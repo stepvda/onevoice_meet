@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<title>SSO bootstrap</title>
+</head>
+<body>
+<!--
+  This page is loaded as a hidden iframe by other witysk.org subdomains
+  (e.g. meet.witysk.org) so they can read the access_token that the onevoice
+  SPA stores in this origin's localStorage.
+
+  It sends the token to the parent window via postMessage with an EXPLICIT
+  target origin (never "*"). Only origins in ALLOWED_ORIGINS receive the
+  message.
+
+  Add new witysk.org subdomains to ALLOWED_ORIGINS as they appear.
+-->
+<script>
+(function () {
+  var ALLOWED_ORIGINS = [
+    "https://meet.witysk.org"
+    // add more trusted witysk.org subdomains here if needed
+  ];
+
+  function read() {
+    try {
+      return {
+        access_token: localStorage.getItem("access_token"),
+        refresh_token: localStorage.getItem("refresh_token")
+      };
+    } catch (e) {
+      return { access_token: null, refresh_token: null };
+    }
+  }
+
+  function send(origin, payload) {
+    try {
+      window.parent.postMessage(
+        Object.assign({ type: "witysk-sso" }, payload),
+        origin
+      );
+    } catch (e) {
+      // parent may be gone; swallow
+    }
+  }
+
+  // On load, push current state to every allowed parent.
+  var snapshot = read();
+  ALLOWED_ORIGINS.forEach(function (o) { send(o, snapshot); });
+
+  // Also respond to a polling request so the parent can re-fetch if the user
+  // logs in/out after the iframe was already mounted.
+  window.addEventListener("message", function (ev) {
+    if (ALLOWED_ORIGINS.indexOf(ev.origin) === -1) return;
+    if (!ev.data || ev.data.type !== "witysk-sso-request") return;
+    send(ev.origin, read());
+  });
+})();
+</script>
+</body>
+</html>

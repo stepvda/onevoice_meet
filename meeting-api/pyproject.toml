@@ -1,0 +1,9 @@
+[project]
+name = "meeting-api"
+version = "0.1.0"
+description = "meet.witysk.org control plane — FastAPI service that mints LiveKit tokens, manages meetings, moderates participants, and coordinates recording."
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

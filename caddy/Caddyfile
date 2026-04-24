@@ -1,0 +1,58 @@
+{
+    # Global options.
+    email stephane@stepvda.com
+}
+
+meet.witysk.org {
+    encode zstd gzip
+
+    # LiveKit WebSocket signaling. Clients connect to wss://meet.witysk.org/rtc
+    # LiveKit runs with network_mode: host, so Caddy (bridge network) reaches
+    # it via host.docker.internal:7880, not via Docker DNS. The livekit-client
+    # SDK also appends its own path (/rtc or /rtc/v1) to the serverUrl, so an
+    # incoming request looks like /rtc/rtc/v1 — strip our /rtc prefix before
+    # forwarding so LiveKit receives the canonical /rtc/v1 path.
+    @rtc path /rtc /rtc/*
+    handle @rtc {
+        uri strip_prefix /rtc
+        reverse_proxy host.docker.internal:7880
+    }
+
+    # meeting-api (REST + webhook receiver).
+    @api path /api/*
+    handle @api {
+        reverse_proxy meeting-api:8080
+    }
+
+    # Recording downloads streamed via meeting-api.
+    @rec path /rec/*
+    handle @rec {
+        reverse_proxy meeting-api:8080
+    }
+
+    # Frontend SPA fallback.
+    handle {
+        root * /srv/frontend
+        try_files {path} /index.html
+        file_server
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(self), microphone=(self), display-capture=(self)"
+        # CSP (Phase 12):
+        # - self for scripts/styles bundled by Vite
+        # - wss://meet.witysk.org for LiveKit signaling
+        # - blob: for the MediaPipe/track-processors worker and video blobs
+        # - https://one.witysk.org for any future SSO bootstrap iframe
+        # 'unsafe-inline' in style-src is required by @livekit/components-styles.
+        # 'wasm-unsafe-eval' is required by @livekit/track-processors (MediaPipe).
+        # frame-src https://one.witysk.org is required for the SSO bootstrap
+        # iframe that reads one.witysk.org's localStorage and postMessages the
+        # access_token back. See one-witysk-integration/README.md.
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org; frame-src https://one.witysk.org; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    }
+}

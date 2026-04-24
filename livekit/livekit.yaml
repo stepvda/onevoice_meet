@@ -1,0 +1,38 @@
+port: 7880
+bind_addresses:
+  - 0.0.0.0
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: true
+
+# Built-in TURN disabled; we reuse the existing coturn at turn.witysk.org.
+turn:
+  enabled: false
+
+# Redis reached via 127.0.0.1 because livekit runs with network_mode: host.
+# The redis container publishes 6379 on loopback (see docker-compose.yml).
+redis:
+  address: 127.0.0.1:6379
+
+# Keys and webhook config are set via env vars (LIVEKIT_KEYS,
+# LIVEKIT_WEBHOOK_API_KEY, LIVEKIT_WEBHOOK_URLS) — docker-compose interpolates
+# values from .env into the `environment:` block, which LiveKit then reads.
+# DO NOT put ${VAR} placeholders in this file; they are NOT interpolated here.
+
+room:
+  auto_create: true
+  empty_timeout: 300
+  max_participants: 50
+  enabled_codecs:
+    - mime: audio/opus
+    - mime: video/VP8
+    - mime: video/VP9
+    - mime: video/H264
+    - mime: video/AV1
+
+logging:
+  level: info
+  json: true

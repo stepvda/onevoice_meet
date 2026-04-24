@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Scrollbar — mirrors one.witysk.org */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0E1E33; }
+::-webkit-scrollbar-thumb { background: #294F7E; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #2E5A8F; }
+
+/* Sidebar gradient matches one.witysk.org */
+.bg-witysk-sidebar {
+  background: linear-gradient(
+    180deg,
+    rgba(5, 15, 70, 0.97) 0%,
+    rgba(15, 40, 140, 0.95) 100%
+  );
+}
+
+/* Main content soft-gradient background (dark) */
+.bg-witysk-page {
+  background: radial-gradient(ellipse at top, #12253E 0%, #0E1E33 60%, #0b0b0f 100%);
+}
+
+html, body, #root { height: 100%; }
+body {
+  @apply font-sans text-slate-100;
+  @apply bg-witysk-page;
+}
