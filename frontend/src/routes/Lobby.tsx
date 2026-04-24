@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, AnonTokenResponse } from "../lib/api";
-import { isAuthenticated } from "../lib/auth";
+import { bootstrapFromOneWitysk, isAuthenticated } from "../lib/auth";
 import { Button, Card, Field, Input } from "../components/ui";
 
 const CACHE_KEY = "meet:pending-token";
@@ -29,8 +29,34 @@ export default function Lobby() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const ownerMeetingId = sessionStorage.getItem(`owner:${roomName}`);
+  const [ownerMeetingId, setOwnerMeetingId] = useState<string | null>(
+    sessionStorage.getItem(`owner:${roomName}`)
+  );
   const isOwner = !!ownerMeetingId && isAuthenticated();
+
+  // If we're authenticated but the sessionStorage flag isn't set, ask the API
+  // whether this user owns the meeting and re-establish the flag.
+  useEffect(() => {
+    if (ownerMeetingId) return;
+    let cancelled = false;
+    (async () => {
+      const tok = isAuthenticated() ? localStorage.getItem("access_token") : await bootstrapFromOneWitysk();
+      if (!tok) return;
+      try {
+        const all = await api.listMeetings();
+        const mine = all.find((m) => m.room_name === roomName);
+        if (mine && !cancelled) {
+          sessionStorage.setItem(`owner:${roomName}`, mine.id);
+          setOwnerMeetingId(mine.id);
+        }
+      } catch {
+        /* not authorised, or API down — fall through to anon flow */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ownerMeetingId, roomName]);
 
   async function join(e: React.FormEvent) {
     e.preventDefault();

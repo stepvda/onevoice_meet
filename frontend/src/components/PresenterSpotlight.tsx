@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  FocusLayout,
   GridLayout,
-  ParticipantTile,
+  TrackRefContext,
   useRoomContext,
   useTracks,
 } from "@livekit/components-react";
 import { RoomEvent, Track } from "livekit-client";
+import FlippableTile from "./FlippableTile";
 
 /**
  * Layout that switches between grid view and spotlight view based on
@@ -56,13 +56,15 @@ export default function PresenterSpotlight() {
       (t) => !(t.participant.identity === focus.participant.identity && t.source === focus.source)
     );
     return (
-      <div style={{ display: "flex", height: "calc(100vh - 80px)", gap: "0.5rem" }}>
-        <div style={{ flex: 3 }}>
-          <FocusLayout trackRef={focus} />
+      <div className="flex h-full gap-2 p-2">
+        <div className="flex-[3] min-w-0">
+          <TrackRefContext.Provider value={focus}>
+            <FlippableTile />
+          </TrackRefContext.Provider>
         </div>
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div className="flex-1 min-w-0 overflow-y-auto">
           <GridLayout tracks={others}>
-            <ParticipantTile />
+            <FlippableTile />
           </GridLayout>
         </div>
       </div>
@@ -70,8 +72,8 @@ export default function PresenterSpotlight() {
   }
 
   return (
-    <GridLayout tracks={tracks} style={{ height: "calc(100vh - 80px)" }}>
-      <ParticipantTile />
+    <GridLayout tracks={tracks} className="h-full p-2">
+      <FlippableTile />
     </GridLayout>
   );
 }

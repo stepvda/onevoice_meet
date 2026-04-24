@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Copy, LogIn, Lock, Trash2, Video } from "lucide-react";
 import { api, MeetingOut } from "../lib/api";
 import { Button, Card } from "./ui";
 
 export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<MeetingOut[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  function joinAsOwner(m: MeetingOut) {
+    // Re-establish owner mode for this room in this tab so the in-meeting
+    // owner controls (Record, End, etc.) appear after the lobby.
+    sessionStorage.setItem(`owner:${m.room_name}`, m.id);
+    navigate(`/j/${m.room_name}`);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -105,11 +113,15 @@ export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) 
                 >
                   <Copy size={16} />
                 </Button>
-                <Link to={`/j/${m.room_name}`}>
-                  <Button variant="accent" size="sm" data-testid={`meeting-join-${m.id}`}>
-                    <LogIn size={16} /> Join
-                  </Button>
-                </Link>
+                <Button
+                  type="button"
+                  variant="accent"
+                  size="sm"
+                  onClick={() => joinAsOwner(m)}
+                  data-testid={`meeting-join-${m.id}`}
+                >
+                  <LogIn size={16} /> Join
+                </Button>
                 <Button
                   type="button"
                   variant="danger"
