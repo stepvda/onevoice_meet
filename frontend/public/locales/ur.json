@@ -12,7 +12,8 @@
     "signIn": "سائن ان کریں",
     "logoff": "لاگ آف",
     "loggingOff": "لاگ آؤٹ ہو رہا ہے…",
-    "logoffConfirm": "کیا ہر جگہ سے لاگ آف کریں؟ اس سے آپ meet.witysk.org اور one.witysk.org سے سائن آؤٹ ہو جائیں گے۔"
+    "logoffConfirm": "کیا ہر جگہ سے لاگ آف کریں؟ اس سے آپ meet.witysk.org اور one.witysk.org سے سائن آؤٹ ہو جائیں گے۔",
+    "tiCafe": "TI کیفے"
   },
   "common": {
     "save": "محفوظ کریں",
@@ -213,7 +214,9 @@
     "loading": "لوڈ ہو رہا ہے…",
     "signInFirst": "پہلے one.witysk.org پر سائن ان کریں۔",
     "started": "شروع ہوا {{when}}",
-    "publishTitle": "یوٹیوب پر اپ لوڈ کریں اور کامیابی پر مقامی فائل حذف کریں"
+    "publishTitle": "یوٹیوب پر اپ لوڈ کریں اور کامیابی پر مقامی فائل حذف کریں",
+    "signInTitle": "اپنی ریکارڈنگز دیکھنے کے لیے سائن ان کریں",
+    "signInBody": "ریکارڈنگز صرف مالک کے لیے ہیں۔ one.witysk.org پر سائن ان کریں اور اس صفحے کو دوبارہ لوڈ کریں۔"
   },
   "settings": {
     "title": "ترتیبات",
@@ -495,5 +498,39 @@
     "flip": "افقی پلٹیں",
     "stopFlip": "ویڈیو کو افقی طور پر پلٹنا بند کریں",
     "unflip": "پلٹائیں"
+  },
+  "tiCafe": {
+    "title": "TI کیفے",
+    "subtitle": "TI One Voice کے وہ اراکین جو اس وقت آن لائن ہیں۔",
+    "currentlyOnline": "فی الحال آن لائن ({{count}})",
+    "empty": "فی الحال کوئی اور آن لائن نہیں ہے۔",
+    "signInRequired": "پہلے one.witysk.org پر سائن ان کریں تاکہ دیکھ سکیں کہ کون آن لائن ہے۔",
+    "viewProfile": "one.witysk.org پر پروفائل کھولیں",
+    "view": "دیکھیں",
+    "message": "براہِ راست پیغام بھیجیں",
+    "dmMe": "مجھے ڈائریکٹ میسج کریں",
+    "openToTalk": "چیٹ کے لیے کھلا ہے — بلا جھجھک ڈائریکٹ میسج بھیجیں",
+    "birthday": "آج اس صارف کی سالگرہ ہے",
+    "vouches_one": "{{count}} بار دوسرے صارفین کے ذریعے تصدیق شدہ",
+    "vouches_other": "دیگر صارفین کی طرف سے {{count}} بار تصدیق شدہ",
+    "viaOneWitysk": "one.witysk.org سے لائیو ڈیٹا۔ پروفائل اور پیغام کے لنکس وہاں ایک نئے ٹیب میں کھلتے ہیں۔",
+    "signInTitle": "کیفے میں کون ہے یہ دیکھنے کے لیے سائن ان کریں",
+    "signInBody": "TI Café TI One Voice میں آن لائن صارفین کی لائیو نمائش ہے۔ one.witysk.org پر سائن ان کریں اور اس صفحے کو دوبارہ لوڈ کریں۔",
+    "signInButton": "one.witysk.org پر سائن ان کریں",
+    "loadFailed": "one.witysk.org تک رسائی ممکن نہیں۔ تھوڑی دیر میں دوبارہ کوشش کریں۔",
+    "live": "براہ راست",
+    "bar": {
+      "connectTitle": "TI Café آڈیو میں شامل ہوں",
+      "disconnectTitle": "TI Café آڈیو چھوڑیں",
+      "muteMic": "مائیکروفون خاموش کریں",
+      "unmuteMic": "میرا مائیکروفون آن کریں",
+      "muteSpeaker": "اسپیکر کو خاموش کریں",
+      "unmuteSpeaker": "اسپیکر کو انمٹ کریں",
+      "liveCount_one": "{{count}} لائیو",
+      "liveCount_other": "{{count}} لائیو"
+    }
+  },
+  "signInPrompt": {
+    "button": "one.witysk.org پر سائن ان کریں"
   }
 }

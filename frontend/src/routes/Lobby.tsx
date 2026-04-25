@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api, AnonTokenResponse, PublicRoomInfo } from "../lib/api";
-import { bootstrapFromOneWitysk, fetchOneWityskName, isAuthenticated } from "../lib/auth";
+import { bootstrapFromOneWitysk, fetchOneWityskName, getAccessToken, isAuthenticated } from "../lib/auth";
 import { Button, Card, Field, Input } from "../components/ui";
 
 const CACHE_KEY = "meet:pending-token";
@@ -74,6 +74,24 @@ export default function Lobby() {
       cancelled = true;
     };
   }, [roomName]);
+
+  // Pre-fill the display-name input from one.witysk.org when the visitor is
+  // signed in but isn't the meeting owner (owners skip the form entirely).
+  // Bootstrap SSO if no token is cached yet, then read /api/auth/me. We only
+  // overwrite an empty `name` so we never clobber what the user typed.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const tok = getAccessToken() ?? (await bootstrapFromOneWitysk());
+      if (!tok || cancelled) return;
+      const fetched = await fetchOneWityskName();
+      if (cancelled || !fetched) return;
+      setName((cur) => (cur === "" ? fetched : cur));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // If we're authenticated but the sessionStorage flag isn't set, ask the API
   // whether this user owns the meeting and re-establish the flag.

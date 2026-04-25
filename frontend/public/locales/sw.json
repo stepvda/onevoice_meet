@@ -12,7 +12,8 @@
     "signIn": "Ingia →",
     "logoff": "Toka",
     "loggingOff": "Inatoka…",
-    "logoffConfirm": "Toka kila mahali? Hii itakutoa nje ya meet.witysk.org na one.witysk.org."
+    "logoffConfirm": "Toka kila mahali? Hii itakutoa nje ya meet.witysk.org na one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Hifadhi",
@@ -213,7 +214,9 @@
     "loading": "Inapakia…",
     "signInFirst": "Ingia kwenye one.witysk.org kwanza.",
     "started": "Imeanza {{when}}",
-    "publishTitle": "Pakia kwenye YouTube na ufute faili la ndani ikifanikiwa"
+    "publishTitle": "Pakia kwenye YouTube na ufute faili la ndani ikifanikiwa",
+    "signInTitle": "Ingia ili uone rekodi zako",
+    "signInBody": "Rekodi ni za mmiliki pekee. Ingia kwenye one.witysk.org na upakie upya ukurasa huu."
   },
   "settings": {
     "title": "Mipangilio",
@@ -495,5 +498,39 @@
     "flip": "Pindua kwa mlalo",
     "stopFlip": "Acha kugeuza video kwa mlalo",
     "unflip": "Geuza"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Wanachama wa TI One Voice walio mtandaoni kwa sasa.",
+    "currentlyOnline": "Mtandaoni sasa ({{count}})",
+    "empty": "Hakuna mtu mwingine aliye mtandaoni kwa sasa.",
+    "signInRequired": "Ingia kwenye one.witysk.org kwanza ili kuona nani yuko mtandaoni.",
+    "viewProfile": "Fungua wasifu kwenye one.witysk.org",
+    "view": "Tazama",
+    "message": "Tuma ujumbe wa moja kwa moja",
+    "dmMe": "NITUMIE UJUMBE",
+    "openToTalk": "Fungua kwa mazungumzo — jisikie huru kutuma DM",
+    "birthday": "Ni siku ya kuzaliwa ya mtumiaji huyu leo",
+    "vouches_one": "Imethibitishwa na watumiaji wengine kwa {{count}}",
+    "vouches_other": "Imethibitishwa {{count}} mara na watumiaji wengine",
+    "viaOneWitysk": "Data halisi kutoka one.witysk.org. Viungo vya wasifu na ujumbe hufunguka hapo kwenye kichupo kipya.",
+    "signInTitle": "Ingia ili uone nani yuko kwenye Café",
+    "signInBody": "TI Café ni mwonekano wa moja kwa moja wa nani yuko mtandaoni kwenye TI One Voice. Ingia kwenye one.witysk.org na upakie upya ukurasa huu.",
+    "signInButton": "Ingia kwenye one.witysk.org",
+    "loadFailed": "Haiwezi kufikia one.witysk.org. Jaribu tena baada ya muda.",
+    "live": "MOJA KWA MOJA",
+    "bar": {
+      "connectTitle": "Jiunga na sauti ya TI Café",
+      "disconnectTitle": "Acha sauti ya TI Café",
+      "muteMic": "Zima maikrofoni yangu",
+      "unmuteMic": "Ondoa kimya cha maikrofoni yangu",
+      "muteSpeaker": "Zima sauti ya mzungumzaji",
+      "unmuteSpeaker": "Ondoa ukimya wa spika",
+      "liveCount_one": "{{count}} moja kwa moja",
+      "liveCount_other": "{{count}} moja kwa moja"
+    }
+  },
+  "signInPrompt": {
+    "button": "Ingia kwenye one.witysk.org"
   }
 }

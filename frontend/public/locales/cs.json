@@ -12,7 +12,8 @@
     "signIn": "Přihlásit se →",
     "logoff": "Odhlásit se",
     "loggingOff": "Odhlášení…",
-    "logoffConfirm": "Odhlásit se všude? Tím se odhlásíte z meet.witysk.org a one.witysk.org."
+    "logoffConfirm": "Odhlásit se všude? Tím se odhlásíte z meet.witysk.org a one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Uložit",
@@ -213,7 +214,9 @@
     "loading": "Načítání…",
     "signInFirst": "Nejprve se přihlaste na one.witysk.org.",
     "started": "Zahájeno {{when}}",
-    "publishTitle": "Nahrát na YouTube a po úspěchu smazat lokální soubor"
+    "publishTitle": "Nahrát na YouTube a po úspěchu smazat lokální soubor",
+    "signInTitle": "Přihlaste se pro zobrazení vašich nahrávek",
+    "signInBody": "Nahrávky jsou pouze pro vlastníka. Přihlaste se na one.witysk.org a obnovte tuto stránku."
   },
   "settings": {
     "title": "Nastavení",
@@ -495,5 +498,39 @@
     "flip": "Převrátit vodorovně",
     "stopFlip": "Zastavit horizontální převrácení videa",
     "unflip": "Zrušit převrácení"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Členové TI One Voice, kteří jsou právě online.",
+    "currentlyOnline": "Právě online ({{count}})",
+    "empty": "Nikdo jiný teď není online.",
+    "signInRequired": "Nejprve se přihlaste na one.witysk.org, abyste viděli, kdo je online.",
+    "viewProfile": "Otevřít profil na one.witysk.org",
+    "view": "Zobrazit",
+    "message": "Odeslat přímou zprávu",
+    "dmMe": "Napiš mi DM",
+    "openToTalk": "Otevřeno pro chat — klidně pošli zprávu",
+    "birthday": "Dnes má tento uživatel narozeniny",
+    "vouches_one": "Doporučeno {{count}} uživateli",
+    "vouches_other": "Zaručeno uživatelem {{count}} krát",
+    "viaOneWitysk": "Živá data z one.witysk.org. Odkazy na profily a zprávy se otevírají na nové kartě.",
+    "signInTitle": "Přihlaste se, abyste viděli, kdo je v kavárně",
+    "signInBody": "TI Café je živý přehled toho, kdo je online v TI One Voice. Přihlaste se na one.witysk.org a obnovte tuto stránku.",
+    "signInButton": "Přihlaste se na one.witysk.org",
+    "loadFailed": "Nepodařilo se připojit k one.witysk.org. Zkuste to za chvíli znovu.",
+    "live": "ŽIVĚ",
+    "bar": {
+      "connectTitle": "Připojit se k audiu TI Café",
+      "disconnectTitle": "Opustit zvuk TI Café",
+      "muteMic": "Ztlumit mikrofon",
+      "unmuteMic": "Zapnout mikrofon",
+      "muteSpeaker": "Ztlumit reproduktor",
+      "unmuteSpeaker": "Zapnout mikrofon mluvčího",
+      "liveCount_one": "{{count}} živě",
+      "liveCount_other": "{{count}} živě"
+    }
+  },
+  "signInPrompt": {
+    "button": "Přihlaste se na one.witysk.org"
   }
 }

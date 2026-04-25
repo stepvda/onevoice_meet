@@ -12,7 +12,8 @@
     "signIn": "ਸਾਈਨ ਇਨ ਕਰੋ →",
     "logoff": "ਲੌਗ ਆਫ ਕਰੋ",
     "loggingOff": "ਲੌਗ ਆਫ਼ ਹੋ ਰਿਹਾ ਹੈ…",
-    "logoffConfirm": "ਹਰ ਥਾਂ ਤੋਂ ਲੌਗ ਆਫ ਕਰੀਏ? ਇਹ ਤੁਹਾਨੂੰ meet.witysk.org ਅਤੇ one.witysk.org ਤੋਂ ਸਾਈਨ ਆਉਟ ਕਰ ਦੇਵੇਗਾ।"
+    "logoffConfirm": "ਹਰ ਥਾਂ ਤੋਂ ਲੌਗ ਆਫ ਕਰੀਏ? ਇਹ ਤੁਹਾਨੂੰ meet.witysk.org ਅਤੇ one.witysk.org ਤੋਂ ਸਾਈਨ ਆਉਟ ਕਰ ਦੇਵੇਗਾ।",
+    "tiCafe": "TI ਕੈਫੇ"
   },
   "common": {
     "save": "ਸੰਭਾਲੋ",
@@ -213,7 +214,9 @@
     "loading": "ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ…",
     "signInFirst": "ਪਹਿਲਾਂ one.witysk.org 'ਤੇ ਸਾਈਨ ਇਨ ਕਰੋ।",
     "started": "ਸ਼ੁਰੂ ਹੋਇਆ {{when}}",
-    "publishTitle": "YouTube 'ਤੇ ਅੱਪਲੋਡ ਕਰੋ ਅਤੇ ਸਫਲ ਹੋਣ 'ਤੇ ਸਥਾਨਕ ਫ਼ਾਈਲ ਮਿਟਾਓ"
+    "publishTitle": "YouTube 'ਤੇ ਅੱਪਲੋਡ ਕਰੋ ਅਤੇ ਸਫਲ ਹੋਣ 'ਤੇ ਸਥਾਨਕ ਫ਼ਾਈਲ ਮਿਟਾਓ",
+    "signInTitle": "ਸਾਈਨ ਇਨ ਕਰੋ ਤਾਂ ਜੋ ਤੁਸੀਂ ਆਪਣੀਆਂ ਰਿਕਾਰਡਿੰਗਾਂ ਦੇਖ ਸਕੋ",
+    "signInBody": "ਰਿਕਾਰਡਿੰਗਾਂ ਸਿਰਫ਼ ਮਾਲਕ ਲਈ ਹਨ। one.witysk.org 'ਤੇ ਸਾਈਨ ਇਨ ਕਰੋ ਅਤੇ ਇਸ ਪੇਜ ਨੂੰ ਰੀਲੋਡ ਕਰੋ।"
   },
   "settings": {
     "title": "ਸੈਟਿੰਗਾਂ",
@@ -495,5 +498,39 @@
     "flip": "ਖਿਤਿਜੀ ਰੂਪ ਵਿੱਚ ਫਲਿੱਪ ਕਰੋ",
     "stopFlip": "ਵੀਡੀਓ ਨੂੰ ਖਿਤਿਜੀ ਫਲਿੱਪ ਕਰਨਾ ਬੰਦ ਕਰੋ",
     "unflip": "ਫਲਿੱਪ ਵਾਪਸ ਕਰੋ"
+  },
+  "tiCafe": {
+    "title": "TI ਕੈਫੇ",
+    "subtitle": "TI One Voice ਦੇ ਮੈਂਬਰ ਜੋ ਇਸ ਵੇਲੇ ਔਨਲਾਈਨ ਹਨ।",
+    "currentlyOnline": "ਹੁਣ ਔਨਲਾਈਨ ({{count}})",
+    "empty": "ਹੁਣ ਹੋਰ ਕੋਈ ਔਨਲਾਈਨ ਨਹੀਂ ਹੈ।",
+    "signInRequired": "ਪਹਿਲਾਂ one.witysk.org 'ਤੇ ਸਾਈਨ ਇਨ ਕਰੋ ਤਾਂ ਜੋ ਦੇਖ ਸਕੋ ਕਿ ਕੌਣ ਔਨਲਾਈਨ ਹੈ।",
+    "viewProfile": "ਇੱਕ.witysk.org 'ਤੇ ਪ੍ਰੋਫਾਈਲ ਖੋਲ੍ਹੋ",
+    "view": "ਦੇਖੋ",
+    "message": "ਸਿੱਧਾ ਸੁਨੇਹਾ ਭੇਜੋ",
+    "dmMe": "ਮੈਨੂੰ DM ਕਰੋ",
+    "openToTalk": "ਚੈਟ ਲਈ ਖੁੱਲ੍ਹਾ — DM ਭੇਜਣ ਲਈ ਸੁਤੰਤਰ",
+    "birthday": "ਅੱਜ ਇਸ ਵਰਤੋਂਕਾਰ ਦਾ ਜਨਮ ਦਿਨ ਹੈ",
+    "vouches_one": "{{count}} ਵਾਰ ਹੋਰ ਉਪਭੋਗਤਾਵਾਂ ਦੁਆਰਾ ਪੁਸ਼ਟੀ ਕੀਤੀ ਗਈ",
+    "vouches_other": "ਹੋਰ ਉਪਭੋਗਤਾਵਾਂ ਦੁਆਰਾ {{count}} ਵਾਰ ਪ੍ਰਮਾਣਿਤ",
+    "viaOneWitysk": "one.witysk.org ਤੋਂ ਲਾਈਵ ਡੇਟਾ। ਪ੍ਰੋਫਾਈਲ ਅਤੇ ਸੁਨੇਹੇ ਦੇ ਲਿੰਕ ਉੱਥੇ ਇੱਕ ਨਵੀਂ ਟੈਬ ਵਿੱਚ ਖੁੱਲ੍ਹਦੇ ਹਨ।",
+    "signInTitle": "ਸਾਈਨ ਇਨ ਕਰੋ ਤਾਂ ਜੋ ਦੇਖ ਸਕੋ ਕਿ ਕੈਫੇ ਵਿੱਚ ਕੌਣ ਹੈ",
+    "signInBody": "TI Café TI One Voice ਵਿੱਚ ਔਨਲਾਈਨ ਮੌਜੂਦ ਲੋਕਾਂ ਦਾ ਲਾਈਵ ਦ੍ਰਿਸ਼ ਹੈ। one.witysk.org 'ਤੇ ਸਾਈਨ ਇਨ ਕਰੋ ਅਤੇ ਇਸ ਪੰਨੇ ਨੂੰ ਮੁੜ ਲੋਡ ਕਰੋ।",
+    "signInButton": "ਇੱਕ.witysk.org 'ਤੇ ਸਾਈਨ ਇਨ ਕਰੋ",
+    "loadFailed": "one.witysk.org तक पहुंच नहीं हो सकी। ਕੁਝ ਪਲਾਂ ਬਾਅਦ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    "live": "ਲਾਈਵ",
+    "bar": {
+      "connectTitle": "TI Café ਆਡੀਓ ਵਿੱਚ ਸ਼ਾਮਲ ਹੋਵੋ",
+      "disconnectTitle": "TI Café ਆਡੀਓ ਛੱਡੋ",
+      "muteMic": "ਮੇਰਾ ਮਾਈਕ੍ਰੋਫ਼ੋਨ ਮਿਊਟ ਕਰੋ",
+      "unmuteMic": "ਮੇਰਾ ਮਾਈਕ੍ਰੋਫ਼ੋਨ ਅਨਮਿਊਟ ਕਰੋ",
+      "muteSpeaker": "ਸਪੀਕਰ ਨੂੰ ਮਿਊਟ ਕਰੋ",
+      "unmuteSpeaker": "ਸਪੀਕਰ ਨੂੰ ਅਨਮਿਊਟ ਕਰੋ",
+      "liveCount_one": "{{count}} ਲਾਈਵ",
+      "liveCount_other": "{{count}} ਲਾਈਵ"
+    }
+  },
+  "signInPrompt": {
+    "button": "ਇੱਕ.witysk.org 'ਤੇ ਸਾਈਨ ਇਨ ਕਰੋ"
   }
 }

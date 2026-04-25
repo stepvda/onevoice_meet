@@ -12,7 +12,8 @@
     "signIn": "Вход",
     "logoff": "Излизане",
     "loggingOff": "Излизане от системата…",
-    "logoffConfirm": "Излизане отвсякъде? Това ще ви отпише от meet.witysk.org и one.witysk.org."
+    "logoffConfirm": "Излизане отвсякъде? Това ще ви отпише от meet.witysk.org и one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Запази",
@@ -213,7 +214,9 @@
     "loading": "Зареждане…",
     "signInFirst": "Първо влезте в one.witysk.org.",
     "started": "Започна {{when}}",
-    "publishTitle": "Качване в YouTube и изтриване на локалния файл при успех"
+    "publishTitle": "Качване в YouTube и изтриване на локалния файл при успех",
+    "signInTitle": "Влезте, за да видите вашите записи",
+    "signInBody": "Записите са само за собственика. Влезте в one.witysk.org и презаредете тази страница."
   },
   "settings": {
     "title": "Настройки",
@@ -495,5 +498,39 @@
     "flip": "Обърни хоризонтално",
     "stopFlip": "Спри да обръщаш видеото хоризонтално",
     "unflip": "Отмени обръщането"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Членове на TI One Voice, които са онлайн в момента.",
+    "currentlyOnline": "В момента онлайн ({{count}})",
+    "empty": "В момента никой друг не е онлайн.",
+    "signInRequired": "Влезте първо в one.witysk.org, за да видите кой е онлайн.",
+    "viewProfile": "Отваряне на профил в one.witysk.org",
+    "view": "Изглед",
+    "message": "Изпрати лично съобщение",
+    "dmMe": "Изпрати ми лично съобщение",
+    "openToTalk": "Отворено за чат — свободно изпращайте лично съобщение",
+    "birthday": "Днес е рожденият ден на този потребител",
+    "vouches_one": "Поръчан за {{count}} време от други потребители",
+    "vouches_other": "Поръчан за {{count}} пъти от други потребители",
+    "viaOneWitysk": "Данни на живо от one.witysk.org. Връзките към профила и съобщенията се отварят там в нов раздел.",
+    "signInTitle": "Влезте, за да видите кой е в Кафето",
+    "signInBody": "TI Café е на живо изглед кой е онлайн в TI One Voice. Влезте в one.witysk.org и презаредете тази страница.",
+    "signInButton": "Влезте в one.witysk.org",
+    "loadFailed": "Не може да се свърже с one.witysk.org. Опитайте отново след малко.",
+    "live": "НА ЖИВО",
+    "bar": {
+      "connectTitle": "Присъединете се към аудиото на TI Café",
+      "disconnectTitle": "Напусни аудиото на TI Café",
+      "muteMic": "Изключване на микрофона",
+      "unmuteMic": "Включи микрофона ми",
+      "muteSpeaker": "Заглуши говорителя",
+      "unmuteSpeaker": "Включи звука на говорителя",
+      "liveCount_one": "{{count}} на живо",
+      "liveCount_other": "{{count}} на живо"
+    }
+  },
+  "signInPrompt": {
+    "button": "Влезте в one.witysk.org"
   }
 }

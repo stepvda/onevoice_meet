@@ -12,7 +12,8 @@
     "signIn": "সাইন ইন করুন →",
     "logoff": "লগ অফ",
     "loggingOff": "লগ আউট হচ্ছে…",
-    "logoffConfirm": "সব জায়গা থেকে লগ অফ করবেন? এটি আপনাকে meet.witysk.org এবং one.witysk.org থেকে সাইন আউট করবে।"
+    "logoffConfirm": "সব জায়গা থেকে লগ অফ করবেন? এটি আপনাকে meet.witysk.org এবং one.witysk.org থেকে সাইন আউট করবে।",
+    "tiCafe": "TI ক্যাফে"
   },
   "common": {
     "save": "সংরক্ষণ করুন",
@@ -213,7 +214,9 @@
     "loading": "লোড হচ্ছে…",
     "signInFirst": "প্রথমে one.witysk.org-এ সাইন ইন করুন।",
     "started": "শুরু হয়েছে {{when}}",
-    "publishTitle": "YouTube-এ আপলোড করুন এবং সফল হলে লোকাল ফাইলটি মুছে ফেলুন"
+    "publishTitle": "YouTube-এ আপলোড করুন এবং সফল হলে লোকাল ফাইলটি মুছে ফেলুন",
+    "signInTitle": "আপনার রেকর্ডিং দেখতে সাইন ইন করুন",
+    "signInBody": "রেকর্ডিং শুধুমাত্র মালিকের জন্য। one.witysk.org-এ সাইন ইন করুন এবং এই পৃষ্ঠাটি রিলোড করুন।"
   },
   "settings": {
     "title": "সেটিংস",
@@ -495,5 +498,39 @@
     "flip": "অনুভূমিকভাবে ফ্লিপ করুন",
     "stopFlip": "ভিডিও অনুভূমিকভাবে উল্টানো বন্ধ করুন",
     "unflip": "ফ্লিপ বাতিল করুন"
+  },
+  "tiCafe": {
+    "title": "TI ক্যাফে",
+    "subtitle": "TI One Voice-এর সদস্যরা যারা এখন অনলাইনে আছেন।",
+    "currentlyOnline": "বর্তমানে অনলাইনে ({{count}})",
+    "empty": "এই মুহূর্তে আর কেউ অনলাইনে নেই।",
+    "signInRequired": "এক.উইটিস্ক.অর্গ-এ প্রথমে সাইন ইন করুন কে অনলাইনে আছে তা দেখতে।",
+    "viewProfile": "one.witysk.org-এ প্রোফাইল খুলুন",
+    "view": "দেখুন",
+    "message": "সরাসরি বার্তা পাঠান",
+    "dmMe": "আমাকে ডিএম করুন",
+    "openToTalk": "চ্যাট খোলা — নির্দ্বিধায় ডিএম পাঠাতে পারেন",
+    "birthday": "আজ এই ব্যবহারকারীর জন্মদিন",
+    "vouches_one": "অন্যান্য ব্যবহারকারীদের দ্বারা {{count}} বার সমর্থিত",
+    "vouches_other": "অন্যান্য ব্যবহারকারীদের দ্বারা {{count}} বার সমর্থিত",
+    "viaOneWitysk": "one.witysk.org থেকে লাইভ ডেটা। প্রোফাইল এবং মেসেজ লিংক সেখানে নতুন ট্যাবে খোলে।",
+    "signInTitle": "ক্যাফেতে কে আছে তা দেখতে সাইন ইন করুন",
+    "signInBody": "TI Café হলো TI One Voice-এ কে অনলাইন আছে তার একটি লাইভ ভিউ। one.witysk.org-এ সাইন ইন করুন এবং এই পৃষ্ঠাটি রিলোড করুন।",
+    "signInButton": "one.witysk.org-এ সাইন ইন করুন",
+    "loadFailed": "one.witysk.org-এ পৌঁছানো যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।",
+    "live": "লাইভ",
+    "bar": {
+      "connectTitle": "TI Café অডিওতে যোগ দিন",
+      "disconnectTitle": "TI Café অডিও ছেড়ে দিন",
+      "muteMic": "আমার মাইক্রোফোন নীরব করুন",
+      "unmuteMic": "আমার মাইক্রোফোন আনমিউট করুন",
+      "muteSpeaker": "স্পিকার মিউট করুন",
+      "unmuteSpeaker": "স্পিকার আনমিউট করুন",
+      "liveCount_one": "{{count}} লাইভ",
+      "liveCount_other": "{{count}} লাইভ"
+    }
+  },
+  "signInPrompt": {
+    "button": "one.witysk.org-এ সাইন ইন করুন"
   }
 }

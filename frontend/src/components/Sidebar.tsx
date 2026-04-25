@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  Coffee,
   Home,
   LogIn,
   LogOut,
@@ -23,6 +24,7 @@ interface NavItem {
 const primaryItems: NavItem[] = [
   { to: "/", i18nKey: "nav.home", icon: Home, end: true },
   { to: "/recordings", i18nKey: "nav.recordings", icon: Video },
+  { to: "/ti-cafe", i18nKey: "nav.tiCafe", icon: Coffee },
 ];
 
 const secondaryItems: NavItem[] = [

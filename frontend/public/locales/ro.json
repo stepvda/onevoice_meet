@@ -12,7 +12,8 @@
     "signIn": "Conectați-vă →",
     "logoff": "Deconectare",
     "loggingOff": "Deconectare…",
-    "logoffConfirm": "Deconectare de peste tot? Aceasta te deconectează de pe meet.witysk.org și one.witysk.org."
+    "logoffConfirm": "Deconectare de peste tot? Aceasta te deconectează de pe meet.witysk.org și one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Salvează",
@@ -213,7 +214,9 @@
     "loading": "Se încarcă…",
     "signInFirst": "Autentifică-te mai întâi pe one.witysk.org.",
     "started": "A început {{when}}",
-    "publishTitle": "Încarcă pe YouTube și șterge fișierul local după reușită"
+    "publishTitle": "Încarcă pe YouTube și șterge fișierul local după reușită",
+    "signInTitle": "Conectează-te pentru a vedea înregistrările tale.",
+    "signInBody": "Înregistrările sunt disponibile doar pentru proprietar. Conectează-te pe one.witysk.org și reîncarcă această pagină."
   },
   "settings": {
     "title": "Setări",
@@ -495,5 +498,39 @@
     "flip": "Inversare orizontală",
     "stopFlip": "Oprește oglindirea orizontală a videoclipului",
     "unflip": "Dezactivează răsturnarea"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Membrii TI One Voice care sunt online acum.",
+    "currentlyOnline": "Conectat acum ({{count}})",
+    "empty": "Nimeni altcineva nu este online acum.",
+    "signInRequired": "Conectează-te mai întâi pe one.witysk.org pentru a vedea cine este online.",
+    "viewProfile": "Deschide profilul pe one.witysk.org",
+    "view": "Vizualizare",
+    "message": "Trimite un mesaj direct",
+    "dmMe": "Trimite-mi DM",
+    "openToTalk": "Deschis pentru chat — nu ezita să trimiți un DM",
+    "birthday": "Astăzi este ziua de naștere a acestui utilizator",
+    "vouches_one": "Recomandat de {{count}} ori de alți utilizatori",
+    "vouches_other": "Recomandat de {{count}} ori de alți utilizatori",
+    "viaOneWitysk": "Date live de pe one.witysk.org. Linkurile către profil și mesaje se deschid acolo într-o filă nouă.",
+    "signInTitle": "Conectează-te pentru a vedea cine este la Café",
+    "signInBody": "TI Café este o vedere live a persoanelor online în TI One Voice. Conectează-te pe one.witysk.org și reîncarcă această pagină.",
+    "signInButton": "Conectați-vă pe one.witysk.org",
+    "loadFailed": "Nu s-a putut ajunge la one.witysk.org. Încearcă din nou peste un moment.",
+    "live": "LIVE",
+    "bar": {
+      "connectTitle": "Alătură-te audio-ului TI Café",
+      "disconnectTitle": "Părăsește audio-ul TI Café",
+      "muteMic": "Dezactivează microfonul",
+      "unmuteMic": "Activează microfonul",
+      "muteSpeaker": "Dezactivează microfonul vorbitorului",
+      "unmuteSpeaker": "Deblocare microfon difuzor",
+      "liveCount_one": "{{count}} în direct",
+      "liveCount_other": "{{count}} live"
+    }
+  },
+  "signInPrompt": {
+    "button": "Conectează-te pe one.witysk.org"
   }
 }

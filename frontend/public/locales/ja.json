@@ -12,7 +12,8 @@
     "signIn": "サインイン →",
     "logoff": "ログオフ",
     "loggingOff": "ログアウト中…",
-    "logoffConfirm": "すべての端末からログアウトしますか？これにより、meet.witysk.org と one.witysk.org からサインアウトします。"
+    "logoffConfirm": "すべての端末からログアウトしますか？これにより、meet.witysk.org と one.witysk.org からサインアウトします。",
+    "tiCafe": "TIカフェ"
   },
   "common": {
     "save": "保存",
@@ -213,7 +214,9 @@
     "loading": "読み込み中…",
     "signInFirst": "先に one.witysk.org でサインインしてください。",
     "started": "開始しました {{when}}",
-    "publishTitle": "YouTubeにアップロードし、成功したらローカルファイルを削除"
+    "publishTitle": "YouTubeにアップロードし、成功したらローカルファイルを削除",
+    "signInTitle": "サインインして録画を確認",
+    "signInBody": "録画はオーナーのみ利用可能です。one.witysk.org にサインインして、このページを再読み込みしてください。"
   },
   "settings": {
     "title": "設定",
@@ -495,5 +498,39 @@
     "flip": "水平反転",
     "stopFlip": "水平方向のビデオ反転を停止",
     "unflip": "反転を解除"
+  },
+  "tiCafe": {
+    "title": "TIカフェ",
+    "subtitle": "現在オンライン中のTI One Voiceメンバー。",
+    "currentlyOnline": "現在オンライン（{{count}}）",
+    "empty": "現在、他の人はオンラインではありません。",
+    "signInRequired": "先に one.witysk.org にサインインして、誰がオンラインか確認してください。",
+    "viewProfile": "one.witysk.orgでプロフィールを開く",
+    "view": "表示",
+    "message": "ダイレクトメッセージを送信",
+    "dmMe": "DMしてください",
+    "openToTalk": "チャットを開いています — DMを送ってください",
+    "birthday": "本日はこのユーザーの誕生日です",
+    "vouches_one": "{{count}}回、他のユーザーから保証済み",
+    "vouches_other": "他のユーザーから{{count}}回保証されています",
+    "viaOneWitysk": "one.witysk.org からのライブデータ。プロフィールとメッセージのリンクは新しいタブで開きます。",
+    "signInTitle": "サインインしてカフェの参加者を確認",
+    "signInBody": "TI Caféは、TI One Voiceにオンライン中のメンバーをライブ表示します。one.witysk.orgにサインインして、このページを再読み込みしてください。",
+    "signInButton": "one.witysk.org にサインイン",
+    "loadFailed": "one.witysk.org に接続できませんでした。しばらくしてからもう一度お試しください。",
+    "live": "ライブ",
+    "bar": {
+      "connectTitle": "TI Café オーディオに参加",
+      "disconnectTitle": "TI Caféの音声を退出",
+      "muteMic": "マイクをミュート",
+      "unmuteMic": "マイクのミュートを解除",
+      "muteSpeaker": "話者をミュート",
+      "unmuteSpeaker": "ミュート解除",
+      "liveCount_one": "{{count}} ライブ配信中",
+      "liveCount_other": "{{count}} ライブ配信中"
+    }
+  },
+  "signInPrompt": {
+    "button": "one.witysk.org でサインイン"
   }
 }

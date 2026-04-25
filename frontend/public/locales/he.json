@@ -12,7 +12,8 @@
     "signIn": "התחברות ←",
     "logoff": "התנתק",
     "loggingOff": "מתנתק…",
-    "logoffConfirm": "להתנתק מכל מקום? פעולה זו תנתק אותך מ-meet.witysk.org ו-one.witysk.org."
+    "logoffConfirm": "להתנתק מכל מקום? פעולה זו תנתק אותך מ-meet.witysk.org ו-one.witysk.org.",
+    "tiCafe": "TI קפה"
   },
   "common": {
     "save": "שמור",
@@ -213,7 +214,9 @@
     "loading": "טוען…",
     "signInFirst": "היכנס תחילה לאתר one.witysk.org.",
     "started": "החל {{when}}",
-    "publishTitle": "העלה ל-YouTube ומחק את הקובץ המקומי בהצלחה"
+    "publishTitle": "העלה ל-YouTube ומחק את הקובץ המקומי בהצלחה",
+    "signInTitle": "היכנס כדי לראות את ההקלטות שלך",
+    "signInBody": "הקלטות זמינות לבעלים בלבד. התחבר ב‑one.witysk.org וטען מחדש דף זה."
   },
   "settings": {
     "title": "הגדרות",
@@ -495,5 +498,39 @@
     "flip": "הפוך אופקית",
     "stopFlip": "הפסק להפוך את הווידאו אופקית",
     "unflip": "ביטול היפוך"
+  },
+  "tiCafe": {
+    "title": "TI קפה",
+    "subtitle": "חברי TI One Voice שנמצאים כרגע מחוברים.",
+    "currentlyOnline": "מחוברים כעת ({{count}})",
+    "empty": "אף אחד אחר לא מחובר כרגע.",
+    "signInRequired": "היכנס תחילה ל-one.witysk.org כדי לראות מי מחובר.",
+    "viewProfile": "פתח פרופיל ב-one.witysk.org",
+    "view": "הצג",
+    "message": "שלח הודעה ישירה",
+    "dmMe": "שלח לי הודעה פרטית",
+    "openToTalk": "פתוח לשיחה — אתה מוזמן לשלוח הודעה פרטית",
+    "birthday": "זה יום ההולדת של המשתמש הזה היום",
+    "vouches_one": "אושר על ידי משתמשים אחרים {{count}} פעמים",
+    "vouches_other": "אושר על ידי משתמשים אחרים {{count}} פעמים",
+    "viaOneWitysk": "נתונים חיים מ-one.witysk.org. קישורי פרופיל והודעות נפתחים שם בכרטיסייה חדשה.",
+    "signInTitle": "היכנס כדי לראות מי נמצא בקפה",
+    "signInBody": "TI Café מציג תצוגה חיה של מי מחובר ב-TI One Voice. היכנסו ל-one.witysk.org וטענו מחדש את הדף הזה.",
+    "signInButton": "היכנס ב-one.witysk.org",
+    "loadFailed": "לא ניתן להגיע ל-one.witysk.org. נסה שוב בעוד רגע.",
+    "live": "שידור חי",
+    "bar": {
+      "connectTitle": "הצטרף לאודיו של TI Café",
+      "disconnectTitle": "השאר אודיו של TI Café",
+      "muteMic": "השתק את המיקרופון שלי",
+      "unmuteMic": "בטל השתקת המיקרופון שלי",
+      "muteSpeaker": "השתק רמקול",
+      "unmuteSpeaker": "בטל השתקת דובר",
+      "liveCount_one": "{{count}} בשידור חי",
+      "liveCount_other": "{{count}} בשידור חי"
+    }
+  },
+  "signInPrompt": {
+    "button": "היכנס ב-one.witysk.org"
   }
 }

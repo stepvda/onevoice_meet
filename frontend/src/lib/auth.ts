@@ -74,6 +74,13 @@ export function logoutFromOneWitysk(): Promise<{ ok: boolean }> {
       } catch {
         /* ignore */
       }
+      // Tear down the global TI Café audio session if it's running. The
+      // TICafeProvider listens for this event and disconnects gracefully.
+      try {
+        window.dispatchEvent(new Event("ti-cafe-logout"));
+      } catch {
+        /* ignore */
+      }
       resolve({ ok });
     }
 

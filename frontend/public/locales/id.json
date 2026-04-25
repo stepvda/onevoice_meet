@@ -12,7 +12,8 @@
     "signIn": "Masuk →",
     "logoff": "Keluar",
     "loggingOff": "Keluar…",
-    "logoffConfirm": "Log off di semua tempat? Ini akan menandatangani Anda keluar dari meet.witysk.org dan one.witysk.org."
+    "logoffConfirm": "Log off di semua tempat? Ini akan menandatangani Anda keluar dari meet.witysk.org dan one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Simpan",
@@ -213,7 +214,9 @@
     "loading": "Memuat…",
     "signInFirst": "Masuk dulu di one.witysk.org.",
     "started": "Dimulai {{when}}",
-    "publishTitle": "Unggah ke YouTube dan hapus file lokal jika berhasil"
+    "publishTitle": "Unggah ke YouTube dan hapus file lokal jika berhasil",
+    "signInTitle": "Masuk untuk melihat rekaman Anda",
+    "signInBody": "Rekaman hanya untuk pemilik. Masuk di one.witysk.org dan muat ulang halaman ini."
   },
   "settings": {
     "title": "Pengaturan",
@@ -495,5 +498,39 @@
     "flip": "Balik horizontal",
     "stopFlip": "Hentikan membalik video secara horizontal",
     "unflip": "Balikkan"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Anggota TI One Voice yang sedang online saat ini.",
+    "currentlyOnline": "Sedang online ({{count}})",
+    "empty": "Tidak ada orang lain yang online saat ini.",
+    "signInRequired": "Masuk ke one.witysk.org terlebih dahulu untuk melihat siapa yang online.",
+    "viewProfile": "Buka profil di one.witysk.org",
+    "view": "Tampilan",
+    "message": "Kirim pesan langsung",
+    "dmMe": "DM SAYA",
+    "openToTalk": "Terbuka untuk mengobrol — silakan kirim DM",
+    "birthday": "Hari ini adalah ulang tahun pengguna ini",
+    "vouches_one": "Telah diverifikasi oleh pengguna lain sebanyak {{count}} kali",
+    "vouches_other": "Direkomendasikan sebanyak {{count}} kali oleh pengguna lain",
+    "viaOneWitysk": "Data langsung dari one.witysk.org. Tautan profil dan pesan akan terbuka di tab baru di sana.",
+    "signInTitle": "Masuk untuk melihat siapa yang ada di Café",
+    "signInBody": "TI Café adalah tampilan langsung siapa yang sedang online di TI One Voice. Masuk di one.witysk.org dan muat ulang halaman ini.",
+    "signInButton": "Masuk di one.witysk.org",
+    "loadFailed": "Tidak dapat menjangkau one.witysk.org. Coba lagi sebentar.",
+    "live": "LANGSUNG",
+    "bar": {
+      "connectTitle": "Gabung audio TI Café",
+      "disconnectTitle": "Tinggalkan audio TI Café",
+      "muteMic": "Bisukan mikrofon saya",
+      "unmuteMic": "Bunyikan mikrofon saya",
+      "muteSpeaker": "Bisukan pembicara",
+      "unmuteSpeaker": "Aktifkan suara pembicara",
+      "liveCount_one": "{{count}} langsung",
+      "liveCount_other": "{{count}} langsung"
+    }
+  },
+  "signInPrompt": {
+    "button": "Masuk di one.witysk.org"
   }
 }

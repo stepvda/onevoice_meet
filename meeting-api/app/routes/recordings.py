@@ -332,9 +332,21 @@ def _recording_out(r: Recording) -> dict:
     now = datetime.now(timezone.utc)
     expires_at = _aware_utc(r.expires_at)
     expires_in = (expires_at - now).total_seconds() if expires_at else None
+    # Friendly filename in the form "<room>-YYYYMMDD-HHMM.mp4". Prefer the
+    # basename of `file_path` when the file still exists (it's authoritative);
+    # otherwise reconstruct it from room_name + started_at so deleted /
+    # YouTube-published rows still show a meaningful identifier.
+    filename: str | None = None
+    if r.file_path:
+        filename = Path(r.file_path).name
+    elif r.meeting and r.started_at:
+        ts = _aware_utc(r.started_at)
+        if ts:
+            filename = f"{r.meeting.room_name}-{ts.strftime('%Y%m%d-%H%M')}.mp4"
     return {
         "id": r.id,
         "meeting_id": r.meeting_id,
+        "filename": filename,
         "branding_url": _branding_url(r.meeting) if r.meeting else None,
         "status": r.status,
         "started_at": r.started_at,

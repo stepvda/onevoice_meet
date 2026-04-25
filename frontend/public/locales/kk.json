@@ -12,7 +12,8 @@
     "signIn": "Кіру →",
     "logoff": "Шығу",
     "loggingOff": "Шығу жүріп жатыр…",
-    "logoffConfirm": "Барлық жерден шығу керек пе? Бұл сізді meet.witysk.org және one.witysk.org сайттарынан шығарады."
+    "logoffConfirm": "Барлық жерден шығу керек пе? Бұл сізді meet.witysk.org және one.witysk.org сайттарынан шығарады.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Сақтау",
@@ -213,7 +214,9 @@
     "loading": "Жүктелуде…",
     "signInFirst": "Алдымен one.witysk.org сайтына кіріңіз.",
     "started": "Басталды {{when}}",
-    "publishTitle": "YouTube-ға жүктеп, сәтті болса, жергілікті файлды жою"
+    "publishTitle": "YouTube-ға жүктеп, сәтті болса, жергілікті файлды жою",
+    "signInTitle": "Кіру арқылы жазбаларыңызды көріңіз",
+    "signInBody": "Жазбалар тек иесіне ғана қолжетімді. one.witysk.org сайтына кіріп, бұл бетті қайта жүктеңіз."
   },
   "settings": {
     "title": "Баптаулар",
@@ -495,5 +498,39 @@
     "flip": "Көлденеңінен айналдыру",
     "stopFlip": "Бейнені көлденеңінен айналдыруды тоқтату",
     "unflip": "Түзету"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "TI One Voice мүшелері, қазір онлайн.",
+    "currentlyOnline": "Қазір онлайн ({{count}})",
+    "empty": "Қазір ешкім онлайн емес.",
+    "signInRequired": "Алдымен one.witysk.org сайтына кіріп, кімнің онлайн екенін көріңіз.",
+    "viewProfile": "Профильді one.witysk.org сайтында ашу",
+    "view": "Көру",
+    "message": "Тікелей хабарлама жіберу",
+    "dmMe": "Менің ЖЖ-ге жаз",
+    "openToTalk": "Сөйлесуге ашық — жеке хабарлама жіберуге болады",
+    "birthday": "Бүгін осы пайдаланушының туған күні",
+    "vouches_one": "{{count}} рет басқа пайдаланушылармен расталды",
+    "vouches_other": "{{count}} рет басқа пайдаланушылармен куәландырылды",
+    "viaOneWitysk": "one.witysk.org сайтынан тікелей деректер. Профиль және хабарлама сілтемелері жаңа қойындыда ашылады.",
+    "signInTitle": "Кіру арқылы кафеде кімнің бар екенін көріңіз",
+    "signInBody": "TI Café — бұл TI One Voice қызметінде кім онлайн екенін көрсететін тікелей көрініс. one.witysk.org сайтына кіріп, бұл бетті қайта жүктеңіз.",
+    "signInButton": "one.witysk.org сайтына кіру",
+    "loadFailed": "one.witysk.org сайтына қосылу мүмкін болмады. Біраздан кейін қайталап көріңіз.",
+    "live": "ТІКЕЛЕЙ ЭФИР",
+    "bar": {
+      "connectTitle": "TI Café аудиосына қосылу",
+      "disconnectTitle": "TI Café дыбысынан шығу",
+      "muteMic": "Микрофонымды өшіру",
+      "unmuteMic": "Микрофонымды қос",
+      "muteSpeaker": "Дыбысты өшіру",
+      "unmuteSpeaker": "Дыбысты қосу",
+      "liveCount_one": "{{count}} тікелей эфир",
+      "liveCount_other": "{{count}} тікелей эфир"
+    }
+  },
+  "signInPrompt": {
+    "button": "one.witysk.org сайтына кіру"
   }
 }

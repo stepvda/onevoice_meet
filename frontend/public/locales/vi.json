@@ -12,7 +12,8 @@
     "signIn": "Đăng nhập →",
     "logoff": "Đăng xuất",
     "loggingOff": "Đang đăng xuất…",
-    "logoffConfirm": "Đăng xuất khỏi tất cả? Thao tác này sẽ đăng xuất bạn khỏi meet.witysk.org và one.witysk.org."
+    "logoffConfirm": "Đăng xuất khỏi tất cả? Thao tác này sẽ đăng xuất bạn khỏi meet.witysk.org và one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Lưu",
@@ -213,7 +214,9 @@
     "loading": "Đang tải…",
     "signInFirst": "Đăng nhập trên one.witysk.org trước.",
     "started": "Đã bắt đầu {{when}}",
-    "publishTitle": "Tải lên YouTube và xóa tệp cục bộ nếu thành công"
+    "publishTitle": "Tải lên YouTube và xóa tệp cục bộ nếu thành công",
+    "signInTitle": "Đăng nhập để xem bản ghi của bạn",
+    "signInBody": "Bản ghi chỉ dành cho chủ sở hữu. Đăng nhập tại one.witysk.org và tải lại trang này."
   },
   "settings": {
     "title": "Cài đặt",
@@ -495,5 +498,39 @@
     "flip": "Lật ngang",
     "stopFlip": "Dừng lật ngang video",
     "unflip": "Bỏ lật"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Thành viên của TI One Voice hiện đang trực tuyến.",
+    "currentlyOnline": "Đang trực tuyến ({{count}})",
+    "empty": "Hiện không có ai trực tuyến.",
+    "signInRequired": "Đăng nhập trên one.witysk.org trước để xem ai đang trực tuyến.",
+    "viewProfile": "Mở hồ sơ trên one.witysk.org",
+    "view": "Xem",
+    "message": "Gửi tin nhắn trực tiếp",
+    "dmMe": "NHẮN TIN RIÊNG",
+    "openToTalk": "Mở để trò chuyện — cứ thoải mái nhắn tin riêng nhé",
+    "birthday": "Hôm nay là sinh nhật của người dùng này",
+    "vouches_one": "Được {{count}} người dùng khác bảo lãnh",
+    "vouches_other": "Được {{count}} người dùng khác bảo lãnh",
+    "viaOneWitysk": "Dữ liệu trực tiếp từ one.witysk.org. Các liên kết hồ sơ và tin nhắn sẽ mở ở đó trong tab mới.",
+    "signInTitle": "Đăng nhập để xem ai đang ở Café",
+    "signInBody": "TI Café là chế độ xem trực tiếp những ai đang trực tuyến trong TI One Voice. Đăng nhập tại one.witysk.org và tải lại trang này.",
+    "signInButton": "Đăng nhập trên one.witysk.org",
+    "loadFailed": "Không thể kết nối đến one.witysk.org. Vui lòng thử lại sau.",
+    "live": "TRỰC TIẾP",
+    "bar": {
+      "connectTitle": "Tham gia âm thanh TI Café",
+      "disconnectTitle": "Rời khỏi âm thanh TI Café",
+      "muteMic": "Tắt mic của tôi",
+      "unmuteMic": "Bật mic của tôi",
+      "muteSpeaker": "Tắt tiếng người nói",
+      "unmuteSpeaker": "Bật tiếng người nói",
+      "liveCount_one": "{{count}} trực tiếp",
+      "liveCount_other": "{{count}} trực tiếp"
+    }
+  },
+  "signInPrompt": {
+    "button": "Đăng nhập trên one.witysk.org"
   }
 }

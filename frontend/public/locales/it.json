@@ -12,7 +12,8 @@
     "signIn": "Accedi →",
     "logoff": "Disconnettiti",
     "loggingOff": "Disconnessione in corso…",
-    "logoffConfirm": "Disconnettersi ovunque? Questa operazione ti disconnette da meet.witysk.org e one.witysk.org."
+    "logoffConfirm": "Disconnettersi ovunque? Questa operazione ti disconnette da meet.witysk.org e one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Salva",
@@ -213,7 +214,9 @@
     "loading": "Caricamento…",
     "signInFirst": "Accedi prima su one.witysk.org.",
     "started": "Avviato {{when}}",
-    "publishTitle": "Carica su YouTube ed elimina il file locale in caso di successo"
+    "publishTitle": "Carica su YouTube ed elimina il file locale in caso di successo",
+    "signInTitle": "Accedi per vedere le tue registrazioni",
+    "signInBody": "Le registrazioni sono riservate al proprietario. Accedi su one.witysk.org e ricarica questa pagina."
   },
   "settings": {
     "title": "Impostazioni",
@@ -495,5 +498,39 @@
     "flip": "Capovolgi orizzontalmente",
     "stopFlip": "Interrompi il capovolgimento orizzontale del video",
     "unflip": "Ribalta"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Membri di TI One Voice attualmente online.",
+    "currentlyOnline": "Online ora ({{count}})",
+    "empty": "Nessun altro è online in questo momento.",
+    "signInRequired": "Accedi prima su one.witysk.org per vedere chi è online.",
+    "viewProfile": "Apri il profilo su one.witysk.org",
+    "view": "Visualizza",
+    "message": "Invia un messaggio diretto",
+    "dmMe": "SCRIVIMI IN PRIVATO",
+    "openToTalk": "Aperto alla chat — invia pure un messaggio diretto",
+    "birthday": "Oggi è il compleanno di questo utente",
+    "vouches_one": "Garantito da altri utenti {{count}}",
+    "vouches_other": "Garantito {{count}} volte da altri utenti",
+    "viaOneWitysk": "Dati in tempo reale da one.witysk.org. I collegamenti al profilo e ai messaggi si aprono lì in una nuova scheda.",
+    "signInTitle": "Accedi per vedere chi è al Café",
+    "signInBody": "TI Café è una vista in diretta di chi è online in TI One Voice. Accedi su one.witysk.org e ricarica questa pagina.",
+    "signInButton": "Accedi su one.witysk.org",
+    "loadFailed": "Impossibile raggiungere one.witysk.org. Riprova tra un momento.",
+    "live": "DIRETTA",
+    "bar": {
+      "connectTitle": "Partecipa all'audio di TI Café",
+      "disconnectTitle": "Esci dall'audio di TI Café",
+      "muteMic": "Disattiva il mio microfono",
+      "unmuteMic": "Riattiva il mio microfono",
+      "muteSpeaker": "Disattiva altoparlante",
+      "unmuteSpeaker": "Riattiva audio relatore",
+      "liveCount_one": "{{count}} in diretta",
+      "liveCount_other": "{{count}} in diretta"
+    }
+  },
+  "signInPrompt": {
+    "button": "Accedi su one.witysk.org"
   }
 }

@@ -12,7 +12,8 @@
     "signIn": "ይግቡ →",
     "logoff": "ውጣ",
     "loggingOff": "በመውጣት ላይ…",
-    "logoffConfirm": "በሁሉም ቦታ ይውጡ? ይህ ከ meet.witysk.org እና ከ one.witysk.org ያወጣዎታል።"
+    "logoffConfirm": "በሁሉም ቦታ ይውጡ? ይህ ከ meet.witysk.org እና ከ one.witysk.org ያወጣዎታል።",
+    "tiCafe": "ቲአይ ካፌ"
   },
   "common": {
     "save": "አስቀምጥ",
@@ -213,7 +214,9 @@
     "loading": "በመጫን ላይ…",
     "signInFirst": "በመጀመሪያ በ one.witysk.org ላይ ይግቡ።",
     "started": "{{when}} ተጀምሯል",
-    "publishTitle": "ወደ YouTube ላይ ጫን እና ስኬታማ ከሆነ የአካባቢውን ፋይል ሰርዝ"
+    "publishTitle": "ወደ YouTube ላይ ጫን እና ስኬታማ ከሆነ የአካባቢውን ፋይል ሰርዝ",
+    "signInTitle": "ምዝገባዎችዎን ለማየት ይግቡ",
+    "signInBody": "ቅጂዎች የባለቤቱ ብቻ ናቸው። በ one.witysk.org ላይ ይግቡ እና ይህን ገጽ እንደገና ይጫኑ።"
   },
   "settings": {
     "title": "ቅንብሮች",
@@ -495,5 +498,39 @@
     "flip": "አግድም አገላብጥ",
     "stopFlip": "የቪዲዮውን አግድም መገልበጥ አቁም",
     "unflip": "መልሰህ አትገልብጥ"
+  },
+  "tiCafe": {
+    "title": "ቲአይ ካፌ",
+    "subtitle": "በአሁኑ ሰዓት ኦንላይን ያሉ የTI One Voice አባላት።",
+    "currentlyOnline": "አሁን በመስመር ላይ ({{count}})",
+    "empty": "አሁን ሌላ ሰው ኦንላይን የለም።",
+    "signInRequired": "በመጀመሪያ በ one.witysk.org ላይ ይግቡ ማን እንዳለ ለማየት።",
+    "viewProfile": "በ one.witysk.org ላይ መገለጫ ክፈት",
+    "view": "ተመልከት",
+    "message": "ቀጥታ መልእክት ላክ",
+    "dmMe": "ዲኤም ላክልኝ",
+    "openToTalk": "ለውይይት ክፍት ነው — የግል መልእክት ለመላክ ነፃነት ይሰማዎ",
+    "birthday": "ዛሬ የዚህ ተጠቃሚ ልደት ነው",
+    "vouches_one": "በሌሎች ተጠቃሚዎች የተረጋገጠ {{count}} ጊዜ",
+    "vouches_other": "በሌሎች ተጠቃሚዎች {{count}} ጊዜ የተረጋገጠ",
+    "viaOneWitysk": "ከ one.witysk.org የቀጥታ መረጃ። የመገለጫ እና የመልእክት አገናኞች በአዲስ ትር ውስጥ ይከፈታሉ።",
+    "signInTitle": "ካፌው ላይ ማን እንዳለ ለማየት ይግቡ",
+    "signInBody": "ቲአይ ካፌ በቲአይ ዋን ቮይስ ላይ ማን እንደተገኘ የቀጥታ እይታ ነው። በ one.witysk.org ላይ ይግቡ እና ይህን ገጽ እንደገና ይጫኑ።",
+    "signInButton": "በ one.witysk.org ላይ ይግቡ",
+    "loadFailed": "ወደ one.witysk.org መድረስ አልተቻለም። ትንሽ ቆይተው እንደገና ይሞክሩ።",
+    "live": "ቀጥታ ስርጭት",
+    "bar": {
+      "connectTitle": "የTI Café ኦዲዮ ይቀላቀሉ",
+      "disconnectTitle": "የTI Café ኦዲዮን ይተዉ",
+      "muteMic": "ማይክሮፎኔን ዝም አድርግ",
+      "unmuteMic": "ማይክሮፎኔን አብራ",
+      "muteSpeaker": "ተናጋሪውን ዝም አድርግ",
+      "unmuteSpeaker": "የተናጋሪውን ድምጽ አስጀምር",
+      "liveCount_one": "{{count}} ቀጥታ ስርጭት",
+      "liveCount_other": "{{count}} ቀጥታ ስርጭት"
+    }
+  },
+  "signInPrompt": {
+    "button": "በ one.witysk.org ላይ ይግቡ"
   }
 }

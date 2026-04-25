@@ -12,7 +12,8 @@
     "signIn": "تسجيل الدخول ←",
     "logoff": "تسجيل الخروج",
     "loggingOff": "تسجيل الخروج...",
-    "logoffConfirm": "تسجيل الخروج من كل الأماكن؟ سيؤدي هذا إلى تسجيل خروجك من meet.witysk.org و one.witysk.org."
+    "logoffConfirm": "تسجيل الخروج من كل الأماكن؟ سيؤدي هذا إلى تسجيل خروجك من meet.witysk.org و one.witysk.org.",
+    "tiCafe": "مقهى TI"
   },
   "common": {
     "save": "حفظ",
@@ -213,7 +214,9 @@
     "loading": "جارٍ التحميل…",
     "signInFirst": "سجّل الدخول أولاً على one.witysk.org.",
     "started": "بدأت {{when}}",
-    "publishTitle": "رفع إلى YouTube وحذف الملف المحلي عند النجاح"
+    "publishTitle": "رفع إلى YouTube وحذف الملف المحلي عند النجاح",
+    "signInTitle": "سجّل الدخول لمشاهدة تسجيلاتك",
+    "signInBody": "التسجيلات مخصصة للمالك فقط. سجّل الدخول على one.witysk.org وأعد تحميل هذه الصفحة."
   },
   "settings": {
     "title": "الإعدادات",
@@ -495,5 +498,39 @@
     "flip": "اقلب أفقيًا",
     "stopFlip": "إيقاف عكس الفيديو أفقيًا",
     "unflip": "إلغاء التقليب"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "أعضاء TI One Voice المتصلون الآن.",
+    "currentlyOnline": "متصل الآن ({{count}})",
+    "empty": "لا يوجد أحد متصل الآن.",
+    "signInRequired": "سجّل الدخول على one.witysk.org أولاً لترى من المتصل.",
+    "viewProfile": "افتح الملف الشخصي على one.witysk.org",
+    "view": "عرض",
+    "message": "إرسال رسالة مباشرة",
+    "dmMe": "أرسل لي رسالة خاصة",
+    "openToTalk": "مفتوح للدردشة — لا تتردد في إرسال رسالة خاصة",
+    "birthday": "إنه عيد ميلاد هذا المستخدم اليوم",
+    "vouches_one": "تم توثيق {{count}} مرة من قبل مستخدمين آخرين",
+    "vouches_other": "مُوثوق من قبل مستخدمين آخرين {{count}} مرة",
+    "viaOneWitysk": "بيانات حية من one.witysk.org. روابط الملف الشخصي والرسالة تفتح هناك في علامة تبويب جديدة.",
+    "signInTitle": "سجّل الدخول لترى من في الكافيه",
+    "signInBody": "TI Café هي نافذة حية تظهر من المتصل في TI One Voice. سجّل الدخول على one.witysk.org وأعِد تحميل هذه الصفحة.",
+    "signInButton": "سجّل الدخول على one.witysk.org",
+    "loadFailed": "تعذر الوصول إلى one.witysk.org. حاول مرة أخرى بعد قليل.",
+    "live": "مباشر",
+    "bar": {
+      "connectTitle": "انضم إلى صوتيات مقهى TI",
+      "disconnectTitle": "اترك صوت مقهى TI",
+      "muteMic": "كتم الميكروفون الخاص بي",
+      "unmuteMic": "إلغاء كتم الميكروفون الخاص بي",
+      "muteSpeaker": "كتم المتحدث",
+      "unmuteSpeaker": "إلغاء كتم المتحدث",
+      "liveCount_one": "{{count}} مباشر",
+      "liveCount_other": "{{count}} مباشر"
+    }
+  },
+  "signInPrompt": {
+    "button": "سجّل الدخول على one.witysk.org"
   }
 }

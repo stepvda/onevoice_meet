@@ -12,7 +12,8 @@
     "signIn": "Logga in",
     "logoff": "Logga ut",
     "loggingOff": "Loggar ut…",
-    "logoffConfirm": "Logga ut överallt? Detta loggar ut dig från meet.witysk.org och one.witysk.org."
+    "logoffConfirm": "Logga ut överallt? Detta loggar ut dig från meet.witysk.org och one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Spara",
@@ -213,7 +214,9 @@
     "loading": "Laddar…",
     "signInFirst": "Logga in på one.witysk.org först.",
     "started": "Startade {{when}}",
-    "publishTitle": "Ladda upp till YouTube och ta bort den lokala filen vid lyckad uppladdning"
+    "publishTitle": "Ladda upp till YouTube och ta bort den lokala filen vid lyckad uppladdning",
+    "signInTitle": "Logga in för att se dina inspelningar",
+    "signInBody": "Inspelningar är endast för ägaren. Logga in på one.witysk.org och ladda om sidan."
   },
   "settings": {
     "title": "Inställningar",
@@ -495,5 +498,39 @@
     "flip": "Vänd horisontellt",
     "stopFlip": "Sluta spegelvänd videon horisontellt",
     "unflip": "Ångra vändning"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Medlemmar i TI One Voice som är online just nu.",
+    "currentlyOnline": "Online just nu ({{count}})",
+    "empty": "Ingen annan är online just nu.",
+    "signInRequired": "Logga in på one.witysk.org först för att se vem som är online.",
+    "viewProfile": "Öppna profil på one.witysk.org",
+    "view": "Visa",
+    "message": "Skicka ett direktmeddelande",
+    "dmMe": "SKICKA DM",
+    "openToTalk": "Öppen för chatt — skicka gärna ett DM",
+    "birthday": "Det är den här användarens födelsedag idag",
+    "vouches_one": "Bekräftad av andra användare {{count}} gång",
+    "vouches_other": "Bekräftad av andra användare {{count}} gånger",
+    "viaOneWitysk": "Live-data från one.witysk.org. Profil- och meddelandelänkar öppnas där i en ny flik.",
+    "signInTitle": "Logga in för att se vem som är på Caféet",
+    "signInBody": "TI Café är en livevy över vilka som är online i TI One Voice. Logga in på one.witysk.org och ladda om sidan.",
+    "signInButton": "Logga in på one.witysk.org",
+    "loadFailed": "Kunde inte nå one.witysk.org. Försök igen om en stund.",
+    "live": "LIVE",
+    "bar": {
+      "connectTitle": "Gå med i ljudet för TI Café",
+      "disconnectTitle": "Lämna TI Café-ljud",
+      "muteMic": "Stäng av min mikrofon",
+      "unmuteMic": "Ljud på min mikrofon",
+      "muteSpeaker": "Tysta talare",
+      "unmuteSpeaker": "Ljud på talare",
+      "liveCount_one": "{{count}} live",
+      "liveCount_other": "{{count}} live"
+    }
+  },
+  "signInPrompt": {
+    "button": "Logga in på one.witysk.org"
   }
 }

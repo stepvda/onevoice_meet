@@ -12,7 +12,8 @@
     "signIn": "登录 →",
     "logoff": "注销",
     "loggingOff": "正在注销…",
-    "logoffConfirm": "退出所有登录？这将使您退出 meet.witysk.org 和 one.witysk.org。"
+    "logoffConfirm": "退出所有登录？这将使您退出 meet.witysk.org 和 one.witysk.org。",
+    "tiCafe": "TI 咖啡馆"
   },
   "common": {
     "save": "保存",
@@ -213,7 +214,9 @@
     "loading": "加载中…",
     "signInFirst": "请先在 one.witysk.org 上登录。",
     "started": "已开始 {{when}}",
-    "publishTitle": "上传到YouTube并在成功后删除本地文件"
+    "publishTitle": "上传到YouTube并在成功后删除本地文件",
+    "signInTitle": "登录以查看您的录制内容",
+    "signInBody": "录制仅限所有者查看。请登录 one.witysk.org 并刷新此页面。"
   },
   "settings": {
     "title": "设置",
@@ -495,5 +498,39 @@
     "flip": "水平翻转",
     "stopFlip": "停止水平翻转视频",
     "unflip": "取消翻转"
+  },
+  "tiCafe": {
+    "title": "TI咖啡馆",
+    "subtitle": "当前在线的 TI One Voice 成员。",
+    "currentlyOnline": "当前在线 ({{count}})",
+    "empty": "当前没有其他人在线。",
+    "signInRequired": "请先登录 one.witysk.org 查看谁在线。",
+    "viewProfile": "在 one.witysk.org 上打开个人资料",
+    "view": "查看",
+    "message": "发送私信",
+    "dmMe": "私信我",
+    "openToTalk": "开放聊天 — 欢迎发送私信",
+    "birthday": "今天是这位用户的生日",
+    "vouches_one": "被其他用户担保了 {{count}} 次",
+    "vouches_other": "被其他用户认证 {{count}} 次",
+    "viaOneWitysk": "来自 one.witysk.org 的实时数据。个人资料和消息链接将在新标签页中打开。",
+    "signInTitle": "登录以查看谁在咖啡馆",
+    "signInBody": "TI Café 是 TI One Voice 在线成员的实时视图。请登录 one.witysk.org 并刷新此页面。",
+    "signInButton": "在一.witysk.org上登录",
+    "loadFailed": "无法连接到 one.witysk.org。请稍后重试。",
+    "live": "直播",
+    "bar": {
+      "connectTitle": "加入TI Café音频",
+      "disconnectTitle": "离开TI Café音频",
+      "muteMic": "静音我的麦克风",
+      "unmuteMic": "取消静音",
+      "muteSpeaker": "静音发言者",
+      "unmuteSpeaker": "取消静音",
+      "liveCount_one": "{{count}} 直播",
+      "liveCount_other": "{{count}} 直播"
+    }
+  },
+  "signInPrompt": {
+    "button": "登录 one.witysk.org"
   }
 }

@@ -12,7 +12,8 @@
     "signIn": "Войти →",
     "logoff": "Выйти",
     "loggingOff": "Выход из системы…",
-    "logoffConfirm": "Выйти везде? Это завершит ваш сеанс на meet.witysk.org и one.witysk.org."
+    "logoffConfirm": "Выйти везде? Это завершит ваш сеанс на meet.witysk.org и one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Сохранить",
@@ -213,7 +214,9 @@
     "loading": "Загрузка…",
     "signInFirst": "Сначала войдите на one.witysk.org.",
     "started": "Запущено {{when}}",
-    "publishTitle": "Загрузить на YouTube и удалить локальный файл в случае успеха"
+    "publishTitle": "Загрузить на YouTube и удалить локальный файл в случае успеха",
+    "signInTitle": "Войдите, чтобы увидеть свои записи",
+    "signInBody": "Записи доступны только владельцу. Войдите на one.witysk.org и обновите эту страницу."
   },
   "settings": {
     "title": "Настройки",
@@ -495,5 +498,39 @@
     "flip": "Отразить по горизонтали",
     "stopFlip": "Остановить горизонтальное отражение видео",
     "unflip": "Отменить переворот"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Участники TI One Voice, которые сейчас онлайн.",
+    "currentlyOnline": "Сейчас онлайн ({{count}})",
+    "empty": "Сейчас никого нет в сети.",
+    "signInRequired": "Сначала войдите на one.witysk.org, чтобы увидеть, кто в сети.",
+    "viewProfile": "Открыть профиль на one.witysk.org",
+    "view": "Просмотр",
+    "message": "Отправить личное сообщение",
+    "dmMe": "НАПИШИ МНЕ В ЛС",
+    "openToTalk": "Открыт для чата — не стесняйтесь написать в личку",
+    "birthday": "Сегодня у этого пользователя день рождения",
+    "vouches_one": "Поручились за {{count}} раз другие пользователи",
+    "vouches_other": "Поручились {{count}} раз другие пользователи",
+    "viaOneWitysk": "Данные в реальном времени с one.witysk.org. Ссылки на профиль и сообщения открываются там в новой вкладке.",
+    "signInTitle": "Войдите, чтобы увидеть, кто в «Кафе»",
+    "signInBody": "TI Café — это просмотр в реальном времени, кто онлайн в TI One Voice. Войдите на one.witysk.org и перезагрузите эту страницу.",
+    "signInButton": "Войдите на one.witysk.org",
+    "loadFailed": "Не удалось связаться с one.witysk.org. Попробуйте снова через минуту.",
+    "live": "В ПРЯМОМ ЭФИРЕ",
+    "bar": {
+      "connectTitle": "Присоединиться к аудио TI Café",
+      "disconnectTitle": "Покинуть аудио TI Café",
+      "muteMic": "Выключить мой микрофон",
+      "unmuteMic": "Включить мой микрофон",
+      "muteSpeaker": "Заглушить докладчика",
+      "unmuteSpeaker": "Включить звук докладчика",
+      "liveCount_one": "{{count}} в прямом эфире",
+      "liveCount_other": "{{count}} в прямом эфире"
+    }
+  },
+  "signInPrompt": {
+    "button": "Войдите на one.witysk.org"
   }
 }

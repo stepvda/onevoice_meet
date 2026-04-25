@@ -7,7 +7,7 @@ from app import scheduler
 from app.config import settings
 from app.db import engine, lightweight_migrate
 from app.models import Base
-from app.routes import chat, health, meetings, moderation, recordings, tokens, users
+from app.routes import chat, health, meetings, moderation, recordings, ti_cafe, tokens, users
 from app.webhooks import router as webhook_router
 
 
@@ -49,4 +49,5 @@ app.include_router(moderation.router, prefix="/api")
 app.include_router(recordings.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
+app.include_router(ti_cafe.router, prefix="/api")
 app.include_router(webhook_router, prefix="/api")

@@ -12,7 +12,8 @@
     "signIn": "Kirish →",
     "logoff": "Chiqish",
     "loggingOff": "Chiqish amalga oshirilmoqda…",
-    "logoffConfirm": "Hamma joydan chiqishni xohlaysizmi? Bu sizni meet.witysk.org va one.witysk.org saytlaridan chiqaradi."
+    "logoffConfirm": "Hamma joydan chiqishni xohlaysizmi? Bu sizni meet.witysk.org va one.witysk.org saytlaridan chiqaradi.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Saqlash",
@@ -213,7 +214,9 @@
     "loading": "Yuklanmoqda…",
     "signInFirst": "Avval one.witysk.org saytiga kiring.",
     "started": "Boshlandi {{when}}",
-    "publishTitle": "YouTube’ga yuklang va muvaffaqiyatli bo‘lsa, mahalliy faylni o‘chiring"
+    "publishTitle": "YouTube’ga yuklang va muvaffaqiyatli bo‘lsa, mahalliy faylni o‘chiring",
+    "signInTitle": "Yozuvlaringizni ko‘rish uchun tizimga kiring",
+    "signInBody": "Yozuvlar faqat egasiga tegishli. one.witysk.org saytiga kiring va bu sahifani qayta yuklang."
   },
   "settings": {
     "title": "Sozlamalar",
@@ -495,5 +498,39 @@
     "flip": "Gorizontalga aylantirish",
     "stopFlip": "Videoni gorizontal aylantirishni to‘xtatish",
     "unflip": "Ochish"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "TI One Voice a'zolari hozir onlayn.",
+    "currentlyOnline": "Hozir onlayn ({{count}})",
+    "empty": "Hozircha boshqa hech kim onlayn emas.",
+    "signInRequired": "Avval one.witysk.org saytiga kiring, kim onlayn ekanini ko‘rish uchun.",
+    "viewProfile": "Profiling bir marta oching one.witysk.org",
+    "view": "Ko‘rish",
+    "message": "To‘g‘ridan-to‘g‘ri xabar yuborish",
+    "dmMe": "Menga DM yozing",
+    "openToTalk": "Suhbatga ochiq — DM yuborishingiz mumkin",
+    "birthday": "Bugun bu foydalanuvchining tug‘ilgan kuni",
+    "vouches_one": "Boshqa foydalanuvchilar tomonidan {{count}} marta tasdiqlangan",
+    "vouches_other": "{{count}} marta boshqa foydalanuvchilar tomonidan tasdiqlangan",
+    "viaOneWitysk": "Bir.witysk.org dan jonli ma'lumotlar. Profil va xabar havolalari u yerda yangi yorliqda ochiladi.",
+    "signInTitle": "Kafeda kim borligini ko‘rish uchun tizimga kiring",
+    "signInBody": "TI Café — TI One Voice’da kim onlayn ekanligini jonli ko‘rsatadi. one.witysk.org saytiga kiring va bu sahifani qayta yuklang.",
+    "signInButton": "one.witysk.org saytiga kiring",
+    "loadFailed": "one.witysk.org ga ulanish imkoni bo‘lmadi. Bir ozdan so‘ng qayta urinib ko‘ring.",
+    "live": "Jonli",
+    "bar": {
+      "connectTitle": "TI Café audio-ga qo‘shiling",
+      "disconnectTitle": "TI Café audioni tark etish",
+      "muteMic": "Mikrofonimni o‘chir",
+      "unmuteMic": "Mikrofonimni ovozini ochish",
+      "muteSpeaker": "Karnayni o‘chirish",
+      "unmuteSpeaker": "Ovozni yoqish",
+      "liveCount_one": "{{count}} jonli",
+      "liveCount_other": "{{count}} jonli efir"
+    }
+  },
+  "signInPrompt": {
+    "button": "one.witysk.org saytiga kiring"
   }
 }

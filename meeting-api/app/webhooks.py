@@ -13,6 +13,12 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import get_db
 from app.models import Meeting, MeetingParticipant, Recording
+from app.routes.ti_cafe import (
+    clear_room as ticafe_clear_room,
+    is_ti_cafe_room,
+    mark_joined as ticafe_mark_joined,
+    mark_left as ticafe_mark_left,
+)
 
 router = APIRouter(prefix="/v1")
 
@@ -37,6 +43,8 @@ async def livekit_webhook(request: Request, db: Session = Depends(get_db)) -> di
     etype = event.event
 
     if etype == "participant_joined" and event.participant and event.room:
+        if is_ti_cafe_room(event.room.name):
+            ticafe_mark_joined(event.participant.identity)
         m = db.query(Meeting).filter_by(room_name=event.room.name).first()
         if m:
             existing = (
@@ -57,6 +65,8 @@ async def livekit_webhook(request: Request, db: Session = Depends(get_db)) -> di
                 db.commit()
 
     elif etype == "participant_left" and event.participant and event.room:
+        if is_ti_cafe_room(event.room.name):
+            ticafe_mark_left(event.participant.identity)
         m = db.query(Meeting).filter_by(room_name=event.room.name).first()
         if m:
             row = (
@@ -70,6 +80,8 @@ async def livekit_webhook(request: Request, db: Session = Depends(get_db)) -> di
                 db.commit()
 
     elif etype == "room_finished" and event.room:
+        if is_ti_cafe_room(event.room.name):
+            ticafe_clear_room(event.room.name)
         m = db.query(Meeting).filter_by(room_name=event.room.name).first()
         if m and m.is_active:
             m.is_active = False

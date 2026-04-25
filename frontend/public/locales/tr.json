@@ -12,7 +12,8 @@
     "signIn": "Oturum aç →",
     "logoff": "Oturumu Kapat",
     "loggingOff": "Oturum kapatılıyor…",
-    "logoffConfirm": "Her yerde oturumu kapat? Bu işlem sizi meet.witysk.org ve one.witysk.org'dan çıkış yaptırır."
+    "logoffConfirm": "Her yerde oturumu kapat? Bu işlem sizi meet.witysk.org ve one.witysk.org'dan çıkış yaptırır.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Kaydet",
@@ -213,7 +214,9 @@
     "loading": "Yükleniyor…",
     "signInFirst": "Önce one.witysk.org adresinde oturum açın.",
     "started": "{{when}} başlatıldı",
-    "publishTitle": "YouTube'a yükle ve başarılı olursa yerel dosyayı sil"
+    "publishTitle": "YouTube'a yükle ve başarılı olursa yerel dosyayı sil",
+    "signInTitle": "Kayıtlarınızı görmek için oturum açın",
+    "signInBody": "Kayıtlar yalnızca sahibine aittir. one.witysk.org adresinde oturum açın ve bu sayfayı yenileyin."
   },
   "settings": {
     "title": "Ayarlar",
@@ -495,5 +498,39 @@
     "flip": "Yatay çevir",
     "stopFlip": "Video'yu yatay çevirmeyi durdur",
     "unflip": "Ters çevir"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "TI One Voice'un şu anda çevrimiçi olan üyeleri.",
+    "currentlyOnline": "Şu anda çevrimiçi ({{count}})",
+    "empty": "Şu anda çevrimiçi olan başka kimse yok.",
+    "signInRequired": "Önce kimlerin çevrimiçi olduğunu görmek için one.witysk.org adresine giriş yapın.",
+    "viewProfile": "one.witysk.org üzerinde profili aç",
+    "view": "Görüntüle",
+    "message": "Doğrudan mesaj gönder",
+    "dmMe": "BANA DM AT",
+    "openToTalk": "Sohbete açık — DM göndermekten çekinmeyin",
+    "birthday": "Bugün bu kullanıcının doğum günü",
+    "vouches_one": "Diğer kullanıcılar tarafından {{count}} kez onaylandı",
+    "vouches_other": "Diğer kullanıcılar tarafından {{count}} kez onaylandı",
+    "viaOneWitysk": "one.witysk.org adresinden canlı veriler. Profil ve mesaj bağlantıları yeni bir sekmede orada açılır.",
+    "signInTitle": "Kafenizde kimlerin olduğunu görmek için oturum açın",
+    "signInBody": "TI Café, TI One Voice'da kimlerin çevrimiçi olduğunu canlı olarak gösterir. one.witysk.org adresinde oturum açın ve bu sayfayı yenileyin.",
+    "signInButton": "one.witysk.org üzerinde oturum açın",
+    "loadFailed": "one.witysk.org adresine ulaşılamadı. Birazdan tekrar deneyin.",
+    "live": "CANLI",
+    "bar": {
+      "connectTitle": "TI Café sesine katıl",
+      "disconnectTitle": "TI Café sesinden ayrıl",
+      "muteMic": "Mikrofonumu kapat",
+      "unmuteMic": "Mikrofonumu aç",
+      "muteSpeaker": "Konuşmacıyı sustur",
+      "unmuteSpeaker": "Hoparlörün sesini aç",
+      "liveCount_one": "{{count}} canlı",
+      "liveCount_other": "{{count}} canlı"
+    }
+  },
+  "signInPrompt": {
+    "button": "one.witysk.org üzerinde oturum açın"
   }
 }

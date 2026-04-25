@@ -12,7 +12,8 @@
     "signIn": "Mag-sign in →",
     "logoff": "Mag-log off",
     "loggingOff": "Nagla-log off…",
-    "logoffConfirm": "Mag-log off sa lahat ng dako? Ito ay magla-log out sa iyo sa meet.witysk.org at one.witysk.org."
+    "logoffConfirm": "Mag-log off sa lahat ng dako? Ito ay magla-log out sa iyo sa meet.witysk.org at one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "I-save",
@@ -213,7 +214,9 @@
     "loading": "Naglo-load…",
     "signInFirst": "Mag-sign in muna sa one.witysk.org.",
     "started": "Nagsimula {{when}}",
-    "publishTitle": "I-upload sa YouTube at burahin ang lokal na file kapag matagumpay"
+    "publishTitle": "I-upload sa YouTube at burahin ang lokal na file kapag matagumpay",
+    "signInTitle": "Mag-sign in para makita ang iyong mga recording",
+    "signInBody": "Ang mga recording ay para lamang sa may-ari. Mag-sign in sa one.witysk.org at i-reload ang pahinang ito."
   },
   "settings": {
     "title": "Mga Setting",
@@ -495,5 +498,39 @@
     "flip": "I-flip nang pahalang",
     "stopFlip": "Itigil ang pag-flip ng video nang pahalang",
     "unflip": "I-flip pabalik"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Mga miyembro ng TI One Voice na kasalukuyang online.",
+    "currentlyOnline": "Kasalukuyang online ({{count}})",
+    "empty": "Wala pang ibang online sa ngayon.",
+    "signInRequired": "Mag-sign in muna sa one.witysk.org para makita kung sino ang online.",
+    "viewProfile": "Buksan ang profile sa one.witysk.org",
+    "view": "Tingnan",
+    "message": "Magpadala ng direktang mensahe",
+    "dmMe": "I-DM MO",
+    "openToTalk": "Bukas sa chat — huwag mag-atubiling magpadala ng DM",
+    "birthday": "Kaarawan ng user na ito ngayon.",
+    "vouches_one": "Na-verify ni {{count}} beses ng ibang mga user",
+    "vouches_other": "Na-vouch na {{count}} beses ng ibang mga user",
+    "viaOneWitysk": "Live data mula sa one.witysk.org. Ang mga link ng profile at mensahe ay magbubukas doon sa bagong tab.",
+    "signInTitle": "Mag-sign in para makita kung sino ang nasa Café",
+    "signInBody": "Ang TI Café ay isang live na pagtingin kung sino ang online sa TI One Voice. Mag-sign in sa one.witysk.org at i-reload ang pahinang ito.",
+    "signInButton": "Mag-sign in sa one.witysk.org",
+    "loadFailed": "Hindi maabot ang one.witysk.org. Subukan muli sa ilang sandali.",
+    "live": "LIVE",
+    "bar": {
+      "connectTitle": "Sumali sa audio ng TI Café",
+      "disconnectTitle": "Iwanan ang audio ng TI Café",
+      "muteMic": "I-mute ang aking mikropono",
+      "unmuteMic": "I-unmute ang aking mikropono",
+      "muteSpeaker": "I-mute ang speaker",
+      "unmuteSpeaker": "I-mute ang speaker",
+      "liveCount_one": "{{count}} live",
+      "liveCount_other": "{{count}} live"
+    }
+  },
+  "signInPrompt": {
+    "button": "Mag-sign in sa one.witysk.org"
   }
 }

@@ -12,7 +12,8 @@
     "signIn": "Logg inn →",
     "logoff": "Logg av",
     "loggingOff": "Logger ut…",
-    "logoffConfirm": "Logg av overalt? Dette logger deg ut av meet.witysk.org og one.witysk.org."
+    "logoffConfirm": "Logg av overalt? Dette logger deg ut av meet.witysk.org og one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Lagre",
@@ -213,7 +214,9 @@
     "loading": "Laster…",
     "signInFirst": "Logg inn på one.witysk.org først.",
     "started": "Startet {{when}}",
-    "publishTitle": "Last opp til YouTube og slett den lokale filen ved suksess"
+    "publishTitle": "Last opp til YouTube og slett den lokale filen ved suksess",
+    "signInTitle": "Logg inn for å se opptakene dine",
+    "signInBody": "Opptak er kun for eier. Logg inn på one.witysk.org og last inn denne siden på nytt."
   },
   "settings": {
     "title": "Innstillinger",
@@ -495,5 +498,39 @@
     "flip": "Speilvend horisontalt",
     "stopFlip": "Stopp horisontal speiling av video",
     "unflip": "Snudd"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Medlemmer av TI One Voice som er pålogget akkurat nå.",
+    "currentlyOnline": "Nå online ({{count}})",
+    "empty": "Ingen andre er pålogget akkurat nå.",
+    "signInRequired": "Logg inn på one.witysk.org først for å se hvem som er pålogget.",
+    "viewProfile": "Åpne profil på one.witysk.org",
+    "view": "Vis",
+    "message": "Send en direktemelding",
+    "dmMe": "DM MEG",
+    "openToTalk": "Åpen for chat — send gjerne en DM",
+    "birthday": "Det er denne brukerens bursdag i dag",
+    "vouches_one": "Bekreftet av andre brukere {{count}} gang",
+    "vouches_other": "Bekreftet {{count}} ganger av andre brukere",
+    "viaOneWitysk": "Live-data fra one.witysk.org. Profil- og meldingslenker åpnes der i en ny fane.",
+    "signInTitle": "Logg inn for å se hvem som er på Caféen",
+    "signInBody": "TI Café er en live-oversikt over hvem som er pålogget i TI One Voice. Logg inn på one.witysk.org og last inn denne siden på nytt.",
+    "signInButton": "Logg inn på one.witysk.org",
+    "loadFailed": "Kunne ikke nå one.witysk.org. Prøv igjen om et øyeblikk.",
+    "live": "DIREKTE",
+    "bar": {
+      "connectTitle": "Bli med i lyden til TI Café",
+      "disconnectTitle": "Forlat TI Café-lyd",
+      "muteMic": "Demp mikrofonen min",
+      "unmuteMic": "Slå på mikrofonen min",
+      "muteSpeaker": "Demp høyttaler",
+      "unmuteSpeaker": "Slå på lyd for foredragsholder",
+      "liveCount_one": "{{count}} direkte",
+      "liveCount_other": "{{count}} direkte"
+    }
+  },
+  "signInPrompt": {
+    "button": "Logg inn på one.witysk.org"
   }
 }

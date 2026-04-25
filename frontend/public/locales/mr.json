@@ -12,7 +12,8 @@
     "signIn": "साइन इन करा →",
     "logoff": "लॉग ऑफ",
     "loggingOff": "लॉग ऑफ होत आहे…",
-    "logoffConfirm": "सर्वत्र लॉग ऑफ करायचे? यामुळे तुम्ही meet.witysk.org आणि one.witysk.org वरून साइन आउट होता."
+    "logoffConfirm": "सर्वत्र लॉग ऑफ करायचे? यामुळे तुम्ही meet.witysk.org आणि one.witysk.org वरून साइन आउट होता.",
+    "tiCafe": "टीआय कॅफे"
   },
   "common": {
     "save": "जतन करा",
@@ -213,7 +214,9 @@
     "loading": "लोड होत आहे…",
     "signInFirst": "प्रथम one.witysk.org वर साइन इन करा.",
     "started": "सुरू झाले {{when}}",
-    "publishTitle": "YouTube वर अपलोड करा आणि यशस्वी झाल्यास स्थानिक फाइल हटवा"
+    "publishTitle": "YouTube वर अपलोड करा आणि यशस्वी झाल्यास स्थानिक फाइल हटवा",
+    "signInTitle": "तुमचे रेकॉर्डिंग पाहण्यासाठी साइन इन करा",
+    "signInBody": "रेकॉर्डिंग्स फक्त मालकासाठी आहेत. one.witysk.org वर साइन इन करा आणि हे पेज रीलोड करा."
   },
   "settings": {
     "title": "सेटिंग्ज",
@@ -495,5 +498,39 @@
     "flip": "क्षैतिज फ्लिप करा",
     "stopFlip": "व्हिडिओ आडवा फिरवणे थांबवा",
     "unflip": "फ्लिप रद्द करा"
+  },
+  "tiCafe": {
+    "title": "टीआय कॅफे",
+    "subtitle": "TI One Voice चे सदस्य जे सध्या ऑनलाइन आहेत.",
+    "currentlyOnline": "सध्या ऑनलाइन ({{count}})",
+    "empty": "आत्ता इतर कोणीही ऑनलाइन नाही.",
+    "signInRequired": "एकदा one.witysk.org वर साइन इन करा मग कोण ऑनलाइन आहे ते पहा.",
+    "viewProfile": "one.witysk.org वर प्रोफाइल उघडा",
+    "view": "पहा",
+    "message": "थेट संदेश पाठवा",
+    "dmMe": "मला DM करा",
+    "openToTalk": "चॅटसाठी खुले — डीएम पाठवू शकता",
+    "birthday": "आज या वापरकर्त्याचा वाढदिवस आहे",
+    "vouches_one": "इतर वापरकर्त्यांकडून {{count}} वेळेसाठी प्रमाणित",
+    "vouches_other": "इतर वापरकर्त्यांकडून {{count}} वेळा प्रमाणित",
+    "viaOneWitysk": "one.witysk.org वरून थेट डेटा. प्रोफाइल आणि संदेश दुवे तेथे नवीन टॅबमध्ये उघडतात.",
+    "signInTitle": "कॅफेमध्ये कोण आहे हे पाहण्यासाठी साइन इन करा",
+    "signInBody": "TI Café म्हणजे TI One Voice मध्ये कोण ऑनलाइन आहे याचे थेट दृश्य. one.witysk.org वर साइन इन करा आणि हे पृष्ठ पुन्हा लोड करा.",
+    "signInButton": "one.witysk.org वर साइन इन करा",
+    "loadFailed": "one.witysk.org पर पोहोचता आले नाही. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा.",
+    "live": "थेट प्रक्षेपण",
+    "bar": {
+      "connectTitle": "TI Café ऑडिओमध्ये सामील व्हा",
+      "disconnectTitle": "TI कॅफे ऑडिओ सोडा",
+      "muteMic": "माझे मायक्रोफोन म्यूट करा",
+      "unmuteMic": "माझे मायक्रोफोन अनम्यूट करा",
+      "muteSpeaker": "स्पीकर म्यूट करा",
+      "unmuteSpeaker": "स्पीकर अनम्यूट करा",
+      "liveCount_one": "{{count}} थेट",
+      "liveCount_other": "{{count}} थेट"
+    }
+  },
+  "signInPrompt": {
+    "button": "one.witysk.org वर साइन इन करा"
   }
 }

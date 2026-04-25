@@ -12,7 +12,8 @@
     "signIn": "Prijava →",
     "logoff": "Odjava",
     "loggingOff": "Odjava…",
-    "logoffConfirm": "Odjaviti se svugdje? Ovo vas odjavljuje s meet.witysk.org i one.witysk.org."
+    "logoffConfirm": "Odjaviti se svugdje? Ovo vas odjavljuje s meet.witysk.org i one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Spremi",
@@ -213,7 +214,9 @@
     "loading": "Učitavanje…",
     "signInFirst": "Prvo se prijavite na one.witysk.org.",
     "started": "Započeto {{when}}",
-    "publishTitle": "Prenesi na YouTube i obriši lokalnu datoteku nakon uspjeha"
+    "publishTitle": "Prenesi na YouTube i obriši lokalnu datoteku nakon uspjeha",
+    "signInTitle": "Prijavite se kako biste vidjeli svoje snimke",
+    "signInBody": "Snimke su dostupne samo vlasniku. Prijavite se na one.witysk.org i ponovno učitajte ovu stranicu."
   },
   "settings": {
     "title": "Postavke",
@@ -495,5 +498,39 @@
     "flip": "Okreni vodoravno",
     "stopFlip": "Zaustavi horizontalno okretanje videa",
     "unflip": "Poništi okretanje"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Članovi TI One Voice koji su trenutno online.",
+    "currentlyOnline": "Trenutno na mreži ({{count}})",
+    "empty": "Nitko drugi nije trenutno online.",
+    "signInRequired": "Prijavite se na one.witysk.org prvo da vidite tko je online.",
+    "viewProfile": "Otvori profil na one.witysk.org",
+    "view": "Prikaz",
+    "message": "Pošalji izravnu poruku",
+    "dmMe": "POŠALJI MI PORUKU",
+    "openToTalk": "Otvoreno za chat — slobodno pošalji DM",
+    "birthday": "Danas je rođendan ovog korisnika",
+    "vouches_one": "Jamčeno od strane drugih korisnika {{count}} puta",
+    "vouches_other": "Jamčen od strane drugih korisnika {{count}} puta",
+    "viaOneWitysk": "Podaci uživo s one.witysk.org. Veze profila i poruka otvaraju se tamo u novoj kartici.",
+    "signInTitle": "Prijavite se da vidite tko je u kafiću",
+    "signInBody": "TI Café je prikaz uživo tko je online u TI One Voice. Prijavite se na one.witysk.org i ponovno učitajte ovu stranicu.",
+    "signInButton": "Prijavite se na one.witysk.org",
+    "loadFailed": "Ne može se doći do one.witysk.org. Pokušajte ponovno za trenutak.",
+    "live": "UŽIVO",
+    "bar": {
+      "connectTitle": "Pridruži se audiozapisu TI Café",
+      "disconnectTitle": "Napusti TI Café audio",
+      "muteMic": "Isključi mikrofon",
+      "unmuteMic": "Uključi moj mikrofon",
+      "muteSpeaker": "Utišaj govornika",
+      "unmuteSpeaker": "Uključi zvuk govornika",
+      "liveCount_one": "{{count}} uživo",
+      "liveCount_other": "{{count}} uživo"
+    }
+  },
+  "signInPrompt": {
+    "button": "Prijavite se na one.witysk.org"
   }
 }

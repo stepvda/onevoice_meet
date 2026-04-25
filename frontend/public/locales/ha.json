@@ -12,7 +12,8 @@
     "signIn": "Shiga",
     "logoff": "Fita",
     "loggingOff": "Ana fita…",
-    "logoffConfirm": "Ka fita daga ko'ina? Wannan zai fitar da kai daga meet.witysk.org da one.witysk.org."
+    "logoffConfirm": "Ka fita daga ko'ina? Wannan zai fitar da kai daga meet.witysk.org da one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Ajiye",
@@ -213,7 +214,9 @@
     "loading": "Ana lodi...",
     "signInFirst": "Da farko shiga one.witysk.org.",
     "started": "An fara {{when}}",
-    "publishTitle": "Loda zuwa YouTube kuma share fayil ɗin gida idan an yi nasara."
+    "publishTitle": "Loda zuwa YouTube kuma share fayil ɗin gida idan an yi nasara.",
+    "signInTitle": "Shiga don ganin rikodin ku",
+    "signInBody": "Rikodi na mai shi ne kawai. Shiga a one.witysk.org sannan ka sake loda wannan shafin."
   },
   "settings": {
     "title": "Saituna",
@@ -495,5 +498,39 @@
     "flip": "Juyawa a kwance",
     "stopFlip": "Dakatar da jujjuya bidiyo a kwance",
     "unflip": "Juyar da"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Membobin TI One Voice da ke kan layi a yanzu.",
+    "currentlyOnline": "Yanar gizo a yanzu ({{count}})",
+    "empty": "Babu wani a kan layi a yanzu.",
+    "signInRequired": "Shiga one.witysk.org tukuna don ganin wanda ke kan layi.",
+    "viewProfile": "Bude bayanin martaba akan one.witysk.org",
+    "view": "Duba",
+    "message": "Aika saƙon kai tsaye",
+    "dmMe": "Aiko mina DM",
+    "openToTalk": "Bude don hira — ka iya aiko da saƙon sirri",
+    "birthday": "Yau ranar haihuwar wannan mai amfani ce",
+    "vouches_one": "An tabbatar da {{count}} lokaci ta wasu masu amfani",
+    "vouches_other": "An tabbatar da {{count}} sau daga wasu masu amfani",
+    "viaOneWitysk": "Bayanan kai tsaye daga one.witysk.org. Hanyoyin bayanan martaba da saƙonni suna buɗe a can a cikin sabon shafi.",
+    "signInTitle": "Shiga don ganin wanda ke Café",
+    "signInBody": "TI Café shine ra'ayin kai tsaye na wanda ke kan layi a cikin TI One Voice. Shiga a one.witysk.org kuma sake loda wannan shafin.",
+    "signInButton": "Shiga a one.witysk.org",
+    "loadFailed": "Ba a iya shiga one.witysk.org ba. Ka sake gwadawa nan da nan.",
+    "live": "KAI TSAYE",
+    "bar": {
+      "connectTitle": "Shiga TI Café audio",
+      "disconnectTitle": "Bar sauraron sautin TI Café",
+      "muteMic": "Kashe makirarfo na",
+      "unmuteMic": "Cire shiru na makirufo na",
+      "muteSpeaker": "Kashe muryar mai magana",
+      "unmuteSpeaker": "Bude muryar mai magana",
+      "liveCount_one": "{{count}} kai tsaye",
+      "liveCount_other": "{{count}} kai tsaye"
+    }
+  },
+  "signInPrompt": {
+    "button": "Shiga a one.witysk.org"
   }
 }

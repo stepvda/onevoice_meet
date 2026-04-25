@@ -12,7 +12,8 @@
     "signIn": "ورود ←",
     "logoff": "خروج از حساب",
     "loggingOff": "در حال خروج از سیستم…",
-    "logoffConfirm": "آیا از همه جا خارج می‌شوید؟ با این کار از meet.witysk.org و one.witysk.org خارج می‌شوید."
+    "logoffConfirm": "آیا از همه جا خارج می‌شوید؟ با این کار از meet.witysk.org و one.witysk.org خارج می‌شوید.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "ذخیره",
@@ -213,7 +214,9 @@
     "loading": "در حال بارگذاری…",
     "signInFirst": "ابتدا در one.witysk.org وارد شوید.",
     "started": "شروع شد {{when}}",
-    "publishTitle": "آپلود در YouTube و حذف فایل محلی در صورت موفقیت"
+    "publishTitle": "آپلود در YouTube و حذف فایل محلی در صورت موفقیت",
+    "signInTitle": "برای مشاهده ضبط‌های خود وارد شوید",
+    "signInBody": "ضبط‌ها فقط برای مالک قابل مشاهده است. در one.witysk.org وارد شوید و این صفحه را دوباره بارگذاری کنید."
   },
   "settings": {
     "title": "تنظیمات",
@@ -495,5 +498,39 @@
     "flip": "چرخش افقی",
     "stopFlip": "توقف آینه‌سازی افقی ویدیو",
     "unflip": "برگرداندن"
+  },
+  "tiCafe": {
+    "title": "کافه TI",
+    "subtitle": "اعضای TI One Voice که اکنون آنلاین هستند.",
+    "currentlyOnline": "آنلاین ({{count}})",
+    "empty": "الان هیچکس آنلاین نیست.",
+    "signInRequired": "برای دیدن افراد آنلاین، ابتدا در one.witysk.org وارد شوید.",
+    "viewProfile": "باز کردن پروفایل در one.witysk.org",
+    "view": "مشاهده",
+    "message": "ارسال پیام مستقیم",
+    "dmMe": "به من پیام خصوصی بده",
+    "openToTalk": "باز برای چت — می‌توانید پیام خصوصی بفرستید",
+    "birthday": "امروز تولد این کاربر است",
+    "vouches_one": "تأیید شده توسط کاربران دیگر برای {{count}} بار",
+    "vouches_other": "تأیید شده توسط کاربران دیگر به تعداد {{count}} بار",
+    "viaOneWitysk": "داده‌های زنده از one.witysk.org. لینک‌های پروفایل و پیام در یک تب جدید در آنجا باز می‌شوند.",
+    "signInTitle": "برای دیدن افرادی که در کافه هستند، وارد شوید",
+    "signInBody": "TI Café نمایی زنده از افرادی است که در TI One Voice آنلاین هستند. در one.witysk.org وارد شوید و این صفحه را بارگذاری مجدد کنید.",
+    "signInButton": "ورود به one.witysk.org",
+    "loadFailed": "دسترسی به one.witysk.org ممکن نیست. لحظه‌ای دیگر تلاش کنید.",
+    "live": "زنده",
+    "bar": {
+      "connectTitle": "عضویت در صدای TI Café",
+      "disconnectTitle": "خروج از صدای TI Café",
+      "muteMic": "میکروفون من را بی‌صدا کن",
+      "unmuteMic": "میکروفون من را روشن کن",
+      "muteSpeaker": "قطع کردن صدای بلندگو",
+      "unmuteSpeaker": "رفع صدا از بلندگو",
+      "liveCount_one": "{{count}} زنده",
+      "liveCount_other": "{{count}} زنده"
+    }
+  },
+  "signInPrompt": {
+    "button": "ورود به one.witysk.org"
   }
 }

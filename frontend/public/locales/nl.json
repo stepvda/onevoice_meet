@@ -12,7 +12,8 @@
     "signIn": "Inloggen →",
     "logoff": "Uitloggen",
     "loggingOff": "Afmelden…",
-    "logoffConfirm": "Overal uitloggen? Hiermee wordt u uitgelogd bij meet.witysk.org en one.witysk.org."
+    "logoffConfirm": "Overal uitloggen? Hiermee wordt u uitgelogd bij meet.witysk.org en one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Opslaan",
@@ -213,7 +214,9 @@
     "loading": "Laden…",
     "signInFirst": "Log eerst in op one.witysk.org.",
     "started": "Gestart {{when}}",
-    "publishTitle": "Uploaden naar YouTube en lokaal bestand verwijderen bij succes"
+    "publishTitle": "Uploaden naar YouTube en lokaal bestand verwijderen bij succes",
+    "signInTitle": "Log in om je opnames te bekijken",
+    "signInBody": "Opnames zijn alleen voor de eigenaar. Log in op one.witysk.org en laad deze pagina opnieuw."
   },
   "settings": {
     "title": "Instellingen",
@@ -495,5 +498,39 @@
     "flip": "Horizontaal spiegelen",
     "stopFlip": "Stop met het horizontaal spiegelen van de video",
     "unflip": "Omkeren ongedaan maken"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Leden van TI One Voice die nu online zijn.",
+    "currentlyOnline": "Online ({{count}})",
+    "empty": "Niemand anders is nu online.",
+    "signInRequired": "Log eerst in op one.witysk.org om te zien wie er online is.",
+    "viewProfile": "Open profiel op one.witysk.org",
+    "view": "Weergave",
+    "message": "Stuur een direct bericht",
+    "dmMe": "STUUR MIJN EEN BERICHT",
+    "openToTalk": "Open voor chat — stuur gerust een DM",
+    "birthday": "Het is vandaag de verjaardag van deze gebruiker",
+    "vouches_one": "Aanbevolen door andere gebruikers {{count}} keer",
+    "vouches_other": "Ingestaan voor {{count}} keer door andere gebruikers",
+    "viaOneWitysk": "Live data van one.witysk.org. Profiel- en berichtkoppelingen openen daar in een nieuw tabblad.",
+    "signInTitle": "Log in om te zien wie er in het Café is",
+    "signInBody": "TI Café is een live overzicht van wie er online is in TI One Voice. Log in op one.witysk.org en herlaad deze pagina.",
+    "signInButton": "Log in op one.witysk.org",
+    "loadFailed": "Kan geen verbinding maken met one.witysk.org. Probeer het over een moment opnieuw.",
+    "live": "LIVE",
+    "bar": {
+      "connectTitle": "Neem deel aan TI Café audio",
+      "disconnectTitle": "Verlaat de audio van TI Café",
+      "muteMic": "Dempen",
+      "unmuteMic": "Dempen van mijn microfoon opheffen",
+      "muteSpeaker": "Dempen",
+      "unmuteSpeaker": "Dempen opheffen",
+      "liveCount_one": "{{count}} live",
+      "liveCount_other": "{{count}} live"
+    }
+  },
+  "signInPrompt": {
+    "button": "Log in op one.witysk.org"
   }
 }

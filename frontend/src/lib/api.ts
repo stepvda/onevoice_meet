@@ -182,6 +182,14 @@ export const api = {
   reopenMeeting: (meetingId: string) =>
     request<MeetingOut>(`/api/v1/meetings/${meetingId}/reopen`, { method: "POST" }),
 
+  // TI Café — always-on audio room. The token bears `room: "ti-cafe"`; LiveKit
+  // auto-creates the room on first join.
+  tiCafeToken: () =>
+    request<AnonTokenResponse>("/api/v1/ti-cafe/token", { method: "POST" }),
+
+  tiCafeLive: () =>
+    request<{ user_ids: number[] }>("/api/v1/ti-cafe/live"),
+
   setPresenter: (meetingId: string, participant_identity: string | null) =>
     request(`/api/v1/meetings/${meetingId}/presenter`, {
       method: "POST",

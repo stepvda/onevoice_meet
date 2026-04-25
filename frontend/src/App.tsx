@@ -7,8 +7,10 @@ import CreateMeeting from "./routes/CreateMeeting";
 import Recordings from "./routes/Recordings";
 import Settings from "./routes/Settings";
 import MeetingChat from "./routes/MeetingChat";
+import TICafe from "./routes/TICafe";
 import { bootstrapFromOneWitysk } from "./lib/auth";
 import { syncServerLanguage } from "./i18n";
+import { TICafeProvider } from "./lib/tiCafe";
 
 export default function App() {
   // Once at app start: try to bootstrap an SSO token, then ask the API for the
@@ -26,14 +28,19 @@ export default function App() {
     };
   }, []);
 
+  // TICafeProvider wraps the entire app so the audio session survives route
+  // changes — the only triggers that disconnect are an explicit click on the
+  // bar's main toggle, or `window.dispatchEvent(new Event("ti-cafe-logout"))`
+  // (fired from logoutFromOneWitysk()).
   return (
-    <>
+    <TICafeProvider>
       <Sidebar />
       <MainArea>
         <Routes>
           {/* Static paths first — React Router v6 ranks static above dynamic. */}
           <Route path="/" element={<CreateMeeting />} />
           <Route path="/recordings" element={<Recordings />} />
+          <Route path="/ti-cafe" element={<TICafe />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/meetings/:meetingId/chat" element={<MeetingChat />} />
           {/* Live meeting view */}
@@ -44,6 +51,6 @@ export default function App() {
           <Route path="/:roomName" element={<Lobby />} />
         </Routes>
       </MainArea>
-    </>
+    </TICafeProvider>
   );
 }

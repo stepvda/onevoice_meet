@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Download, ExternalLink, Trash2, Video } from "lucide-react";
 import { api } from "../lib/api";
-import { bootstrapFromOneWitysk, isAuthenticated } from "../lib/auth";
+import { bootstrapFromOneWitysk, clearAccessToken, isAuthenticated } from "../lib/auth";
 import { Button, Card } from "../components/ui";
+import SignInPrompt from "../components/SignInPrompt";
 
 interface Recording {
   id: string;
   meeting_id: string;
+  filename: string | null;
   branding_url: string | null;
   status: string;
   started_at: string;
@@ -27,6 +29,7 @@ export default function Recordings() {
   const [rows, setRows] = useState<Recording[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsSignIn, setNeedsSignIn] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,7 +39,7 @@ export default function Recordings() {
         const tok = await bootstrapFromOneWitysk();
         if (!tok) {
           if (!cancelled) {
-            setErr(t("recordings.signInFirst"));
+            setNeedsSignIn(true);
             setLoading(false);
           }
           return;
@@ -46,7 +49,16 @@ export default function Recordings() {
         const r = await api.listRecordings();
         if (!cancelled) setRows(r as Recording[]);
       } catch (e) {
-        if (!cancelled) setErr((e as Error).message);
+        if (cancelled) return;
+        // 401 from a stale upstream session — fall through to the sign-in
+        // prompt instead of showing the raw HTTP error.
+        const msg = (e as Error).message || "";
+        if (/401|invalid token|expired/i.test(msg)) {
+          clearAccessToken();
+          setNeedsSignIn(true);
+        } else {
+          setErr(msg);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -60,7 +72,7 @@ export default function Recordings() {
     setBusyId(`dl-${r.id}`);
     setErr(null);
     try {
-      await api.downloadRecording(r.id, `meet-${r.meeting_id}-${r.id}.mp4`);
+      await api.downloadRecording(r.id, r.filename ?? `meet-${r.meeting_id}-${r.id}.mp4`);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -88,7 +100,16 @@ export default function Recordings() {
       </h1>
       <p className="text-slate-400 mb-6">{t("recordings.subtitle")}</p>
 
-      {err && (
+      {needsSignIn && (
+        <SignInPrompt
+          icon={Video}
+          title={t("recordings.signInTitle")}
+          body={t("recordings.signInBody")}
+          testId="recordings-signin"
+        />
+      )}
+
+      {err && !needsSignIn && (
         <Card>
           <p className="text-red-400" data-testid="recordings-error">
             {err}
@@ -96,13 +117,13 @@ export default function Recordings() {
         </Card>
       )}
 
-      {loading && !err && (
+      {loading && !err && !needsSignIn && (
         <Card>
           <p className="text-slate-300">{t("recordings.loading")}</p>
         </Card>
       )}
 
-      {!loading && !err && rows.length === 0 && (
+      {!loading && !err && !needsSignIn && rows.length === 0 && (
         <Card data-testid="recordings-empty">
           <p className="text-slate-300">
             <Trans i18nKey="recordings.empty" components={{ 1: <b /> }} />
@@ -125,7 +146,7 @@ export default function Recordings() {
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <code className="text-sm text-slate-200">{r.id}</code>
+                    <code className="text-sm text-slate-200 break-all">{r.filename ?? r.id}</code>
                     <Badge status={r.status} />
                     {r.youtube_status && <YtBadge status={r.youtube_status} />}
                   </div>

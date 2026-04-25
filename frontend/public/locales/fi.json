@@ -12,7 +12,8 @@
     "signIn": "Kirjaudu sisään",
     "logoff": "Kirjaudu ulos",
     "loggingOff": "Kirjaudutaan ulos…",
-    "logoffConfirm": "Kirjaudutaanko ulos kaikkialta? Tämä kirjaa sinut ulos meet.witysk.org- ja one.witysk.org-palveluista."
+    "logoffConfirm": "Kirjaudutaanko ulos kaikkialta? Tämä kirjaa sinut ulos meet.witysk.org- ja one.witysk.org-palveluista.",
+    "tiCafe": "TI-kahvila"
   },
   "common": {
     "save": "Tallenna",
@@ -213,7 +214,9 @@
     "loading": "Ladataan…",
     "signInFirst": "Kirjaudu ensin sisään osoitteessa one.witysk.org.",
     "started": "Aloitettu {{when}}",
-    "publishTitle": "Lataa YouTubeen ja poista paikallinen tiedosto onnistuneen latauksen jälkeen"
+    "publishTitle": "Lataa YouTubeen ja poista paikallinen tiedosto onnistuneen latauksen jälkeen",
+    "signInTitle": "Kirjaudu sisään nähdäksesi tallenteesi",
+    "signInBody": "Tallenteet ovat vain omistajalle. Kirjaudu sisään osoitteessa one.witysk.org ja lataa tämä sivu uudelleen."
   },
   "settings": {
     "title": "Asetukset",
@@ -495,5 +498,39 @@
     "flip": "Peilaa vaakasuunnassa",
     "stopFlip": "Lopeta videon vaakasuuntainen peilaus",
     "unflip": "Poista peilaus"
+  },
+  "tiCafe": {
+    "title": "TI-kahvila",
+    "subtitle": "TI One Voicen jäsenet, jotka ovat nyt paikalla.",
+    "currentlyOnline": "Tällä hetkellä paikalla ({{count}})",
+    "empty": "Kukaan muu ei ole nyt paikalla.",
+    "signInRequired": "Kirjaudu ensin sisään osoitteessa one.witysk.org nähdäksesi, kuka on paikalla.",
+    "viewProfile": "Avaa profiili osoitteessa one.witysk.org",
+    "view": "Näytä",
+    "message": "Lähetä yksityisviesti",
+    "dmMe": "LÄHETÄ MINULLE YKSITYISVIESTI",
+    "openToTalk": "Avoin keskustelulle — voit lähettää yksityisviestin",
+    "birthday": "Tänään on tämän käyttäjän syntymäpäivä",
+    "vouches_one": "Käyttäjät ovat taanneet {{count}} kertaa",
+    "vouches_other": "Käyttäjät ovat taanneet {{count}} kertaa",
+    "viaOneWitysk": "Live-tietoa osoitteesta one.witysk.org. Profiili- ja viestilinkit avautuvat siellä uudessa välilehdessä.",
+    "signInTitle": "Kirjaudu sisään nähdäksesi, kuka on kahvilassa",
+    "signInBody": "TI Café on live-näkymä siitä, ketkä ovat paikalla TI One Voicessa. Kirjaudu sisään osoitteessa one.witysk.org ja lataa tämä sivu uudelleen.",
+    "signInButton": "Kirjaudu sisään osoitteessa one.witysk.org",
+    "loadFailed": "Yhteyttä osoitteeseen one.witysk.org ei saatu. Yritä hetken kuluttua uudelleen.",
+    "live": "LIVE",
+    "bar": {
+      "connectTitle": "Liity TI Café -äänen",
+      "disconnectTitle": "Poistu TI Café -äänestä",
+      "muteMic": "Mykistä mikrofoni",
+      "unmuteMic": "Poista mykistys mikrofonistani",
+      "muteSpeaker": "Mykistä puhuja",
+      "unmuteSpeaker": "Poista mykistys puhujalta",
+      "liveCount_one": "{{count}} suorana",
+      "liveCount_other": "{{count}} suorana"
+    }
+  },
+  "signInPrompt": {
+    "button": "Kirjaudu sisään osoitteessa one.witysk.org"
   }
 }

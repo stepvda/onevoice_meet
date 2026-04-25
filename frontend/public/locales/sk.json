@@ -12,7 +12,8 @@
     "signIn": "Prihlásiť sa",
     "logoff": "Odhlásiť sa",
     "loggingOff": "Odhlásenie…",
-    "logoffConfirm": "Odhlásiť sa všade? Týmto sa odhlásite z meet.witysk.org a one.witysk.org."
+    "logoffConfirm": "Odhlásiť sa všade? Týmto sa odhlásite z meet.witysk.org a one.witysk.org.",
+    "tiCafe": "TI Kaviareň"
   },
   "common": {
     "save": "Uložiť",
@@ -213,7 +214,9 @@
     "loading": "Načítava sa…",
     "signInFirst": "Najprv sa prihláste na one.witysk.org.",
     "started": "Spustené {{when}}",
-    "publishTitle": "Nahrať na YouTube a po úspechu odstrániť lokálny súbor"
+    "publishTitle": "Nahrať na YouTube a po úspechu odstrániť lokálny súbor",
+    "signInTitle": "Prihláste sa, aby ste videli svoje nahrávky",
+    "signInBody": "Nahrávky sú prístupné len pre vlastníka. Prihláste sa na one.witysk.org a obnovte túto stránku."
   },
   "settings": {
     "title": "Nastavenia",
@@ -495,5 +498,39 @@
     "flip": "Preklopiť vodorovne",
     "stopFlip": "Zastaviť horizontálne preklopenie videa",
     "unflip": "Otočiť späť"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Členovia TI One Voice, ktorí sú práve online.",
+    "currentlyOnline": "Momentálne online ({{count}})",
+    "empty": "Nikto iný nie je práve online.",
+    "signInRequired": "Najprv sa prihláste na one.witysk.org, aby ste videli, kto je online.",
+    "viewProfile": "Otvoriť profil na one.witysk.org",
+    "view": "Zobraziť",
+    "message": "Odoslať priamu správu",
+    "dmMe": "NAPÍŠ MI",
+    "openToTalk": "Otvorené na chat — kľudne pošli správu",
+    "birthday": "Dnes má tento používateľ narodeniny",
+    "vouches_one": "Zaručené používateľmi už {{count}} krát",
+    "vouches_other": "Zaručené používateľmi {{count}} krát",
+    "viaOneWitysk": "Živé údaje z one.witysk.org. Odkazy na profily a správy sa otvárajú na novej karte.",
+    "signInTitle": "Prihláste sa, aby ste videli, kto je v Café",
+    "signInBody": "TI Café je živý prehľad o tom, kto je online v TI One Voice. Prihláste sa na one.witysk.org a obnovte túto stránku.",
+    "signInButton": "Prihláste sa na one.witysk.org",
+    "loadFailed": "Nepodarilo sa pripojiť k one.witysk.org. Skúste znova o chvíľu.",
+    "live": "NAŽIVO",
+    "bar": {
+      "connectTitle": "Pripojiť sa k audiu TI Café",
+      "disconnectTitle": "Opustiť zvuk TI Café",
+      "muteMic": "Stlmiť mikrofón",
+      "unmuteMic": "Zrušiť stlmenie môjho mikrofónu",
+      "muteSpeaker": "Stlmiť rečníka",
+      "unmuteSpeaker": "Zrušiť stlmenie rečníka",
+      "liveCount_one": "{{count}} naživo",
+      "liveCount_other": "{{count}} naživo"
+    }
+  },
+  "signInPrompt": {
+    "button": "Prihláste sa na one.witysk.org"
   }
 }

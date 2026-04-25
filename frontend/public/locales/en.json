@@ -6,6 +6,7 @@
   "nav": {
     "home": "Home",
     "recordings": "Recordings",
+    "tiCafe": "TI Café",
     "settings": "Settings",
     "signedIn": "signed in via one.witysk.org",
     "notSignedIn": "not signed in",
@@ -13,6 +14,37 @@
     "logoff": "Log off",
     "loggingOff": "Logging off…",
     "logoffConfirm": "Log off everywhere? This signs you out of meet.witysk.org and one.witysk.org."
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Members of TI One Voice who are online right now.",
+    "currentlyOnline": "Currently online ({{count}})",
+    "empty": "No one else is online right now.",
+    "signInRequired": "Sign in on one.witysk.org first to see who's online.",
+    "signInTitle": "Sign in to see who's at the Café",
+    "signInBody": "TI Café is a live view of who's online in TI One Voice. Sign in on one.witysk.org and reload this page.",
+    "signInButton": "Sign in on one.witysk.org",
+    "loadFailed": "Couldn't reach one.witysk.org. Try again in a moment.",
+    "viewProfile": "Open profile on one.witysk.org",
+    "view": "View",
+    "message": "Send a direct message",
+    "dmMe": "DM ME",
+    "openToTalk": "Open to chat — feel free to send a DM",
+    "birthday": "It's this user's birthday today",
+    "vouches_one": "Vouched for {{count}} time by other users",
+    "vouches_other": "Vouched for {{count}} times by other users",
+    "viaOneWitysk": "Live data from one.witysk.org. Profile and message links open there in a new tab.",
+    "live": "LIVE",
+    "bar": {
+      "connectTitle": "Join TI Café audio",
+      "disconnectTitle": "Leave TI Café audio",
+      "muteMic": "Mute my microphone",
+      "unmuteMic": "Unmute my microphone",
+      "muteSpeaker": "Mute speaker",
+      "unmuteSpeaker": "Unmute speaker",
+      "liveCount_one": "{{count}} live",
+      "liveCount_other": "{{count}} live"
+    }
   },
   "common": {
     "save": "Save",
@@ -26,6 +58,9 @@
     "close": "Close",
     "anonymous": "anonymous",
     "requestFailed": "Request failed"
+  },
+  "signInPrompt": {
+    "button": "Sign in on one.witysk.org"
   },
   "createMeeting": {
     "checkingSession": "Checking your one.witysk.org session…",
@@ -252,6 +287,8 @@
     "empty": "No recordings yet. Start a meeting and click <1>Record</1> to capture one.",
     "loading": "Loading…",
     "signInFirst": "Sign in on one.witysk.org first.",
+    "signInTitle": "Sign in to see your recordings",
+    "signInBody": "Recordings are owner-only. Sign in on one.witysk.org and reload this page.",
     "started": "Started {{when}}",
     "publishTitle": "Upload to YouTube and delete the local file on success",
     "download": "Download",

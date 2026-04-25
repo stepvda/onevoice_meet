@@ -12,7 +12,8 @@
     "signIn": "ลงชื่อเข้าใช้ →",
     "logoff": "ออกจากระบบ",
     "loggingOff": "กำลังออกจากระบบ…",
-    "logoffConfirm": "ออกจากระบบทุกที่? การดำเนินการนี้จะออกจากระบบคุณจาก meet.witysk.org และ one.witysk.org"
+    "logoffConfirm": "ออกจากระบบทุกที่? การดำเนินการนี้จะออกจากระบบคุณจาก meet.witysk.org และ one.witysk.org",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "บันทึก",
@@ -213,7 +214,9 @@
     "loading": "กำลังโหลด…",
     "signInFirst": "กรุณาเข้าสู่ระบบที่ one.witysk.org ก่อน",
     "started": "เริ่มต้นแล้ว {{when}}",
-    "publishTitle": "อัปโหลดไปยัง YouTube และลบไฟล์ในเครื่องเมื่อสำเร็จ"
+    "publishTitle": "อัปโหลดไปยัง YouTube และลบไฟล์ในเครื่องเมื่อสำเร็จ",
+    "signInTitle": "ลงชื่อเข้าใช้เพื่อดูบันทึกของคุณ",
+    "signInBody": "การบันทึกเป็นของผู้ใช้เท่านั้น กรุณาเข้าสู่ระบบที่ one.witysk.org แล้วโหลดหน้านี้ใหม่"
   },
   "settings": {
     "title": "การตั้งค่า",
@@ -495,5 +498,39 @@
     "flip": "พลิกแนวนอน",
     "stopFlip": "หยุดกลับด้านวิดีโอแนวนอน",
     "unflip": "กลับด้าน"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "สมาชิกของ TI One Voice ที่กำลังออนไลน์อยู่ในขณะนี้",
+    "currentlyOnline": "ออนไลน์อยู่ ({{count}})",
+    "empty": "ขณะนี้ไม่มีผู้อื่นออนไลน์อยู่",
+    "signInRequired": "ลงชื่อเข้าใช้ที่ one.witysk.org ก่อนเพื่อดูว่าใครออนไลน์อยู่บ้าง",
+    "viewProfile": "เปิดโปรไฟล์บน one.witysk.org",
+    "view": "ดู",
+    "message": "ส่งข้อความโดยตรง",
+    "dmMe": "ส่งข้อความถึงฉัน",
+    "openToTalk": "เปิดให้แชท — ส่งข้อความส่วนตัวได้เลย",
+    "birthday": "วันนี้เป็นวันเกิดของผู้ใช้รายนี้",
+    "vouches_one": "รับรองโดยผู้ใช้รายอื่น {{count}} ครั้ง",
+    "vouches_other": "รับรองโดยผู้ใช้อื่น {{count}} ครั้ง",
+    "viaOneWitysk": "ข้อมูลสดจาก one.witysk.org ลิงก์โปรไฟล์และข้อความจะเปิดในแท็บใหม่ที่นั่น",
+    "signInTitle": "ลงชื่อเข้าใช้เพื่อดูว่าใครอยู่ใน Café",
+    "signInBody": "TI Café คือมุมมองสดของผู้ที่ออนไลน์อยู่ใน TI One Voice ลงชื่อเข้าใช้ที่ one.witysk.org แล้วโหลดหน้านี้ใหม่",
+    "signInButton": "ลงชื่อเข้าใช้ที่ one.witysk.org",
+    "loadFailed": "ไม่สามารถเชื่อมต่อ one.witysk.org ได้ กรุณาลองอีกครั้งในภายหลัง",
+    "live": "ถ่ายทอดสด",
+    "bar": {
+      "connectTitle": "เข้าร่วมเสียง TI Café",
+      "disconnectTitle": "ออกจากเสียงของ TI Café",
+      "muteMic": "ปิดไมโครโฟนของฉัน",
+      "unmuteMic": "เปิดไมโครโฟนของฉัน",
+      "muteSpeaker": "ปิดเสียงผู้พูด",
+      "unmuteSpeaker": "เปิดเสียงผู้พูด",
+      "liveCount_one": "{{count}} ถ่ายทอดสด",
+      "liveCount_other": "{{count}} ถ่ายทอดสด"
+    }
+  },
+  "signInPrompt": {
+    "button": "ลงชื่อเข้าใช้ที่ one.witysk.org"
   }
 }

@@ -12,7 +12,8 @@
     "signIn": "Bejelentkezés →",
     "logoff": "Kijelentkezés",
     "loggingOff": "Kijelentkezés…",
-    "logoffConfirm": "Kijelentkezés mindenhol? Ezzel kijelentkezel a meet.witysk.org és a one.witysk.org oldalakról."
+    "logoffConfirm": "Kijelentkezés mindenhol? Ezzel kijelentkezel a meet.witysk.org és a one.witysk.org oldalakról.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Mentés",
@@ -213,7 +214,9 @@
     "loading": "Betöltés…",
     "signInFirst": "Először jelentkezz be a one.witysk.org oldalon.",
     "started": "Elindítva: {{when}}",
-    "publishTitle": "Feltöltés YouTube-ra, és a helyi fájl törlése siker esetén"
+    "publishTitle": "Feltöltés YouTube-ra, és a helyi fájl törlése siker esetén",
+    "signInTitle": "Jelentkezz be a felvételeid megtekintéséhez",
+    "signInBody": "A felvételek csak a tulajdonos számára érhetők el. Jelentkezz be a one.witysk.org oldalon, majd töltsd újra ezt az oldalt."
   },
   "settings": {
     "title": "Beállítások",
@@ -495,5 +498,39 @@
     "flip": "Vízszintes tükrözés",
     "stopFlip": "Videó vízszintes tükrözésének leállítása",
     "unflip": "Visszafordítás"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "A TI One Voice azon tagjai, akik jelenleg online vannak.",
+    "currentlyOnline": "Jelenleg online ({{count}})",
+    "empty": "Jelenleg senki más nincs online.",
+    "signInRequired": "Először jelentkezz be a one.witysk.org oldalon, hogy lásd, ki van online.",
+    "viewProfile": "Profil megnyitása a one.witysk.org oldalon",
+    "view": "Megtekintés",
+    "message": "Küldj egy közvetlen üzenetet",
+    "dmMe": "KÜLDJ NEKEM ÜZENETET",
+    "openToTalk": "Nyitva a csevegésre — nyugodtan küldj egy DM-et",
+    "birthday": "Ma van ennek a felhasználónak a születésnapja",
+    "vouches_one": "Más felhasználók által {{count}} alkalommal igazolt",
+    "vouches_other": "Más felhasználók által {{count}} alkalommal igazolva",
+    "viaOneWitysk": "Élő adatok a one.witysk.org oldalról. A profil- és üzenethivatkozások új lapon nyílnak meg ott.",
+    "signInTitle": "Jelentkezz be, hogy lásd, ki van a Kávézóban",
+    "signInBody": "A TI Café a TI One Voice-ban online lévők élő nézete. Jelentkezz be a one.witysk.org oldalon, majd töltsd újra ezt az oldalt.",
+    "signInButton": "Jelentkezz be a one.witysk.org oldalon",
+    "loadFailed": "Nem sikerült elérni a one.witysk.org oldalt. Próbáld újra egy pillanat múlva.",
+    "live": "ÉLŐ",
+    "bar": {
+      "connectTitle": "Csatlakozás a TI Café hanghoz",
+      "disconnectTitle": "TI Café hang elhagyása",
+      "muteMic": "Némítsa el a mikrofonomat",
+      "unmuteMic": "Némítsa ki a mikrofonomat",
+      "muteSpeaker": "Hangtalanítás",
+      "unmuteSpeaker": "Némítás feloldása",
+      "liveCount_one": "{{count}} élő",
+      "liveCount_other": "{{count}} élő"
+    }
+  },
+  "signInPrompt": {
+    "button": "Jelentkezz be a one.witysk.org oldalon"
   }
 }

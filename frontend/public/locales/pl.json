@@ -12,7 +12,8 @@
     "signIn": "Zaloguj się →",
     "logoff": "Wyloguj się",
     "loggingOff": "Wylogowywanie…",
-    "logoffConfirm": "Wylogować wszędzie? Spowoduje to wylogowanie z meet.witysk.org i one.witysk.org."
+    "logoffConfirm": "Wylogować wszędzie? Spowoduje to wylogowanie z meet.witysk.org i one.witysk.org.",
+    "tiCafe": "TI Café"
   },
   "common": {
     "save": "Zapisz",
@@ -213,7 +214,9 @@
     "loading": "Ładowanie…",
     "signInFirst": "Najpierw zaloguj się na one.witysk.org.",
     "started": "Rozpoczęto {{when}}",
-    "publishTitle": "Prześlij do YouTube i usuń lokalny plik po powodzeniu"
+    "publishTitle": "Prześlij do YouTube i usuń lokalny plik po powodzeniu",
+    "signInTitle": "Zaloguj się, aby zobaczyć swoje nagrania",
+    "signInBody": "Nagrania są dostępne tylko dla właściciela. Zaloguj się na one.witysk.org i odśwież tę stronę."
   },
   "settings": {
     "title": "Ustawienia",
@@ -495,5 +498,39 @@
     "flip": "Odbij w poziomie",
     "stopFlip": "Zatrzymaj odwracanie wideo w poziomie",
     "unflip": "Odwróć"
+  },
+  "tiCafe": {
+    "title": "TI Café",
+    "subtitle": "Członkowie TI One Voice, którzy są teraz online.",
+    "currentlyOnline": "Aktualnie online ({{count}})",
+    "empty": "Nikt inny nie jest teraz online.",
+    "signInRequired": "Najpierw zaloguj się na one.witysk.org, aby zobaczyć, kto jest online.",
+    "viewProfile": "Otwórz profil na one.witysk.org",
+    "view": "Widok",
+    "message": "Wyślij bezpośrednią wiadomość",
+    "dmMe": "NAPISZ DO MNIE",
+    "openToTalk": "Otwarte na czat — możesz wysłać DM",
+    "birthday": "Dzisiaj są urodziny tego użytkownika",
+    "vouches_one": "Potwierdzony przez innych użytkowników {{count}} razy",
+    "vouches_other": "Polecany {{count}} razy przez innych użytkowników",
+    "viaOneWitysk": "Dane na żywo z one.witysk.org. Linki do profili i wiadomości otwierają się tam w nowej karcie.",
+    "signInTitle": "Zaloguj się, aby zobaczyć, kto jest w Café",
+    "signInBody": "TI Café to podgląd na żywo, kto jest online w TI One Voice. Zaloguj się na one.witysk.org i odśwież tę stronę.",
+    "signInButton": "Zaloguj się na one.witysk.org",
+    "loadFailed": "Nie można połączyć się z one.witysk.org. Spróbuj ponownie za chwilę.",
+    "live": "NA ŻYWO",
+    "bar": {
+      "connectTitle": "Dołącz do audio TI Café",
+      "disconnectTitle": "Opuść dźwięk TI Café",
+      "muteMic": "Wycisz mój mikrofon",
+      "unmuteMic": "Wyłącz wyciszenie mojego mikrofonu",
+      "muteSpeaker": "Wycisz mówcę",
+      "unmuteSpeaker": "Wyłącz wyciszenie mówcy",
+      "liveCount_one": "{{count}} na żywo",
+      "liveCount_other": "{{count}} na żywo"
+    }
+  },
+  "signInPrompt": {
+    "button": "Zaloguj się na one.witysk.org"
   }
 }
