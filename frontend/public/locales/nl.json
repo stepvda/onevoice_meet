@@ -23,7 +23,9 @@
     "yes": "Ja",
     "no": "Nee",
     "loading": "Laden…",
-    "close": "Sluiten"
+    "close": "Sluiten",
+    "anonymous": "anoniem",
+    "requestFailed": "Verzoek mislukt"
   },
   "createMeeting": {
     "checkingSession": "Je one.witysk.org-sessie wordt gecontroleerd…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Weergegeven in de lobby en de bovenste balk van de vergadering. JPEG, PNG, WebP of GIF; maximaal 2 MB.",
     "noImage": "Geen afbeelding geselecteerd",
     "submit": "Vergadering maken",
-    "submitting": "Aanmaken…"
+    "submitting": "Aanmaken…",
+    "visibility": "Zichtbaarheid",
+    "visibilityHint": "Standaard zie jij alleen deze vergadering op je startpagina.",
+    "listForAuth": "Lijst op de startpagina van andere ingelogde gebruikers",
+    "listForAuthDesc": "Iedereen die is ingelogd via one.witysk.org kan vinden en deelnemen.",
+    "listForAnon": "Toon ook aan anonieme bezoekers (niet-ingelogd)",
+    "listForAnonDesc": "De vergadering verschijnt op de openbare landingspagina.",
+    "brandingPreviewAlt": "Merkvoorbeeld",
+    "brandingFieldAlt": "Branding-afbeelding",
+    "unsupportedImageType": "Niet-ondersteund afbeeldingstype {{type}}; gebruik JPEG, PNG, WebP of GIF.",
+    "imageTooLarge": "Afbeelding is {{mb}} MB; max is 2 MB.",
+    "uploadFailed": "Vergadering aangemaakt, maar uploaden van branding mislukt: {{message}}"
   },
   "myMeetings": {
     "loading": "Je vergaderingen laden…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Verwijder deze vergadering uit de lijst",
     "more": "+ {{count}} meer",
     "closedLabel": "gesloten",
-    "maxParticipants": "max {{n}}"
+    "maxParticipants": "max {{n}}",
+    "visibilityPublic": "Openbaar",
+    "visibilityListed": "Vermeld voor ingelogde gebruikers",
+    "visibilityPrivate": "Alleen zichtbaar voor mij",
+    "visibilityChange": "{{label}} — klik om te wijzigen",
+    "copyJoinPrompt": "Kopieer deze deelnamelink"
   },
   "lobby": {
     "joinMeeting": "Vergadering bijwonen",
@@ -70,7 +88,9 @@
     "emailOptional": "E-mail (optioneel)",
     "passwordIfRequired": "Wachtwoord (indien vereist)",
     "join": "Deelnemen",
-    "joining": "Verbinden..."
+    "joining": "Verbinden...",
+    "hostedBy": "Gehost door {{name}}",
+    "brandingAlt": "Vergaderingsbrandingafbeelding"
   },
   "room": {
     "takeStage": "Neem het podium",
@@ -89,7 +109,11 @@
     "people": "Mensen",
     "chat": "Chat",
     "invite": "Uitnodigen",
-    "inviteTitle": "Mensen uitnodigen via e-mail"
+    "inviteTitle": "Mensen uitnodigen via e-mail",
+    "settings": "Instellingen",
+    "settingsLabel": "Instellingen tijdens vergadering",
+    "topbarBrandingAlt": "Vergaderingsbrandingafbeelding",
+    "requestFailed": "verzoek mislukt"
   },
   "recordingIndicator": {
     "label": "OPN"
@@ -110,7 +134,11 @@
     "upload": "Uploaden",
     "uploadTitle": "Upload je eigen achtergrondafbeelding",
     "tooLarge": "Afbeelding is {{mb}} MB; max is 4 MB.",
-    "notImage": "Geen afbeelding"
+    "notImage": "Geen afbeelding ({{type}})",
+    "uploadAria": "Achtergrondafbeelding uploaden",
+    "processorFailed": "Achtergrond effecten worden niet ondersteund op dit apparaat.",
+    "custom": "Aangepast: {{name}}",
+    "customDefault": "Aangepaste afbeelding"
   },
   "participants": {
     "title": "Deelnemers",
@@ -118,14 +146,21 @@
     "muteMic": "Microfoon dempen",
     "makePresenter": "Maak presentator",
     "removeFromMeeting": "Verwijderen uit vergadering",
-    "authenticatedOwner": "Geverifieerde eigenaar"
+    "authenticatedOwner": "Geverifieerde eigenaar",
+    "titleCount": "Deelnemers ({{count}})",
+    "close": "Deelnemers sluiten",
+    "muteName": "Dempen {{name}}",
+    "makeNamePresenter": "Maak {{name}} presentator",
+    "removeName": "Verwijder {{name}}"
   },
   "chatPanel": {
     "title": "Chat",
     "empty": "Nog geen berichten — zeg hallo.",
     "placeholder": "Typ een bericht",
     "send": "Verstuur",
-    "close": "Chat sluiten"
+    "close": "Chat sluiten",
+    "ariaLabel": "Vergaderchat",
+    "messageAria": "Chatbericht"
   },
   "invite": {
     "title": "Uitnodigen via e-mail",
@@ -143,12 +178,14 @@
     "tooMany": "Maximaal 20 ontvangers per verzending.",
     "sentN_one": "{{count}} uitnodiging(en) verzonden.",
     "sentN_other": "{{count}} uitnodigingen verzonden.",
-    "failedSuffix": "Mislukt: {{list}}"
+    "failedSuffix": "Mislukt: {{list}}",
+    "cancel": "Annuleren",
+    "close": "Sluiten"
   },
   "recordings": {
     "title": "Opnames",
     "subtitle": "Server-side opnames van uw vergaderingen. Lokale bestanden worden na 30 dagen automatisch verwijderd (of wanneer u naar YouTube publiceert). Uploads worden alleen door de eigenaar gestart.",
-    "empty": "Nog geen opnames. Start een vergadering en klik op Opnemen om er een te maken.",
+    "empty": "Nog geen opnames. Start een vergadering en klik op <1>Opnemen</1> om er een te maken.",
     "download": "Downloaden",
     "downloading": "Bezig met downloaden…",
     "publish": "Publiceren naar YouTube",
@@ -170,7 +207,11 @@
       "running": "bezig",
       "failed": "mislukt",
       "deleted": "verwijderd"
-    }
+    },
+    "loading": "Laden…",
+    "signInFirst": "Log eerst in op one.witysk.org.",
+    "started": "Gestart {{when}}",
+    "publishTitle": "Uploaden naar YouTube en lokaal bestand verwijderen bij succes"
   },
   "settings": {
     "title": "Instellingen",
@@ -390,5 +431,67 @@
       "confirm": "Alle voorkeuren terugzetten naar standaardwaarden?",
       "doneFlash": "Standaardinstellingen herstellen"
     }
+  },
+  "discover": {
+    "title": "Ontdekken",
+    "subtitle": "— vergaderingen die openstaan om deel te nemen",
+    "join": "Deelnemen",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Gehost door {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Instellingen",
+    "close": "Instellingen sluiten",
+    "groupAv": "Audio en video",
+    "groupDisplay": "Weergeven",
+    "groupNotifications": "Meldingen",
+    "groupAccessibility": "Toegankelijkheid",
+    "groupNetwork": "Netwerk",
+    "groupAppearance": "Weergave",
+    "camOnJoin": "Camera aan wanneer ik deelneem",
+    "micOnJoin": "Microfoon aan wanneer ik deelneem",
+    "noiseSuppression": "Ruisonderdrukking",
+    "echoCancellation": "Echocompensatie",
+    "mirrorPreview": "Spiegel mijn voorbeeld",
+    "layout": "Indeling",
+    "layoutAuto": "Automatisch",
+    "layoutGrid": "Raster",
+    "layoutSpeaker": "Actieve spreker",
+    "layoutSpotlight": "Spotlight",
+    "mirrorOwn": "Spiegel mijn eigen video",
+    "hideSelf": "Verberg eigen weergave",
+    "showNames": "Toon deelnemersnamen",
+    "connQuality": "Toon verbindingskwaliteit",
+    "meetingClock": "Toon vergaderklok",
+    "highlightSpeaker": "Markeer actieve spreker",
+    "soundOnJoin": "Geluid wanneer iemand deelneemt",
+    "chatSound": "Geluid bij chatbericht",
+    "ignoreOwnJoins": "Negeer mijn eigen deelnames",
+    "captions": "Live-ondertiteling",
+    "captionsSize": "Lettergrootte van ondertiteling",
+    "fontSmall": "Klein",
+    "fontMedium": "Gemiddeld",
+    "fontLarge": "Groot",
+    "fontXl": "Extra groot",
+    "reducedMotion": "Verminderde beweging",
+    "monoAudio": "Mono audiomix",
+    "quality": "Voorkeurskwaliteit video",
+    "qualityAuto": "Automatisch",
+    "qualityLow": "Laag",
+    "qualityMedium": "Gemiddeld",
+    "qualityHigh": "Hoog",
+    "simulcast": "Simulcast",
+    "forceRelay": "Forceer TURN-relay",
+    "theme": "Thema",
+    "themeSystem": "Systeem",
+    "themeDark": "Donker",
+    "themeLight": "Licht",
+    "compact": "Compacte interface",
+    "moreSettings": "Meer instellingen vind je op de volledige pagina <1>Instellingen</1>."
+  },
+  "tile": {
+    "flip": "Horizontaal spiegelen",
+    "stopFlip": "Stop met het horizontaal spiegelen van de video",
+    "unflip": "Omkeren ongedaan maken"
   }
 }

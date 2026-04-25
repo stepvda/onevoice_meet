@@ -23,7 +23,9 @@
     "yes": "Có",
     "no": "Không",
     "loading": "Đang tải…",
-    "close": "Đóng"
+    "close": "Đóng",
+    "anonymous": "ẩn danh",
+    "requestFailed": "Yêu cầu thất bại"
   },
   "createMeeting": {
     "checkingSession": "Đang kiểm tra phiên làm việc của bạn tại one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Hiển thị ở sảnh chờ và thanh trên cùng của cuộc họp. JPEG, PNG, WebP hoặc GIF; tối đa 2 MB.",
     "noImage": "Chưa chọn ảnh",
     "submit": "Tạo cuộc họp",
-    "submitting": "Đang tạo…"
+    "submitting": "Đang tạo…",
+    "visibility": "Hiển thị",
+    "visibilityHint": "Theo mặc định, chỉ bạn nhìn thấy cuộc họp này trên trang Chủ của mình.",
+    "listForAuth": "Danh sách người dùng đã đăng nhập khác trên trang chủ",
+    "listForAuthDesc": "Bất kỳ ai đăng nhập qua one.witysk.org đều có thể tìm và tham gia.",
+    "listForAnon": "Cũng hiển thị cho khách ẩn danh (chưa đăng nhập)",
+    "listForAnonDesc": "Cuộc họp xuất hiện trên trang đích công khai.",
+    "brandingPreviewAlt": "Xem trước thương hiệu",
+    "brandingFieldAlt": "Hình ảnh thương hiệu",
+    "unsupportedImageType": "Loại hình ảnh không được hỗ trợ {{type}}; hãy sử dụng JPEG, PNG, WebP hoặc GIF.",
+    "imageTooLarge": "Kích thước ảnh là {{mb}} MB; tối đa 2 MB.",
+    "uploadFailed": "Cuộc họp đã được tạo nhưng tải lên thương hiệu thất bại: {{message}}"
   },
   "myMeetings": {
     "loading": "Đang tải cuộc họp của bạn…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Xóa cuộc họp này khỏi danh sách",
     "more": "+ {{count}} khác",
     "closedLabel": "đã đóng",
-    "maxParticipants": "tối đa {{n}}"
+    "maxParticipants": "tối đa {{n}}",
+    "visibilityPublic": "Công khai",
+    "visibilityListed": "Đã liệt kê cho người dùng đã đăng nhập",
+    "visibilityPrivate": "Chỉ mình tôi thấy",
+    "visibilityChange": "{{label}} — nhấp để thay đổi",
+    "copyJoinPrompt": "Sao chép liên kết tham gia này"
   },
   "lobby": {
     "joinMeeting": "Tham gia cuộc họp",
@@ -70,7 +88,9 @@
     "emailOptional": "Email (không bắt buộc)",
     "passwordIfRequired": "Mật khẩu (nếu có)",
     "join": "Tham gia",
-    "joining": "Đang tham gia…"
+    "joining": "Đang tham gia…",
+    "hostedBy": "Được tổ chức bởi {{name}}",
+    "brandingAlt": "Hình ảnh thương hiệu cuộc họp"
   },
   "room": {
     "takeStage": "Lên sân khấu",
@@ -89,7 +109,11 @@
     "people": "Mọi người",
     "chat": "Trò chuyện",
     "invite": "Mời",
-    "inviteTitle": "Mời mọi người qua email"
+    "inviteTitle": "Mời mọi người qua email",
+    "settings": "Cài đặt",
+    "settingsLabel": "Cài đặt trong cuộc họp",
+    "topbarBrandingAlt": "Hình ảnh thương hiệu cuộc họp",
+    "requestFailed": "Yêu cầu thất bại"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "Tải lên",
     "uploadTitle": "Tải lên ảnh nền của bạn",
     "tooLarge": "Ảnh có kích thước {{mb}} MB; tối đa 4 MB.",
-    "notImage": "Không phải ảnh"
+    "notImage": "Không phải hình ảnh ({{type}})",
+    "uploadAria": "Tải lên ảnh nền",
+    "processorFailed": "Thiết bị này không hỗ trợ hiệu ứng nền.",
+    "custom": "Tùy chỉnh: {{name}}",
+    "customDefault": "Ảnh tùy chỉnh"
   },
   "participants": {
     "title": "Người tham gia",
@@ -118,14 +146,21 @@
     "muteMic": "Tắt mic",
     "makePresenter": "Trở thành người thuyết trình",
     "removeFromMeeting": "Xóa khỏi cuộc họp",
-    "authenticatedOwner": "Chủ sở hữu đã xác thực"
+    "authenticatedOwner": "Chủ sở hữu đã xác thực",
+    "titleCount": "Người tham gia ({{count}})",
+    "close": "Đóng người tham gia",
+    "muteName": "Tắt tiếng {{name}}",
+    "makeNamePresenter": "Đặt {{name}} làm người thuyết trình",
+    "removeName": "Xóa {{name}}"
   },
   "chatPanel": {
     "title": "Trò chuyện",
     "empty": "Chưa có tin nhắn nào — hãy gửi lời chào.",
     "placeholder": "Nhập tin nhắn",
     "send": "Gửi",
-    "close": "Đóng chat"
+    "close": "Đóng chat",
+    "ariaLabel": "Trò chuyện cuộc họp",
+    "messageAria": "Tin nhắn trò chuyện"
   },
   "invite": {
     "title": "Mời qua email",
@@ -143,12 +178,14 @@
     "tooMany": "Tối đa 20 người nhận mỗi lần gửi.",
     "sentN_one": "Đã gửi {{count}} lời mời.",
     "sentN_other": "Đã gửi {{count}} lời mời.",
-    "failedSuffix": "Thất bại: {{list}}"
+    "failedSuffix": "Thất bại: {{list}}",
+    "cancel": "Hủy",
+    "close": "Đóng"
   },
   "recordings": {
     "title": "Bản ghi",
     "subtitle": "Bản ghi phía máy chủ của các cuộc họp của bạn. Tệp cục bộ tự động xóa sau 30 ngày (hoặc khi bạn xuất bản lên YouTube). Chỉ chủ sở hữu mới có thể tải lên.",
-    "empty": "Chưa có bản ghi nào. Hãy bắt đầu cuộc họp và nhấn Ghi để tạo bản ghi.",
+    "empty": "Chưa có bản ghi nào. Hãy bắt đầu cuộc họp và nhấn <1>Ghi âm</1> để ghi lại.",
     "download": "Tải xuống",
     "downloading": "Đang tải xuống…",
     "publish": "Xuất bản lên YouTube",
@@ -170,7 +207,11 @@
       "running": "đang chạy",
       "failed": "thất bại",
       "deleted": "đã xóa"
-    }
+    },
+    "loading": "Đang tải…",
+    "signInFirst": "Đăng nhập trên one.witysk.org trước.",
+    "started": "Đã bắt đầu {{when}}",
+    "publishTitle": "Tải lên YouTube và xóa tệp cục bộ nếu thành công"
   },
   "settings": {
     "title": "Cài đặt",
@@ -390,5 +431,67 @@
       "confirm": "Đặt lại tất cả tùy chọn về mặc định?",
       "doneFlash": "Đặt lại về mặc định"
     }
+  },
+  "discover": {
+    "title": "Khám phá",
+    "subtitle": "— cuộc họp có thể tham gia",
+    "join": "Tham gia",
+    "maxParticipants": "tối đa {{n}}",
+    "hostedBy": "Tổ chức bởi {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Cài đặt",
+    "close": "Đóng cài đặt",
+    "groupAv": "Âm thanh & Video",
+    "groupDisplay": "Hiển thị",
+    "groupNotifications": "Thông báo",
+    "groupAccessibility": "Trợ năng",
+    "groupNetwork": "Mạng",
+    "groupAppearance": "Giao diện",
+    "camOnJoin": "Bật camera khi tôi tham gia",
+    "micOnJoin": "Bật mic khi tôi tham gia",
+    "noiseSuppression": "Khử tiếng ồn",
+    "echoCancellation": "Khử tiếng vọng",
+    "mirrorPreview": "Phản chiếu bản xem trước của tôi",
+    "layout": "Bố cục",
+    "layoutAuto": "Tự động",
+    "layoutGrid": "Lưới",
+    "layoutSpeaker": "Người đang nói",
+    "layoutSpotlight": "Điểm sáng",
+    "mirrorOwn": "Phản chiếu video của tôi",
+    "hideSelf": "Ẩn chế độ xem bản thân",
+    "showNames": "Hiển thị tên người tham gia",
+    "connQuality": "Hiển thị chất lượng kết nối",
+    "meetingClock": "Hiển thị đồng hồ cuộc họp",
+    "highlightSpeaker": "Làm nổi bật người nói đang hoạt động",
+    "soundOnJoin": "Âm thanh khi có người tham gia",
+    "chatSound": "Bật âm thanh khi có tin nhắn",
+    "ignoreOwnJoins": "Bỏ qua các lần tham gia của tôi",
+    "captions": "Phụ đề trực tiếp",
+    "captionsSize": "Cỡ chữ phụ đề",
+    "fontSmall": "Nhỏ",
+    "fontMedium": "Trung bình",
+    "fontLarge": "Lớn",
+    "fontXl": "Cực lớn",
+    "reducedMotion": "Giảm chuyển động",
+    "monoAudio": "Trộn âm thanh đơn âm",
+    "quality": "Chất lượng video ưa thích",
+    "qualityAuto": "Tự động",
+    "qualityLow": "Thấp",
+    "qualityMedium": "Trung bình",
+    "qualityHigh": "Cao",
+    "simulcast": "Phát sóng đồng thời",
+    "forceRelay": "Buộc chuyển tiếp TURN",
+    "theme": "Chủ đề",
+    "themeSystem": "Hệ thống",
+    "themeDark": "Tối",
+    "themeLight": "Sáng",
+    "compact": "Giao diện gọn",
+    "moreSettings": "Các cài đặt khác có trên trang <1>Cài đặt</1> đầy đủ."
+  },
+  "tile": {
+    "flip": "Lật ngang",
+    "stopFlip": "Dừng lật ngang video",
+    "unflip": "Bỏ lật"
   }
 }

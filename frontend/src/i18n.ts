@@ -5,10 +5,16 @@
  * doesn't ship 50 languages worth of strings to every visitor.
  *
  * Language is decided in this order:
- *   1. The user's saved preference at `meet-preferences-v1.state.locale.language`
- *      (matches the existing Settings → Language pref).
- *   2. The browser's navigator.language (via i18next-browser-languagedetector).
- *   3. Fallback: English.
+ *   1. Server-side per-user preference (only if `language_set_manually=true`).
+ *      Fetched after init via `syncServerLanguage()` once a JWT is available.
+ *   2. The user's saved preference at `meet-preferences-v1.state.locale.language`
+ *      (writes here happen alongside server PUTs in `setLocale`).
+ *   3. The browser's navigator.language (via i18next-browser-languagedetector).
+ *   4. Fallback: English.
+ *
+ * For authenticated users, `syncServerLanguage()` honours the
+ * `language_set_manually` flag: when false, the browser language wins on
+ * every page load; when true, the server-stored language overrides it.
  */
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
@@ -60,5 +66,33 @@ void i18n
     },
     react: { useSuspense: false },
   });
+
+/**
+ * After login, ask the API for the user's saved language preference.
+ *
+ * - If `language_set_manually` is true and the server has a language, switch
+ *   to it (overriding whatever was loaded from localStorage / browser).
+ * - If `language_set_manually` is false, do nothing — the browser-detected
+ *   language stays in effect, and we leave the server flag alone until the
+ *   user explicitly picks a language in Settings.
+ *
+ * Errors are swallowed: we don't want a flaky API to block i18n.
+ */
+export async function syncServerLanguage(): Promise<void> {
+  try {
+    const { api } = await import("./lib/api");
+    const prefs = await api.getMyPreferences();
+    if (prefs.language_set_manually && prefs.language && prefs.language !== i18n.language) {
+      await i18n.changeLanguage(prefs.language);
+      // Mirror into the local zustand store so Settings reflects the value.
+      const { usePreferences } = await import("./lib/preferences");
+      usePreferences.setState((s) => ({
+        locale: { ...s.locale, language: prefs.language as never },
+      }));
+    }
+  } catch {
+    /* offline / unauthenticated / API down — keep current language */
+  }
+}
 
 export default i18n;

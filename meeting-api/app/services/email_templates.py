@@ -74,6 +74,7 @@ def meeting_invite(
     meeting_title: str,
     join_url: str,
     personal_message: Optional[str] = None,
+    branding_url: Optional[str] = None,
 ) -> tuple[str, str, str]:
     """Returns (subject, html, plaintext) for a meeting invite."""
     inviter_label = inviter_name or inviter_email or "Someone"
@@ -88,7 +89,18 @@ def meeting_invite(
   </td></tr>
 </table>"""
 
+    branding_block = ""
+    if branding_url:
+        branding_block = f"""
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px 0;">
+  <tr><td>
+    <img src="{escape(branding_url, quote=True)}" alt="" width="96" height="96"
+         style="display:block;width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid #1A3354;">
+  </td></tr>
+</table>"""
+
     body_html = f"""
+{branding_block}
 <h1 style="margin:0 0 12px 0;font-size:22px;font-weight:600;color:#ffffff;">You're invited to a meeting</h1>
 <p style="margin:0 0 14px 0;color:#b6c7dd;">
   <b style="color:#dde6f2;">{escape(inviter_label)}</b> invited you to join

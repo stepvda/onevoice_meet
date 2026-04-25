@@ -23,7 +23,9 @@
     "yes": "አዎ",
     "no": "አይ",
     "loading": "በመጫን ላይ…",
-    "close": "ዝጋ"
+    "close": "ዝጋ",
+    "anonymous": "ማንነት የማይታወቅ",
+    "requestFailed": "ጥያቄው አልተሳካም"
   },
   "createMeeting": {
     "checkingSession": "የእርስዎን one.witysk.org ክፍለ ጊዜ በመፈተሽ ላይ…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "በሎቢ እና በስብሰባው የላይኛው አሞሌ ላይ ይታያል። JPEG፣ PNG፣ WebP ወይም GIF፤ እስከ 2 ሜባ።",
     "noImage": "ምንም ምስል አልተመረጠም",
     "submit": "ስብሰባ ፍጠር",
-    "submitting": "በመፍጠር ላይ…"
+    "submitting": "በመፍጠር ላይ…",
+    "visibility": "ታይነት",
+    "visibilityHint": "በነባሪ፣ ይህን ስብሰባ በመነሻ ገፅዎ ላይ የሚያዩት እርስዎ ብቻ ነው።",
+    "listForAuth": "በመነሻ ገፅ ላይ ሌሎች በመለያ የገቡ ተጠቃሚዎችን ዘርዝር",
+    "listForAuthDesc": "በ one.witysk.org በኩል የገቡ ማንኛውም ሰው ማግኘት እና መቀላቀል ይችላል።",
+    "listForAnon": "እንዲሁም ማንነታቸው ያልታወቁ (ያልተገቡ) ጎብኚዎችን ዘርዝር",
+    "listForAnonDesc": "ስብሰባው በሕዝብ መግቢያ ገፅ ላይ ይታያል።",
+    "brandingPreviewAlt": "የብራንድ ቅድመ-እይታ",
+    "brandingFieldAlt": "የምርት ስም ምስል",
+    "unsupportedImageType": "ያልተደገፈ የምስል አይነት {{type}}; JPEG፣ PNG፣ WebP ወይም GIF ይጠቀሙ።",
+    "imageTooLarge": "ምስሉ {{mb}} ሜባ ነው፤ ከፍተኛው ደግሞ 2 ሜባ ነው።",
+    "uploadFailed": "ስብሰባ ተፈጥሯል ነገር ግን የምርት ስም መጫን አልተሳካም፦ {{message}}"
   },
   "myMeetings": {
     "loading": "ስብሰባዎችዎን በመጫን ላይ…",
@@ -60,7 +73,12 @@
     "deleteTitle": "ይህን ስብሰባ ከዝርዝሩ አስወግድ",
     "more": "+ {{count}} ተጨማሪ",
     "closedLabel": "ዝግ",
-    "maxParticipants": "ከፍተኛ {{n}}"
+    "maxParticipants": "ከፍተኛ {{n}}",
+    "visibilityPublic": "ህዝባዊ",
+    "visibilityListed": "ለተመዘገቡ ተጠቃሚዎች ብቻ የተዘረዘረ",
+    "visibilityPrivate": "ለእኔ ብቻ የሚታይ",
+    "visibilityChange": "{{label}} — ለመቀየር ጠቅ ያድርጉ",
+    "copyJoinPrompt": "ይህን የመቀላቀል ሊንክ ቅዳ"
   },
   "lobby": {
     "joinMeeting": "ስብሰባ ይቀላቀሉ",
@@ -70,7 +88,9 @@
     "emailOptional": "ኢሜይል (አማራጭ)",
     "passwordIfRequired": "የይለፍ ቃል (አስፈላጊ ከሆነ)",
     "join": "ተቀላቀል",
-    "joining": "በመቀላቀል ላይ…"
+    "joining": "በመቀላቀል ላይ…",
+    "hostedBy": "በ {{name}} አስተናጋጅነት",
+    "brandingAlt": "የስብሰባ ምስል ብራንዲንግ"
   },
   "room": {
     "takeStage": "መድረክ ይያዙ",
@@ -89,7 +109,11 @@
     "people": "ሰዎች",
     "chat": "ውይይት",
     "invite": "ጋብዝ",
-    "inviteTitle": "በኢሜይል ሰዎችን ይጋብዙ"
+    "inviteTitle": "በኢሜይል ሰዎችን ይጋብዙ",
+    "settings": "ቅንብሮች",
+    "settingsLabel": "የስብሰባ ቅንብሮች",
+    "topbarBrandingAlt": "የስብሰባ ብራንዲንግ ምስል",
+    "requestFailed": "ጥያቄው አልተሳካም"
   },
   "recordingIndicator": {
     "label": "ሪከርድ"
@@ -110,7 +134,11 @@
     "upload": "አስገባ",
     "uploadTitle": "የራስዎን የበስተጀርባ ምስል ይስቀሉ",
     "tooLarge": "ምስሉ {{mb}} ሜባ ነው፤ ከፍተኛው ደግሞ 4 ሜባ ነው።",
-    "notImage": "ምስል አይደለም"
+    "notImage": "ምስል አይደለም ({{type}})",
+    "uploadAria": "የበስተጀርባ ምስል ይሰቅሉ",
+    "processorFailed": "ይህ መሣሪያ የበስተጀርባ ተፅዕኖዎችን አይደግፍም።",
+    "custom": "ብጁ፡ {{name}}",
+    "customDefault": "ብጁ ምስል"
   },
   "participants": {
     "title": "ተሳታፊዎች",
@@ -118,14 +146,21 @@
     "muteMic": "ማይክሮፎን ዝም አድርግ",
     "makePresenter": "አቅራቢ አድርግ",
     "removeFromMeeting": "ከስብሰባ አስወግድ",
-    "authenticatedOwner": "የተረጋገጠ ባለቤት"
+    "authenticatedOwner": "የተረጋገጠ ባለቤት",
+    "titleCount": "ተሳታፊዎች ({{count}})",
+    "close": "ተሳታፊዎችን ዝጋ",
+    "muteName": "ድምጽ አጥፋ {{name}}",
+    "makeNamePresenter": "{{name}} አቅራቢ አድርግ",
+    "removeName": "{{name}}ን አስወግድ"
   },
   "chatPanel": {
     "title": "ውይይት",
     "empty": "ገና ምንም መልእክት የለም — ሰላም በሉ።",
     "placeholder": "መልእክት ይጻፉ",
     "send": "ላክ",
-    "close": "ውይይት ዝጋ"
+    "close": "ውይይት ዝጋ",
+    "ariaLabel": "የስብሰባ ውይይት",
+    "messageAria": "የውይይት መልእክት"
   },
   "invite": {
     "title": "በኢሜል ይጋብዙ",
@@ -143,12 +178,14 @@
     "tooMany": "በአንድ ጊዜ ከፍተኛ 20 ተቀባዮች ብቻ።",
     "sentN_one": "{{count}} ግብዣ ላክ።",
     "sentN_other": "{{count}} ግብዣዎች ተልከዋል።",
-    "failedSuffix": "አልተሳካም፦ {{list}}"
+    "failedSuffix": "አልተሳካም፦ {{list}}",
+    "cancel": "ሰርዝ",
+    "close": "ዝጋ"
   },
   "recordings": {
     "title": "ቀረጻዎች",
     "subtitle": "በሰርቨር ላይ የሚቀመጡ የስብሰባዎችዎ ቅጂዎች። የአካባቢ ፋይሎች ከ30 ቀናት በኋላ (ወይም ወደ ዩቲዩብ ሲለቀቁ) በራስ-ሰር ይሰረዛሉ። መጫን በባለቤቱ ተነሳሽነት ብቻ ነው።",
-    "empty": "እስካሁን ምንም ቅጂዎች የሉም። ስብሰባ ይጀምሩ እና ለመቅዳት ቀረጻን ጠቅ ያድርጉ።",
+    "empty": "እስካሁን ምንም ቅጂ የለም። ስብሰባ ይጀምሩ እና <1>ቅጂ</1> የሚለውን ጠቅ ያድርጉ አንዱን ለመያዝ።",
     "download": "አውርድ",
     "downloading": "በማውረድ ላይ…",
     "publish": "ወደ YouTube አትልቅ",
@@ -170,7 +207,11 @@
       "running": "በመስራት ላይ",
       "failed": "አልተሳካም",
       "deleted": "ተሰርዟል"
-    }
+    },
+    "loading": "በመጫን ላይ…",
+    "signInFirst": "በመጀመሪያ በ one.witysk.org ላይ ይግቡ።",
+    "started": "{{when}} ተጀምሯል",
+    "publishTitle": "ወደ YouTube ላይ ጫን እና ስኬታማ ከሆነ የአካባቢውን ፋይል ሰርዝ"
   },
   "settings": {
     "title": "ቅንብሮች",
@@ -390,5 +431,67 @@
       "confirm": "ሁሉንም ምርጫዎች ወደ ነባሪ ይመልሱ?",
       "doneFlash": "ወደ ነባሪ ቅንብሮች ዳግም አስጀምር"
     }
+  },
+  "discover": {
+    "title": "አግኝ",
+    "subtitle": "— ለመቀላቀል ክፍት የሆኑ ስብሰባዎች",
+    "join": "ተቀላቀል",
+    "maxParticipants": "ከፍተኛ {{n}}",
+    "hostedBy": "በ {{name}} የሚስተናገድ"
+  },
+  "inMeetingSettings": {
+    "title": "ቅንብሮች",
+    "close": "ቅንብሮችን ዝጋ",
+    "groupAv": "ኦዲዮ እና ቪዲዮ",
+    "groupDisplay": "ማሳያ",
+    "groupNotifications": "ማሳወቂያዎች",
+    "groupAccessibility": "ተደራሽነት",
+    "groupNetwork": "አውታረ መረብ",
+    "groupAppearance": "መልክ",
+    "camOnJoin": "በሚቀላቀሉበት ጊዜ ካሜራ ይብራ",
+    "micOnJoin": "ስገባ ማይክሮፎን በርቶ",
+    "noiseSuppression": "የድምጽ መቆጣጠሪያ",
+    "echoCancellation": "Echo ማስወገጃ",
+    "mirrorPreview": "የእኔን ቅድመ እይታ አንጸባርቅ",
+    "layout": "አቀማመጥ",
+    "layoutAuto": "ራስ-ሰር",
+    "layoutGrid": "ግሪድ",
+    "layoutSpeaker": "ንቁ ተናጋሪ",
+    "layoutSpotlight": "ማተኮሪያ",
+    "mirrorOwn": "የራሴን ቪዲዮ አንጸባርቅ",
+    "hideSelf": "የራስህን እይታ ደብቅ",
+    "showNames": "የተሳታፊዎችን ስም አሳይ",
+    "connQuality": "የግንኙነት ጥራት አሳይ",
+    "meetingClock": "የስብሰባ ሰዓት አሳይ",
+    "highlightSpeaker": "ተናጋሪውን አጉልቶ አሳይ",
+    "soundOnJoin": "አንድ ሰው ሲቀላቀል ድምጽ",
+    "chatSound": "በቻት መልእክት ላይ ድምጽ",
+    "ignoreOwnJoins": "የራሴን መቀላቀል ችላ በል",
+    "captions": "የቀጥታ መግለጫ ጽሑፎች",
+    "captionsSize": "የጽሑፍ መጠን",
+    "fontSmall": "ትንሽ",
+    "fontMedium": "መካከለኛ",
+    "fontLarge": "ትልቅ",
+    "fontXl": "እጅግ ትልቅ",
+    "reducedMotion": "የተቀነሰ እንቅስቃሴ",
+    "monoAudio": "ሞኖ ኦዲዮ ድብልቅ",
+    "quality": "ተመራጭ የቪዲዮ ጥራት",
+    "qualityAuto": "ራስ-ሰር",
+    "qualityLow": "ዝቅተኛ",
+    "qualityMedium": "መካከለኛ",
+    "qualityHigh": "ከፍተኛ",
+    "simulcast": "ሲሙልካስት",
+    "forceRelay": "TURN ሪሌይ ማስገደድ",
+    "theme": "ገጽታ",
+    "themeSystem": "ሲስተም",
+    "themeDark": "ጨለማ",
+    "themeLight": "ብርሃን",
+    "compact": "ተጨማቂ ዩአይ",
+    "moreSettings": "ተጨማሪ ቅንብሮች በሙሉ <1>ቅንብሮች</1> ገጽ ላይ ይገኛሉ።"
+  },
+  "tile": {
+    "flip": "አግድም አገላብጥ",
+    "stopFlip": "የቪዲዮውን አግድም መገልበጥ አቁም",
+    "unflip": "መልሰህ አትገልብጥ"
   }
 }

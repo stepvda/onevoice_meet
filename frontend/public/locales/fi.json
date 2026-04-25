@@ -23,7 +23,9 @@
     "yes": "Kyllä",
     "no": "Ei",
     "loading": "Ladataan…",
-    "close": "Sulje"
+    "close": "Sulje",
+    "anonymous": "anonyymi",
+    "requestFailed": "Pyyntö epäonnistui"
   },
   "createMeeting": {
     "checkingSession": "Tarkistetaan one.witysk.org-istuntoasi…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Näkyy aulassa ja kokouksen yläpalkissa. JPEG, PNG, WebP tai GIF; enintään 2 Mt.",
     "noImage": "Kuvaa ei ole valittu",
     "submit": "Luo kokous",
-    "submitting": "Luodaan…"
+    "submitting": "Luodaan…",
+    "visibility": "Näkyvyys",
+    "visibilityHint": "Oletuksena vain sinä näet tämän kokouksen Etusivullasi.",
+    "listForAuth": "Lista muista kirjautuneista käyttäjistä etusivulla",
+    "listForAuthDesc": "Kuka tahansa, joka on kirjautunut sisään one.witysk.org:n kautta, voi löytää ja liittyä.",
+    "listForAnon": "Listaa myös nimettömille (kirjautumattomille) vierailijoille",
+    "listForAnonDesc": "Kokous näkyy julkisella aloitussivulla.",
+    "brandingPreviewAlt": "Brändin esikatselu",
+    "brandingFieldAlt": "Brändikuva",
+    "unsupportedImageType": "Kuvatyyppiä {{type}} ei tueta; käytä JPEG, PNG, WebP tai GIF.",
+    "imageTooLarge": "Kuva on {{mb}} MB; enimmäiskoko on 2 MB.",
+    "uploadFailed": "Kokous luotu, mutta brändäyksen lataus epäonnistui: {{message}}"
   },
   "myMeetings": {
     "loading": "Ladataan kokouksiasi…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Poista tämä kokous listalta",
     "more": "+ {{count}} lisää",
     "closedLabel": "Suljettu",
-    "maxParticipants": "enintään {{n}}"
+    "maxParticipants": "enintään {{n}}",
+    "visibilityPublic": "Julkinen",
+    "visibilityListed": "Listattu sisäänkirjautuneille käyttäjille",
+    "visibilityPrivate": "Vain minulle näkyvä",
+    "visibilityChange": "{{label}} — napsauta vaihtaaksesi",
+    "copyJoinPrompt": "Kopioi tämä liittymislinkki"
   },
   "lobby": {
     "joinMeeting": "Liity kokoukseen",
@@ -70,7 +88,9 @@
     "emailOptional": "Sähköposti (valinnainen)",
     "passwordIfRequired": "Salasana (jos vaaditaan)",
     "join": "Liity",
-    "joining": "Liitytään…"
+    "joining": "Liitytään…",
+    "hostedBy": "Isännöi {{name}}",
+    "brandingAlt": "Kokouksen brändikuva"
   },
   "room": {
     "takeStage": "Ota esiintymisvuoro",
@@ -89,7 +109,11 @@
     "people": "Ihmiset",
     "chat": "Keskustele",
     "invite": "Kutsu",
-    "inviteTitle": "Kutsu ihmisiä sähköpostitse"
+    "inviteTitle": "Kutsu ihmisiä sähköpostitse",
+    "settings": "Asetukset",
+    "settingsLabel": "Kokouksen asetukset",
+    "topbarBrandingAlt": "Kokouksen brändikuva",
+    "requestFailed": "Pyyntö epäonnistui"
   },
   "recordingIndicator": {
     "label": "TALLENNA"
@@ -110,7 +134,11 @@
     "upload": "Lataa",
     "uploadTitle": "Lataa oma taustakuva",
     "tooLarge": "Kuva on {{mb}} MB; maksimi on 4 MB.",
-    "notImage": "Ei kuva"
+    "notImage": "Ei kuva ({{type}})",
+    "uploadAria": "Lataa taustakuva",
+    "processorFailed": "Taustatehosteet eivät toimi tällä laitteella.",
+    "custom": "Mukautettu: {{name}}",
+    "customDefault": "Mukautettu kuva"
   },
   "participants": {
     "title": "Osallistujat",
@@ -118,14 +146,21 @@
     "muteMic": "Mykistä mikki",
     "makePresenter": "Tee esittäjäksi",
     "removeFromMeeting": "Poista kokouksesta",
-    "authenticatedOwner": "Todennettu omistaja"
+    "authenticatedOwner": "Todennettu omistaja",
+    "titleCount": "Osallistujat ({{count}})",
+    "close": "Sulje osallistujat",
+    "muteName": "Mykistä {{name}}",
+    "makeNamePresenter": "Tee {{name}} esittäjäksi",
+    "removeName": "Poista {{name}}"
   },
   "chatPanel": {
     "title": "Keskustele",
     "empty": "Ei vielä viestejä — sano hei.",
     "placeholder": "Kirjoita viesti",
     "send": "Lähetä",
-    "close": "Sulje keskustelu"
+    "close": "Sulje keskustelu",
+    "ariaLabel": "Kokouskeskustelu",
+    "messageAria": "Keskusteluviesti"
   },
   "invite": {
     "title": "Kutsu sähköpostitse",
@@ -143,12 +178,14 @@
     "tooMany": "Enintään 20 vastaanottajaa per lähetys.",
     "sentN_one": "Lähetettiin {{count}} kutsu.",
     "sentN_other": "Lähetetty {{count}} kutsua.",
-    "failedSuffix": "Epäonnistui: {{list}}"
+    "failedSuffix": "Epäonnistui: {{list}}",
+    "cancel": "Peruuta",
+    "close": "Sulje"
   },
   "recordings": {
     "title": "Tallenteet",
     "subtitle": "Palvelimen puolella tallennetut kokouksesi. Paikalliset tiedostot poistuvat automaattisesti 30 päivän kuluttua (tai kun julkaiset YouTubeen). Lataukset tehdään vain omistajan aloitteesta.",
-    "empty": "Ei vielä tallenteita. Aloita kokous ja napsauta Tallenna tallentaaksesi yhden.",
+    "empty": "Ei vielä tallenteita. Aloita kokous ja napsauta <1>Tallenna</1> tallentaaksesi yhden.",
     "download": "Lataa",
     "downloading": "Ladataan…",
     "publish": "Julkaise YouTubeen",
@@ -170,7 +207,11 @@
       "running": "käynnissä",
       "failed": "epäonnistui",
       "deleted": "poistettu"
-    }
+    },
+    "loading": "Ladataan…",
+    "signInFirst": "Kirjaudu ensin sisään osoitteessa one.witysk.org.",
+    "started": "Aloitettu {{when}}",
+    "publishTitle": "Lataa YouTubeen ja poista paikallinen tiedosto onnistuneen latauksen jälkeen"
   },
   "settings": {
     "title": "Asetukset",
@@ -390,5 +431,67 @@
       "confirm": "Palautetaanko kaikki asetukset oletusarvoihin?",
       "doneFlash": "Palauta oletusasetukset"
     }
+  },
+  "discover": {
+    "title": "Löydä",
+    "subtitle": "— kokoukset, joihin voi liittyä",
+    "join": "Liity",
+    "maxParticipants": "enintään {{n}}",
+    "hostedBy": "Isännöi {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Asetukset",
+    "close": "Sulje asetukset",
+    "groupAv": "Ääni ja video",
+    "groupDisplay": "Näytä",
+    "groupNotifications": "Ilmoitukset",
+    "groupAccessibility": "Saavutettavuus",
+    "groupNetwork": "Verkko",
+    "groupAppearance": "Ulkonäkö",
+    "camOnJoin": "Kamera päälle kun liityn",
+    "micOnJoin": "Mikrofoni päällä kun liityn",
+    "noiseSuppression": "Kohinan vaimennus",
+    "echoCancellation": "Kaikujen vaimennus",
+    "mirrorPreview": "Peilaa esikatseluni",
+    "layout": "Asettelu",
+    "layoutAuto": "Automaattinen",
+    "layoutGrid": "Ruudukko",
+    "layoutSpeaker": "Aktiivinen puhuja",
+    "layoutSpotlight": "Valokeila",
+    "mirrorOwn": "Peilaa omaa videoani",
+    "hideSelf": "Piilota oma kuva",
+    "showNames": "Näytä osallistujien nimet",
+    "connQuality": "Näytä yhteyden laatu",
+    "meetingClock": "Näytä kokouskello",
+    "highlightSpeaker": "Korosta aktiivista puhujaa",
+    "soundOnJoin": "Ääni kun joku liittyy",
+    "chatSound": "Ääni chat-viestissä",
+    "ignoreOwnJoins": "Ohita omat liittymiseni",
+    "captions": "Livetekstitys",
+    "captionsSize": "Tekstityksen fonttikoko",
+    "fontSmall": "Pieni",
+    "fontMedium": "Keskitaso",
+    "fontLarge": "Suuri",
+    "fontXl": "Erittäin suuri",
+    "reducedMotion": "Vähennetty liike",
+    "monoAudio": "Mono-äänimiksaus",
+    "quality": "Ensisijainen videon laatu",
+    "qualityAuto": "Automaattinen",
+    "qualityLow": "Alhainen",
+    "qualityMedium": "Keskitaso",
+    "qualityHigh": "Korkea",
+    "simulcast": "Simulcast",
+    "forceRelay": "Pakota TURN-välitys",
+    "theme": "Teema",
+    "themeSystem": "Järjestelmä",
+    "themeDark": "Tumma",
+    "themeLight": "Valo",
+    "compact": "Kompakti käyttöliittymä",
+    "moreSettings": "Lisää asetuksia löytyy koko <1>Asetukset</1>-sivulta."
+  },
+  "tile": {
+    "flip": "Peilaa vaakasuunnassa",
+    "stopFlip": "Lopeta videon vaakasuuntainen peilaus",
+    "unflip": "Poista peilaus"
   }
 }

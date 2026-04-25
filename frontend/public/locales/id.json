@@ -23,7 +23,9 @@
     "yes": "Ya",
     "no": "Tidak",
     "loading": "Memuat…",
-    "close": "Tutup"
+    "close": "Tutup",
+    "anonymous": "anonim",
+    "requestFailed": "Permintaan gagal"
   },
   "createMeeting": {
     "checkingSession": "Memeriksa sesi one.witysk.org Anda…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Ditampilkan di lobi dan bilah atas rapat. JPEG, PNG, WebP, atau GIF; maksimal 2 MB.",
     "noImage": "Tidak ada gambar yang dipilih",
     "submit": "Buat rapat",
-    "submitting": "Membuat…"
+    "submitting": "Membuat…",
+    "visibility": "Visibilitas",
+    "visibilityHint": "Secara default, hanya Anda yang melihat rapat ini di halaman Beranda.",
+    "listForAuth": "Daftar pengguna lain yang sedang masuk di halaman Beranda",
+    "listForAuthDesc": "Siapa pun yang masuk melalui one.witysk.org dapat menemukan dan bergabung.",
+    "listForAnon": "Juga tampilkan ke pengunjung anonim (yang belum masuk)",
+    "listForAnonDesc": "Rapat muncul di halaman arahan publik.",
+    "brandingPreviewAlt": "Pratayang merek",
+    "brandingFieldAlt": "Gambar merek",
+    "unsupportedImageType": "Tipe gambar tidak didukung {{type}}; gunakan JPEG, PNG, WebP, atau GIF.",
+    "imageTooLarge": "Gambar berukuran {{mb}} MB; maksimal 2 MB.",
+    "uploadFailed": "Rapat berhasil dibuat tetapi unggahan branding gagal: {{message}}"
   },
   "myMeetings": {
     "loading": "Memuat rapat Anda…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Hapus rapat ini dari daftar",
     "more": "+ {{count}} lainnya",
     "closedLabel": "tertutup",
-    "maxParticipants": "maks {{n}}"
+    "maxParticipants": "maks {{n}}",
+    "visibilityPublic": "Publik",
+    "visibilityListed": "Terdaftar untuk pengguna yang masuk",
+    "visibilityPrivate": "Hanya terlihat oleh saya",
+    "visibilityChange": "{{label}} — klik untuk mengubah",
+    "copyJoinPrompt": "Salin tautan bergabung ini"
   },
   "lobby": {
     "joinMeeting": "Gabung rapat",
@@ -70,7 +88,9 @@
     "emailOptional": "Email (opsional)",
     "passwordIfRequired": "Kata sandi (jika diperlukan)",
     "join": "Bergabung",
-    "joining": "Bergabung…"
+    "joining": "Bergabung…",
+    "hostedBy": "Diselenggarakan oleh {{name}}",
+    "brandingAlt": "Gambar merek rapat"
   },
   "room": {
     "takeStage": "Ambil panggung",
@@ -89,7 +109,11 @@
     "people": "Orang",
     "chat": "Obrolan",
     "invite": "Undang",
-    "inviteTitle": "Undang orang melalui email"
+    "inviteTitle": "Undang orang melalui email",
+    "settings": "Pengaturan",
+    "settingsLabel": "Pengaturan dalam rapat",
+    "topbarBrandingAlt": "Gambar merek rapat",
+    "requestFailed": "Permintaan gagal"
   },
   "recordingIndicator": {
     "label": "REKAM"
@@ -110,7 +134,11 @@
     "upload": "Unggah",
     "uploadTitle": "Unggah gambar latar Anda sendiri",
     "tooLarge": "Gambar sebesar {{mb}} MB; maksimal 4 MB.",
-    "notImage": "Bukan gambar"
+    "notImage": "Bukan gambar ({{type}})",
+    "uploadAria": "Unggah gambar latar belakang",
+    "processorFailed": "Efek latar belakang tidak didukung di perangkat ini.",
+    "custom": "Kustom: {{name}}",
+    "customDefault": "Gambar kustom"
   },
   "participants": {
     "title": "Peserta",
@@ -118,14 +146,21 @@
     "muteMic": "Matikan mikrofon",
     "makePresenter": "Jadikan presenter",
     "removeFromMeeting": "Hapus dari rapat",
-    "authenticatedOwner": "Pemilik yang terautentikasi"
+    "authenticatedOwner": "Pemilik yang terautentikasi",
+    "titleCount": "Peserta ({{count}})",
+    "close": "Tutup peserta",
+    "muteName": "Bisukan {{name}}",
+    "makeNamePresenter": "Jadikan {{name}} presenter",
+    "removeName": "Hapus {{name}}"
   },
   "chatPanel": {
     "title": "Obrolan",
     "empty": "Belum ada pesan — sapa saja.",
     "placeholder": "Ketik pesan",
     "send": "Kirim",
-    "close": "Tutup obrolan"
+    "close": "Tutup obrolan",
+    "ariaLabel": "Obrolan Rapat",
+    "messageAria": "Pesan obrolan"
   },
   "invite": {
     "title": "Undang melalui email",
@@ -143,12 +178,14 @@
     "tooMany": "Maksimal 20 penerima per pengiriman.",
     "sentN_one": "Kirim undangan {{count}}.",
     "sentN_other": "Kirim {{count}} undangan.",
-    "failedSuffix": "Gagal: {{list}}"
+    "failedSuffix": "Gagal: {{list}}",
+    "cancel": "Batal",
+    "close": "Tutup"
   },
   "recordings": {
     "title": "Rekaman",
     "subtitle": "Rekaman rapat di sisi server. File lokal otomatis terhapus setelah 30 hari (atau saat Anda publikasikan ke YouTube). Unggahan hanya dilakukan oleh pemilik.",
-    "empty": "Belum ada rekaman. Mulai rapat dan klik Rekam untuk membuatnya.",
+    "empty": "Belum ada rekaman. Mulai rapat dan klik <1>Rekam</1> untuk merekamnya.",
     "download": "Unduh",
     "downloading": "Mengunduh…",
     "publish": "Publikasikan ke YouTube",
@@ -170,7 +207,11 @@
       "running": "berjalan",
       "failed": "gagal",
       "deleted": "dihapus"
-    }
+    },
+    "loading": "Memuat…",
+    "signInFirst": "Masuk dulu di one.witysk.org.",
+    "started": "Dimulai {{when}}",
+    "publishTitle": "Unggah ke YouTube dan hapus file lokal jika berhasil"
   },
   "settings": {
     "title": "Pengaturan",
@@ -390,5 +431,67 @@
       "confirm": "Atur ulang semua preferensi ke default?",
       "doneFlash": "Setel ulang ke default"
     }
+  },
+  "discover": {
+    "title": "Temukan",
+    "subtitle": "— rapat terbuka untuk bergabung",
+    "join": "Bergabung",
+    "maxParticipants": "maks. {{n}}",
+    "hostedBy": "Diselenggarakan oleh {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Pengaturan",
+    "close": "Tutup pengaturan",
+    "groupAv": "Audio & Video",
+    "groupDisplay": "Tampilkan",
+    "groupNotifications": "Notifikasi",
+    "groupAccessibility": "Aksesibilitas",
+    "groupNetwork": "Jaringan",
+    "groupAppearance": "Tampilan",
+    "camOnJoin": "Kamera menyala saat saya bergabung",
+    "micOnJoin": "Mikrofon aktif saat saya bergabung",
+    "noiseSuppression": "Peredam kebisingan",
+    "echoCancellation": "Pembatalan gema",
+    "mirrorPreview": "Cerminkan pratinjau saya",
+    "layout": "Tata Letak",
+    "layoutAuto": "Otomatis",
+    "layoutGrid": "Kisi",
+    "layoutSpeaker": "Pembicara aktif",
+    "layoutSpotlight": "Sorotan",
+    "mirrorOwn": "Cerminkan video saya sendiri",
+    "hideSelf": "Sembunyikan tampilan diri",
+    "showNames": "Tampilkan nama peserta",
+    "connQuality": "Tampilkan kualitas koneksi",
+    "meetingClock": "Tampilkan jam rapat",
+    "highlightSpeaker": "Sorot pembicara aktif",
+    "soundOnJoin": "Suara saat seseorang bergabung",
+    "chatSound": "Suara pada pesan chat",
+    "ignoreOwnJoins": "Abaikan bergabung saya sendiri",
+    "captions": "Teks langsung",
+    "captionsSize": "Ukuran font teks",
+    "fontSmall": "Kecil",
+    "fontMedium": "Sedang",
+    "fontLarge": "Besar",
+    "fontXl": "Sangat besar",
+    "reducedMotion": "Gerakan dikurangi",
+    "monoAudio": "Campuran audio mono",
+    "quality": "Kualitas video yang diinginkan",
+    "qualityAuto": "Otomatis",
+    "qualityLow": "Rendah",
+    "qualityMedium": "Sedang",
+    "qualityHigh": "Tinggi",
+    "simulcast": "Simulcast",
+    "forceRelay": "Paksa relai TURN",
+    "theme": "Tema",
+    "themeSystem": "Sistem",
+    "themeDark": "Gelap",
+    "themeLight": "Terang",
+    "compact": "UI Ringkas",
+    "moreSettings": "Pengaturan lainnya tersedia di halaman <1>Pengaturan</1> lengkap."
+  },
+  "tile": {
+    "flip": "Balik horizontal",
+    "stopFlip": "Hentikan membalik video secara horizontal",
+    "unflip": "Balikkan"
   }
 }

@@ -23,7 +23,9 @@
     "yes": "はい",
     "no": "いいえ",
     "loading": "読み込み中…",
-    "close": "閉じる"
+    "close": "閉じる",
+    "anonymous": "匿名",
+    "requestFailed": "リクエストに失敗しました"
   },
   "createMeeting": {
     "checkingSession": "one.witysk.org のセッションを確認中…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "ロビーとミーティングのトップバーに表示されます。JPEG、PNG、WebP、GIF形式、2MBまで。",
     "noImage": "画像が選択されていません",
     "submit": "会議を作成",
-    "submitting": "作成中…"
+    "submitting": "作成中…",
+    "visibility": "表示設定",
+    "visibilityHint": "デフォルトでは、このミーティングはあなたのホームページにのみ表示されます。",
+    "listForAuth": "ホームページに他のログインユーザーを一覧表示",
+    "listForAuthDesc": "one.witysk.org 経由でサインインしているユーザーは誰でも検索して参加できます。",
+    "listForAnon": "匿名（未ログイン）の訪問者にも表示する",
+    "listForAnonDesc": "ミーティングが公開ランディングページに表示されます。",
+    "brandingPreviewAlt": "ブランディングプレビュー",
+    "brandingFieldAlt": "ブランディング画像",
+    "unsupportedImageType": "未対応の画像形式 {{type}} です。JPEG、PNG、WebP、またはGIFを使用してください。",
+    "imageTooLarge": "画像は{{mb}}MBです（最大2MB）。",
+    "uploadFailed": "ミーティングは作成されましたが、ブランディングのアップロードに失敗しました：{{message}}"
   },
   "myMeetings": {
     "loading": "会議を読み込み中…",
@@ -60,7 +73,12 @@
     "deleteTitle": "この会議をリストから削除",
     "more": "+ {{count}} 件",
     "closedLabel": "クローズ",
-    "maxParticipants": "最大 {{n}}"
+    "maxParticipants": "最大 {{n}}",
+    "visibilityPublic": "公開",
+    "visibilityListed": "サインインユーザー向けに表示",
+    "visibilityPrivate": "自分のみ表示",
+    "visibilityChange": "{{label}} — クリックして変更",
+    "copyJoinPrompt": "この参加リンクをコピー"
   },
   "lobby": {
     "joinMeeting": "ミーティングに参加",
@@ -70,7 +88,9 @@
     "emailOptional": "メールアドレス（任意）",
     "passwordIfRequired": "パスワード（必要な場合）",
     "join": "参加する",
-    "joining": "参加中…"
+    "joining": "参加中…",
+    "hostedBy": "{{name}} がホストしています",
+    "brandingAlt": "会議のブランディング画像"
   },
   "room": {
     "takeStage": "ステージに上がる",
@@ -89,7 +109,11 @@
     "people": "参加者",
     "chat": "チャット",
     "invite": "招待する",
-    "inviteTitle": "メールで人を招待する"
+    "inviteTitle": "メールで人を招待する",
+    "settings": "設定",
+    "settingsLabel": "会議中の設定",
+    "topbarBrandingAlt": "会議ブランディング画像",
+    "requestFailed": "リクエストに失敗しました"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "アップロード",
     "uploadTitle": "背景画像をアップロード",
     "tooLarge": "画像は{{mb}}MBです（最大4MB）。",
-    "notImage": "画像ではありません"
+    "notImage": "画像ではありません（{{type}}）",
+    "uploadAria": "背景画像をアップロード",
+    "processorFailed": "このデバイスでは背景効果がサポートされていません。",
+    "custom": "カスタム: {{name}}",
+    "customDefault": "カスタム画像"
   },
   "participants": {
     "title": "参加者",
@@ -118,14 +146,21 @@
     "muteMic": "マイクをミュート",
     "makePresenter": "発表者にする",
     "removeFromMeeting": "ミーティングから削除",
-    "authenticatedOwner": "認証済みの所有者"
+    "authenticatedOwner": "認証済みの所有者",
+    "titleCount": "参加者（{{count}}）",
+    "close": "参加者を閉じる",
+    "muteName": "ミュート {{name}}",
+    "makeNamePresenter": "{{name}} を発表者にする",
+    "removeName": "{{name}}を削除"
   },
   "chatPanel": {
     "title": "チャット",
     "empty": "まだメッセージはありません — 挨拶してみましょう。",
     "placeholder": "メッセージを入力",
     "send": "送信",
-    "close": "チャットを閉じる"
+    "close": "チャットを閉じる",
+    "ariaLabel": "会議チャット",
+    "messageAria": "チャットメッセージ"
   },
   "invite": {
     "title": "メールで招待",
@@ -143,12 +178,14 @@
     "tooMany": "1回の送信につき最大20名の受信者。",
     "sentN_one": "{{count}} 件の招待を送信しました。",
     "sentN_other": "{{count}}件の招待を送信しました",
-    "failedSuffix": "失敗: {{list}}"
+    "failedSuffix": "失敗: {{list}}",
+    "cancel": "キャンセル",
+    "close": "閉じる"
   },
   "recordings": {
     "title": "録画",
     "subtitle": "サーバー側で録画された会議。ローカルファイルは30日後（またはYouTube公開時）に自動削除されます。アップロードは所有者のみが開始できます。",
-    "empty": "まだ録画はありません。ミーティングを開始し、録画をクリックして録画してください。",
+    "empty": "まだ録画はありません。会議を開始し、<1>録画</1>をクリックして録画してください。",
     "download": "ダウンロード",
     "downloading": "ダウンロード中…",
     "publish": "YouTubeに公開",
@@ -170,7 +207,11 @@
       "running": "実行中",
       "failed": "失敗しました",
       "deleted": "削除しました"
-    }
+    },
+    "loading": "読み込み中…",
+    "signInFirst": "先に one.witysk.org でサインインしてください。",
+    "started": "開始しました {{when}}",
+    "publishTitle": "YouTubeにアップロードし、成功したらローカルファイルを削除"
   },
   "settings": {
     "title": "設定",
@@ -390,5 +431,67 @@
       "confirm": "すべての設定をデフォルトにリセットしますか？",
       "doneFlash": "デフォルトにリセット"
     }
+  },
+  "discover": {
+    "title": "見つける",
+    "subtitle": "— 参加可能なミーティング",
+    "join": "参加",
+    "maxParticipants": "最大 {{n}}",
+    "hostedBy": "{{name}} がホストしています"
+  },
+  "inMeetingSettings": {
+    "title": "設定",
+    "close": "設定を閉じる",
+    "groupAv": "音声とビデオ",
+    "groupDisplay": "表示",
+    "groupNotifications": "通知",
+    "groupAccessibility": "アクセシビリティ",
+    "groupNetwork": "ネットワーク",
+    "groupAppearance": "外観",
+    "camOnJoin": "参加時にカメラをオンにする",
+    "micOnJoin": "参加時にマイクをオンにする",
+    "noiseSuppression": "ノイズ抑制",
+    "echoCancellation": "エコーキャンセレーション",
+    "mirrorPreview": "プレビューをミラー表示",
+    "layout": "レイアウト",
+    "layoutAuto": "自動",
+    "layoutGrid": "グリッド",
+    "layoutSpeaker": "アクティブスピーカー",
+    "layoutSpotlight": "スポットライト",
+    "mirrorOwn": "自分のビデオをミラー表示",
+    "hideSelf": "自分を非表示",
+    "showNames": "参加者名を表示",
+    "connQuality": "接続品質を表示",
+    "meetingClock": "会議時計を表示",
+    "highlightSpeaker": "アクティブスピーカーを強調",
+    "soundOnJoin": "誰かが参加したときの音",
+    "chatSound": "チャットメッセージの着信音",
+    "ignoreOwnJoins": "自分の参加を無視",
+    "captions": "ライブキャプション",
+    "captionsSize": "字幕のフォントサイズ",
+    "fontSmall": "小",
+    "fontMedium": "中",
+    "fontLarge": "大",
+    "fontXl": "特大",
+    "reducedMotion": "動作を減らす",
+    "monoAudio": "モノラル音声ミックス",
+    "quality": "優先映像品質",
+    "qualityAuto": "自動",
+    "qualityLow": "低",
+    "qualityMedium": "中",
+    "qualityHigh": "高い",
+    "simulcast": "サイマルキャスト",
+    "forceRelay": "TURNリレーを強制",
+    "theme": "テーマ",
+    "themeSystem": "システム",
+    "themeDark": "ダーク",
+    "themeLight": "明るい",
+    "compact": "コンパクトUI",
+    "moreSettings": "詳細設定は、完全な<1>設定</1>ページにあります。"
+  },
+  "tile": {
+    "flip": "水平反転",
+    "stopFlip": "水平方向のビデオ反転を停止",
+    "unflip": "反転を解除"
   }
 }

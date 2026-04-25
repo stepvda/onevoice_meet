@@ -23,7 +23,9 @@
     "yes": "جی ہاں",
     "no": "نہیں",
     "loading": "لوڈ ہو رہا ہے…",
-    "close": "بند کریں"
+    "close": "بند کریں",
+    "anonymous": "گمنام",
+    "requestFailed": "درخواست ناکام ہوگئی"
   },
   "createMeeting": {
     "checkingSession": "آپ کے one.witysk.org سیشن کی تصدیق ہو رہی ہے…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "لابی اور میٹنگ کے ٹاپ بار میں دکھایا جاتا ہے۔ JPEG، PNG، WebP یا GIF؛ 2 MB تک۔",
     "noImage": "کوئی تصویر منتخب نہیں کی گئی",
     "submit": "میٹنگ بنائیں",
-    "submitting": "بنا رہا ہے…"
+    "submitting": "بنا رہا ہے…",
+    "visibility": "نمایانی",
+    "visibilityHint": "پہلے سے طے شدہ طور پر، یہ میٹنگ آپ کے ہوم پیج پر صرف آپ کو نظر آتی ہے۔",
+    "listForAuth": "ہوم پیج پر دوسرے سائن ان صارفین کی فہرست",
+    "listForAuthDesc": "one.witysk.org کے ذریعے سائن ان کرنے والا کوئی بھی ڈھونڈ سکتا ہے اور شامل ہو سکتا ہے۔",
+    "listForAnon": "گمنام (غیر لاگ ان) زائرین کے لیے بھی فہرست بنائیں",
+    "listForAnonDesc": "میٹنگ عوامی لینڈنگ پیج پر ظاہر ہوتی ہے۔",
+    "brandingPreviewAlt": "برانڈنگ کا پیش منظر",
+    "brandingFieldAlt": "برانڈنگ امیج",
+    "unsupportedImageType": "غیر معاون تصویر کی قسم {{type}}؛ JPEG، PNG، WebP، یا GIF استعمال کریں۔",
+    "imageTooLarge": "تصویر کا سائز {{mb}} MB ہے؛ زیادہ سے زیادہ 2 MB ہے۔",
+    "uploadFailed": "میٹنگ بن گئی لیکن برانڈنگ اپ لوڈ ناکام ہو گئی: {{message}}"
   },
   "myMeetings": {
     "loading": "آپ کی میٹنگیں لوڈ ہو رہی ہیں…",
@@ -60,7 +73,12 @@
     "deleteTitle": "اس میٹنگ کو فہرست سے حذف کریں",
     "more": "+ {{count}} مزید",
     "closedLabel": "بند",
-    "maxParticipants": "زیادہ سے زیادہ {{n}}"
+    "maxParticipants": "زیادہ سے زیادہ {{n}}",
+    "visibilityPublic": "عوام",
+    "visibilityListed": "سائن ان صارفین کے لیے درج",
+    "visibilityPrivate": "صرف مجھے نظر آتا ہے",
+    "visibilityChange": "{{label}} — تبدیل کرنے کے لیے کلک کریں",
+    "copyJoinPrompt": "اس جوائن لنک کو کاپی کریں"
   },
   "lobby": {
     "joinMeeting": "میٹنگ میں شامل ہوں",
@@ -70,7 +88,9 @@
     "emailOptional": "ای میل (اختیاری)",
     "passwordIfRequired": "پاس ورڈ (اگر ضرورت ہو)",
     "join": "شامل ہوں",
-    "joining": "شامل ہو رہے ہیں…"
+    "joining": "شامل ہو رہے ہیں…",
+    "hostedBy": "میزبانی شده توسط {{name}}",
+    "brandingAlt": "برانڈنگ امیج برائے میٹنگ"
   },
   "room": {
     "takeStage": "اسٹیج سنبھالیں",
@@ -89,7 +109,11 @@
     "people": "لوگ",
     "chat": "چیٹ",
     "invite": "دعوت دیں",
-    "inviteTitle": "لوگوں کو ای میل کے ذریعے مدعو کریں"
+    "inviteTitle": "لوگوں کو ای میل کے ذریعے مدعو کریں",
+    "settings": "ترتیبات",
+    "settingsLabel": "اجلاس کی ترتیبات",
+    "topbarBrandingAlt": "ملاقات کی برانڈنگ تصویر",
+    "requestFailed": "درخواست ناکام ہوگئی"
   },
   "recordingIndicator": {
     "label": "ریکارڈ"
@@ -110,7 +134,11 @@
     "upload": "اپ لوڈ کریں",
     "uploadTitle": "اپنی پس منظر کی تصویر اپ لوڈ کریں",
     "tooLarge": "تصویر کا سائز {{mb}} MB ہے؛ زیادہ سے زیادہ 4 MB ہے۔",
-    "notImage": "تصویر نہیں ہے"
+    "notImage": "تصویر نہیں ({{type}})",
+    "uploadAria": "پس منظر کی تصویر اپ لوڈ کریں",
+    "processorFailed": "اس ڈیوائس پر بیک گراؤنڈ ایفیکٹس معاون نہیں ہیں۔",
+    "custom": "اپنی مرضی: {{name}}",
+    "customDefault": "اپنی مرضی کی تصویر"
   },
   "participants": {
     "title": "شرکاء",
@@ -118,14 +146,21 @@
     "muteMic": "مائیک بند کریں",
     "makePresenter": "پیش کنندہ بنائیں",
     "removeFromMeeting": "اجلاس سے ہٹائیں",
-    "authenticatedOwner": "مصدقہ مالک"
+    "authenticatedOwner": "مصدقہ مالک",
+    "titleCount": "شرکاء ({{count}})",
+    "close": "شرکاء بند کریں",
+    "muteName": "خاموش کریں {{name}}",
+    "makeNamePresenter": "{{name}} کو پیش کنندہ بنائیں",
+    "removeName": "{{name}} کو ہٹائیں"
   },
   "chatPanel": {
     "title": "چیٹ",
     "empty": "ابھی تک کوئی پیغام نہیں — ہیلو کہیں۔",
     "placeholder": "ایک پیغام ٹائپ کریں",
     "send": "بھیجیں",
-    "close": "چیٹ بند کریں"
+    "close": "چیٹ بند کریں",
+    "ariaLabel": "میٹنگ چیٹ",
+    "messageAria": "چیٹ پیغام"
   },
   "invite": {
     "title": "ای میل کے ذریعے دعوت دیں",
@@ -143,12 +178,14 @@
     "tooMany": "فی الحال زیادہ سے زیادہ 20 وصول کنندگان فی بھیج۔",
     "sentN_one": "{{count}} دعوت نامہ بھیجا گیا۔",
     "sentN_other": "{{count}} دعوت نامے بھیجے گئے۔",
-    "failedSuffix": "ناکام: {{list}}"
+    "failedSuffix": "ناکام: {{list}}",
+    "cancel": "منسوخ کریں",
+    "close": "بند کریں"
   },
   "recordings": {
     "title": "ریکارڈنگز",
     "subtitle": "آپ کی میٹنگز کی سرور پر ریکارڈنگز۔ مقامی فائلیں 30 دنوں کے بعد خود بخود حذف ہو جاتی ہیں (یا جب آپ یوٹیوب پر شائع کرتے ہیں)۔ اپ لوڈ صرف مالک کی طرف سے شروع کیے جاتے ہیں۔",
-    "empty": "ابھی تک کوئی ریکارڈنگ نہیں ہے۔ میٹنگ شروع کریں اور ریکارڈ کرنے کے لیے کلک کریں۔",
+    "empty": "ابھی تک کوئی ریکارڈنگ نہیں ہے۔ میٹنگ شروع کریں اور ریکارڈ کرنے کے لیے <1>ریکارڈ</1> پر کلک کریں۔",
     "download": "ڈاؤن لوڈ کریں",
     "downloading": "ڈاؤن لوڈ ہو رہا ہے…",
     "publish": "یوٹیوب پر شائع کریں",
@@ -170,7 +207,11 @@
       "running": "چل رہا ہے",
       "failed": "ناکام",
       "deleted": "حذف کر دیا گیا"
-    }
+    },
+    "loading": "لوڈ ہو رہا ہے…",
+    "signInFirst": "پہلے one.witysk.org پر سائن ان کریں۔",
+    "started": "شروع ہوا {{when}}",
+    "publishTitle": "یوٹیوب پر اپ لوڈ کریں اور کامیابی پر مقامی فائل حذف کریں"
   },
   "settings": {
     "title": "ترتیبات",
@@ -390,5 +431,67 @@
       "confirm": "کیا تمام ترجیحات کو ڈیفالٹ پر ری سیٹ کر دیا جائے؟",
       "doneFlash": "پہلے والی حالت پر واپس جائیں"
     }
+  },
+  "discover": {
+    "title": "دریافت کریں",
+    "subtitle": "— ملنے کے لیے کھلی میٹنگیں",
+    "join": "شامل ہوں",
+    "maxParticipants": "زیادہ سے زیادہ {{n}}",
+    "hostedBy": "میزبانی شده توسط {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "ترتیبات",
+    "close": "ترتیبات بند کریں",
+    "groupAv": "آڈیو اور ویڈیو",
+    "groupDisplay": "نمایاں کریں",
+    "groupNotifications": "اطلاعات",
+    "groupAccessibility": "قابل رسائی",
+    "groupNetwork": "نیٹ ورک",
+    "groupAppearance": "ظاہری شکل",
+    "camOnJoin": "شامل ہوتے وقت کیمرہ آن رکھیں",
+    "micOnJoin": "مائیکروفون آن جب میں شامل ہوں",
+    "noiseSuppression": "شور دبانا",
+    "echoCancellation": "ایکو کینسلیشن",
+    "mirrorPreview": "میرا پیش نظارہ آئینہ کریں",
+    "layout": "ترتیب",
+    "layoutAuto": "خودکار",
+    "layoutGrid": "گرڈ",
+    "layoutSpeaker": "فعال اسپیکر",
+    "layoutSpotlight": "اسپاٹ لائٹ",
+    "mirrorOwn": "اپنی ویڈیو آئینہ کریں",
+    "hideSelf": "خود کو چھپائیں",
+    "showNames": "شرکاء کے نام دکھائیں",
+    "connQuality": "کنکشن کا معیار دکھائیں",
+    "meetingClock": "میٹنگ کلاک دکھائیں",
+    "highlightSpeaker": "فعال اسپیکر کو نمایاں کریں",
+    "soundOnJoin": "کسی کے شامل ہونے پر آواز",
+    "chatSound": "چیٹ میسج پر آواز",
+    "ignoreOwnJoins": "میرے اپنے شامل ہونے کو نظر انداز کریں",
+    "captions": "لائیو کیپشنز",
+    "captionsSize": "کیپشنز کا فونٹ سائز",
+    "fontSmall": "چھوٹا",
+    "fontMedium": "درمیانہ",
+    "fontLarge": "بڑا",
+    "fontXl": "بہت بڑا",
+    "reducedMotion": "کم حرکت",
+    "monoAudio": "مونو آڈیو مکس",
+    "quality": "ترجیحی ویڈیو کوالٹی",
+    "qualityAuto": "خودکار",
+    "qualityLow": "کم",
+    "qualityMedium": "درمیانہ",
+    "qualityHigh": "اعلیٰ",
+    "simulcast": "سملکاسٹ",
+    "forceRelay": "TURN ریلے کو مجبور کریں",
+    "theme": "تھیم",
+    "themeSystem": "سسٹم",
+    "themeDark": "اندھیرا",
+    "themeLight": "روشنی",
+    "compact": "کمپیکٹ یو آئی",
+    "moreSettings": "مزید ترتیبات مکمل <1>سیٹنگز</1> صفحے پر موجود ہیں۔"
+  },
+  "tile": {
+    "flip": "افقی پلٹیں",
+    "stopFlip": "ویڈیو کو افقی طور پر پلٹنا بند کریں",
+    "unflip": "پلٹائیں"
   }
 }

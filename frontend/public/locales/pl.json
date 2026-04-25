@@ -23,7 +23,9 @@
     "yes": "Tak",
     "no": "Nie",
     "loading": "Ładowanie…",
-    "close": "Zamknij"
+    "close": "Zamknij",
+    "anonymous": "anonimowy",
+    "requestFailed": "Żądanie nie powiodło się"
   },
   "createMeeting": {
     "checkingSession": "Sprawdzanie sesji one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Wyświetlane w lobby i górnym pasku spotkania. JPEG, PNG, WebP lub GIF; do 2 MB.",
     "noImage": "Nie wybrano obrazu",
     "submit": "Utwórz spotkanie",
-    "submitting": "Tworzenie…"
+    "submitting": "Tworzenie…",
+    "visibility": "Widoczność",
+    "visibilityHint": "Domyślnie tylko Ty widzisz to spotkanie na swojej stronie głównej.",
+    "listForAuth": "Lista innych zalogowanych użytkowników na stronie głównej",
+    "listForAuthDesc": "Każdy zalogowany przez one.witysk.org może znaleźć i dołączyć.",
+    "listForAnon": "Wyświetlaj także anonimowym (niezalogowanym) odwiedzającym",
+    "listForAnonDesc": "Spotkanie pojawia się na publicznej stronie głównej.",
+    "brandingPreviewAlt": "Podgląd marki",
+    "brandingFieldAlt": "Obraz marki",
+    "unsupportedImageType": "Nieobsługiwany typ obrazu {{type}}; użyj JPEG, PNG, WebP lub GIF.",
+    "imageTooLarge": "Obraz ma {{mb}} MB; maksymalny rozmiar to 2 MB.",
+    "uploadFailed": "Spotkanie utworzone, ale przesyłanie brandingu nie powiodło się: {{message}}"
   },
   "myMeetings": {
     "loading": "Wczytywanie spotkań…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Usuń to spotkanie z listy",
     "more": "+ {{count}} więcej",
     "closedLabel": "zamknięte",
-    "maxParticipants": "maks. {{n}}"
+    "maxParticipants": "maks. {{n}}",
+    "visibilityPublic": "Public",
+    "visibilityListed": "Widoczne dla zalogowanych użytkowników",
+    "visibilityPrivate": "Widoczne tylko dla mnie",
+    "visibilityChange": "{{label}} — kliknij, aby zmienić",
+    "copyJoinPrompt": "Skopiuj ten link do dołączenia"
   },
   "lobby": {
     "joinMeeting": "Dołącz do spotkania",
@@ -70,7 +88,9 @@
     "emailOptional": "E-mail (opcjonalnie)",
     "passwordIfRequired": "Hasło (jeśli wymagane)",
     "join": "Dołącz",
-    "joining": "Dołączanie…"
+    "joining": "Dołączanie…",
+    "hostedBy": "Prowadzone przez {{name}}",
+    "brandingAlt": "Obraz marki spotkania"
   },
   "room": {
     "takeStage": "Zajmij scenę",
@@ -89,7 +109,11 @@
     "people": "Osoby",
     "chat": "Czat",
     "invite": "Zaproś",
-    "inviteTitle": "Zaproś osoby przez e-mail"
+    "inviteTitle": "Zaproś osoby przez e-mail",
+    "settings": "Ustawienia",
+    "settingsLabel": "Ustawienia podczas spotkania",
+    "topbarBrandingAlt": "Obraz marki spotkania",
+    "requestFailed": "Żądanie nie powiodło się"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "Prześlij",
     "uploadTitle": "Prześlij własne tło",
     "tooLarge": "Obraz ma {{mb}} MB; maksymalnie 4 MB.",
-    "notImage": "To nie jest obraz"
+    "notImage": "To nie obraz ({{type}})",
+    "uploadAria": "Prześlij obraz tła",
+    "processorFailed": "Efekty tła nie są obsługiwane na tym urządzeniu.",
+    "custom": "Niestandardowe: {{name}}",
+    "customDefault": "Obraz niestandardowy"
   },
   "participants": {
     "title": "Uczestnicy",
@@ -118,14 +146,21 @@
     "muteMic": "Wycisz mikrofon",
     "makePresenter": "Ustaw jako prezentującego",
     "removeFromMeeting": "Usuń ze spotkania",
-    "authenticatedOwner": "Uwierzytelniony właściciel"
+    "authenticatedOwner": "Uwierzytelniony właściciel",
+    "titleCount": "Uczestnicy ({{count}})",
+    "close": "Zamknij uczestników",
+    "muteName": "Wycisz {{name}}",
+    "makeNamePresenter": "Ustaw {{name}} jako prezentera",
+    "removeName": "Usuń {{name}}"
   },
   "chatPanel": {
     "title": "Czat",
     "empty": "Brak wiadomości — przywitaj się.",
     "placeholder": "Napisz wiadomość",
     "send": "Wyślij",
-    "close": "Zamknij czat"
+    "close": "Zamknij czat",
+    "ariaLabel": "Czat spotkania",
+    "messageAria": "Wiadomość na czacie"
   },
   "invite": {
     "title": "Zaproś przez e-mail",
@@ -143,12 +178,14 @@
     "tooMany": "Maksymalnie 20 odbiorców na wysłanie.",
     "sentN_one": "Wysłano zaproszenie {{count}}.",
     "sentN_other": "Wysłano {{count}} zaproszeń.",
-    "failedSuffix": "Niepowodzenie: {{list}}"
+    "failedSuffix": "Niepowodzenie: {{list}}",
+    "cancel": "Anuluj",
+    "close": "Zamknij"
   },
   "recordings": {
     "title": "Nagrania",
     "subtitle": "Nagrania spotkań po stronie serwera. Pliki lokalne są automatycznie usuwane po 30 dniach (lub po opublikowaniu na YouTube). Przesyłanie jest inicjowane wyłącznie przez właściciela.",
-    "empty": "Brak nagrań. Rozpocznij spotkanie i kliknij Nagraj, aby je utworzyć.",
+    "empty": "Brak nagrań. Rozpocznij spotkanie i kliknij <1>Nagraj</1>, aby je utworzyć.",
     "download": "Pobierz",
     "downloading": "Pobieranie…",
     "publish": "Opublikuj na YouTube",
@@ -170,7 +207,11 @@
       "running": "uruchamianie",
       "failed": "nie udało się",
       "deleted": "usunięto"
-    }
+    },
+    "loading": "Ładowanie…",
+    "signInFirst": "Najpierw zaloguj się na one.witysk.org.",
+    "started": "Rozpoczęto {{when}}",
+    "publishTitle": "Prześlij do YouTube i usuń lokalny plik po powodzeniu"
   },
   "settings": {
     "title": "Ustawienia",
@@ -390,5 +431,67 @@
       "confirm": "Zresetować wszystkie preferencje do domyślnych?",
       "doneFlash": "Przywróć domyślne"
     }
+  },
+  "discover": {
+    "title": "Odkryj",
+    "subtitle": "— spotkania otwarte do dołączenia",
+    "join": "Dołącz",
+    "maxParticipants": "maks. {{n}}",
+    "hostedBy": "Prowadzone przez {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Ustawienia",
+    "close": "Zamknij ustawienia",
+    "groupAv": "Audio i Wideo",
+    "groupDisplay": "Wyświetl",
+    "groupNotifications": "Powiadomienia",
+    "groupAccessibility": "Dostępność",
+    "groupNetwork": "Sieć",
+    "groupAppearance": "Wygląd",
+    "camOnJoin": "Kamera włączona po dołączeniu",
+    "micOnJoin": "Mikrofon włączony po dołączeniu",
+    "noiseSuppression": "Tłumienie szumów",
+    "echoCancellation": "Eliminacja echa",
+    "mirrorPreview": "Odbicie lustrzane mojego podglądu",
+    "layout": "Układ",
+    "layoutAuto": "Automatyczny",
+    "layoutGrid": "Siatka",
+    "layoutSpeaker": "Aktywny mówca",
+    "layoutSpotlight": "Spotlight",
+    "mirrorOwn": "Odbij moje własne wideo",
+    "hideSelf": "Ukryj swój widok",
+    "showNames": "Pokaż nazwy uczestników",
+    "connQuality": "Pokaż jakość połączenia",
+    "meetingClock": "Pokaż zegar spotkania",
+    "highlightSpeaker": "Podświetl aktywnego mówcę",
+    "soundOnJoin": "Dźwięk, gdy ktoś dołącza",
+    "chatSound": "Dźwięk przy wiadomości na czacie",
+    "ignoreOwnJoins": "Ignoruj moje własne dołączenia",
+    "captions": "Napisy na żywo",
+    "captionsSize": "Rozmiar czcionki napisów",
+    "fontSmall": "Mały",
+    "fontMedium": "Średni",
+    "fontLarge": "Duży",
+    "fontXl": "Bardzo duży",
+    "reducedMotion": "Ograniczony ruch",
+    "monoAudio": "Miks mono audio",
+    "quality": "Preferowana jakość wideo",
+    "qualityAuto": "Automatyczny",
+    "qualityLow": "Niski",
+    "qualityMedium": "Średni",
+    "qualityHigh": "Wysoki",
+    "simulcast": "Symulcast",
+    "forceRelay": "Wymuszaj przekaźnik TURN",
+    "theme": "Motyw",
+    "themeSystem": "System",
+    "themeDark": "Ciemny",
+    "themeLight": "Jasny",
+    "compact": "Kompaktowy interfejs",
+    "moreSettings": "Więcej ustawień znajduje się na pełnej stronie <1>Ustawienia</1>."
+  },
+  "tile": {
+    "flip": "Odbij w poziomie",
+    "stopFlip": "Zatrzymaj odwracanie wideo w poziomie",
+    "unflip": "Odwróć"
   }
 }

@@ -56,6 +56,7 @@ def lightweight_migrate() -> None:
                 ("branding_image_path", "ALTER TABLE meetings ADD COLUMN branding_image_path TEXT"),
                 ("list_for_authenticated", "ALTER TABLE meetings ADD COLUMN list_for_authenticated BOOLEAN DEFAULT 0 NOT NULL"),
                 ("list_for_anonymous", "ALTER TABLE meetings ADD COLUMN list_for_anonymous BOOLEAN DEFAULT 0 NOT NULL"),
+                ("owner_name", "ALTER TABLE meetings ADD COLUMN owner_name TEXT"),
             )),
         ):
             try:

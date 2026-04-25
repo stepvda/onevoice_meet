@@ -23,7 +23,9 @@
     "yes": "是",
     "no": "否",
     "loading": "加载中…",
-    "close": "关闭"
+    "close": "关闭",
+    "anonymous": "匿名",
+    "requestFailed": "请求失败"
   },
   "createMeeting": {
     "checkingSession": "正在检查您的 one.witysk.org 会话…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "显示在大厅和会议顶部栏。支持JPEG、PNG、WebP或GIF格式；最大2 MB。",
     "noImage": "未选择图片",
     "submit": "创建会议",
-    "submitting": "正在创建…"
+    "submitting": "正在创建…",
+    "visibility": "可见性",
+    "visibilityHint": "默认情况下，只有你会在首页看到此会议。",
+    "listForAuth": "列出主页上其他已登录用户",
+    "listForAuthDesc": "任何通过 one.witysk.org 登录的用户均可查找并加入。",
+    "listForAnon": "同时向匿名（未登录）访客展示",
+    "listForAnonDesc": "会议将显示在公共登录页面上。",
+    "brandingPreviewAlt": "品牌预览",
+    "brandingFieldAlt": "品牌形象",
+    "unsupportedImageType": "不支持的图片类型 {{type}}；请使用 JPEG、PNG、WebP 或 GIF 格式。",
+    "imageTooLarge": "图片大小为 {{mb}} MB；最大为 2 MB。",
+    "uploadFailed": "会议已创建，但品牌上传失败：{{message}}"
   },
   "myMeetings": {
     "loading": "正在加载您的会议…",
@@ -60,7 +73,12 @@
     "deleteTitle": "从列表中删除此会议",
     "more": "+ {{count}} 更多",
     "closedLabel": "已关闭",
-    "maxParticipants": "最大 {{n}}"
+    "maxParticipants": "最大 {{n}}",
+    "visibilityPublic": "公开",
+    "visibilityListed": "仅限已登录用户使用",
+    "visibilityPrivate": "仅自己可见",
+    "visibilityChange": "{{label}} — 点击切换",
+    "copyJoinPrompt": "复制此加入链接"
   },
   "lobby": {
     "joinMeeting": "加入会议",
@@ -70,7 +88,9 @@
     "emailOptional": "电子邮件（可选）",
     "passwordIfRequired": "密码（如需要）",
     "join": "加入",
-    "joining": "正在加入…"
+    "joining": "正在加入…",
+    "hostedBy": "主持人：{{name}}",
+    "brandingAlt": "会议品牌图片"
   },
   "room": {
     "takeStage": "上台",
@@ -89,7 +109,11 @@
     "people": "人员",
     "chat": "聊天",
     "invite": "邀请",
-    "inviteTitle": "通过电子邮件邀请他人"
+    "inviteTitle": "通过电子邮件邀请他人",
+    "settings": "设置",
+    "settingsLabel": "会议中设置",
+    "topbarBrandingAlt": "会议品牌图片",
+    "requestFailed": "请求失败"
   },
   "recordingIndicator": {
     "label": "录制"
@@ -110,7 +134,11 @@
     "upload": "上传",
     "uploadTitle": "上传您自己的背景图片",
     "tooLarge": "图片大小为 {{mb}} MB，最大为 4 MB。",
-    "notImage": "不是图片"
+    "notImage": "非图片（{{type}}）",
+    "uploadAria": "上传背景图片",
+    "processorFailed": "此设备不支持背景效果。",
+    "custom": "自定义：{{name}}",
+    "customDefault": "自定义图片"
   },
   "participants": {
     "title": "参与者",
@@ -118,14 +146,21 @@
     "muteMic": "静音麦克风",
     "makePresenter": "设为演示者",
     "removeFromMeeting": "从会议中移除",
-    "authenticatedOwner": "已验证的所有者"
+    "authenticatedOwner": "已验证的所有者",
+    "titleCount": "参与者（{{count}}）",
+    "close": "关闭参会者",
+    "muteName": "静音 {{name}}",
+    "makeNamePresenter": "将 {{name}} 设为主讲人",
+    "removeName": "移除 {{name}}"
   },
   "chatPanel": {
     "title": "聊天",
     "empty": "暂无消息 — 打个招呼吧。",
     "placeholder": "输入消息",
     "send": "发送",
-    "close": "关闭聊天"
+    "close": "关闭聊天",
+    "ariaLabel": "会议聊天",
+    "messageAria": "聊天消息"
   },
   "invite": {
     "title": "通过邮件邀请",
@@ -143,12 +178,14 @@
     "tooMany": "每次发送最多20个收件人。",
     "sentN_one": "已发送 {{count}} 份邀请。",
     "sentN_other": "已发送 {{count}} 份邀请。",
-    "failedSuffix": "失败：{{list}}"
+    "failedSuffix": "失败：{{list}}",
+    "cancel": "取消",
+    "close": "关闭"
   },
   "recordings": {
     "title": "录制",
     "subtitle": "会议服务器端录制。本地文件30天后自动删除（或发布到YouTube后删除）。仅限会议所有者发起上传。",
-    "empty": "暂无录制内容。开始会议并点击录制即可录制。",
+    "empty": "暂无录制内容。开始会议并点击<1>录制</1>即可捕获。",
     "download": "下载",
     "downloading": "正在下载…",
     "publish": "发布到 YouTube",
@@ -170,7 +207,11 @@
       "running": "运行中",
       "failed": "失败",
       "deleted": "已删除"
-    }
+    },
+    "loading": "加载中…",
+    "signInFirst": "请先在 one.witysk.org 上登录。",
+    "started": "已开始 {{when}}",
+    "publishTitle": "上传到YouTube并在成功后删除本地文件"
   },
   "settings": {
     "title": "设置",
@@ -390,5 +431,67 @@
       "confirm": "将所有偏好设置重置为默认值？",
       "doneFlash": "恢复默认设置"
     }
+  },
+  "discover": {
+    "title": "发现",
+    "subtitle": "— 开放加入的会议",
+    "join": "加入",
+    "maxParticipants": "最大 {{n}}",
+    "hostedBy": "由 {{name}} 主持"
+  },
+  "inMeetingSettings": {
+    "title": "设置",
+    "close": "关闭设置",
+    "groupAv": "音频与视频",
+    "groupDisplay": "显示",
+    "groupNotifications": "通知",
+    "groupAccessibility": "无障碍",
+    "groupNetwork": "网络",
+    "groupAppearance": "外观",
+    "camOnJoin": "加入时开启摄像头",
+    "micOnJoin": "加入时开启麦克风",
+    "noiseSuppression": "噪声抑制",
+    "echoCancellation": "回声消除",
+    "mirrorPreview": "镜像我的预览",
+    "layout": "布局",
+    "layoutAuto": "自动",
+    "layoutGrid": "网格",
+    "layoutSpeaker": "当前发言者",
+    "layoutSpotlight": "聚焦",
+    "mirrorOwn": "镜像我的视频",
+    "hideSelf": "隐藏自身画面",
+    "showNames": "显示参与者姓名",
+    "connQuality": "显示连接质量",
+    "meetingClock": "显示会议时钟",
+    "highlightSpeaker": "高亮当前发言者",
+    "soundOnJoin": "有人加入时播放提示音",
+    "chatSound": "聊天消息提示音",
+    "ignoreOwnJoins": "忽略我自己的加入",
+    "captions": "实时字幕",
+    "captionsSize": "字幕字体大小",
+    "fontSmall": "小",
+    "fontMedium": "中等",
+    "fontLarge": "大",
+    "fontXl": "超大",
+    "reducedMotion": "减少动态效果",
+    "monoAudio": "单声道音频混音",
+    "quality": "首选视频质量",
+    "qualityAuto": "自动",
+    "qualityLow": "低",
+    "qualityMedium": "中等",
+    "qualityHigh": "高",
+    "simulcast": "联播",
+    "forceRelay": "强制使用TURN中继",
+    "theme": "主题",
+    "themeSystem": "系统",
+    "themeDark": "深色",
+    "themeLight": "亮色",
+    "compact": "紧凑界面",
+    "moreSettings": "更多设置位于完整的<1>设置</1>页面。"
+  },
+  "tile": {
+    "flip": "水平翻转",
+    "stopFlip": "停止水平翻转视频",
+    "unflip": "取消翻转"
   }
 }

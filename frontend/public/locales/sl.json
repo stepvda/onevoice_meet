@@ -23,7 +23,9 @@
     "yes": "Da",
     "no": "Ne",
     "loading": "Nalaganje…",
-    "close": "Zapri"
+    "close": "Zapri",
+    "anonymous": "anonimen",
+    "requestFailed": "Zahteva ni uspela"
   },
   "createMeeting": {
     "checkingSession": "Preverjanje vaše seje one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Prikazano v preddverju in zgornji vrstici sestanka. JPEG, PNG, WebP ali GIF; do 2 MB.",
     "noImage": "Ni izbrane slike",
     "submit": "Ustvari sestanek",
-    "submitting": "Ustvarjanje…"
+    "submitting": "Ustvarjanje…",
+    "visibility": "Vidnost",
+    "visibilityHint": "Privzeto to srečanje na svoji domači strani vidite samo vi.",
+    "listForAuth": "Seznam drugih prijavljenih uporabnikov na domači strani",
+    "listForAuthDesc": "Kdor se je prijavil prek one.witysk.org, lahko najde in se pridruži.",
+    "listForAnon": "Prav tako prikaži anonimnim obiskovalcem (neprijavljenim)",
+    "listForAnonDesc": "Sestanek se prikaže na javni vstopni strani.",
+    "brandingPreviewAlt": "Predogled blagovne znamke",
+    "brandingFieldAlt": "Slika blagovne znamke",
+    "unsupportedImageType": "Nepodprta vrsta slike {{type}}; uporabite JPEG, PNG, WebP ali GIF.",
+    "imageTooLarge": "Slika je velika {{mb}} MB; največja dovoljena velikost je 2 MB.",
+    "uploadFailed": "Sestanek ustvarjen, vendar nalaganje blagovne znamke ni uspelo: {{message}}"
   },
   "myMeetings": {
     "loading": "Nalagam vaše sestanke…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Izbriši to srečanje s seznama",
     "more": "+ še {{count}}",
     "closedLabel": "zaprto",
-    "maxParticipants": "največ {{n}}"
+    "maxParticipants": "največ {{n}}",
+    "visibilityPublic": "Javno",
+    "visibilityListed": "Navedeno za prijavljene uporabnike",
+    "visibilityPrivate": "Vidno samo meni",
+    "visibilityChange": "{{label}} — kliknite za spremembo",
+    "copyJoinPrompt": "Kopiraj to povezavo za pridružitev"
   },
   "lobby": {
     "joinMeeting": "Pridruži se sestanku",
@@ -70,7 +88,9 @@
     "emailOptional": "E-pošta (neobvezno)",
     "passwordIfRequired": "Geslo (če je potrebno)",
     "join": "Pridruži se",
-    "joining": "Pridruževanje…"
+    "joining": "Pridruževanje…",
+    "hostedBy": "Gostuje {{name}}",
+    "brandingAlt": "Slika blagovne znamke sestanka"
   },
   "room": {
     "takeStage": "Zavzemi oder",
@@ -89,7 +109,11 @@
     "people": "Ljudje",
     "chat": "Klepet",
     "invite": "Povabi",
-    "inviteTitle": "Povabi ljudi po e-pošti"
+    "inviteTitle": "Povabi ljudi po e-pošti",
+    "settings": "Nastavitve",
+    "settingsLabel": "Nastavitve med sestankom",
+    "topbarBrandingAlt": "Slika blagovne znamke sestanka",
+    "requestFailed": "Zahteva ni uspela"
   },
   "recordingIndicator": {
     "label": "SNEMANJE"
@@ -110,7 +134,11 @@
     "upload": "Naloži",
     "uploadTitle": "Naloži svojo sliko ozadja",
     "tooLarge": "Slika je velika {{mb}} MB; največja dovoljena velikost je 4 MB.",
-    "notImage": "Ni slika"
+    "notImage": "Ni slika ({{type}})",
+    "uploadAria": "Naloži sliko ozadja",
+    "processorFailed": "Učinki ozadja na tej napravi niso podprti.",
+    "custom": "Po meri: {{name}}",
+    "customDefault": "Slika po meri"
   },
   "participants": {
     "title": "Udeleženci",
@@ -118,14 +146,21 @@
     "muteMic": "Utišaj mikrofon",
     "makePresenter": "Naredi predavatelja",
     "removeFromMeeting": "Odstrani iz sestanka",
-    "authenticatedOwner": "Overjen lastnik"
+    "authenticatedOwner": "Overjen lastnik",
+    "titleCount": "Udeleženci ({{count}})",
+    "close": "Zapri udeležence",
+    "muteName": "Utišaj {{name}}",
+    "makeNamePresenter": "Naredi {{name}} predavatelja",
+    "removeName": "Odstrani {{name}}"
   },
   "chatPanel": {
     "title": "Klepet",
     "empty": "Ni še sporočil — pozdravi.",
     "placeholder": "Vnesite sporočilo",
     "send": "Pošlji",
-    "close": "Zapri klepet"
+    "close": "Zapri klepet",
+    "ariaLabel": "Klepet sestanka",
+    "messageAria": "Sporočilo klepeta"
   },
   "invite": {
     "title": "Povabi po e-pošti",
@@ -143,12 +178,14 @@
     "tooMany": "Največ 20 prejemnikov na pošiljanje.",
     "sentN_one": "Pošlji {{count}} povabilo.",
     "sentN_other": "Poslana {{count}} povabila.",
-    "failedSuffix": "Neuspešno: {{list}}"
+    "failedSuffix": "Neuspešno: {{list}}",
+    "cancel": "Prekliči",
+    "close": "Zapri"
   },
   "recordings": {
     "title": "Posnetki",
     "subtitle": "Streposne strani posnetki vaših sestankov. Lokalne datoteke se samodejno izbrišejo po 30 dneh (ali ko objavite na YouTube). Nalaganja sproži le lastnik.",
-    "empty": "Ni še nobenih posnetkov. Začnite sestanek in kliknite Snemaj, da ga ustvarite.",
+    "empty": "Ni še nobenih posnetkov. Začnite sestanek in kliknite <1>Posnemi</1>, da ga ustvarite.",
     "download": "Prenesi",
     "downloading": "Prenašanje…",
     "publish": "Objavi na YouTube",
@@ -170,7 +207,11 @@
       "running": "teče",
       "failed": "neuspešno",
       "deleted": "izbrisano"
-    }
+    },
+    "loading": "Nalaganje…",
+    "signInFirst": "Najprej se prijavite na one.witysk.org.",
+    "started": "Začel {{when}}",
+    "publishTitle": "Naloži na YouTube in ob uspehu izbriši lokalno datoteko"
   },
   "settings": {
     "title": "Nastavitve",
@@ -390,5 +431,67 @@
       "confirm": "Ponastaviti vse nastavitve na privzete?",
       "doneFlash": "Ponastavi na privzeto"
     }
+  },
+  "discover": {
+    "title": "Odkrij",
+    "subtitle": "— sestanki, ki so odprti za pridružitev",
+    "join": "Pridruži se",
+    "maxParticipants": "maks {{n}}",
+    "hostedBy": "Gostuje {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Nastavitve",
+    "close": "Zapri nastavitve",
+    "groupAv": "Zvok in video",
+    "groupDisplay": "Prikaži",
+    "groupNotifications": "Obvestila",
+    "groupAccessibility": "Dostopnost",
+    "groupNetwork": "Omrežje",
+    "groupAppearance": "Videz",
+    "camOnJoin": "Kamera vklopljena, ko se pridružim",
+    "micOnJoin": "Mikrofon vklopljen, ko se pridružim",
+    "noiseSuppression": "Dušenje šuma",
+    "echoCancellation": "Odprava odmeva",
+    "mirrorPreview": "Zrcali moj predogled",
+    "layout": "Postavitev",
+    "layoutAuto": "Samodejno",
+    "layoutGrid": "Mreža",
+    "layoutSpeaker": "Aktivni govorec",
+    "layoutSpotlight": "Poudarek",
+    "mirrorOwn": "Zrcali moj video",
+    "hideSelf": "Skrij svoj pogled",
+    "showNames": "Pokaži imena udeležencev",
+    "connQuality": "Pokaži kakovost povezave",
+    "meetingClock": "Pokaži uro sestanka",
+    "highlightSpeaker": "Označi aktivnega govorca",
+    "soundOnJoin": "Zvok ob prihodu nekoga",
+    "chatSound": "Zvok ob sporočilu v klepetu",
+    "ignoreOwnJoins": "Prezri moje lastne priključitve",
+    "captions": "Neposredni podnapisi",
+    "captionsSize": "Velikost pisave podnapisov",
+    "fontSmall": "Majhen",
+    "fontMedium": "Srednje",
+    "fontLarge": "Veliko",
+    "fontXl": "Izjemno velik",
+    "reducedMotion": "Zmanjšano gibanje",
+    "monoAudio": "Mono mešanica zvoka",
+    "quality": "Prednostna kakovost videa",
+    "qualityAuto": "Samodejno",
+    "qualityLow": "Nizko",
+    "qualityMedium": "Srednje",
+    "qualityHigh": "Visoko",
+    "simulcast": "Simulcast",
+    "forceRelay": "Vsili posredovanje prek TURN",
+    "theme": "Tema",
+    "themeSystem": "Sistem",
+    "themeDark": "Temno",
+    "themeLight": "Svetloba",
+    "compact": "Zgoščen vmesnik",
+    "moreSettings": "Več nastavitev je na voljo na celotni strani <1>Nastavitve</1>."
+  },
+  "tile": {
+    "flip": "Obrni vodoravno",
+    "stopFlip": "Ustavi vodoravno obračanje videa",
+    "unflip": "Obrni nazaj"
   }
 }

@@ -23,7 +23,9 @@
     "yes": "Иә",
     "no": "Жоқ",
     "loading": "Жүктелуде…",
-    "close": "Жабу"
+    "close": "Жабу",
+    "anonymous": "анонимді",
+    "requestFailed": "Сұраныс орындалмады"
   },
   "createMeeting": {
     "checkingSession": "one.witysk.org сессияңыз тексерілуде…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Лобби және кездесу жоғарғы панелінде көрсетіледі. JPEG, PNG, WebP немесе GIF; 2 МБ дейін.",
     "noImage": "Сурет таңдалмады",
     "submit": "Кездесу жасау",
-    "submitting": "Жасалуда…"
+    "submitting": "Жасалуда…",
+    "visibility": "Көріну",
+    "visibilityHint": "Әдепкі бойынша, бұл кездесуді тек сіз ғана Басты бетіңізде көресіз.",
+    "listForAuth": "Үй бетіндегі басқа жүйеге кірген пайдаланушылардың тізімі",
+    "listForAuthDesc": "one.witysk.org арқылы кірген кез келген адам тауып, қосыла алады.",
+    "listForAnon": "Анонимді (кірмеген) келушілерге де тізімдеу",
+    "listForAnonDesc": "Жиналыс жалпы бетте көрсетіледі.",
+    "brandingPreviewAlt": "Брендингті алдын ала қарау",
+    "brandingFieldAlt": "Брендтік сурет",
+    "unsupportedImageType": "Қолданылмайтын сурет түрі {{type}}; JPEG, PNG, WebP немесе GIF пайдаланыңыз.",
+    "imageTooLarge": "Сурет өлшемі {{mb}} МБ; максимум 2 МБ.",
+    "uploadFailed": "Кездесу жасалды, бірақ брендинг жүктеу сәтсіз аяқталды: {{message}}"
   },
   "myMeetings": {
     "loading": "Кездесулеріңіз жүктелуде…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Бұл кездесуді тізімнен жою",
     "more": "+ {{count}} тағы",
     "closedLabel": "жабық",
-    "maxParticipants": "макс {{n}}"
+    "maxParticipants": "макс {{n}}",
+    "visibilityPublic": "Жария",
+    "visibilityListed": "Тек тіркелген пайдаланушылар үшін көрсетілген",
+    "visibilityPrivate": "Тек маған көрінеді",
+    "visibilityChange": "{{label}} — өзгерту үшін басыңыз",
+    "copyJoinPrompt": "Осы қосылу сілтемесін көшіріңіз"
   },
   "lobby": {
     "joinMeeting": "Кеңеске қосылу",
@@ -70,7 +88,9 @@
     "emailOptional": "Электрондық пошта (міндетті емес)",
     "passwordIfRequired": "Құпия сөз (қажет болса)",
     "join": "Қосылу",
-    "joining": "Қосылуда…"
+    "joining": "Қосылуда…",
+    "hostedBy": "Ұйымдастырушы: {{name}}",
+    "brandingAlt": "Кеңес брендингінің суреті"
   },
   "room": {
     "takeStage": "Сахнаға шығу",
@@ -89,7 +109,11 @@
     "people": "Адамдар",
     "chat": "Сөйлесу",
     "invite": "Шақыру",
-    "inviteTitle": "Адамдарды электрондық пошта арқылы шақыру"
+    "inviteTitle": "Адамдарды электрондық пошта арқылы шақыру",
+    "settings": "Баптаулар",
+    "settingsLabel": "Кездесу барысындағы баптаулар",
+    "topbarBrandingAlt": "Кеңес брендингінің суреті",
+    "requestFailed": "сұраныс орындалмады"
   },
   "recordingIndicator": {
     "label": "ЖАЗБА"
@@ -110,7 +134,11 @@
     "upload": "Жүктеу",
     "uploadTitle": "Өз фондық суретіңізді жүктеңіз",
     "tooLarge": "Сурет өлшемі {{mb}} МБ; ең үлкені 4 МБ.",
-    "notImage": "Сурет емес"
+    "notImage": "Сурет емес ({{type}})",
+    "uploadAria": "Фондық суретті жүктеу",
+    "processorFailed": "Бұл құрылғыда фон эффектілеріне қолдау көрсетілмейді.",
+    "custom": "Арнайы: {{name}}",
+    "customDefault": "Арнайы сурет"
   },
   "participants": {
     "title": "Қатысушылар",
@@ -118,14 +146,21 @@
     "muteMic": "Микрофонды өшіру",
     "makePresenter": "Презентаторды қосу",
     "removeFromMeeting": "Кездесуден шығару",
-    "authenticatedOwner": "Аутентификацияланған иесі"
+    "authenticatedOwner": "Аутентификацияланған иесі",
+    "titleCount": "Қатысушылар ({{count}})",
+    "close": "Қатысушыларды жабу",
+    "muteName": "Дыбысты өшіру {{name}}",
+    "makeNamePresenter": "{{name}} баяндамашы етіп тағайындау",
+    "removeName": "{{name}} жою"
   },
   "chatPanel": {
     "title": "Сөйлесу",
     "empty": "Әлі хабарлама жоқ — сәлемдесіңіз.",
     "placeholder": "Хабарлама жазыңыз",
     "send": "Жіберу",
-    "close": "Чатты жабу"
+    "close": "Чатты жабу",
+    "ariaLabel": "Жиналыс чаты",
+    "messageAria": "Чат хабарламасы"
   },
   "invite": {
     "title": "Электрондық пошта арқылы шақыру",
@@ -143,12 +178,14 @@
     "tooMany": "Жіберуге ең көбі 20 алушы.",
     "sentN_one": "{{count}} шақыру жіберілді.",
     "sentN_other": "{{count}} шақыру жіберілді.",
-    "failedSuffix": "Сәтсіз: {{list}}"
+    "failedSuffix": "Сәтсіз: {{list}}",
+    "cancel": "Болдырмау",
+    "close": "Жабу"
   },
   "recordings": {
     "title": "Жазбалар",
     "subtitle": "Кеңес жазбалары серверде сақталады. Жергілікті файлдар 30 күннен кейін (немесе YouTube-қа жариялағанда) автоматты түрде жойылады. Жүктеулерді тек иесі бастай алады.",
-    "empty": "Әзірге жазбалар жоқ. Кездесуді бастап, жазба алу үшін «Жазу» түймесін басыңыз.",
+    "empty": "Әзірге жазбалар жоқ. Кездесуді бастап, <1>Жазу</1> түймесін басыңыз.",
     "download": "Жүктеу",
     "downloading": "Жүктелуде…",
     "publish": "YouTube-қа жариялау",
@@ -170,7 +207,11 @@
       "running": "жүріп жатыр",
       "failed": "сәтсіз",
       "deleted": "жойылды"
-    }
+    },
+    "loading": "Жүктелуде…",
+    "signInFirst": "Алдымен one.witysk.org сайтына кіріңіз.",
+    "started": "Басталды {{when}}",
+    "publishTitle": "YouTube-ға жүктеп, сәтті болса, жергілікті файлды жою"
   },
   "settings": {
     "title": "Баптаулар",
@@ -390,5 +431,67 @@
       "confirm": "Барлық баптауларды әдепкіге қайта орнату керек пе?",
       "doneFlash": "Әдепкіге қайта келтіру"
     }
+  },
+  "discover": {
+    "title": "Ашу",
+    "subtitle": "— қосылуға ашық кездесулер",
+    "join": "Қосылу",
+    "maxParticipants": "макс {{n}}",
+    "hostedBy": "Ұйымдастырушы: {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Баптаулар",
+    "close": "Параметрлерді жабу",
+    "groupAv": "Аудио және Бейне",
+    "groupDisplay": "Көрсету",
+    "groupNotifications": "Хабарландырулар",
+    "groupAccessibility": "Қолжетімділік",
+    "groupNetwork": "Желі",
+    "groupAppearance": "Көрініс",
+    "camOnJoin": "Қосылған кезде камераны қосу",
+    "micOnJoin": "Қосылған кезде микрофон қосулы",
+    "noiseSuppression": "Шуды басу",
+    "echoCancellation": "Эхоны болдырмау",
+    "mirrorPreview": "Менің алдын ала көрінісімді айналандыру",
+    "layout": "Орналасу",
+    "layoutAuto": "Авто",
+    "layoutGrid": "Тор",
+    "layoutSpeaker": "Белсенді сөйлеуші",
+    "layoutSpotlight": "На прожектор",
+    "mirrorOwn": "Менің өз бейнемді айнадан көрсету",
+    "hideSelf": "Өз көрінісімді жасыру",
+    "showNames": "Қатысушылардың атын көрсету",
+    "connQuality": "Қосылым сапасын көрсету",
+    "meetingClock": "Жиналыс сағатын көрсету",
+    "highlightSpeaker": "Белсенді сөйлеушіні бөлектеу",
+    "soundOnJoin": "Біреу қосылғанда дыбыс",
+    "chatSound": "Дыбыс чат хабарламасында",
+    "ignoreOwnJoins": "Менің өз қосылуларымды елемеу",
+    "captions": "Тікелей субтитрлер",
+    "captionsSize": "Субтитрлер қаріпінің өлшемі",
+    "fontSmall": "Кіші",
+    "fontMedium": "Орташа",
+    "fontLarge": "Үлкен",
+    "fontXl": "Өте үлкен",
+    "reducedMotion": "Қозғалысты азайту",
+    "monoAudio": "Моно дыбыс араластыру",
+    "quality": "Қалаулы бейне сапасы",
+    "qualityAuto": "Авто",
+    "qualityLow": "Төмен",
+    "qualityMedium": "Орташа",
+    "qualityHigh": "Жоғары",
+    "simulcast": "Симулькаст",
+    "forceRelay": "TURN релеін мәжбүрлеу",
+    "theme": "Тақырып",
+    "themeSystem": "Жүйе",
+    "themeDark": "Қараңғы",
+    "themeLight": "Жарық",
+    "compact": "Ықшам интерфейс",
+    "moreSettings": "Толық <1>Баптаулар</1> бетінде қосымша параметрлер бар."
+  },
+  "tile": {
+    "flip": "Көлденеңінен айналдыру",
+    "stopFlip": "Бейнені көлденеңінен айналдыруды тоқтату",
+    "unflip": "Түзету"
   }
 }

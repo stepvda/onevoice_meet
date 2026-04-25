@@ -23,7 +23,9 @@
     "yes": "Ha",
     "no": "Yo‘q",
     "loading": "Yuklanmoqda…",
-    "close": "Yopish"
+    "close": "Yopish",
+    "anonymous": "anonim",
+    "requestFailed": "So‘rov amalga oshmadi"
   },
   "createMeeting": {
     "checkingSession": "Bir daqiqa, one.witysk.org sessiyangiz tekshirilmoqda…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Lobbi va uchrashuvning yuqori panelida ko‘rsatiladi. JPEG, PNG, WebP yoki GIF; 2 MB gacha.",
     "noImage": "Rasm tanlanmagan",
     "submit": "Uchrashuv yaratish",
-    "submitting": "Yaratilmoqda…"
+    "submitting": "Yaratilmoqda…",
+    "visibility": "Ko'rinish",
+    "visibilityHint": "Odatiy bo‘lib, bu uchrashuvni faqat siz Bosh sahifangizda ko‘rasiz.",
+    "listForAuth": "Boshqa tizimga kirgan foydalanuvchilar ro‘yxati (Bosh sahifada)",
+    "listForAuthDesc": "one.witysk.org orqali kirgan har kim topib, qo‘shila oladi.",
+    "listForAnon": "Anonim (tizimga kirmagan) tashrif buyuruvchilarga ham ro‘yxat ko‘rsatish",
+    "listForAnonDesc": "Uchrashuv umumiy kirish sahifasida ko‘rinadi.",
+    "brandingPreviewAlt": "Brendlashni oldindan ko‘rish",
+    "brandingFieldAlt": "Brend rasmi",
+    "unsupportedImageType": "Qo'llab-quvvatlanmaydigan rasm turi {{type}}; JPEG, PNG, WebP yoki GIF dan foydalaning.",
+    "imageTooLarge": "Rasm hajmi {{mb}} MB; maksimal 2 MB.",
+    "uploadFailed": "Uchrashuv yaratildi, ammo brend yuklash muvaffaqiyatsiz tugadi: {{message}}"
   },
   "myMeetings": {
     "loading": "Uchrashuvlaringiz yuklanmoqda…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Uchrashuvni ro‘yxatdan o‘chirish",
     "more": "+ {{count}} ta ko‘proq",
     "closedLabel": "yopiq",
-    "maxParticipants": "maks {{n}}"
+    "maxParticipants": "maks {{n}}",
+    "visibilityPublic": "Ommaviy",
+    "visibilityListed": "Ro‘yxatga olingan, faqat tizimga kirgan foydalanuvchilar uchun",
+    "visibilityPrivate": "Faqat menga ko‘rinadi",
+    "visibilityChange": "{{label}} — o‘zgartirish uchun bosing",
+    "copyJoinPrompt": "Ushbu qo‘shilish havolasini nusxalash"
   },
   "lobby": {
     "joinMeeting": "Uchrashuvga qo‘shilish",
@@ -70,7 +88,9 @@
     "emailOptional": "Elektron pochta (ixtiyoriy)",
     "passwordIfRequired": "Parol (agar kerak bo‘lsa)",
     "join": "Qo‘shilish",
-    "joining": "Qo‘shilmoqda…"
+    "joining": "Qo‘shilmoqda…",
+    "hostedBy": "{{name}} tomonidan o'tkazilmoqda",
+    "brandingAlt": "Uchrashuv brendi tasviri"
   },
   "room": {
     "takeStage": "Sahna",
@@ -89,7 +109,11 @@
     "people": "Odamlar",
     "chat": "Suhbat",
     "invite": "Таклиф қилиш",
-    "inviteTitle": "Odamlarni elektron pochta orqali taklif qiling"
+    "inviteTitle": "Odamlarni elektron pochta orqali taklif qiling",
+    "settings": "Sozlamalar",
+    "settingsLabel": "Uchrashuv sozlamalari",
+    "topbarBrandingAlt": "Uchrashuv brendi tasviri",
+    "requestFailed": "So‘rov muvaffaqiyatsiz tugadi"
   },
   "recordingIndicator": {
     "label": "YOZIB OLISH"
@@ -110,7 +134,11 @@
     "upload": "Yuklash",
     "uploadTitle": "O‘zingizning fon rasmingizni yuklang",
     "tooLarge": "Rasm hajmi {{mb}} MB; maksimal 4 MB.",
-    "notImage": "Rasm emas"
+    "notImage": "Rasm emas ({{type}})",
+    "uploadAria": "Fon rasmini yuklang",
+    "processorFailed": "Bu qurilmada fon effektlari qo‘llab-quvvatlanmaydi.",
+    "custom": "Maxsus: {{name}}",
+    "customDefault": "Maxsus rasm"
   },
   "participants": {
     "title": "Ishtirokchilar",
@@ -118,14 +146,21 @@
     "muteMic": "Mikrofoni o‘chirish",
     "makePresenter": "Taqdimotchini belgilash",
     "removeFromMeeting": "Uchrashuvdan olib tashlash",
-    "authenticatedOwner": "Tasdiqlangan egasi"
+    "authenticatedOwner": "Tasdiqlangan egasi",
+    "titleCount": "Ishtirokchilar ({{count}})",
+    "close": "Ishtirokchilarni yopish",
+    "muteName": "Ovozni o‘chirish {{name}}",
+    "makeNamePresenter": "{{name}} ni taqdimotchi qiling",
+    "removeName": "{{name}} ni olib tashlash"
   },
   "chatPanel": {
     "title": "Suhbat",
     "empty": "Hali xabarlar yo‘q — salom ayting.",
     "placeholder": "Xabar yozing",
     "send": "Yuborish",
-    "close": "Chatni yopish"
+    "close": "Chatni yopish",
+    "ariaLabel": "Чат учрашуви",
+    "messageAria": "Xabar"
   },
   "invite": {
     "title": "Elektron pochta orqali taklif qilish",
@@ -143,12 +178,14 @@
     "tooMany": "Yuborishda eng ko‘pi bilan 20 ta qabul qiluvchi.",
     "sentN_one": "{{count}} taklifnomasi yuborildi.",
     "sentN_other": "{{count}} ta taklifnoma yuborildi.",
-    "failedSuffix": "Muvaffaqiyatsiz: {{list}}"
+    "failedSuffix": "Muvaffaqiyatsiz: {{list}}",
+    "cancel": "Bekor qilish",
+    "close": "Yopish"
   },
   "recordings": {
     "title": "Yozuvlar",
     "subtitle": "Uchrashuvlaringizning server tomonidagi yozuvlari. Mahalliy fayllar 30 kundan so‘ng (yoki YouTube’ga joylaganingizda) avtomatik o‘chiriladi. Yuklashlar faqat egasi tomonidan boshlanadi.",
-    "empty": "Hali yozuvlar yo‘q. Uchrashuvni boshlang va yozib olish uchun “Yozib olish” tugmasini bosing.",
+    "empty": "Hozircha yozib olinganlar yo‘q. Uchrashuvni boshlang va yozib olish uchun <1>Yozib olish</1> tugmasini bosing.",
     "download": "Yuklab olish",
     "downloading": "Yuklanmoqda…",
     "publish": "YouTube'ga nashr qilish",
@@ -170,7 +207,11 @@
       "running": "Ishga tushirilmoqda",
       "failed": "Muvaffaqiyatsiz",
       "deleted": "o‘chirildi"
-    }
+    },
+    "loading": "Yuklanmoqda…",
+    "signInFirst": "Avval one.witysk.org saytiga kiring.",
+    "started": "Boshlandi {{when}}",
+    "publishTitle": "YouTube’ga yuklang va muvaffaqiyatli bo‘lsa, mahalliy faylni o‘chiring"
   },
   "settings": {
     "title": "Sozlamalar",
@@ -390,5 +431,67 @@
       "confirm": "Barcha sozlamalarni standart holatga qaytarishni xohlaysizmi?",
       "doneFlash": "Standart holatga qaytarish"
     }
+  },
+  "discover": {
+    "title": "Kashf et",
+    "subtitle": "— uchrashuvlarga qo‘shilish ochiq",
+    "join": "Qo'shilish",
+    "maxParticipants": "maks {{n}}",
+    "hostedBy": "{{name}} tomonidan tashkil etilgan"
+  },
+  "inMeetingSettings": {
+    "title": "Sozlamalar",
+    "close": "Sozlamalarni yopish",
+    "groupAv": "Audio va Video",
+    "groupDisplay": "Ko‘rsatish",
+    "groupNotifications": "Bildirishnomalar",
+    "groupAccessibility": "Mavjudlik",
+    "groupNetwork": "Tarmoq",
+    "groupAppearance": "Tashqi ko‘rinish",
+    "camOnJoin": "Qo‘shilganimda kamera yoqilgan",
+    "micOnJoin": "Mikrofon yoqilgan holda qo‘shilaman",
+    "noiseSuppression": "Shovqinni bostirish",
+    "echoCancellation": "Aks sado o‘chirish",
+    "mirrorPreview": "Ko‘rinishimni oynalash",
+    "layout": "Maket",
+    "layoutAuto": "Avtomatik",
+    "layoutGrid": "Katak",
+    "layoutSpeaker": "Faol ma'ruzachi",
+    "layoutSpotlight": "Yoritish",
+    "mirrorOwn": "O‘z videomni ko‘zgu qilish",
+    "hideSelf": "O‘z ko‘rinishini yashirish",
+    "showNames": "Ishtirokchilar ismlarini ko‘rsatish",
+    "connQuality": "Ulanish sifatini ko‘rsatish",
+    "meetingClock": "Uchrashuv soatini ko‘rsatish",
+    "highlightSpeaker": "Faqir so‘zlovchini ajratib ko‘rsatish",
+    "soundOnJoin": "Kimdir qo‘shilganda ovoz",
+    "chatSound": "Chat xabarida ovoz",
+    "ignoreOwnJoins": "Mening qo‘shilishlarimni e’tiborsiz qoldir",
+    "captions": "Jonli taglavhalar",
+    "captionsSize": "Subtitrlar shrift oʻlchami",
+    "fontSmall": "Kichik",
+    "fontMedium": "O‘rta",
+    "fontLarge": "Katta",
+    "fontXl": "Juda katta",
+    "reducedMotion": "Harakatni kamaytirish",
+    "monoAudio": "Mono audio aralashmasi",
+    "quality": "Video sifatini tanlang",
+    "qualityAuto": "Avtomatik",
+    "qualityLow": "Past",
+    "qualityMedium": "O‘rta",
+    "qualityHigh": "Yuqori",
+    "simulcast": "Simulcast",
+    "forceRelay": "TURN relayni majburiy qilish",
+    "theme": "Mavzu",
+    "themeSystem": "Tizim",
+    "themeDark": "Qorong‘i",
+    "themeLight": "Yorug‘",
+    "compact": "Yig‘ma interfeys",
+    "moreSettings": "Qo‘shimcha sozlamalar to‘liq <1>Sozlamalar</1> sahifasida joylashgan."
+  },
+  "tile": {
+    "flip": "Gorizontalga aylantirish",
+    "stopFlip": "Videoni gorizontal aylantirishni to‘xtatish",
+    "unflip": "Ochish"
   }
 }

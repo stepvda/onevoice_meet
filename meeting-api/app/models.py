@@ -20,6 +20,11 @@ class Meeting(Base):
     display_title: Mapped[str] = mapped_column(String, nullable=False)
     owner_user_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     owner_email: Mapped[str | None] = mapped_column(String)
+    # Snapshot of the owner's preferred display name from one.witysk.org,
+    # refreshed on every owner action (create / token mint). Used to show
+    # "Hosted by …" to other viewers who can't fetch one.witysk.org's
+    # /api/auth/me on the owner's behalf.
+    owner_name: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -86,6 +91,18 @@ class Recording(Base):
     youtube_error: Mapped[str | None] = mapped_column(String)
 
     meeting: Mapped[Meeting] = relationship(back_populates="recordings")
+
+
+class UserPreferences(Base):
+    __tablename__ = "user_preferences"
+
+    user_id: Mapped[str] = mapped_column(String, primary_key=True)
+    language: Mapped[str | None] = mapped_column(String)
+    # True once the user picks a language in Settings. While False, the client
+    # is free to follow the browser's preferred language on each load.
+    language_set_manually: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
 
 class ModerationAudit(Base):

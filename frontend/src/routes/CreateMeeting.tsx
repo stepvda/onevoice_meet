@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ImagePlus, Video, X } from "lucide-react";
 import { api } from "../lib/api";
-import { bootstrapFromOneWitysk, isAuthenticated } from "../lib/auth";
+import { bootstrapFromOneWitysk, fetchOneWityskName, isAuthenticated } from "../lib/auth";
 import { usePreferences } from "../lib/preferences";
 import { Button, Card, Field, Input, Label, Toggle } from "../components/ui";
 import MyMeetings from "../components/MyMeetings";
@@ -14,6 +15,7 @@ const ALLOWED_BRANDING_TYPES = ["image/jpeg", "image/png", "image/webp", "image/
 type AuthState = "bootstrapping" | "authenticated" | "anonymous";
 
 export default function CreateMeeting() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const prefs = usePreferences((s) => s.meetingDefaults);
   const [title, setTitle] = useState("");
@@ -35,11 +37,11 @@ export default function CreateMeeting() {
       return;
     }
     if (!ALLOWED_BRANDING_TYPES.includes(file.type)) {
-      setErr(`Unsupported image type ${file.type}; use JPEG, PNG, WebP, or GIF.`);
+      setErr(t("createMeeting.unsupportedImageType", { type: file.type }));
       return;
     }
     if (file.size > MAX_BRANDING_BYTES) {
-      setErr(`Image is ${(file.size / 1_048_576).toFixed(1)} MB; max is 2 MB.`);
+      setErr(t("createMeeting.imageTooLarge", { mb: (file.size / 1_048_576).toFixed(1) }));
       return;
     }
     setErr(null);
@@ -68,7 +70,7 @@ export default function CreateMeeting() {
       <div className="p-4 lg:p-8 max-w-xl mx-auto">
         <Card>
           <h1 className="text-2xl font-bold">meet.witysk.org</h1>
-          <p className="text-slate-300 mt-2">Checking your one.witysk.org session…</p>
+          <p className="text-slate-300 mt-2">{t("createMeeting.checkingSession")}</p>
         </Card>
       </div>
     );
@@ -79,16 +81,8 @@ export default function CreateMeeting() {
       <div className="p-4 lg:p-8 max-w-xl mx-auto flex flex-col gap-6">
         <Card>
           <h1 className="text-2xl font-bold">meet.witysk.org</h1>
-          <p className="mt-2 text-slate-200">
-            You need to sign in on{" "}
-            <a className="text-primary-200 underline" href="https://one.witysk.org">
-              one.witysk.org
-            </a>{" "}
-            before you can create meetings.
-          </p>
-          <p className="mt-2 text-slate-400">
-            If you already have a join link, open it directly — no account required to join.
-          </p>
+          <p className="mt-2 text-slate-200">{t("createMeeting.needSignIn")}</p>
+          <p className="mt-2 text-slate-400">{t("createMeeting.haveJoinLink")}</p>
         </Card>
         <DiscoverableMeetings />
       </div>
@@ -100,19 +94,21 @@ export default function CreateMeeting() {
     setErr(null);
     setBusy(true);
     try {
+      const display_name = await fetchOneWityskName();
       const res = await api.createMeeting({
         display_title: title,
         password: usePassword && password ? password : undefined,
         // Anonymous discovery implies authenticated.
         list_for_authenticated: listForAuth || listForAnon,
         list_for_anonymous: listForAnon,
+        display_name,
       });
       // Upload branding (if chosen) before navigation. Non-fatal if it fails.
       if (branding) {
         try {
           await api.uploadBranding(res.meeting.id, branding);
         } catch (e) {
-          setErr(`Meeting created but branding upload failed: ${(e as Error).message}`);
+          setErr(t("createMeeting.uploadFailed", { message: (e as Error).message }));
         }
       }
       sessionStorage.setItem(`owner:${res.meeting.room_name}`, res.meeting.id);
@@ -134,24 +130,26 @@ export default function CreateMeeting() {
             <Video size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-50">Create a meeting</h1>
+            <h1 className="text-2xl font-bold text-slate-50">{t("createMeeting.title")}</h1>
             <p className="text-sm text-slate-400">
-              Using your defaults: up to {prefs.maxParticipants} participants,{" "}
-              {prefs.recordingMode === "off"
-                ? "no recording"
-                : prefs.recordingMode === "auto_on_start"
-                ? "auto-record on start"
-                : "manual recording"}
-              .{" "}
+              {t("createMeeting.usingDefaults", {
+                max: prefs.maxParticipants,
+                recording:
+                  prefs.recordingMode === "off"
+                    ? t("createMeeting.recordingOff")
+                    : prefs.recordingMode === "auto_on_start"
+                    ? t("createMeeting.recordingAuto")
+                    : t("createMeeting.recordingManual"),
+              })}{" "}
               <a className="text-primary-200 underline" href="/settings">
-                Change defaults
+                {t("createMeeting.changeDefaults")}
               </a>
             </p>
           </div>
         </div>
 
         <form onSubmit={submit} className="flex flex-col gap-4">
-          <Field id="meeting-title" label="Title">
+          <Field id="meeting-title" label={t("createMeeting.fieldTitle")}>
             <Input
               id="meeting-title"
               data-testid="meeting-title"
@@ -159,19 +157,19 @@ export default function CreateMeeting() {
               onChange={(e) => setTitle(e.target.value)}
               required
               maxLength={200}
-              placeholder="Weekly sync, 1:1 with Alice, etc."
+              placeholder={t("createMeeting.fieldTitlePlaceholder")}
             />
           </Field>
 
           <Toggle
             id="meeting-use-password"
-            label="Require a password"
+            label={t("createMeeting.fieldRequirePassword")}
             checked={usePassword}
             onChange={setUsePassword}
           />
 
           {usePassword && (
-            <Field id="meeting-password" label="Password">
+            <Field id="meeting-password" label={t("createMeeting.fieldPassword")}>
               <Input
                 id="meeting-password"
                 data-testid="meeting-password"
@@ -184,14 +182,12 @@ export default function CreateMeeting() {
           )}
 
           <div className="space-y-2 border-t border-primary-700 pt-3">
-            <p className="text-sm text-slate-300 font-medium">Visibility</p>
-            <p className="text-xs text-slate-400">
-              By default, only you see this meeting on your Home page.
-            </p>
+            <p className="text-sm text-slate-300 font-medium">{t("createMeeting.visibility")}</p>
+            <p className="text-xs text-slate-400">{t("createMeeting.visibilityHint")}</p>
             <Toggle
               id="meeting-list-auth"
-              label="List on the Home page of other signed-in users"
-              description="Anyone signed in via one.witysk.org can find and join."
+              label={t("createMeeting.listForAuth")}
+              description={t("createMeeting.listForAuthDesc")}
               checked={listForAuth || listForAnon}
               onChange={(v) => {
                 setListForAuth(v);
@@ -200,8 +196,8 @@ export default function CreateMeeting() {
             />
             <Toggle
               id="meeting-list-anon"
-              label="Also list to anonymous (non-signed-in) visitors"
-              description="The meeting appears on the public landing page."
+              label={t("createMeeting.listForAnon")}
+              description={t("createMeeting.listForAnonDesc")}
               checked={listForAnon}
               onChange={(v) => {
                 setListForAnon(v);
@@ -211,17 +207,15 @@ export default function CreateMeeting() {
           </div>
 
           <div>
-            <Label htmlFor="meeting-branding">Branding image (optional)</Label>
-            <p className="text-xs text-slate-400 mb-2">
-              Shown in the lobby and the meeting top bar. JPEG, PNG, WebP or GIF; up to 2 MB.
-            </p>
+            <Label htmlFor="meeting-branding">{t("createMeeting.fieldBranding")}</Label>
+            <p className="text-xs text-slate-400 mb-2">{t("createMeeting.fieldBrandingHint")}</p>
             <input
               ref={brandingInputRef}
               id="meeting-branding"
               data-testid="meeting-branding"
               type="file"
-              aria-label="Branding image"
-              title="Branding image"
+              aria-label={t("createMeeting.brandingFieldAlt")}
+              title={t("createMeeting.brandingFieldAlt")}
               accept={ALLOWED_BRANDING_TYPES.join(",")}
               onChange={(e) => pickBranding(e.target.files?.[0] ?? null)}
               className="block text-sm text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-700 file:text-slate-100 hover:file:bg-primary-600"
@@ -230,7 +224,7 @@ export default function CreateMeeting() {
               <div className="mt-3 flex items-center gap-3">
                 <img
                   src={brandingPreview}
-                  alt="Branding preview"
+                  alt={t("createMeeting.brandingPreviewAlt")}
                   data-testid="meeting-branding-preview"
                   className="h-16 w-16 object-cover rounded-md border border-primary-700"
                 />
@@ -242,20 +236,20 @@ export default function CreateMeeting() {
                   }}
                   className="inline-flex items-center gap-1 text-sm text-slate-300 hover:text-slate-100"
                 >
-                  <X size={14} /> Remove
+                  <X size={14} /> {t("common.remove")}
                 </button>
               </div>
             )}
             {!brandingPreview && (
               <span className="inline-flex items-center gap-1 text-xs text-slate-500 mt-2">
-                <ImagePlus size={14} /> No image selected
+                <ImagePlus size={14} /> {t("createMeeting.noImage")}
               </span>
             )}
           </div>
 
           <div>
             <Button type="submit" disabled={busy || !title} data-testid="create-submit">
-              {busy ? "Creating…" : "Create meeting"}
+              {busy ? t("createMeeting.submitting") : t("createMeeting.submit")}
             </Button>
             {err && <div className="text-red-400 text-sm mt-2">{err}</div>}
           </div>

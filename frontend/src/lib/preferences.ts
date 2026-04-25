@@ -422,6 +422,17 @@ function notifyLanguageChange(lng: string) {
   } else {
     _i18n.changeLanguage(lng);
   }
+  // Persist server-side for authenticated users; this also flips the
+  // `language_set_manually` flag so future sessions stop falling back to
+  // browser-language detection.
+  void import("./auth").then(({ isAuthenticated }) => {
+    if (!isAuthenticated()) return;
+    void import("./api").then(({ api }) => {
+      api.updateMyPreferences({ language: lng }).catch(() => {
+        /* offline / API down — picker still works locally */
+      });
+    });
+  });
 }
 
 export const usePreferences = create<PreferencesState>()(

@@ -17,6 +17,7 @@ export interface MeetingOut {
   room_name: string;
   display_title: string;
   owner_user_id: string;
+  owner_name?: string | null;
   is_active: boolean;
   require_password: boolean;
   max_participants: number;
@@ -31,6 +32,7 @@ export interface PublicMeeting {
   max_participants: number;
   require_password: boolean;
   branding_url: string | null;
+  owner_name: string | null;
 }
 
 export interface PublicRoomInfo {
@@ -38,6 +40,12 @@ export interface PublicRoomInfo {
   display_title: string;
   require_password: boolean;
   branding_url: string | null;
+  owner_name: string | null;
+}
+
+export interface UserPreferencesOut {
+  language: string | null;
+  language_set_manually: boolean;
 }
 
 async function fetchOnce(path: string, init: RequestInit, token: string | null): Promise<Response> {
@@ -89,6 +97,7 @@ export const api = {
     password?: string;
     list_for_authenticated?: boolean;
     list_for_anonymous?: boolean;
+    display_name?: string | null;
   }) =>
     request<{ meeting: MeetingOut; join_url: string }>("/api/v1/meetings", {
       method: "POST",
@@ -115,8 +124,11 @@ export const api = {
 
   listPublicMeetings: () => request<PublicMeeting[]>("/api/v1/public-meetings"),
 
-  ownerToken: (meetingId: string) =>
-    request<AnonTokenResponse>(`/api/v1/meetings/${meetingId}/token`, { method: "POST" }),
+  ownerToken: (meetingId: string, body: { display_name?: string | null } = {}) =>
+    request<AnonTokenResponse>(`/api/v1/meetings/${meetingId}/token`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   anonToken: (roomName: string, body: { display_name: string; email?: string; password?: string }) =>
     request<AnonTokenResponse>(`/api/v1/rooms/${roomName}/anon-token`, {
@@ -226,7 +238,7 @@ export const api = {
 
   invite: (
     meetingId: string,
-    body: { emails: string[]; personal_message?: string }
+    body: { emails: string[]; personal_message?: string; display_name?: string | null }
   ) =>
     request<{ ok: boolean; sent: number; failed: string[]; join_url: string }>(
       `/api/v1/meetings/${meetingId}/invite`,
@@ -236,6 +248,15 @@ export const api = {
   /** Public: meeting metadata for the lobby (no auth). */
   publicRoomInfo: (roomName: string) =>
     request<PublicRoomInfo>(`/api/v1/rooms/${roomName}/info`),
+
+  getMyPreferences: () =>
+    request<UserPreferencesOut>("/api/v1/me/preferences"),
+
+  updateMyPreferences: (body: { language?: string }) =>
+    request<UserPreferencesOut>("/api/v1/me/preferences", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 
   /** Upload (or replace) a meeting's branding image. */
   async uploadBranding(meetingId: string, file: File): Promise<{ branding_url: string | null }> {

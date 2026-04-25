@@ -23,7 +23,9 @@
     "yes": "Да",
     "no": "Не",
     "loading": "Зареждане…",
-    "close": "Затваряне"
+    "close": "Затваряне",
+    "anonymous": "анонимен",
+    "requestFailed": "Заявката не бе успешна"
   },
   "createMeeting": {
     "checkingSession": "Проверка на вашата сесия в one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Показва се в лобито и горната лента на срещата. JPEG, PNG, WebP или GIF; до 2 MB.",
     "noImage": "Няма избрано изображение",
     "submit": "Създаване на среща",
-    "submitting": "Създаване…"
+    "submitting": "Създаване…",
+    "visibility": "Видимост",
+    "visibilityHint": "По подразбиране само ти виждаш тази среща на началната си страница.",
+    "listForAuth": "Списък на началната страница с други влезли потребители",
+    "listForAuthDesc": "Всеки, влязъл чрез one.witysk.org, може да намери и да се присъедини.",
+    "listForAnon": "Също така показвай на анонимни (нерегистрирани) посетители",
+    "listForAnonDesc": "Срещата се показва на публичната начална страница.",
+    "brandingPreviewAlt": "Преглед на брандирането",
+    "brandingFieldAlt": "Изображение на марката",
+    "unsupportedImageType": "Неподдържан тип изображение {{type}}; използвайте JPEG, PNG, WebP или GIF.",
+    "imageTooLarge": "Изображението е {{mb}} MB; максимумът е 2 MB.",
+    "uploadFailed": "Срещата е създадена, но качването на брандиране не успя: {{message}}"
   },
   "myMeetings": {
     "loading": "Зареждане на срещите ви…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Изтрий тази среща от списъка",
     "more": "+ още {{count}}",
     "closedLabel": "Затворено",
-    "maxParticipants": "макс {{n}}"
+    "maxParticipants": "макс {{n}}",
+    "visibilityPublic": "Публична",
+    "visibilityListed": "Изброени за влезли потребители",
+    "visibilityPrivate": "Само за мен",
+    "visibilityChange": "{{label}} — щракнете за промяна",
+    "copyJoinPrompt": "Копирай тази връзка за присъединяване"
   },
   "lobby": {
     "joinMeeting": "Присъединяване към среща",
@@ -70,7 +88,9 @@
     "emailOptional": "Имейл (по избор)",
     "passwordIfRequired": "Парола (ако се изисква)",
     "join": "Присъединяване",
-    "joining": "Присъединяване…"
+    "joining": "Присъединяване…",
+    "hostedBy": "Водещ: {{name}}",
+    "brandingAlt": "Изображение за брандиране на срещата"
   },
   "room": {
     "takeStage": "Излез на сцена",
@@ -89,7 +109,11 @@
     "people": "Хора",
     "chat": "Чат",
     "invite": "Покани",
-    "inviteTitle": "Поканете хора по имейл"
+    "inviteTitle": "Поканете хора по имейл",
+    "settings": "Настройки",
+    "settingsLabel": "Настройки по време на среща",
+    "topbarBrandingAlt": "Изображение на брандиране на среща",
+    "requestFailed": "Заявката не бе успешна"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "Качване",
     "uploadTitle": "Качете свой собствен фон",
     "tooLarge": "Изображението е {{mb}} MB; максимумът е 4 MB.",
-    "notImage": "Не е изображение"
+    "notImage": "Не е изображение ({{type}})",
+    "uploadAria": "Качете фонова снимка",
+    "processorFailed": "Фоновите ефекти не се поддържат на това устройство.",
+    "custom": "Персонализирано: {{name}}",
+    "customDefault": "Персонализирано изображение"
   },
   "participants": {
     "title": "Участници",
@@ -118,14 +146,21 @@
     "muteMic": "Изключване на микрофона",
     "makePresenter": "Направи водещ",
     "removeFromMeeting": "Премахване от срещата",
-    "authenticatedOwner": "Удостоверен собственик"
+    "authenticatedOwner": "Удостоверен собственик",
+    "titleCount": "Участници ({{count}})",
+    "close": "Затваряне на участници",
+    "muteName": "Заглуши {{name}}",
+    "makeNamePresenter": "Направи {{name}} презентатор",
+    "removeName": "Премахни {{name}}"
   },
   "chatPanel": {
     "title": "Чат",
     "empty": "Все още няма съобщения — кажете „Здравей“.",
     "placeholder": "Напишете съобщение",
     "send": "Изпрати",
-    "close": "Затваряне на чата"
+    "close": "Затваряне на чата",
+    "ariaLabel": "Чат на срещата",
+    "messageAria": "Съобщение в чата"
   },
   "invite": {
     "title": "Покана по имейл",
@@ -143,12 +178,14 @@
     "tooMany": "Максимум 20 получатели на изпращане.",
     "sentN_one": "Изпратихте {{count}} покана.",
     "sentN_other": "Изпратени {{count}} покани.",
-    "failedSuffix": "Неуспешно: {{list}}"
+    "failedSuffix": "Неуспешно: {{list}}",
+    "cancel": "Отказ",
+    "close": "Затваряне"
   },
   "recordings": {
     "title": "Записи",
     "subtitle": "Сървърни записи на вашите срещи. Локалните файлове се изтриват автоматично след 30 дни (или когато публикувате в YouTube). Качванията се инициират само от собственика.",
-    "empty": "Все още няма записи. Започнете среща и натиснете Record, за да направите запис.",
+    "empty": "Все още няма записи. Започнете среща и кликнете върху <1>Запис</1>, за да направите такъв.",
     "download": "Изтегляне",
     "downloading": "Изтегляне…",
     "publish": "Публикуване в YouTube",
@@ -170,7 +207,11 @@
       "running": "работи",
       "failed": "неуспешно",
       "deleted": "изтрито"
-    }
+    },
+    "loading": "Зареждане…",
+    "signInFirst": "Първо влезте в one.witysk.org.",
+    "started": "Започна {{when}}",
+    "publishTitle": "Качване в YouTube и изтриване на локалния файл при успех"
   },
   "settings": {
     "title": "Настройки",
@@ -390,5 +431,67 @@
       "confirm": "Да нулирам всички настройки по подразбиране?",
       "doneFlash": "Възстановяване на стандартните"
     }
+  },
+  "discover": {
+    "title": "Открийте",
+    "subtitle": "— срещи, отворени за присъединяване",
+    "join": "Присъединяване",
+    "maxParticipants": "макс {{n}}",
+    "hostedBy": "Домакин е {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Настройки",
+    "close": "Затваряне на настройки",
+    "groupAv": "Аудио и видео",
+    "groupDisplay": "Дисплей",
+    "groupNotifications": "Известия",
+    "groupAccessibility": "Достъпност",
+    "groupNetwork": "Мрежа",
+    "groupAppearance": "Външен вид",
+    "camOnJoin": "Камерата включена при присъединяване",
+    "micOnJoin": "Микрофонът включен, когато се присъединя",
+    "noiseSuppression": "Потискане на шум",
+    "echoCancellation": "Премахване на ехо",
+    "mirrorPreview": "Огледай моя преглед",
+    "layout": "Оформление",
+    "layoutAuto": "Автоматично",
+    "layoutGrid": "Решетка",
+    "layoutSpeaker": "Активен говорител",
+    "layoutSpotlight": "Акцент",
+    "mirrorOwn": "Огледай моето видео",
+    "hideSelf": "Скрий собствения си изглед",
+    "showNames": "Показване на имената на участниците",
+    "connQuality": "Показване качеството на връзката",
+    "meetingClock": "Показване на часовника на срещата",
+    "highlightSpeaker": "Открояване на активния говорител",
+    "soundOnJoin": "Звук при присъединяване",
+    "chatSound": "Звук при съобщение в чата",
+    "ignoreOwnJoins": "Игнорирай моите собствени присъединявания",
+    "captions": "Живи субтитри",
+    "captionsSize": "Размер на шрифта на субтитрите",
+    "fontSmall": "Малък",
+    "fontMedium": "Среден",
+    "fontLarge": "Голям",
+    "fontXl": "Изключително голям",
+    "reducedMotion": "Намалено движение",
+    "monoAudio": "Моно аудио микс",
+    "quality": "Предпочитано качество на видеото",
+    "qualityAuto": "Автоматично",
+    "qualityLow": "Ниско",
+    "qualityMedium": "Среден",
+    "qualityHigh": "Високо",
+    "simulcast": "Simulcast",
+    "forceRelay": "Принудително TURN реле",
+    "theme": "Тема",
+    "themeSystem": "Система",
+    "themeDark": "Тъмен",
+    "themeLight": "Светлина",
+    "compact": "Компактен интерфейс",
+    "moreSettings": "Повече настройки са налични на страницата <1>Настройки</1>."
+  },
+  "tile": {
+    "flip": "Обърни хоризонтално",
+    "stopFlip": "Спри да обръщаш видеото хоризонтално",
+    "unflip": "Отмени обръщането"
   }
 }

@@ -23,7 +23,9 @@
     "yes": "예",
     "no": "아니요",
     "loading": "로딩 중…",
-    "close": "닫기"
+    "close": "닫기",
+    "anonymous": "익명",
+    "requestFailed": "요청 실패"
   },
   "createMeeting": {
     "checkingSession": "one.witysk.org 세션 확인 중…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "로비 및 회의 상단 표시줄에 표시됩니다. JPEG, PNG, WebP 또는 GIF; 최대 2MB.",
     "noImage": "선택된 이미지 없음",
     "submit": "회의 만들기",
-    "submitting": "생성 중…"
+    "submitting": "생성 중…",
+    "visibility": "표시",
+    "visibilityHint": "기본적으로, 이 회의는 홈 페이지에서만 표시됩니다.",
+    "listForAuth": "홈 페이지에 로그인한 다른 사용자 목록",
+    "listForAuthDesc": "one.witysk.org를 통해 로그인한 사람이라면 누구나 찾고 참여할 수 있습니다.",
+    "listForAnon": "익명(로그인하지 않은) 방문자에게도 표시",
+    "listForAnonDesc": "회의가 공개 랜딩 페이지에 표시됩니다.",
+    "brandingPreviewAlt": "브랜딩 미리보기",
+    "brandingFieldAlt": "브랜딩 이미지",
+    "unsupportedImageType": "지원되지 않는 이미지 형식 {{type}}입니다. JPEG, PNG, WebP 또는 GIF를 사용하세요.",
+    "imageTooLarge": "이미지 크기는 {{mb}} MB이며, 최대 2 MB입니다.",
+    "uploadFailed": "회의가 생성되었으나 브랜딩 업로드에 실패했습니다: {{message}}"
   },
   "myMeetings": {
     "loading": "회의를 불러오는 중…",
@@ -60,7 +73,12 @@
     "deleteTitle": "목록에서 이 회의를 삭제",
     "more": "+ {{count}}개 더 보기",
     "closedLabel": "닫힘",
-    "maxParticipants": "최대 {{n}}"
+    "maxParticipants": "최대 {{n}}",
+    "visibilityPublic": "공개",
+    "visibilityListed": "로그인한 사용자에게 표시됨",
+    "visibilityPrivate": "나만 볼 수 있음",
+    "visibilityChange": "{{label}} — 클릭하여 변경",
+    "copyJoinPrompt": "이 참가 링크를 복사하세요"
   },
   "lobby": {
     "joinMeeting": "회의 참가",
@@ -70,7 +88,9 @@
     "emailOptional": "이메일(선택 사항)",
     "passwordIfRequired": "비밀번호 (필요한 경우)",
     "join": "참여",
-    "joining": "참여 중…"
+    "joining": "참여 중…",
+    "hostedBy": "호스트: {{name}}",
+    "brandingAlt": "회의 브랜딩 이미지"
   },
   "room": {
     "takeStage": "무대 차지하기",
@@ -89,7 +109,11 @@
     "people": "참가자",
     "chat": "채팅",
     "invite": "초대",
-    "inviteTitle": "이메일로 사람 초대하기"
+    "inviteTitle": "이메일로 사람 초대하기",
+    "settings": "설정",
+    "settingsLabel": "회의 중 설정",
+    "topbarBrandingAlt": "회의 브랜딩 이미지",
+    "requestFailed": "요청 실패"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "업로드",
     "uploadTitle": "나만의 배경 이미지 업로드",
     "tooLarge": "이미지 크기가 {{mb}} MB이며, 최대 4 MB까지 가능합니다.",
-    "notImage": "이미지가 아닙니다"
+    "notImage": "이미지 아님 ({{type}})",
+    "uploadAria": "배경 이미지 업로드",
+    "processorFailed": "이 기기에서는 배경 효과를 지원하지 않습니다.",
+    "custom": "사용자 지정: {{name}}",
+    "customDefault": "사용자 지정 이미지"
   },
   "participants": {
     "title": "참가자",
@@ -118,14 +146,21 @@
     "muteMic": "마이크 음소거",
     "makePresenter": "발표자로 지정",
     "removeFromMeeting": "회의에서 제거",
-    "authenticatedOwner": "인증된 소유자"
+    "authenticatedOwner": "인증된 소유자",
+    "titleCount": "참가자 ({{count}})",
+    "close": "참가자 닫기",
+    "muteName": "{{name}} 음소거",
+    "makeNamePresenter": "{{name}}를 발표자로 지정",
+    "removeName": "{{name}} 제거"
   },
   "chatPanel": {
     "title": "채팅",
     "empty": "아직 메시지가 없습니다 — 인사해 보세요.",
     "placeholder": "메시지 입력",
     "send": "보내기",
-    "close": "채팅 닫기"
+    "close": "채팅 닫기",
+    "ariaLabel": "회의 채팅",
+    "messageAria": "채팅 메시지"
   },
   "invite": {
     "title": "이메일로 초대",
@@ -143,12 +178,14 @@
     "tooMany": "보내기당 최대 20명의 수신자.",
     "sentN_one": "{{count}}명에게 초대장을 보냈습니다.",
     "sentN_other": "{{count}}개의 초대장을 보냈습니다.",
-    "failedSuffix": "실패: {{list}}"
+    "failedSuffix": "실패: {{list}}",
+    "cancel": "취소",
+    "close": "닫기"
   },
   "recordings": {
     "title": "녹화",
     "subtitle": "서버 측 회의 녹음. 로컬 파일은 30일 후 (또는 YouTube에 게시 시) 자동 삭제됩니다. 업로드는 소유자만 시작할 수 있습니다.",
-    "empty": "아직 녹화된 항목이 없습니다. 회의를 시작하고 녹화 버튼을 클릭하여 녹화하세요.",
+    "empty": "아직 녹화된 내용이 없습니다. 회의를 시작하고 <1>녹화</1>를 클릭하여 녹화하세요.",
     "download": "다운로드",
     "downloading": "다운로드 중…",
     "publish": "YouTube에 게시",
@@ -170,7 +207,11 @@
       "running": "실행 중",
       "failed": "실패",
       "deleted": "삭제됨"
-    }
+    },
+    "loading": "로딩 중…",
+    "signInFirst": "먼저 one.witysk.org에서 로그인하세요.",
+    "started": "{{when}} 시작됨",
+    "publishTitle": "YouTube에 업로드하고 성공 시 로컬 파일 삭제"
   },
   "settings": {
     "title": "설정",
@@ -390,5 +431,67 @@
       "confirm": "모든 환경 설정을 기본값으로 초기화하시겠습니까?",
       "doneFlash": "기본값으로 재설정"
     }
+  },
+  "discover": {
+    "title": "발견",
+    "subtitle": "— 참여 가능한 회의",
+    "join": "참여하기",
+    "maxParticipants": "최대 {{n}}",
+    "hostedBy": "주최: {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "설정",
+    "close": "설정 닫기",
+    "groupAv": "오디오 및 비디오",
+    "groupDisplay": "표시",
+    "groupNotifications": "알림",
+    "groupAccessibility": "접근성",
+    "groupNetwork": "네트워크",
+    "groupAppearance": "모양",
+    "camOnJoin": "입장 시 카메라 켜기",
+    "micOnJoin": "입장 시 마이크 켜기",
+    "noiseSuppression": "소음 억제",
+    "echoCancellation": "반향 제거",
+    "mirrorPreview": "내 미리보기 거울 모드",
+    "layout": "레이아웃",
+    "layoutAuto": "자동",
+    "layoutGrid": "그리드",
+    "layoutSpeaker": "현재 발언자",
+    "layoutSpotlight": "스포트라이트",
+    "mirrorOwn": "내 비디오를 거울처럼 보기",
+    "hideSelf": "자신 보기 숨기기",
+    "showNames": "참가자 이름 표시",
+    "connQuality": "연결 품질 표시",
+    "meetingClock": "회의 시계 표시",
+    "highlightSpeaker": "활성 발표자 강조",
+    "soundOnJoin": "누군가 참여할 때 소리",
+    "chatSound": "채팅 메시지 소리",
+    "ignoreOwnJoins": "내 참가 무시",
+    "captions": "실시간 자막",
+    "captionsSize": "자막 글꼴 크기",
+    "fontSmall": "작게",
+    "fontMedium": "중간",
+    "fontLarge": "큰",
+    "fontXl": "매우 큼",
+    "reducedMotion": "동작 줄이기",
+    "monoAudio": "모노 오디오 믹스",
+    "quality": "선호하는 화질",
+    "qualityAuto": "자동",
+    "qualityLow": "낮음",
+    "qualityMedium": "중간",
+    "qualityHigh": "높음",
+    "simulcast": "시뮬캐스트",
+    "forceRelay": "TURN 릴레이 강제 사용",
+    "theme": "테마",
+    "themeSystem": "시스템",
+    "themeDark": "어둡게",
+    "themeLight": "밝게",
+    "compact": "간결한 UI",
+    "moreSettings": "더 많은 설정은 전체 <1>설정</1> 페이지에 있습니다."
+  },
+  "tile": {
+    "flip": "좌우 반전",
+    "stopFlip": "동영상 좌우 반전 중지",
+    "unflip": "뒤집기 해제"
   }
 }

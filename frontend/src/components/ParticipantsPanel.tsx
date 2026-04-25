@@ -5,6 +5,7 @@ import {
 import { Crown, Mic, MicOff, Users, Video, VideoOff, X } from "lucide-react";
 import { Track } from "livekit-client";
 import type { Participant } from "livekit-client";
+import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
 import { useState } from "react";
 
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }: Props) {
+  const { t } = useTranslation();
   const { localParticipant } = useLocalParticipant();
   const remotes = useRemoteParticipants();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -51,16 +53,16 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
       data-testid="participants-panel"
       className="h-full w-full sm:w-72 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col"
       role="complementary"
-      aria-label="Participants"
+      aria-label={t("participants.title")}
     >
       <header className="flex items-center justify-between px-4 py-3 border-b border-primary-700">
         <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-          <Users size={16} /> Participants ({all.length})
+          <Users size={16} /> {t("participants.titleCount", { count: all.length })}
         </h2>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close participants"
+          aria-label={t("participants.close")}
           data-testid="participants-close"
           className="p-1 rounded hover:bg-primary-700 text-slate-300"
         >
@@ -74,7 +76,7 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
       >
         {all.map((p) => {
           const me = p.identity === localParticipant?.identity;
-          const name = p.name || p.identity || "anonymous";
+          const name = p.name || p.identity || t("common.anonymous");
           return (
             <li
               key={p.identity}
@@ -87,13 +89,13 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-slate-100 truncate flex items-center gap-1.5">
                   <span className="truncate">{name}</span>
-                  {me && <span className="text-xs text-slate-400">(you)</span>}
+                  {me && <span className="text-xs text-slate-400">{t("participants.you")}</span>}
                   {p.permissions?.canPublishData && p.permissions?.recorder !== true && (
                     /* heuristic: roomAdmin grants canPublishData; this is just a visual hint */
                     null
                   )}
                   {p.identity?.startsWith("user-") && (
-                    <span title="Authenticated owner" className="text-amber-400">
+                    <span title={t("participants.authenticatedOwner")} className="text-amber-400">
                       <Crown size={12} />
                     </span>
                   )}
@@ -116,8 +118,8 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    title="Mute mic"
-                    aria-label={`Mute ${name}`}
+                    title={t("participants.muteMic")}
+                    aria-label={t("participants.muteName", { name })}
                     data-testid={`participant-mute-${p.identity}`}
                     disabled={busyId !== null}
                     onClick={() =>
@@ -131,8 +133,8 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
                   </button>
                   <button
                     type="button"
-                    title="Make presenter"
-                    aria-label={`Make ${name} presenter`}
+                    title={t("participants.makePresenter")}
+                    aria-label={t("participants.makeNamePresenter", { name })}
                     data-testid={`participant-present-${p.identity}`}
                     disabled={busyId !== null}
                     onClick={() =>
@@ -144,8 +146,8 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
                   </button>
                   <button
                     type="button"
-                    title="Remove from meeting"
-                    aria-label={`Remove ${name}`}
+                    title={t("participants.removeFromMeeting")}
+                    aria-label={t("participants.removeName", { name })}
                     data-testid={`participant-kick-${p.identity}`}
                     disabled={busyId !== null}
                     onClick={() => withBusy(p.identity, () => api.kick(meetingId, p.identity))}

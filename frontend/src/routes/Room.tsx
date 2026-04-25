@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ControlBar,
   LiveKitRoom,
@@ -8,8 +9,10 @@ import {
 } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 import {
+  Check,
   CircleStopIcon,
   Crown,
+  Link2,
   Mail,
   MessageSquare,
   MicOff,
@@ -34,9 +37,11 @@ interface InnerProps {
   isOwner: boolean;
   meetingTitle: string | null;
   brandingUrl: string | null;
+  roomName: string;
 }
 
-function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps) {
+function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: InnerProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const room = useRoomContext();
   const [recordingActive, setRecordingActive] = useState(false);
@@ -46,7 +51,21 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
   const [inviteOpen, setInviteOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const errClear = useRef<number | null>(null);
+  const copiedClear = useRef<number | null>(null);
+
+  async function copyMeetingLink() {
+    const url = `${window.location.origin}/${roomName}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt(t("room.copyLinkPrompt", { defaultValue: "Copy this link" }), url);
+    }
+    setCopied(true);
+    if (copiedClear.current) window.clearTimeout(copiedClear.current);
+    copiedClear.current = window.setTimeout(() => setCopied(false), 1500);
+  }
 
   function showErr(m: string) {
     setErr(m);
@@ -77,7 +96,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
     try {
       await fn();
     } catch (e) {
-      showErr((e as Error).message || "request failed");
+      showErr((e as Error).message || t("room.requestFailed"));
     } finally {
       setBusy(null);
     }
@@ -110,7 +129,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
 
   async function endMeeting() {
     if (!meetingId) return;
-    if (!confirm("End the meeting for everyone? This will disconnect all participants.")) return;
+    if (!confirm(t("room.endMeetingConfirm"))) return;
     await withBusy("end-meeting", () => api.endMeeting(meetingId));
     await room.disconnect();
     navigate("/");
@@ -127,7 +146,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
           {brandingUrl && (
             <img
               src={brandingUrl}
-              alt=""
+              alt={t("room.topbarBrandingAlt")}
               data-testid="topbar-branding"
               className="h-8 w-8 object-cover rounded-md border border-primary-700 flex-shrink-0"
             />
@@ -155,10 +174,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
             onClick={() => setInviteOpen(true)}
             data-testid="btn-invite"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600"
-            title="Invite people by email"
+            title={t("room.inviteTitle")}
           >
             <Mail size={16} />
-            Invite
+            {t("room.invite")}
           </button>
         )}
 
@@ -170,10 +189,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
               data-testid="btn-center-stage"
               disabled={busy !== null}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50"
-              title="Spotlight myself for everyone"
+              title={t("room.takeStageTitle")}
             >
               <Crown size={16} />
-              Take stage
+              {t("room.takeStage")}
             </button>
             <button
               type="button"
@@ -181,10 +200,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
               data-testid="btn-grid"
               disabled={busy !== null}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50"
-              title="Switch back to grid view"
+              title={t("room.gridTitle")}
             >
               <Square size={16} />
-              Grid
+              {t("room.grid")}
             </button>
             <button
               type="button"
@@ -192,10 +211,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
               data-testid="btn-mute-all"
               disabled={busy !== null}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50"
-              title="Mute every other participant"
+              title={t("room.muteAllTitle")}
             >
               <MicOff size={16} />
-              Mute all
+              {t("room.muteAll")}
             </button>
             <button
               type="button"
@@ -212,12 +231,12 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
             >
               {recordingActive ? <CircleStopIcon size={16} /> : <Radio size={16} />}
               {busy === "rec-start"
-                ? "Starting…"
+                ? t("room.starting")
                 : busy === "rec-stop"
-                ? "Stopping…"
+                ? t("room.stopping")
                 : recordingActive
-                ? "Stop recording"
-                : "Record"}
+                ? t("room.stopRecording")
+                : t("room.record")}
             </button>
             <button
               type="button"
@@ -225,20 +244,38 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
               data-testid="btn-end-meeting"
               disabled={busy !== null}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-700 text-white hover:bg-red-800 disabled:opacity-50"
-              title="End meeting and kick everyone"
+              title={t("room.endMeetingTitle")}
             >
-              End meeting
+              {t("room.endMeeting")}
             </button>
           </>
         )}
 
         <button
           type="button"
+          onClick={copyMeetingLink}
+          data-testid="btn-copy-link"
+          title={t("room.copyLinkTitle", { defaultValue: "Copy meeting link to clipboard" })}
+          className={[
+            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
+            copied
+              ? "bg-accent-500 text-white"
+              : "bg-primary-700 text-slate-100 hover:bg-primary-600",
+          ].join(" ")}
+        >
+          {copied ? <Check size={16} /> : <Link2 size={16} />}
+          {copied
+            ? t("room.linkCopied", { defaultValue: "Copied!" })
+            : t("room.copyLink", { defaultValue: "Link" })}
+        </button>
+
+        <button
+          type="button"
           onClick={() => setSettingsOpen((v) => !v)}
           data-testid="btn-settings"
           aria-pressed={settingsOpen ? "true" : "false"}
-          aria-label="In-meeting settings"
-          title="Settings"
+          aria-label={t("room.settingsLabel")}
+          title={t("room.settings")}
           className={[
             "inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-sm font-medium",
             settingsOpen
@@ -262,7 +299,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
           ].join(" ")}
         >
           <Users size={16} />
-          People
+          {t("room.people")}
         </button>
 
         <button
@@ -278,7 +315,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl }: InnerProps
           ].join(" ")}
         >
           <MessageSquare size={16} />
-          Chat
+          {t("room.chat")}
         </button>
       </header>
 
@@ -362,6 +399,7 @@ export default function Room() {
         isOwner={isOwner}
         meetingTitle={meta.display_title ?? null}
         brandingUrl={meta.branding_url ?? null}
+        roomName={roomName}
       />
     </LiveKitRoom>
   );

@@ -23,7 +23,9 @@
     "yes": "Ja",
     "no": "Nej",
     "loading": "Laddar…",
-    "close": "Stäng"
+    "close": "Stäng",
+    "anonymous": "anonym",
+    "requestFailed": "Begäran misslyckades"
   },
   "createMeeting": {
     "checkingSession": "Kontrollerar din one.witysk.org-session…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Visas i lobbyn och mötets översta fält. JPEG, PNG, WebP eller GIF; upp till 2 MB.",
     "noImage": "Ingen bild vald",
     "submit": "Skapa möte",
-    "submitting": "Skapar…"
+    "submitting": "Skapar…",
+    "visibility": "Synlighet",
+    "visibilityHint": "Som standard ser bara du detta möte på din startsida.",
+    "listForAuth": "Lista över andra inloggade användare på startsidan",
+    "listForAuthDesc": "Alla som är inloggade via one.witysk.org kan hitta och gå med.",
+    "listForAnon": "Lista även för anonyma besökare (ej inloggade)",
+    "listForAnonDesc": "Mötet visas på den offentliga landningssidan.",
+    "brandingPreviewAlt": "Varumärkesförhandsvisning",
+    "brandingFieldAlt": "Varumärkesbild",
+    "unsupportedImageType": "Bildtypen {{type}} stöds inte; använd JPEG, PNG, WebP eller GIF.",
+    "imageTooLarge": "Bilden är {{mb}} MB; max är 2 MB.",
+    "uploadFailed": "Möte skapat men varumärkesuppladdning misslyckades: {{message}}"
   },
   "myMeetings": {
     "loading": "Laddar dina möten…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Ta bort detta möte från listan",
     "more": "+ {{count}} till",
     "closedLabel": "Stängd",
-    "maxParticipants": "max {{n}}"
+    "maxParticipants": "max {{n}}",
+    "visibilityPublic": "Offentlig",
+    "visibilityListed": "Visas för inloggade användare",
+    "visibilityPrivate": "Endast synlig för mig",
+    "visibilityChange": "{{label}} — klicka för att ändra",
+    "copyJoinPrompt": "Kopiera denna anslutningslänk"
   },
   "lobby": {
     "joinMeeting": "Gå med i möte",
@@ -70,7 +88,9 @@
     "emailOptional": "E-post (valfritt)",
     "passwordIfRequired": "Lösenord (om det krävs)",
     "join": "Gå med",
-    "joining": "Ansluter…"
+    "joining": "Ansluter…",
+    "hostedBy": "Värd av {{name}}",
+    "brandingAlt": "Mötesvarumärkesbild"
   },
   "room": {
     "takeStage": "Ta scenen",
@@ -89,7 +109,11 @@
     "people": "Personer",
     "chat": "Chatta",
     "invite": "Bjud in",
-    "inviteTitle": "Bjud in personer via e-post"
+    "inviteTitle": "Bjud in personer via e-post",
+    "settings": "Inställningar",
+    "settingsLabel": "Mötesinställningar",
+    "topbarBrandingAlt": "Mötesvarumärkesbild",
+    "requestFailed": "Begäran misslyckades"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "Ladda upp",
     "uploadTitle": "Ladda upp din egen bakgrundsbild",
     "tooLarge": "Bilden är {{mb}} MB; max är 4 MB.",
-    "notImage": "Inte en bild"
+    "notImage": "Inte en bild ({{type}})",
+    "uploadAria": "Ladda upp en bakgrundsbild",
+    "processorFailed": "Bakgrundseffekter stöds inte på den här enheten.",
+    "custom": "Anpassad: {{name}}",
+    "customDefault": "Anpassad bild"
   },
   "participants": {
     "title": "Deltagare",
@@ -118,14 +146,21 @@
     "muteMic": "Stäng av mik",
     "makePresenter": "Gör till presentatör",
     "removeFromMeeting": "Ta bort från mötet",
-    "authenticatedOwner": "Autentiserad ägare"
+    "authenticatedOwner": "Autentiserad ägare",
+    "titleCount": "Deltagare ({{count}})",
+    "close": "Stäng deltagare",
+    "muteName": "Tysta {{name}}",
+    "makeNamePresenter": "Gör {{name}} till presentatör",
+    "removeName": "Ta bort {{name}}"
   },
   "chatPanel": {
     "title": "Chatta",
     "empty": "Inga meddelanden än — säg hej.",
     "placeholder": "Skriv ett meddelande",
     "send": "Skicka",
-    "close": "Stäng chatt"
+    "close": "Stäng chatt",
+    "ariaLabel": "Möteschatt",
+    "messageAria": "Chattmeddelande"
   },
   "invite": {
     "title": "Bjud in via e-post",
@@ -143,12 +178,14 @@
     "tooMany": "Max 20 mottagare per sändning.",
     "sentN_one": "Skicka {{count}} inbjudan.",
     "sentN_other": "Skickade {{count}} inbjudningar.",
-    "failedSuffix": "Misslyckades: {{list}}"
+    "failedSuffix": "Misslyckades: {{list}}",
+    "cancel": "Avbryt",
+    "close": "Stäng"
   },
   "recordings": {
     "title": "Inspelningar",
     "subtitle": "Serversida inspelningar av dina möten. Lokala filer raderas automatiskt efter 30 dagar (eller när du publicerar på YouTube). Uppladdningar initieras endast av ägaren.",
-    "empty": "Inga inspelningar än. Starta ett möte och klicka på Spela in för att göra en.",
+    "empty": "Inga inspelningar än. Starta ett möte och klicka på <1>Spela in</1> för att fånga en.",
     "download": "Ladda ner",
     "downloading": "Laddar ner…",
     "publish": "Publicera på YouTube",
@@ -170,7 +207,11 @@
       "running": "Kör",
       "failed": "misslyckades",
       "deleted": "raderad"
-    }
+    },
+    "loading": "Laddar…",
+    "signInFirst": "Logga in på one.witysk.org först.",
+    "started": "Startade {{when}}",
+    "publishTitle": "Ladda upp till YouTube och ta bort den lokala filen vid lyckad uppladdning"
   },
   "settings": {
     "title": "Inställningar",
@@ -390,5 +431,67 @@
       "confirm": "Återställ alla inställningar till standard?",
       "doneFlash": "Återställ till standard"
     }
+  },
+  "discover": {
+    "title": "Upptäck",
+    "subtitle": "— möten som är öppna att gå med i",
+    "join": "Gå med",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Värd av {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Inställningar",
+    "close": "Stäng inställningar",
+    "groupAv": "Ljud och video",
+    "groupDisplay": "Visa",
+    "groupNotifications": "Aviseringar",
+    "groupAccessibility": "Tillgänglighet",
+    "groupNetwork": "Nätverk",
+    "groupAppearance": "Utseende",
+    "camOnJoin": "Kamera på när jag går med",
+    "micOnJoin": "Mikrofon på när jag ansluter",
+    "noiseSuppression": "Brusreducering",
+    "echoCancellation": "Ekosläckning",
+    "mirrorPreview": "Spegla min förhandsvisning",
+    "layout": "Layout",
+    "layoutAuto": "Automatisk",
+    "layoutGrid": "Rutnät",
+    "layoutSpeaker": "Aktiv talare",
+    "layoutSpotlight": "Spotlight",
+    "mirrorOwn": "Spegla min egen video",
+    "hideSelf": "Dölj egen vy",
+    "showNames": "Visa deltagarnas namn",
+    "connQuality": "Visa anslutningskvalitet",
+    "meetingClock": "Visa mötesklocka",
+    "highlightSpeaker": "Markera aktiv talare",
+    "soundOnJoin": "Ljud när någon ansluter",
+    "chatSound": "Ljud vid chattmeddelande",
+    "ignoreOwnJoins": "Ignorera mina egna anslutningar",
+    "captions": "Live-textning",
+    "captionsSize": "Teckenstorlek för undertexter",
+    "fontSmall": "Liten",
+    "fontMedium": "Medel",
+    "fontLarge": "Stor",
+    "fontXl": "Extra stor",
+    "reducedMotion": "Minskad rörelse",
+    "monoAudio": "Mono-ljudmix",
+    "quality": "Önskad videokvalitet",
+    "qualityAuto": "Automatisk",
+    "qualityLow": "Låg",
+    "qualityMedium": "Medel",
+    "qualityHigh": "Hög",
+    "simulcast": "Simulcast",
+    "forceRelay": "Tvinga TURN-relä",
+    "theme": "Tema",
+    "themeSystem": "System",
+    "themeDark": "Mörk",
+    "themeLight": "Ljus",
+    "compact": "Kompakt gränssnitt",
+    "moreSettings": "Fler inställningar finns på den fullständiga sidan <1>Inställningar</1>."
+  },
+  "tile": {
+    "flip": "Vänd horisontellt",
+    "stopFlip": "Sluta spegelvänd videon horisontellt",
+    "unflip": "Ångra vändning"
   }
 }

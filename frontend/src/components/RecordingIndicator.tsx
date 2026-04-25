@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useRoomContext } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 
 export default function RecordingIndicator() {
+  const { t } = useTranslation();
   const room = useRoomContext();
   const [active, setActive] = useState(false);
 
@@ -39,7 +41,7 @@ export default function RecordingIndicator() {
       aria-live="polite"
     >
       <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f87171" }} />
-      REC
+      {t("recordingIndicator.label")}
     </span>
   );
 }

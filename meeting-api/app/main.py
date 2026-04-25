@@ -7,7 +7,7 @@ from app import scheduler
 from app.config import settings
 from app.db import engine, lightweight_migrate
 from app.models import Base
-from app.routes import health, meetings, moderation, recordings, tokens
+from app.routes import health, meetings, moderation, recordings, tokens, users
 from app.webhooks import router as webhook_router
 
 
@@ -38,7 +38,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.public_url, "http://localhost:5173"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -47,4 +47,5 @@ app.include_router(meetings.router, prefix="/api")
 app.include_router(tokens.router, prefix="/api")
 app.include_router(moderation.router, prefix="/api")
 app.include_router(recordings.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
 app.include_router(webhook_router, prefix="/api")

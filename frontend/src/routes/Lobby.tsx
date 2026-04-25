@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { api, AnonTokenResponse, PublicRoomInfo } from "../lib/api";
-import { bootstrapFromOneWitysk, isAuthenticated } from "../lib/auth";
+import { bootstrapFromOneWitysk, fetchOneWityskName, isAuthenticated } from "../lib/auth";
 import { Button, Card, Field, Input } from "../components/ui";
 
 const CACHE_KEY = "meet:pending-token";
@@ -37,6 +38,7 @@ export function clearRoomMeta(): void {
 }
 
 export default function Lobby() {
+  const { t } = useTranslation();
   const { roomName = "" } = useParams();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -103,7 +105,7 @@ export default function Lobby() {
     setErr(null);
     try {
       const resp = isOwner
-        ? await api.ownerToken(ownerMeetingId!)
+        ? await api.ownerToken(ownerMeetingId!, { display_name: await fetchOneWityskName() })
         : await api.anonToken(roomName, {
             display_name: name,
             email: email || undefined,
@@ -125,26 +127,31 @@ export default function Lobby() {
           {info?.branding_url && (
             <img
               src={info.branding_url}
-              alt=""
+              alt={t("lobby.brandingAlt")}
               data-testid="lobby-branding"
               className="h-16 w-16 object-cover rounded-md border border-primary-700 flex-shrink-0"
             />
           )}
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-slate-50 truncate">
-              {info?.display_title || "Join meeting"}
+              {info?.display_title || t("lobby.joinMeeting")}
             </h1>
             <p className="text-sm text-slate-400">
-              Room: <code className="text-slate-200">{roomName}</code>
-              {isOwner && <span className="ml-2 text-accent-500">— you are the host</span>}
+              {t("lobby.room")} <code className="text-slate-200">{roomName}</code>
+              {isOwner && <span className="ml-2 text-accent-500">{t("lobby.host")}</span>}
             </p>
+            {info?.owner_name && (
+              <p className="text-sm text-slate-400 mt-0.5" data-testid="lobby-host">
+                {t("lobby.hostedBy", { name: info.owner_name, defaultValue: "Hosted by {{name}}" })}
+              </p>
+            )}
           </div>
         </div>
 
         <form onSubmit={join} className="flex flex-col gap-4">
           {!isOwner && (
             <>
-              <Field id="lobby-name" label="Your name">
+              <Field id="lobby-name" label={t("lobby.yourName")}>
                 <Input
                   id="lobby-name"
                   data-testid="lobby-name"
@@ -154,7 +161,7 @@ export default function Lobby() {
                   maxLength={80}
                 />
               </Field>
-              <Field id="lobby-email" label="Email (optional)">
+              <Field id="lobby-email" label={t("lobby.emailOptional")}>
                 <Input
                   id="lobby-email"
                   type="email"
@@ -162,7 +169,7 @@ export default function Lobby() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </Field>
-              <Field id="lobby-password" label="Password (if required)">
+              <Field id="lobby-password" label={t("lobby.passwordIfRequired")}>
                 <Input
                   id="lobby-password"
                   type="password"
@@ -175,7 +182,7 @@ export default function Lobby() {
 
           <div>
             <Button type="submit" disabled={busy || (!isOwner && !name)} data-testid="lobby-submit">
-              {busy ? "Joining…" : "Join"}
+              {busy ? t("lobby.joining") : t("lobby.join")}
             </Button>
             {err && <div className="text-red-400 text-sm mt-2">{err}</div>}
           </div>

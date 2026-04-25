@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from livekit import api
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from ulid import ULID
 
 from app.auth import RequireUser
@@ -22,6 +22,7 @@ from app.config import settings
 from app.db import get_db
 from app.livekit_client import livekit_api
 from app.models import Meeting, ModerationAudit, Recording
+from app.routes.meetings import _branding_url
 
 router = APIRouter(prefix="/v1")
 
@@ -99,7 +100,11 @@ async def start_recording(meeting_id: str, user: RequireUser, db: Session = Depe
 
     rec_id = str(ULID())
     Path(settings.recordings_dir).mkdir(parents=True, exist_ok=True)
-    filepath = str(Path(settings.recordings_dir) / f"{m.id}-{rec_id}.mp4")
+    started = datetime.now(timezone.utc)
+    filepath = str(
+        Path(settings.recordings_dir)
+        / f"{m.room_name}-{started.strftime('%Y%m%d-%H%M')}.mp4"
+    )
 
     lk = livekit_api()
     try:
@@ -124,7 +129,6 @@ async def start_recording(meeting_id: str, user: RequireUser, db: Session = Depe
     finally:
         await lk.aclose()
 
-    started = datetime.now(timezone.utc)
     rec = Recording(
         id=rec_id,
         meeting_id=m.id,
@@ -168,6 +172,7 @@ def list_meeting_recordings(meeting_id: str, user: RequireUser, db: Session = De
     _require_owner(meeting_id, user.user_id, db)
     rows = (
         db.query(Recording)
+        .options(joinedload(Recording.meeting))
         .filter(Recording.meeting_id == meeting_id)
         .filter(Recording.status != "deleted")
         .order_by(Recording.started_at.desc())
@@ -183,6 +188,7 @@ def list_all_my_recordings(user: RequireUser, db: Session = Depends(get_db)) -> 
     visible because they still carry a useful URL."""
     rows = (
         db.query(Recording)
+        .options(joinedload(Recording.meeting))
         .join(Meeting, Meeting.id == Recording.meeting_id)
         .filter(Meeting.owner_user_id == user.user_id)
         .filter(Recording.status != "deleted")
@@ -210,7 +216,7 @@ def download_recording(rec_id: str, user: RequireUser, db: Session = Depends(get
     return FileResponse(
         path=str(path),
         media_type="video/mp4",
-        filename=f"{r.meeting_id}-{r.id}.mp4",
+        filename=path.name,
     )
 
 
@@ -329,6 +335,7 @@ def _recording_out(r: Recording) -> dict:
     return {
         "id": r.id,
         "meeting_id": r.meeting_id,
+        "branding_url": _branding_url(r.meeting) if r.meeting else None,
         "status": r.status,
         "started_at": r.started_at,
         "ended_at": r.ended_at,

@@ -7,6 +7,7 @@ import {
   Palette,
   X,
 } from "lucide-react";
+import { Trans, useTranslation } from "react-i18next";
 import { usePreferences } from "../lib/preferences";
 import type {
   Layout as LayoutT,
@@ -31,6 +32,7 @@ interface Props {
  * the full Settings page; persistence is automatic.
  */
 export default function InMeetingSettings({ open, onClose }: Props) {
+  const { t } = useTranslation();
   const prefs = usePreferences();
 
   if (!open) return null;
@@ -39,15 +41,15 @@ export default function InMeetingSettings({ open, onClose }: Props) {
     <aside
       data-testid="in-meeting-settings"
       role="complementary"
-      aria-label="In-meeting settings"
+      aria-label={t("inMeetingSettings.title")}
       className="h-full w-full sm:w-80 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col"
     >
       <header className="flex items-center justify-between px-4 py-3 border-b border-primary-700">
-        <h2 className="text-sm font-semibold text-slate-100">Settings</h2>
+        <h2 className="text-sm font-semibold text-slate-100">{t("inMeetingSettings.title")}</h2>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close settings"
+          aria-label={t("inMeetingSettings.close")}
           data-testid="in-meeting-settings-close"
           className="p-1 rounded hover:bg-primary-700 text-slate-300"
         >
@@ -56,120 +58,120 @@ export default function InMeetingSettings({ open, onClose }: Props) {
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 text-sm">
-        <Group icon={<Mic size={14} />} title="Audio & Video">
+        <Group icon={<Mic size={14} />} title={t("inMeetingSettings.groupAv")}>
           <Toggle
             id="im-cam-default"
-            label="Camera on when I join"
+            label={t("inMeetingSettings.camOnJoin")}
             checked={prefs.av.cameraOnByDefault}
             onChange={(v) => prefs.setAv({ cameraOnByDefault: v })}
           />
           <Toggle
             id="im-mic-default"
-            label="Microphone on when I join"
+            label={t("inMeetingSettings.micOnJoin")}
             checked={prefs.av.micOnByDefault}
             onChange={(v) => prefs.setAv({ micOnByDefault: v })}
           />
           <Toggle
             id="im-noise"
-            label="Noise suppression"
+            label={t("inMeetingSettings.noiseSuppression")}
             checked={prefs.av.noiseSuppression}
             onChange={(v) => prefs.setAv({ noiseSuppression: v })}
           />
           <Toggle
             id="im-echo"
-            label="Echo cancellation"
+            label={t("inMeetingSettings.echoCancellation")}
             checked={prefs.av.echoCancellation}
             onChange={(v) => prefs.setAv({ echoCancellation: v })}
           />
           <Toggle
             id="im-mirror-preview"
-            label="Mirror my preview"
+            label={t("inMeetingSettings.mirrorPreview")}
             checked={prefs.av.mirrorPreview}
             onChange={(v) => prefs.setAv({ mirrorPreview: v })}
           />
         </Group>
 
-        <Group icon={<Monitor size={14} />} title="Display">
-          <Field label="Layout">
+        <Group icon={<Monitor size={14} />} title={t("inMeetingSettings.groupDisplay")}>
+          <Field label={t("inMeetingSettings.layout")}>
             <SelectInline
               id="im-layout"
               value={prefs.display.layout}
               onChange={(v) => prefs.setDisplay({ layout: v as LayoutT })}
               options={[
-                ["auto", "Auto"],
-                ["grid", "Grid"],
-                ["speaker", "Active speaker"],
-                ["spotlight", "Spotlight"],
+                ["auto", t("inMeetingSettings.layoutAuto")],
+                ["grid", t("inMeetingSettings.layoutGrid")],
+                ["speaker", t("inMeetingSettings.layoutSpeaker")],
+                ["spotlight", t("inMeetingSettings.layoutSpotlight")],
               ]}
             />
           </Field>
           <Toggle
             id="im-mirror-own"
-            label="Mirror my own video"
+            label={t("inMeetingSettings.mirrorOwn")}
             checked={prefs.display.mirrorOwnVideo}
             onChange={(v) => prefs.setDisplay({ mirrorOwnVideo: v })}
           />
           <Toggle
             id="im-hide-self"
-            label="Hide self view"
+            label={t("inMeetingSettings.hideSelf")}
             checked={prefs.display.hideSelfView}
             onChange={(v) => prefs.setDisplay({ hideSelfView: v })}
           />
           <Toggle
             id="im-show-names"
-            label="Show participant names"
+            label={t("inMeetingSettings.showNames")}
             checked={prefs.display.showParticipantNames}
             onChange={(v) => prefs.setDisplay({ showParticipantNames: v })}
           />
           <Toggle
             id="im-conn-quality"
-            label="Show connection quality"
+            label={t("inMeetingSettings.connQuality")}
             checked={prefs.display.showConnectionQuality}
             onChange={(v) => prefs.setDisplay({ showConnectionQuality: v })}
           />
           <Toggle
             id="im-meeting-clock"
-            label="Show meeting clock"
+            label={t("inMeetingSettings.meetingClock")}
             checked={prefs.display.showMeetingClock}
             onChange={(v) => prefs.setDisplay({ showMeetingClock: v })}
           />
           <Toggle
             id="im-highlight-speaker"
-            label="Highlight active speaker"
+            label={t("inMeetingSettings.highlightSpeaker")}
             checked={prefs.display.highlightSpeaker}
             onChange={(v) => prefs.setDisplay({ highlightSpeaker: v })}
           />
         </Group>
 
-        <Group icon={<Bell size={14} />} title="Notifications">
+        <Group icon={<Bell size={14} />} title={t("inMeetingSettings.groupNotifications")}>
           <Toggle
             id="im-sound-join"
-            label="Sound when someone joins"
+            label={t("inMeetingSettings.soundOnJoin")}
             checked={prefs.notifications.soundOnJoin}
             onChange={(v) => prefs.setNotifications({ soundOnJoin: v })}
           />
           <Toggle
             id="im-chat-sound"
-            label="Sound on chat message"
+            label={t("inMeetingSettings.chatSound")}
             checked={prefs.notifications.chatMessageSound}
             onChange={(v) => prefs.setNotifications({ chatMessageSound: v })}
           />
           <Toggle
             id="im-ignore-own"
-            label="Ignore my own joins"
+            label={t("inMeetingSettings.ignoreOwnJoins")}
             checked={prefs.notifications.ignoreOwnJoins}
             onChange={(v) => prefs.setNotifications({ ignoreOwnJoins: v })}
           />
         </Group>
 
-        <Group icon={<Accessibility size={14} />} title="Accessibility">
+        <Group icon={<Accessibility size={14} />} title={t("inMeetingSettings.groupAccessibility")}>
           <Toggle
             id="im-captions"
-            label="Live captions"
+            label={t("inMeetingSettings.captions")}
             checked={prefs.accessibility.liveCaptions}
             onChange={(v) => prefs.setAccessibility({ liveCaptions: v })}
           />
-          <Field label="Captions font size">
+          <Field label={t("inMeetingSettings.captionsSize")}>
             <SelectInline
               id="im-captions-size"
               value={prefs.accessibility.captionsFontSize}
@@ -177,29 +179,29 @@ export default function InMeetingSettings({ open, onClose }: Props) {
                 prefs.setAccessibility({ captionsFontSize: v as FontSize })
               }
               options={[
-                ["small", "Small"],
-                ["medium", "Medium"],
-                ["large", "Large"],
-                ["xl", "Extra large"],
+                ["small", t("inMeetingSettings.fontSmall")],
+                ["medium", t("inMeetingSettings.fontMedium")],
+                ["large", t("inMeetingSettings.fontLarge")],
+                ["xl", t("inMeetingSettings.fontXl")],
               ]}
             />
           </Field>
           <Toggle
             id="im-reduced-motion"
-            label="Reduced motion"
+            label={t("inMeetingSettings.reducedMotion")}
             checked={prefs.accessibility.reducedMotion}
             onChange={(v) => prefs.setAccessibility({ reducedMotion: v })}
           />
           <Toggle
             id="im-mono"
-            label="Mono audio mix"
+            label={t("inMeetingSettings.monoAudio")}
             checked={prefs.accessibility.monoAudio}
             onChange={(v) => prefs.setAccessibility({ monoAudio: v })}
           />
         </Group>
 
-        <Group icon={<Wifi size={14} />} title="Network">
-          <Field label="Preferred video quality">
+        <Group icon={<Wifi size={14} />} title={t("inMeetingSettings.groupNetwork")}>
+          <Field label={t("inMeetingSettings.quality")}>
             <SelectInline
               id="im-quality"
               value={prefs.network.preferredVideoQuality}
@@ -207,50 +209,53 @@ export default function InMeetingSettings({ open, onClose }: Props) {
                 prefs.setNetwork({ preferredVideoQuality: v as VideoQuality })
               }
               options={[
-                ["auto", "Auto"],
-                ["low", "Low"],
-                ["medium", "Medium"],
-                ["high", "High"],
+                ["auto", t("inMeetingSettings.qualityAuto")],
+                ["low", t("inMeetingSettings.qualityLow")],
+                ["medium", t("inMeetingSettings.qualityMedium")],
+                ["high", t("inMeetingSettings.qualityHigh")],
               ]}
             />
           </Field>
           <Toggle
             id="im-simulcast"
-            label="Simulcast"
+            label={t("inMeetingSettings.simulcast")}
             checked={prefs.network.simulcastEnabled}
             onChange={(v) => prefs.setNetwork({ simulcastEnabled: v })}
           />
           <Toggle
             id="im-force-relay"
-            label="Force TURN relay"
+            label={t("inMeetingSettings.forceRelay")}
             checked={prefs.network.forceRelay}
             onChange={(v) => prefs.setNetwork({ forceRelay: v })}
           />
         </Group>
 
-        <Group icon={<Palette size={14} />} title="Appearance">
-          <Field label="Theme">
+        <Group icon={<Palette size={14} />} title={t("inMeetingSettings.groupAppearance")}>
+          <Field label={t("inMeetingSettings.theme")}>
             <SelectInline
               id="im-theme"
               value={prefs.appearance.theme}
               onChange={(v) => prefs.setAppearance({ theme: v as Theme })}
               options={[
-                ["system", "System"],
-                ["dark", "Dark"],
-                ["light", "Light"],
+                ["system", t("inMeetingSettings.themeSystem")],
+                ["dark", t("inMeetingSettings.themeDark")],
+                ["light", t("inMeetingSettings.themeLight")],
               ]}
             />
           </Field>
           <Toggle
             id="im-compact"
-            label="Compact UI"
+            label={t("inMeetingSettings.compact")}
             checked={prefs.appearance.compactMode}
             onChange={(v) => prefs.setAppearance({ compactMode: v })}
           />
         </Group>
 
         <p className="text-xs text-slate-500 pt-1">
-          More settings live on the full <a href="/settings" className="underline">Settings</a> page.
+          <Trans
+            i18nKey="inMeetingSettings.moreSettings"
+            components={{ 1: <a href="/settings" className="underline" title={t("nav.settings")} /> }}
+          />
         </p>
       </div>
     </aside>

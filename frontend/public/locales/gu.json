@@ -23,7 +23,9 @@
     "yes": "હા",
     "no": "ના",
     "loading": "લોડ થઈ રહ્યું છે…",
-    "close": "બંધ કરો"
+    "close": "બંધ કરો",
+    "anonymous": "અજ્ઞાત",
+    "requestFailed": "વિનંતી નિષ્ફળ"
   },
   "createMeeting": {
     "checkingSession": "તમારા one.witysk.org સત્રની ચકાસણી થઈ રહી છે…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "લોબી અને મીટિંગ ટોપ બારમાં બતાવાય છે. JPEG, PNG, WebP અથવા GIF; મહત્તમ 2 MB.",
     "noImage": "કોઈ ચિત્ર પસંદ કરેલ નથી",
     "submit": "મીટિંગ બનાવો",
-    "submitting": "બનાવી રહ્યા છે..."
+    "submitting": "બનાવી રહ્યા છે...",
+    "visibility": "દૃશ્યતા",
+    "visibilityHint": "મૂળભૂત રીતે, તમારા હોમ પેજ પર આ મીટિંગ ફક્ત તમે જ જોઈ શકો છો.",
+    "listForAuth": "હોમ પેજ પર અન્ય સાઇન-ઇન કરેલા વપરાશકર્તાઓની યાદી",
+    "listForAuthDesc": "one.witysk.org દ્વારા સાઇન ઇન કરેલ કોઈપણ વ્યક્તિ શોધી અને જોડાઈ શકે છે.",
+    "listForAnon": "અજાણ્યા (સાઇન-ઇન ન કરેલા) મુલાકાતીઓને પણ સૂચિબદ્ધ કરો",
+    "listForAnonDesc": "મીટિંગ જાહેર લેન્ડિંગ પેજ પર દેખાય છે.",
+    "brandingPreviewAlt": "બ્રાન્ડિંગ પૂર્વદર્શન",
+    "brandingFieldAlt": "બ્રાન્ડિંગ ઇમેજ",
+    "unsupportedImageType": "અસમર્થિત ઇમેજ પ્રકાર {{type}}; JPEG, PNG, WebP અથવા GIF વાપરો.",
+    "imageTooLarge": "છબીનું કદ {{mb}} MB છે; મહત્તમ 2 MB છે.",
+    "uploadFailed": "મીટિંગ બનાવાઈ પરંતુ બ્રાન્ડિંગ અપલોડ નિષ્ફળ: {{message}}"
   },
   "myMeetings": {
     "loading": "તમારી મીટિંગ્સ લોડ થઈ રહી છે…",
@@ -60,7 +73,12 @@
     "deleteTitle": "આ મીટિંગને યાદીમાંથી કાઢી નાખો",
     "more": "+ {{count}} વધુ",
     "closedLabel": "બંધ",
-    "maxParticipants": "મહત્તમ {{n}}"
+    "maxParticipants": "મહત્તમ {{n}}",
+    "visibilityPublic": "જાહેર",
+    "visibilityListed": "સાઇન ઇન કરેલા વપરાશકર્તાઓ માટે સૂચિબદ્ધ",
+    "visibilityPrivate": "ફક્ત મારા માટે જ દૃશ્યમાન",
+    "visibilityChange": "{{label}} — ફેરફાર કરવા ક્લિક કરો",
+    "copyJoinPrompt": "આ જોડાણ લિંક કૉપિ કરો"
   },
   "lobby": {
     "joinMeeting": "મીટિંગમાં જોડાઓ",
@@ -70,7 +88,9 @@
     "emailOptional": "ઇમેઇલ (વૈકલ્પિક)",
     "passwordIfRequired": "પાસવર્ડ (જો જરૂરી હોય તો)",
     "join": "જોડાઓ",
-    "joining": "જોડાઈ રહ્યા છે…"
+    "joining": "જોડાઈ રહ્યા છે…",
+    "hostedBy": "હોસ્ટ કર્યું {{name}}",
+    "brandingAlt": "મીટિંગ બ્રાન્ડિંગ ઇમેજ"
   },
   "room": {
     "takeStage": "સ્ટેજ લો",
@@ -89,7 +109,11 @@
     "people": "લોકો",
     "chat": "ચેટ",
     "invite": "આમંત્રિત કરો",
-    "inviteTitle": "ઈમેઈલ દ્વારા લોકોને આમંત્રિત કરો"
+    "inviteTitle": "ઈમેઈલ દ્વારા લોકોને આમંત્રિત કરો",
+    "settings": "સેટિંગ્સ",
+    "settingsLabel": "મીટિંગ દરમિયાનની સેટિંગ્સ",
+    "topbarBrandingAlt": "મીટિંગ બ્રાન્ડિંગ ઇમેજ",
+    "requestFailed": "વિનંતી નિષ્ફળ ગઈ"
   },
   "recordingIndicator": {
     "label": "રેક"
@@ -110,7 +134,11 @@
     "upload": "અપલોડ કરો",
     "uploadTitle": "તમારી પોતાની પૃષ્ઠભૂમિ છબી અપલોડ કરો",
     "tooLarge": "છબી {{mb}} MB છે; મહત્તમ 4 MB છે.",
-    "notImage": "ચિત્ર નથી"
+    "notImage": "છબી નથી ({{type}})",
+    "uploadAria": "પૃષ્ઠભૂમિ ચિત્ર અપલોડ કરો",
+    "processorFailed": "આ ઉપકરણ પર બેકગ્રાઉન્ડ ઇફેક્ટ્સ સપોર્ટેડ નથી.",
+    "custom": "કસ્ટમ: {{name}}",
+    "customDefault": "કસ્ટમ ઇમેજ"
   },
   "participants": {
     "title": "સહભાગીઓ",
@@ -118,14 +146,21 @@
     "muteMic": "માઈક મ્યૂટ કરો",
     "makePresenter": "પ્રસ્તુતકર્તા બનાવો",
     "removeFromMeeting": "મીટિંગમાંથી દૂર કરો",
-    "authenticatedOwner": "પ્રમાણિત માલિક"
+    "authenticatedOwner": "પ્રમાણિત માલિક",
+    "titleCount": "સહભાગીઓ ({{count}})",
+    "close": "સહભાગીઓ બંધ કરો",
+    "muteName": "મ્યૂટ કરો {{name}}",
+    "makeNamePresenter": "{{name}} ને પ્રસ્તુતકર્તા બનાવો",
+    "removeName": "{{name}} દૂર કરો"
   },
   "chatPanel": {
     "title": "ચેટ",
     "empty": "હજી સુધી કોઈ સંદેશા નથી — હેલો કહો.",
     "placeholder": "સંદેશો લખો",
     "send": "મોકલો",
-    "close": "ચેટ બંધ કરો"
+    "close": "ચેટ બંધ કરો",
+    "ariaLabel": "મીટિંગ ચેટ",
+    "messageAria": "ચેટ સંદેશ"
   },
   "invite": {
     "title": "ઇમેઇલ દ્વારા આમંત્રણ",
@@ -143,12 +178,14 @@
     "tooMany": "મહત્તમ 20 પ્રાપ્તકર્તા પ્રતિ મોકલ.",
     "sentN_one": "{{count}} આમંત્રણ મોકલ્યું.",
     "sentN_other": "{{count}} આમંત્રણો મોકલ્યાં.",
-    "failedSuffix": "નિષ્ફળ: {{list}}"
+    "failedSuffix": "નિષ્ફળ: {{list}}",
+    "cancel": "રદ કરો",
+    "close": "બંધ કરો"
   },
   "recordings": {
     "title": "રેકોર્ડિંગ્સ",
     "subtitle": "તમારી મીટિંગ્સની સર્વર-સાઇડ રેકોર્ડિંગ્સ. સ્થાનિક ફાઇલો 30 દિવસ પછી (અથવા જ્યારે તમે YouTube પર પ્રકાશિત કરો ત્યારે) આપમેળે કાઢી નાખાય છે. અપલોડ ફક્ત માલિક દ્વારા જ શરૂ કરી શકાય છે.",
-    "empty": "હજી સુધી કોઈ રેકોર્ડિંગ નથી. મીટિંગ શરૂ કરો અને એક કેપ્ચર કરવા માટે Record પર ક્લિક કરો.",
+    "empty": "હજી સુધી કોઈ રેકોર્ડિંગ નથી. મીટિંગ શરૂ કરો અને એક કેપ્ચર કરવા માટે <1>રેકોર્ડ</1> પર ક્લિક કરો.",
     "download": "ડાઉનલોડ કરો",
     "downloading": "ડાઉનલોડ થઈ રહ્યું છે…",
     "publish": "YouTube પર પ્રકાશિત કરો",
@@ -170,7 +207,11 @@
       "running": "ચાલી રહ્યું છે",
       "failed": "નિષ્ફળ",
       "deleted": "કાઢી નાખ્યું"
-    }
+    },
+    "loading": "લોડ થઈ રહ્યું છે…",
+    "signInFirst": "પ્રથમ one.witysk.org પર સાઇન ઇન કરો.",
+    "started": "શરૂ થયું {{when}}",
+    "publishTitle": "YouTube પર અપલોડ કરો અને સફળતા પર સ્થાનિક ફાઇલ કાઢી નાખો"
   },
   "settings": {
     "title": "સેટિંગ્સ",
@@ -390,5 +431,67 @@
       "confirm": "બધી પસંદગીઓ ડિફોલ્ટ પર રીસેટ કરો?",
       "doneFlash": "ડિફોલ્ટ પર રીસેટ કરો"
     }
+  },
+  "discover": {
+    "title": "શોધો",
+    "subtitle": "— જોડાવા માટે ખુલ્લી મીટિંગ્સ",
+    "join": "જોડાઓ",
+    "maxParticipants": "મહત્તમ {{n}}",
+    "hostedBy": "હોસ્ટ કર્યું {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "સેટિંગ્સ",
+    "close": "સેટિંગ્સ બંધ કરો",
+    "groupAv": "ઓડિયો અને વિડિયો",
+    "groupDisplay": "પ્રદર્શિત કરો",
+    "groupNotifications": "સૂચનાઓ",
+    "groupAccessibility": "સુલભતા",
+    "groupNetwork": "નેટવર્ક",
+    "groupAppearance": "દેખાવ",
+    "camOnJoin": "જોડાવા પર કેમેરા ચાલુ",
+    "micOnJoin": "જોડાવા પર માઇક્રોફોન ચાલુ",
+    "noiseSuppression": "અવાજ દબાવવું",
+    "echoCancellation": "ઇકો કેન્સલેશન",
+    "mirrorPreview": "મારું પ્રીવ્યૂ મિરર કરો",
+    "layout": "લેઆઉટ",
+    "layoutAuto": "સ્વચાલિત",
+    "layoutGrid": "ગ્રિડ",
+    "layoutSpeaker": "સક્રિય વક્તા",
+    "layoutSpotlight": "સ્પોટલાઇટ",
+    "mirrorOwn": "મારો પોતાનો વિડિયો મિરર કરો",
+    "hideSelf": "સ્વ-દૃશ્ય છુપાવો",
+    "showNames": "સહભાગીઓના નામ બતાવો",
+    "connQuality": "કનેક્શન ગુણવત્તા બતાવો",
+    "meetingClock": "મીટિંગ ઘડિયાળ બતાવો",
+    "highlightSpeaker": "સક્રિય વક્તાને હાઇલાઇટ કરો",
+    "soundOnJoin": "કોઈ વ્યક્તિ જોડાય ત્યારે અવાજ",
+    "chatSound": "ચેટ સંદેશ પર અવાજ",
+    "ignoreOwnJoins": "મારા પોતાના જોડાણોને અવગણો",
+    "captions": "લાઇવ કૅપ્શન",
+    "captionsSize": "કૅપ્શન ફોન્ટનું કદ",
+    "fontSmall": "નાનું",
+    "fontMedium": "મધ્યમ",
+    "fontLarge": "મોટું",
+    "fontXl": "અતિ મોટું",
+    "reducedMotion": "ઘટાડેલી ગતિ",
+    "monoAudio": "મોનો ઓડિયો મિક્સ",
+    "quality": "પસંદગીની વિડિઓ ગુણવત્તા",
+    "qualityAuto": "સ્વચાલિત",
+    "qualityLow": "નીચું",
+    "qualityMedium": "મધ્યમ",
+    "qualityHigh": "ઉચ્ચ",
+    "simulcast": "સિમલકાસ્ટ",
+    "forceRelay": "TURN રિલે ફરજિયાત કરો",
+    "theme": "થીમ",
+    "themeSystem": "સિસ્ટમ",
+    "themeDark": "ડાર્ક",
+    "themeLight": "પ્રકાશ",
+    "compact": "કોમ્પેક્ટ UI",
+    "moreSettings": "વધુ સેટિંગ્સ સંપૂર્ણ <1>સેટિંગ્સ</1> પેજ પર ઉપલબ્ધ છે."
+  },
+  "tile": {
+    "flip": "આડું ફ્લિપ કરો",
+    "stopFlip": "વિડિયોને આડું ફેરવવાનું બંધ કરો",
+    "unflip": "ફ્લિપ પાછું કરો"
   }
 }

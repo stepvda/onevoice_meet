@@ -23,7 +23,9 @@
     "yes": "Oo",
     "no": "Hindi",
     "loading": "Naglo-load…",
-    "close": "Isara"
+    "close": "Isara",
+    "anonymous": "anonymous",
+    "requestFailed": "Nabigo ang kahilingan"
   },
   "createMeeting": {
     "checkingSession": "Sinusuri ang iyong session sa one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Ipinapakita sa lobby at sa top bar ng meeting. JPEG, PNG, WebP o GIF; hanggang 2 MB.",
     "noImage": "Walang napiling larawan",
     "submit": "Gumawa ng meeting",
-    "submitting": "Ginagawa…"
+    "submitting": "Ginagawa…",
+    "visibility": "Visibility",
+    "visibilityHint": "Bilang default, ikaw lang ang nakakakita ng meeting na ito sa iyong Home page.",
+    "listForAuth": "Listahan ng iba pang naka-sign in na user sa Home page",
+    "listForAuthDesc": "Ang sinumang naka-sign in sa pamamagitan ng one.witysk.org ay makakahanap at makakasali.",
+    "listForAnon": "Ilista rin sa mga hindi naka-sign-in na bisita",
+    "listForAnonDesc": "Lumalabas ang pulong sa pampublikong landing page.",
+    "brandingPreviewAlt": "Preview ng branding",
+    "brandingFieldAlt": "Larawan ng tatak",
+    "unsupportedImageType": "Hindi suportadong uri ng larawan {{type}}; gumamit ng JPEG, PNG, WebP, o GIF.",
+    "imageTooLarge": "Ang imahe ay {{mb}} MB; ang maximum ay 2 MB.",
+    "uploadFailed": "Gawa na ang meeting pero nabigo ang pag-upload ng branding: {{message}}"
   },
   "myMeetings": {
     "loading": "Naglo-load ng iyong mga meeting…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Tanggalin ang pulong na ito mula sa listahan",
     "more": "+ {{count}} pa",
     "closedLabel": "sarado",
-    "maxParticipants": "max {{n}}"
+    "maxParticipants": "max {{n}}",
+    "visibilityPublic": "Pampubliko",
+    "visibilityListed": "Nakalista para sa mga naka-sign in na user",
+    "visibilityPrivate": "Ako lang ang nakakakita",
+    "visibilityChange": "{{label}} — pindutin para palitan",
+    "copyJoinPrompt": "Kopyahin ang link na ito para sumali"
   },
   "lobby": {
     "joinMeeting": "Sumali sa meeting",
@@ -70,7 +88,9 @@
     "emailOptional": "Email (opsyonal)",
     "passwordIfRequired": "Password (kung kinakailangan)",
     "join": "Sumali",
-    "joining": "Sumasali…"
+    "joining": "Sumasali…",
+    "hostedBy": "Hino-host ni {{name}}",
+    "brandingAlt": "Larawan ng pagba-brand ng pulong"
   },
   "room": {
     "takeStage": "Pumunta sa entablado",
@@ -89,7 +109,11 @@
     "people": "Mga Tao",
     "chat": "Chat",
     "invite": "Imbitahin",
-    "inviteTitle": "Mag-imbita ng mga tao sa pamamagitan ng email"
+    "inviteTitle": "Mag-imbita ng mga tao sa pamamagitan ng email",
+    "settings": "Mga Setting",
+    "settingsLabel": "Mga setting sa loob ng pulong",
+    "topbarBrandingAlt": "Larawan ng pagba-brand ng pulong",
+    "requestFailed": "Nabigo ang kahilingan"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "Mag-upload",
     "uploadTitle": "Mag-upload ng sarili mong background na larawan",
     "tooLarge": "Ang imahe ay {{mb}} MB; ang maximum ay 4 MB.",
-    "notImage": "Hindi larawan"
+    "notImage": "Hindi imahe ({{type}})",
+    "uploadAria": "Mag-upload ng background image",
+    "processorFailed": "Hindi sinusuportahan ng device na ito ang mga background effects.",
+    "custom": "Custom: {{name}}",
+    "customDefault": "Custom na larawan"
   },
   "participants": {
     "title": "Mga Kalahok",
@@ -118,14 +146,21 @@
     "muteMic": "I-mute ang mic",
     "makePresenter": "Gawing presenter",
     "removeFromMeeting": "Alisin mula sa meeting",
-    "authenticatedOwner": "Pinatotohanang may-ari"
+    "authenticatedOwner": "Pinatotohanang may-ari",
+    "titleCount": "Mga Kalahok ({{count}})",
+    "close": "Isara ang mga kalahok",
+    "muteName": "I-mute si {{name}}",
+    "makeNamePresenter": "Gawing {{name}} tagapresenter",
+    "removeName": "Alisin ang {{name}}"
   },
   "chatPanel": {
     "title": "Chat",
     "empty": "Wala pang mensahe — mag-hello ka na.",
     "placeholder": "Mag-type ng mensahe",
     "send": "Ipadala",
-    "close": "Isara ang chat"
+    "close": "Isara ang chat",
+    "ariaLabel": "Chat sa meeting",
+    "messageAria": "Mensahe sa chat"
   },
   "invite": {
     "title": "Mag-imbita sa pamamagitan ng email",
@@ -143,12 +178,14 @@
     "tooMany": "Maaari lamang hanggang 20 tatanggap bawat pagpapadala.",
     "sentN_one": "Nagpadala ng imbitasyon si {{count}}.",
     "sentN_other": "Nagpadala ng {{count}} imbitasyon.",
-    "failedSuffix": "Nabigo: {{list}}"
+    "failedSuffix": "Nabigo: {{list}}",
+    "cancel": "Kanselahin",
+    "close": "Isara"
   },
   "recordings": {
     "title": "Mga Recording",
     "subtitle": "Mga recording ng iyong mga pulong sa server. Awtomatikong binubura ang mga lokal na file pagkatapos ng 30 araw (o kapag na-publish mo sa YouTube). Ang pag-upload ay inuumpisahan lamang ng may-ari.",
-    "empty": "Wala pang recording. Magsimula ng meeting at i-click ang Record para makagawa.",
+    "empty": "Wala pang recording. Magsimula ng meeting at i-click ang <1>Record</1> para makapag-record.",
     "download": "I-download",
     "downloading": "Nagda-download…",
     "publish": "I-publish sa YouTube",
@@ -170,7 +207,11 @@
       "running": "tumatakbo",
       "failed": "nabigo",
       "deleted": "tinanggal"
-    }
+    },
+    "loading": "Naglo-load…",
+    "signInFirst": "Mag-sign in muna sa one.witysk.org.",
+    "started": "Nagsimula {{when}}",
+    "publishTitle": "I-upload sa YouTube at burahin ang lokal na file kapag matagumpay"
   },
   "settings": {
     "title": "Mga Setting",
@@ -390,5 +431,67 @@
       "confirm": "I-reset lahat ng preferences sa default?",
       "doneFlash": "I-reset sa default"
     }
+  },
+  "discover": {
+    "title": "Tuklasin",
+    "subtitle": "— mga pulong na bukas para sumali",
+    "join": "Sumali",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Hino-host ni {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Mga Setting",
+    "close": "Isara ang mga setting",
+    "groupAv": "Audio at Video",
+    "groupDisplay": "Ipakita",
+    "groupNotifications": "Mga Notipikasyon",
+    "groupAccessibility": "Accessibility",
+    "groupNetwork": "Network",
+    "groupAppearance": "Hitsura",
+    "camOnJoin": "Naka-on ang camera pag sumali ako",
+    "micOnJoin": "Naka-on ang mikropono kapag sumali ako",
+    "noiseSuppression": "Pagpigil ng ingay",
+    "echoCancellation": "Pagkansela ng echo",
+    "mirrorPreview": "I-mirror ang aking preview",
+    "layout": "Layout",
+    "layoutAuto": "Awtomatiko",
+    "layoutGrid": "Grid",
+    "layoutSpeaker": "Aktibong nagsasalita",
+    "layoutSpotlight": "Spotlight",
+    "mirrorOwn": "I-mirror ang sarili kong video",
+    "hideSelf": "Itago ang sariling view",
+    "showNames": "Ipakita ang mga pangalan ng kalahok",
+    "connQuality": "Ipakita ang kalidad ng koneksyon",
+    "meetingClock": "Ipakita ang orasan ng pulong",
+    "highlightSpeaker": "I-highlight ang aktibong nagsasalita",
+    "soundOnJoin": "Tunog kapag may sumali",
+    "chatSound": "May tunog sa mensahe ng chat",
+    "ignoreOwnJoins": "Huwag pansinin ang aking sariling pagsali",
+    "captions": "Mga live caption",
+    "captionsSize": "Laki ng font ng caption",
+    "fontSmall": "Maliit",
+    "fontMedium": "Katamtaman",
+    "fontLarge": "Malaki",
+    "fontXl": "Napakalaki",
+    "reducedMotion": "Pinababang galaw",
+    "monoAudio": "Mono audio mix",
+    "quality": "Ginustong kalidad ng video",
+    "qualityAuto": "Awtomatiko",
+    "qualityLow": "Mababa",
+    "qualityMedium": "Katamtaman",
+    "qualityHigh": "Mataas",
+    "simulcast": "Simulcast",
+    "forceRelay": "Puwersahin ang TURN relay",
+    "theme": "Tema",
+    "themeSystem": "Sistema",
+    "themeDark": "Madilim",
+    "themeLight": "Liwanag",
+    "compact": "Compact UI",
+    "moreSettings": "Higit pang mga setting ay makikita sa buong pahina ng <1>Settings</1>."
+  },
+  "tile": {
+    "flip": "I-flip nang pahalang",
+    "stopFlip": "Itigil ang pag-flip ng video nang pahalang",
+    "unflip": "I-flip pabalik"
   }
 }

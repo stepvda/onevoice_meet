@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Compass, Globe, LogIn, Lock } from "lucide-react";
 import { api, PublicMeeting } from "../lib/api";
 import { isAuthenticated } from "../lib/auth";
@@ -17,6 +18,7 @@ import { Button, Card } from "./ui";
  * Renders nothing if the result is empty (no clutter on solo/private setups).
  */
 export default function DiscoverableMeetings() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [rows, setRows] = useState<PublicMeeting[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -44,8 +46,8 @@ export default function DiscoverableMeetings() {
     <Card data-testid="discoverable-meetings">
       <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
         <Compass size={18} className="text-accent-500" />
-        Discover
-        <span className="text-sm font-normal text-slate-400">— meetings open to join</span>
+        {t("discover.title")}
+        <span className="text-sm font-normal text-slate-400">{t("discover.subtitle")}</span>
       </h2>
       <ul className="flex flex-col divide-y divide-primary-700">
         {rows.map((m) => (
@@ -68,7 +70,12 @@ export default function DiscoverableMeetings() {
                 <Globe size={14} className="text-accent-500" />
               </div>
               <div className="text-xs text-slate-400 mt-0.5">
-                <code>{m.room_name}</code> · max {m.max_participants}
+                <code>{m.room_name}</code> · {t("discover.maxParticipants", { n: m.max_participants })}
+                {m.owner_name && (
+                  <span className="ml-2" data-testid={`discover-host-${m.room_name}`}>
+                    · {t("discover.hostedBy", { name: m.owner_name, defaultValue: "Hosted by {{name}}" })}
+                  </span>
+                )}
               </div>
             </div>
             <Button
@@ -78,7 +85,7 @@ export default function DiscoverableMeetings() {
               onClick={() => navigate(`/${m.room_name}`)}
               data-testid={`discover-join-${m.room_name}`}
             >
-              <LogIn size={16} /> Join
+              <LogIn size={16} /> {t("discover.join")}
             </Button>
           </li>
         ))}

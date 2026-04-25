@@ -23,7 +23,9 @@
     "yes": "Ndiyo",
     "no": "Hapana",
     "loading": "Inapakia…",
-    "close": "Funga"
+    "close": "Funga",
+    "anonymous": "wasiojulikana",
+    "requestFailed": "Ombi halikufaulu"
   },
   "createMeeting": {
     "checkingSession": "Inaangalia kipindi chako cha one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Inaonyeshwa kwenye ukumbi na upau wa juu wa mkutano. JPEG, PNG, WebP au GIF; hadi MB 2.",
     "noImage": "Hakuna picha iliyochaguliwa",
     "submit": "Unda mkutano",
-    "submitting": "Inaundwa…"
+    "submitting": "Inaundwa…",
+    "visibility": "Mwonekano",
+    "visibilityHint": "Kwa chaguo-msingi, ni wewe pekee unayeona mkutano huu kwenye ukurasa wako wa Nyumbani.",
+    "listForAuth": "Orodha ya watumiaji wengine walioingia kwenye ukurasa wa Nyumbani",
+    "listForAuthDesc": "Mtu yeyote aliyeingia kupitia one.witysk.org anaweza kupata na kujiunga.",
+    "listForAnon": "Pia orodhesha kwa wageni wasiojulikana (wasiojiandikisha)",
+    "listForAnonDesc": "Mkutano unaonekana kwenye ukurasa wa kwanza wa umma.",
+    "brandingPreviewAlt": "Onyesho la chapa",
+    "brandingFieldAlt": "Picha ya chapa",
+    "unsupportedImageType": "Aina ya picha isiyotumika {{type}}; tumia JPEG, PNG, WebP, au GIF.",
+    "imageTooLarge": "Picha ni {{mb}} MB; upeo ni 2 MB.",
+    "uploadFailed": "Mkutano umeundwa lakini upakiaji wa chapa umeshindwa: {{message}}"
   },
   "myMeetings": {
     "loading": "Inapakia mikutano yako…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Futa mkutano huu kutoka kwenye orodha",
     "more": "+ {{count}} zaidi",
     "closedLabel": "imefungwa",
-    "maxParticipants": "kiwango cha juu {{n}}"
+    "maxParticipants": "kiwango cha juu {{n}}",
+    "visibilityPublic": "Umma",
+    "visibilityListed": "Imeorodheshwa kwa watumiaji walioingia",
+    "visibilityPrivate": "Inaonekana kwangu pekee",
+    "visibilityChange": "{{label}} — bofya kubadilisha",
+    "copyJoinPrompt": "Nakili kiungo hiki cha kujiunga"
   },
   "lobby": {
     "joinMeeting": "Jiunga na mkutano",
@@ -70,7 +88,9 @@
     "emailOptional": "Barua pepe (si lazima)",
     "passwordIfRequired": "Nenosiri (ikihitajika)",
     "join": "Jiunga",
-    "joining": "Inaungana…"
+    "joining": "Inaungana…",
+    "hostedBy": "Inaendeshwa na {{name}}",
+    "brandingAlt": "Picha ya chapa ya mkutano"
   },
   "room": {
     "takeStage": "Chukua jukwaa",
@@ -89,7 +109,11 @@
     "people": "Watu",
     "chat": "Ongea",
     "invite": "Alika",
-    "inviteTitle": "Alika watu kwa barua pepe"
+    "inviteTitle": "Alika watu kwa barua pepe",
+    "settings": "Mipangilio",
+    "settingsLabel": "Mipangilio ya kikao",
+    "topbarBrandingAlt": "Picha ya chapa ya mkutano",
+    "requestFailed": "Ombi halikufaulu"
   },
   "recordingIndicator": {
     "label": "REKODI"
@@ -110,7 +134,11 @@
     "upload": "Pakia",
     "uploadTitle": "Pakia picha yako mwenyewe ya mandharinyuma",
     "tooLarge": "Picha ni {{mb}} MB; upeo ni 4 MB.",
-    "notImage": "Sio picha"
+    "notImage": "Sio picha ({{type}})",
+    "uploadAria": "Pakia picha ya mandharinyuma",
+    "processorFailed": "Madoido ya mandharinyuma hayawezi kutumika kwenye kifaa hiki.",
+    "custom": "Custom: {{name}}",
+    "customDefault": "Picha maalum"
   },
   "participants": {
     "title": "Washiriki",
@@ -118,14 +146,21 @@
     "muteMic": "Zima maikrofoni",
     "makePresenter": "Fanya mwasilishaji",
     "removeFromMeeting": "Ondoa kutoka kwenye mkutano",
-    "authenticatedOwner": "Mmiliki aliyeidhinishwa"
+    "authenticatedOwner": "Mmiliki aliyeidhinishwa",
+    "titleCount": "Washiriki ({{count}})",
+    "close": "Funga washiriki",
+    "muteName": "Nyamazisha {{name}}",
+    "makeNamePresenter": "Fanya {{name}} mtangazaji",
+    "removeName": "Ondoa {{name}}"
   },
   "chatPanel": {
     "title": "Ongea",
     "empty": "Hakuna ujumbe bado — sema hello.",
     "placeholder": "Andika ujumbe",
     "send": "Tuma",
-    "close": "Funga mazungumzo"
+    "close": "Funga mazungumzo",
+    "ariaLabel": "Soga la mkutano",
+    "messageAria": "Ujumbe wa mazungumzo"
   },
   "invite": {
     "title": "Alika kwa barua pepe",
@@ -143,12 +178,14 @@
     "tooMany": "Anga wastani wa wapokeaji 20 kwa kila kutuma.",
     "sentN_one": "Tuma mwaliko wa {{count}}.",
     "sentN_other": "Tuma mialiko {{count}}.",
-    "failedSuffix": "Imeshindwa: {{list}}"
+    "failedSuffix": "Imeshindwa: {{list}}",
+    "cancel": "Ghairi",
+    "close": "Funga"
   },
   "recordings": {
     "title": "Rekodi",
     "subtitle": "Rekodi za upande wa seva za mikutano yako. Faili za ndani hufutwa kiotomatiki baada ya siku 30 (au unapochapisha kwenye YouTube). Upakiaji huanzishwa na mmiliki pekee.",
-    "empty": "Hakuna rekodi bado. Anza mkutano na ubofye Rekodi ili kunasa moja.",
+    "empty": "Hakuna rekodi bado. Anza mkutano na ubofye <1>Rekodi</1> ili kunasa moja.",
     "download": "Pakua",
     "downloading": "Inapakua…",
     "publish": "Chapisha kwa YouTube",
@@ -170,7 +207,11 @@
       "running": "inaendesha",
       "failed": "imeshindwa",
       "deleted": "imefutwa"
-    }
+    },
+    "loading": "Inapakia…",
+    "signInFirst": "Ingia kwenye one.witysk.org kwanza.",
+    "started": "Imeanza {{when}}",
+    "publishTitle": "Pakia kwenye YouTube na ufute faili la ndani ikifanikiwa"
   },
   "settings": {
     "title": "Mipangilio",
@@ -390,5 +431,67 @@
       "confirm": "Weka mapendeleo yote kwa chaguo-msingi?",
       "doneFlash": "Weka kwenye chaguo-msingi"
     }
+  },
+  "discover": {
+    "title": "Gundua",
+    "subtitle": "— mikutano iliyo wazi kujiunga",
+    "join": "Jiunga",
+    "maxParticipants": "kiwango cha juu {{n}}",
+    "hostedBy": "Inaendeshwa na {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Mipangilio",
+    "close": "Funga mipangilio",
+    "groupAv": "Sauti na Video",
+    "groupDisplay": "Onyesha",
+    "groupNotifications": "Arifa",
+    "groupAccessibility": "Ufikiaji",
+    "groupNetwork": "Mtandao",
+    "groupAppearance": "Mwonekano",
+    "camOnJoin": "Kamera iwashwe ninapojiunga",
+    "micOnJoin": "Mikrofoni iwashwe ninapojiunga",
+    "noiseSuppression": "Ukandamizaji wa kelele",
+    "echoCancellation": "Kughairi mwangwi",
+    "mirrorPreview": "Onyesha hakikisho langu",
+    "layout": "Mpangilio",
+    "layoutAuto": "Otomatiki",
+    "layoutGrid": "Grid",
+    "layoutSpeaker": "Spika anayezungumza",
+    "layoutSpotlight": "Mwangaza",
+    "mirrorOwn": "Onyesha video yangu mwenyewe",
+    "hideSelf": "Ficha mwenyewe",
+    "showNames": "Onyesha majina ya washiriki",
+    "connQuality": "Onyesha ubora wa muunganisho",
+    "meetingClock": "Onyesha saa ya mkutano",
+    "highlightSpeaker": "Angazia mzungumzaji anayezungumza",
+    "soundOnJoin": "Sauti wakati mtu anajiunga",
+    "chatSound": "Sauti kwenye ujumbe wa mazungumzo",
+    "ignoreOwnJoins": "Puuza kujiunga kwangu mwenyewe",
+    "captions": "Maandishi ya moja kwa moja",
+    "captionsSize": "Ukubwa wa herufi za manukuu",
+    "fontSmall": "Ndogo",
+    "fontMedium": "Kati",
+    "fontLarge": "Kubwa",
+    "fontXl": "Kubwa zaidi",
+    "reducedMotion": "Mwendo uliopunguzwa",
+    "monoAudio": "Mchanganyiko wa sauti wa Mono",
+    "quality": "Ubora wa video unaopendelewa",
+    "qualityAuto": "Otomatiki",
+    "qualityLow": "Chini",
+    "qualityMedium": "Kati",
+    "qualityHigh": "Juu",
+    "simulcast": "Simulcast",
+    "forceRelay": "Lazimisha relay ya TURN",
+    "theme": "Mandhari",
+    "themeSystem": "Mfumo",
+    "themeDark": "Giza",
+    "themeLight": "Mwanga",
+    "compact": "UI Iliyoshikana",
+    "moreSettings": "Mipangilio zaidi iko kwenye ukurasa kamili wa <1>Mipangilio</1>."
+  },
+  "tile": {
+    "flip": "Pindua kwa mlalo",
+    "stopFlip": "Acha kugeuza video kwa mlalo",
+    "unflip": "Geuza"
   }
 }

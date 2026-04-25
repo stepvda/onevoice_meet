@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import Sidebar, { MainArea } from "./components/Sidebar";
 import Lobby from "./routes/Lobby";
@@ -5,8 +6,25 @@ import Room from "./routes/Room";
 import CreateMeeting from "./routes/CreateMeeting";
 import Recordings from "./routes/Recordings";
 import Settings from "./routes/Settings";
+import { bootstrapFromOneWitysk } from "./lib/auth";
+import { syncServerLanguage } from "./i18n";
 
 export default function App() {
+  // Once at app start: try to bootstrap an SSO token, then ask the API for the
+  // user's saved language. If the user has explicitly chosen one in Settings
+  // (`language_set_manually=true`), it overrides whatever the browser detected.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const tok = await bootstrapFromOneWitysk();
+      if (cancelled || !tok) return;
+      await syncServerLanguage();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <>
       <Sidebar />

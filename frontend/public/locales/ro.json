@@ -23,7 +23,9 @@
     "yes": "Da",
     "no": "Nu",
     "loading": "Se încarcă…",
-    "close": "Închide"
+    "close": "Închide",
+    "anonymous": "anonim",
+    "requestFailed": "Cererea a eșuat"
   },
   "createMeeting": {
     "checkingSession": "Se verifică sesiunea one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Afișat în lobby și în bara de sus a întâlnirii. JPEG, PNG, WebP sau GIF; până la 2 MB.",
     "noImage": "Nicio imagine selectată",
     "submit": "Creează întâlnire",
-    "submitting": "Se creează…"
+    "submitting": "Se creează…",
+    "visibility": "Vizibilitate",
+    "visibilityHint": "Implicit, numai tu vezi această întâlnire pe pagina ta principală.",
+    "listForAuth": "Listă cu ceilalți utilizatori autentificați pe pagina principală",
+    "listForAuthDesc": "Oricine s-a autentificat prin one.witysk.org poate găsi și se poate alătura.",
+    "listForAnon": "De asemenea, afișează vizitatorilor anonimi (neautentificați)",
+    "listForAnonDesc": "Întâlnirea apare pe pagina publică de prezentare.",
+    "brandingPreviewAlt": "Previzualizare branding",
+    "brandingFieldAlt": "Imagine de branding",
+    "unsupportedImageType": "Tip de imagine neacceptat {{type}}; folosește JPEG, PNG, WebP sau GIF.",
+    "imageTooLarge": "Imaginea are {{mb}} MB; maximul este de 2 MB.",
+    "uploadFailed": "Întâlnire creată, dar încărcarea branding-ului a eșuat: {{message}}"
   },
   "myMeetings": {
     "loading": "Se încarcă întâlnirile tale…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Șterge această întâlnire din listă",
     "more": "+ încă {{count}}",
     "closedLabel": "închis",
-    "maxParticipants": "maxim {{n}}"
+    "maxParticipants": "maxim {{n}}",
+    "visibilityPublic": "Public",
+    "visibilityListed": "Listat pentru utilizatorii autentificați",
+    "visibilityPrivate": "Vizibil doar pentru mine",
+    "visibilityChange": "{{label}} — apasă pentru a schimba",
+    "copyJoinPrompt": "Copiază acest link de participare"
   },
   "lobby": {
     "joinMeeting": "Participă la întâlnire",
@@ -70,7 +88,9 @@
     "emailOptional": "Email (opțional)",
     "passwordIfRequired": "Parolă (dacă este necesar)",
     "join": "Alătură-te",
-    "joining": "Se alătură…"
+    "joining": "Se alătură…",
+    "hostedBy": "Găzduit de {{name}}",
+    "brandingAlt": "Imagine de branding a întâlnirii"
   },
   "room": {
     "takeStage": "Preia scena",
@@ -89,7 +109,11 @@
     "people": "Persoane",
     "chat": "Chat",
     "invite": "Invită",
-    "inviteTitle": "Invită persoane prin e-mail"
+    "inviteTitle": "Invită persoane prin e-mail",
+    "settings": "Setări",
+    "settingsLabel": "Setări în timpul întâlnirii",
+    "topbarBrandingAlt": "Imagine de branding a întâlnirii",
+    "requestFailed": "Cererea a eșuat"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "Încarcă",
     "uploadTitle": "Încarcă propria imagine de fundal",
     "tooLarge": "Imaginea are {{mb}} MB; maximul este de 4 MB.",
-    "notImage": "Nu este o imagine"
+    "notImage": "Nu este o imagine ({{type}})",
+    "uploadAria": "Încarcă o imagine de fundal",
+    "processorFailed": "Efectele de fundal nu sunt suportate pe acest dispozitiv.",
+    "custom": "Personalizat: {{name}}",
+    "customDefault": "Imagine personalizată"
   },
   "participants": {
     "title": "Participanți",
@@ -118,14 +146,21 @@
     "muteMic": "Dezactivează microfonul",
     "makePresenter": "Fă prezentator",
     "removeFromMeeting": "Elimină din întâlnire",
-    "authenticatedOwner": "Proprietar autentificat"
+    "authenticatedOwner": "Proprietar autentificat",
+    "titleCount": "Participanți ({{count}})",
+    "close": "Închide participanții",
+    "muteName": "Dezactivează sunetul pentru {{name}}",
+    "makeNamePresenter": "Fă-l pe {{name}} prezentator",
+    "removeName": "Elimină {{name}}"
   },
   "chatPanel": {
     "title": "Chat",
     "empty": "Niciun mesaj încă — spune „bună”.",
     "placeholder": "Scrie un mesaj",
     "send": "Trimite",
-    "close": "Închide chatul"
+    "close": "Închide chatul",
+    "ariaLabel": "Chatul întâlnirii",
+    "messageAria": "Mesaj chat"
   },
   "invite": {
     "title": "Invită prin email",
@@ -143,12 +178,14 @@
     "tooMany": "Maximum 20 de destinatari per expediere.",
     "sentN_one": "Ai trimis invitația către {{count}}.",
     "sentN_other": "Ai trimis {{count}} invitații.",
-    "failedSuffix": "Eșuat: {{list}}"
+    "failedSuffix": "Eșuat: {{list}}",
+    "cancel": "Anulează",
+    "close": "Închide"
   },
   "recordings": {
     "title": "Înregistrări",
     "subtitle": "Înregistrări ale întâlnirilor pe server. Fișierele locale se șterg automat după 30 de zile (sau când publici pe YouTube). Încărcările sunt inițiate doar de proprietar.",
-    "empty": "Nicio înregistrare încă. Începe o întâlnire și apasă Înregistrare pentru a captura una.",
+    "empty": "Nicio înregistrare încă. Începe o întâlnire și apasă <1>Înregistrează</1> pentru a captura una.",
     "download": "Descarcă",
     "downloading": "Se descarcă…",
     "publish": "Publică pe YouTube",
@@ -170,7 +207,11 @@
       "running": "rulează",
       "failed": "a eșuat",
       "deleted": "șters"
-    }
+    },
+    "loading": "Se încarcă…",
+    "signInFirst": "Autentifică-te mai întâi pe one.witysk.org.",
+    "started": "A început {{when}}",
+    "publishTitle": "Încarcă pe YouTube și șterge fișierul local după reușită"
   },
   "settings": {
     "title": "Setări",
@@ -390,5 +431,67 @@
       "confirm": "Resetați toate preferințele la valorile implicite?",
       "doneFlash": "Resetează la valorile implicite"
     }
+  },
+  "discover": {
+    "title": "Descoperă",
+    "subtitle": "— întâlniri deschise pentru participare",
+    "join": "Alăturați-vă",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Găzduit de {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Setări",
+    "close": "Închide setările",
+    "groupAv": "Audio și Video",
+    "groupDisplay": "Afișare",
+    "groupNotifications": "Notificări",
+    "groupAccessibility": "Accesibilitate",
+    "groupNetwork": "Rețea",
+    "groupAppearance": "Aspect",
+    "camOnJoin": "Cameră pornită când mă alătur",
+    "micOnJoin": "Microfon pornit când mă alătur",
+    "noiseSuppression": "Suprimare zgomot",
+    "echoCancellation": "Anulare ecou",
+    "mirrorPreview": "Oglindește previzualizarea mea",
+    "layout": "Aspect",
+    "layoutAuto": "Automat",
+    "layoutGrid": "Grilă",
+    "layoutSpeaker": "Vorbitor activ",
+    "layoutSpotlight": "Reflectoare",
+    "mirrorOwn": "Oglindește propriul meu video",
+    "hideSelf": "Ascunde vizualizarea proprie",
+    "showNames": "Afișează numele participanților",
+    "connQuality": "Afișează calitatea conexiunii",
+    "meetingClock": "Afișează ceasul întâlnirii",
+    "highlightSpeaker": "Evidențiază vorbitorul activ",
+    "soundOnJoin": "Sunet când cineva se alătură",
+    "chatSound": "Sunet la mesajele din chat",
+    "ignoreOwnJoins": "Ignoră propriile conexiuni",
+    "captions": "Subtitrări live",
+    "captionsSize": "Dimensiune font subtitrări",
+    "fontSmall": "Mic",
+    "fontMedium": "Mediu",
+    "fontLarge": "Mare",
+    "fontXl": "Extra mare",
+    "reducedMotion": "Mișcare redusă",
+    "monoAudio": "Mix audio mono",
+    "quality": "Calitate video preferată",
+    "qualityAuto": "Automat",
+    "qualityLow": "Scăzut",
+    "qualityMedium": "Mediu",
+    "qualityHigh": "Ridicat",
+    "simulcast": "Simulcast",
+    "forceRelay": "Forțează releul TURN",
+    "theme": "Temă",
+    "themeSystem": "Sistem",
+    "themeDark": "Întunecat",
+    "themeLight": "Luminos",
+    "compact": "Interfață compactă",
+    "moreSettings": "Mai multe setări se găsesc pe pagina completă <1>Setări</1>."
+  },
+  "tile": {
+    "flip": "Inversare orizontală",
+    "stopFlip": "Oprește oglindirea orizontală a videoclipului",
+    "unflip": "Dezactivează răsturnarea"
   }
 }

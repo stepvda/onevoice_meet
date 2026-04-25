@@ -23,7 +23,9 @@
     "yes": "Oui",
     "no": "Non",
     "loading": "Chargement…",
-    "close": "Fermer"
+    "close": "Fermer",
+    "anonymous": "anonyme",
+    "requestFailed": "La requête a échoué"
   },
   "createMeeting": {
     "checkingSession": "Vérification de votre session one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Affiché dans le hall et la barre supérieure de la réunion. JPEG, PNG, WebP ou GIF ; jusqu'à 2 Mo.",
     "noImage": "Aucune image sélectionnée",
     "submit": "Créer une réunion",
-    "submitting": "Création…"
+    "submitting": "Création…",
+    "visibility": "Visibilité",
+    "visibilityHint": "Par défaut, vous seul voyez cette réunion sur votre page d’accueil.",
+    "listForAuth": "Liste des autres utilisateurs connectés sur la page d'accueil",
+    "listForAuthDesc": "Toute personne connectée via one.witysk.org peut trouver et rejoindre.",
+    "listForAnon": "Lister également pour les visiteurs anonymes (non connectés)",
+    "listForAnonDesc": "La réunion apparaît sur la page d’accueil publique.",
+    "brandingPreviewAlt": "Aperçu de la marque",
+    "brandingFieldAlt": "Image de marque",
+    "unsupportedImageType": "Type d'image non pris en charge {{type}} ; utilisez JPEG, PNG, WebP ou GIF.",
+    "imageTooLarge": "L'image fait {{mb}} Mo ; le maximum est de 2 Mo.",
+    "uploadFailed": "Réunion créée mais échec du téléchargement de la marque : {{message}}"
   },
   "myMeetings": {
     "loading": "Chargement de vos réunions…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Supprimer cette réunion de la liste",
     "more": "+ {{count}} de plus",
     "closedLabel": "fermé",
-    "maxParticipants": "max {{n}}"
+    "maxParticipants": "max {{n}}",
+    "visibilityPublic": "Publique",
+    "visibilityListed": "Listé pour les utilisateurs connectés",
+    "visibilityPrivate": "Visible uniquement pour moi",
+    "visibilityChange": "{{label}} — cliquez pour modifier",
+    "copyJoinPrompt": "Copier ce lien d'invitation"
   },
   "lobby": {
     "joinMeeting": "Rejoindre la réunion",
@@ -70,7 +88,9 @@
     "emailOptional": "E-mail (facultatif)",
     "passwordIfRequired": "Mot de passe (si requis)",
     "join": "Rejoindre",
-    "joining": "Connexion en cours…"
+    "joining": "Connexion en cours…",
+    "hostedBy": "Hébergé par {{name}}",
+    "brandingAlt": "Image de marque de la réunion"
   },
   "room": {
     "takeStage": "Prendre la scène",
@@ -89,7 +109,11 @@
     "people": "Personnes",
     "chat": "Discuter",
     "invite": "Inviter",
-    "inviteTitle": "Inviter des personnes par e-mail"
+    "inviteTitle": "Inviter des personnes par e-mail",
+    "settings": "Paramètres",
+    "settingsLabel": "Paramètres de la réunion",
+    "topbarBrandingAlt": "Image de marque de la réunion",
+    "requestFailed": "Échec de la requête"
   },
   "recordingIndicator": {
     "label": "ENREGISTRÉ"
@@ -110,7 +134,11 @@
     "upload": "Télécharger",
     "uploadTitle": "Téléchargez votre propre image d’arrière-plan",
     "tooLarge": "L'image fait {{mb}} Mo ; le maximum est de 4 Mo.",
-    "notImage": "Pas une image"
+    "notImage": "Pas une image ({{type}})",
+    "uploadAria": "Télécharger une image d’arrière-plan",
+    "processorFailed": "Effets d’arrière-plan non pris en charge sur cet appareil.",
+    "custom": "Personnalisé : {{name}}",
+    "customDefault": "Image personnalisée"
   },
   "participants": {
     "title": "Participants",
@@ -118,14 +146,21 @@
     "muteMic": "Couper le micro",
     "makePresenter": "Faire présentateur",
     "removeFromMeeting": "Supprimer de la réunion",
-    "authenticatedOwner": "Propriétaire authentifié"
+    "authenticatedOwner": "Propriétaire authentifié",
+    "titleCount": "Participants ({{count}})",
+    "close": "Fermer les participants",
+    "muteName": "Couper le son de {{name}}",
+    "makeNamePresenter": "Faire de {{name}} le présentateur",
+    "removeName": "Supprimer {{name}}"
   },
   "chatPanel": {
     "title": "Discuter",
     "empty": "Aucun message pour l'instant — dites bonjour.",
     "placeholder": "Tapez un message",
     "send": "Envoyer",
-    "close": "Fermer le chat"
+    "close": "Fermer le chat",
+    "ariaLabel": "Chat de la réunion",
+    "messageAria": "Message de discussion"
   },
   "invite": {
     "title": "Inviter par e-mail",
@@ -143,12 +178,14 @@
     "tooMany": "Au maximum 20 destinataires par envoi.",
     "sentN_one": "Invitation envoyée à {{count}}.",
     "sentN_other": "{{count}} invitations envoyées.",
-    "failedSuffix": "Échec : {{list}}"
+    "failedSuffix": "Échec : {{list}}",
+    "cancel": "Annuler",
+    "close": "Fermer"
   },
   "recordings": {
     "title": "Enregistrements",
     "subtitle": "Enregistrements côté serveur de vos réunions. Les fichiers locaux sont automatiquement supprimés après 30 jours (ou lors de la publication sur YouTube). Les téléversements sont initiés uniquement par le propriétaire.",
-    "empty": "Aucun enregistrement pour l'instant. Lancez une réunion et cliquez sur Enregistrer pour en créer un.",
+    "empty": "Aucun enregistrement pour l'instant. Lancez une réunion et cliquez sur <1>Enregistrer</1> pour en capturer un.",
     "download": "Télécharger",
     "downloading": "Téléchargement…",
     "publish": "Publier sur YouTube",
@@ -170,7 +207,11 @@
       "running": "en cours",
       "failed": "échec",
       "deleted": "supprimé"
-    }
+    },
+    "loading": "Chargement…",
+    "signInFirst": "Connectez-vous d'abord sur one.witysk.org.",
+    "started": "Démarré {{when}}",
+    "publishTitle": "Téléverser sur YouTube et supprimer le fichier local en cas de succès"
   },
   "settings": {
     "title": "Paramètres",
@@ -390,5 +431,67 @@
       "confirm": "Réinitialiser toutes les préférences par défaut ?",
       "doneFlash": "Réinitialiser aux valeurs par défaut"
     }
+  },
+  "discover": {
+    "title": "Découvrir",
+    "subtitle": "— réunions ouvertes à rejoindre",
+    "join": "Rejoindre",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Organisé par {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Paramètres",
+    "close": "Fermer les paramètres",
+    "groupAv": "Audio et Vidéo",
+    "groupDisplay": "Afficher",
+    "groupNotifications": "Notifications",
+    "groupAccessibility": "Accessibilité",
+    "groupNetwork": "Réseau",
+    "groupAppearance": "Apparence",
+    "camOnJoin": "Caméra activée à mon arrivée",
+    "micOnJoin": "Microphone activé quand je rejoins",
+    "noiseSuppression": "Suppression du bruit",
+    "echoCancellation": "Annulation d'écho",
+    "mirrorPreview": "Miroir de mon aperçu",
+    "layout": "Disposition",
+    "layoutAuto": "Automatique",
+    "layoutGrid": "Grille",
+    "layoutSpeaker": "Orateur actif",
+    "layoutSpotlight": "Projecteur",
+    "mirrorOwn": "Miroir de ma propre vidéo",
+    "hideSelf": "Masquer ma propre vue",
+    "showNames": "Afficher les noms des participants",
+    "connQuality": "Afficher la qualité de la connexion",
+    "meetingClock": "Afficher l’horloge de la réunion",
+    "highlightSpeaker": "Mettre en évidence l’intervenant actif",
+    "soundOnJoin": "Son quand quelqu'un rejoint",
+    "chatSound": "Son du message de chat",
+    "ignoreOwnJoins": "Ignorer mes propres participations",
+    "captions": "Sous-titres en direct",
+    "captionsSize": "Taille de la police des sous-titres",
+    "fontSmall": "Petit",
+    "fontMedium": "Moyen",
+    "fontLarge": "Grand",
+    "fontXl": "Très grand",
+    "reducedMotion": "Mouvement réduit",
+    "monoAudio": "Mixage audio mono",
+    "quality": "Qualité vidéo préférée",
+    "qualityAuto": "Automatique",
+    "qualityLow": "Faible",
+    "qualityMedium": "Moyen",
+    "qualityHigh": "Haut",
+    "simulcast": "Simulcast",
+    "forceRelay": "Forcer le relais TURN",
+    "theme": "Thème",
+    "themeSystem": "Système",
+    "themeDark": "Sombre",
+    "themeLight": "Clair",
+    "compact": "Interface compacte",
+    "moreSettings": "D'autres paramètres se trouvent sur la page complète <1>Paramètres</1>."
+  },
+  "tile": {
+    "flip": "Retourner horizontalement",
+    "stopFlip": "Arrêter le retournement horizontal de la vidéo",
+    "unflip": "Retourner"
   }
 }

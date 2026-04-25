@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Send, X } from "lucide-react";
 import { useChat, useLocalParticipant } from "@livekit/components-react";
 
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function ChatPanel({ open, onClose }: Props) {
+  const { t } = useTranslation();
   const { send, chatMessages, isSending } = useChat();
   const { localParticipant } = useLocalParticipant();
   const [text, setText] = useState("");
@@ -38,14 +40,14 @@ export default function ChatPanel({ open, onClose }: Props) {
       data-testid="chat-panel"
       className="h-full w-full sm:w-96 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col"
       role="complementary"
-      aria-label="Meeting chat"
+      aria-label={t("chatPanel.ariaLabel")}
     >
       <header className="flex items-center justify-between px-4 py-3 border-b border-primary-700">
-        <h2 className="text-sm font-semibold text-slate-100">Chat</h2>
+        <h2 className="text-sm font-semibold text-slate-100">{t("chatPanel.title")}</h2>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close chat"
+          aria-label={t("chatPanel.close")}
           data-testid="chat-close"
           className="p-1 rounded hover:bg-primary-700 text-slate-300"
         >
@@ -59,11 +61,11 @@ export default function ChatPanel({ open, onClose }: Props) {
         data-testid="chat-messages"
       >
         {chatMessages.length === 0 && (
-          <p className="text-sm text-slate-400">No messages yet — say hello.</p>
+          <p className="text-sm text-slate-400">{t("chatPanel.empty")}</p>
         )}
         {chatMessages.map((m) => {
           const mine = m.from?.identity === localParticipant?.identity;
-          const name = m.from?.name || m.from?.identity || "anonymous";
+          const name = m.from?.name || m.from?.identity || t("common.anonymous");
           return (
             <div
               key={m.timestamp + (m.from?.identity ?? "")}
@@ -98,8 +100,8 @@ export default function ChatPanel({ open, onClose }: Props) {
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message"
-          aria-label="Chat message"
+          placeholder={t("chatPanel.placeholder")}
+          aria-label={t("chatPanel.messageAria")}
           data-testid="chat-input"
           className="flex-1 px-3 py-2 rounded-lg bg-primary-800 text-slate-100 border border-primary-700 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
@@ -108,7 +110,7 @@ export default function ChatPanel({ open, onClose }: Props) {
           disabled={isSending || !text.trim()}
           data-testid="chat-send"
           className="px-3 py-2 rounded-lg bg-accent-500 text-white hover:bg-accent-600 disabled:opacity-50"
-          aria-label="Send"
+          aria-label={t("chatPanel.send")}
         >
           <Send size={16} />
         </button>

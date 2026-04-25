@@ -23,7 +23,9 @@
     "yes": "Ja",
     "no": "Nei",
     "loading": "Laster…",
-    "close": "Lukk"
+    "close": "Lukk",
+    "anonymous": "anonym",
+    "requestFailed": "Forespørselen mislyktes"
   },
   "createMeeting": {
     "checkingSession": "Sjekker one.witysk.org-økten din…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Vises i lobbyen og møtets topplinje. JPEG, PNG, WebP eller GIF; opptil 2 MB.",
     "noImage": "Ingen bilde valgt",
     "submit": "Opprett møte",
-    "submitting": "Oppretter…"
+    "submitting": "Oppretter…",
+    "visibility": "Synlighet",
+    "visibilityHint": "Som standard ser bare du dette møtet på Hjem-siden din.",
+    "listForAuth": "Liste over andre påloggede brukere på startsiden",
+    "listForAuthDesc": "Alle som er logget inn via one.witysk.org kan finne og bli med.",
+    "listForAnon": "List også til anonyme (ikke-innloggede) besøkende",
+    "listForAnonDesc": "Møtet vises på den offentlige landingssiden.",
+    "brandingPreviewAlt": "Forhåndsvisning av merkevare",
+    "brandingFieldAlt": "Merkevarebilde",
+    "unsupportedImageType": "Ustøttet bildetype {{type}}; bruk JPEG, PNG, WebP eller GIF.",
+    "imageTooLarge": "Bildet er {{mb}} MB; maks er 2 MB.",
+    "uploadFailed": "Møte opprettet, men opplasting av merkevare mislyktes: {{message}}"
   },
   "myMeetings": {
     "loading": "Laster inn møtene dine…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Slett dette møtet fra listen",
     "more": "+ {{count}} til",
     "closedLabel": "lukket",
-    "maxParticipants": "maks {{n}}"
+    "maxParticipants": "maks {{n}}",
+    "visibilityPublic": "Offentlig",
+    "visibilityListed": "Oppført for innloggede brukere",
+    "visibilityPrivate": "Kun synlig for meg",
+    "visibilityChange": "{{label}} — klikk for å endre",
+    "copyJoinPrompt": "Kopier denne deltakerlenken"
   },
   "lobby": {
     "joinMeeting": "Bli med i møte",
@@ -70,7 +88,9 @@
     "emailOptional": "E-post (valgfritt)",
     "passwordIfRequired": "Passord (hvis nødvendig)",
     "join": "Bli med",
-    "joining": "Bli med…"
+    "joining": "Bli med…",
+    "hostedBy": "Vert ved {{name}}",
+    "brandingAlt": "Møte-merkevarebilde"
   },
   "room": {
     "takeStage": "Ta scenen",
@@ -89,7 +109,11 @@
     "people": "Personer",
     "chat": "Chat",
     "invite": "Inviter",
-    "inviteTitle": "Inviter personer via e-post"
+    "inviteTitle": "Inviter personer via e-post",
+    "settings": "Innstillinger",
+    "settingsLabel": "Møteinnstillinger",
+    "topbarBrandingAlt": "Møte-merkevarebilde",
+    "requestFailed": "forespørselen mislyktes"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "Last opp",
     "uploadTitle": "Last opp ditt eget bakgrunnsbilde",
     "tooLarge": "Bildet er {{mb}} MB; maks er 4 MB.",
-    "notImage": "Ikke et bilde"
+    "notImage": "Ikke et bilde ({{type}})",
+    "uploadAria": "Last opp et bakgrunnsbilde",
+    "processorFailed": "Bakgrunnseffekter støttes ikke på denne enheten.",
+    "custom": "Egendefinert: {{name}}",
+    "customDefault": "Tilpasset bilde"
   },
   "participants": {
     "title": "Deltakere",
@@ -118,14 +146,21 @@
     "muteMic": "Demper mikrofon",
     "makePresenter": "Gjør til presentatør",
     "removeFromMeeting": "Fjern fra møtet",
-    "authenticatedOwner": "Autentisert eier"
+    "authenticatedOwner": "Autentisert eier",
+    "titleCount": "Deltakere ({{count}})",
+    "close": "Lukk deltakere",
+    "muteName": "Demp {{name}}",
+    "makeNamePresenter": "Gjør {{name}} til presentatør",
+    "removeName": "Fjern {{name}}"
   },
   "chatPanel": {
     "title": "Chat",
     "empty": "Ingen meldinger ennå — si hei.",
     "placeholder": "Skriv en melding",
     "send": "Send",
-    "close": "Lukk chat"
+    "close": "Lukk chat",
+    "ariaLabel": "Møtechat",
+    "messageAria": "Chat-melding"
   },
   "invite": {
     "title": "Inviter via e-post",
@@ -143,12 +178,14 @@
     "tooMany": "Maks 20 mottakere per sending.",
     "sentN_one": "Sendt invitasjon til {{count}}.",
     "sentN_other": "Sendte {{count}} invitasjoner.",
-    "failedSuffix": "Mislyktes: {{list}}"
+    "failedSuffix": "Mislyktes: {{list}}",
+    "cancel": "Avbryt",
+    "close": "Lukk"
   },
   "recordings": {
     "title": "Opptak",
     "subtitle": "Opptak av møtene dine på serversiden. Lokale filer slettes automatisk etter 30 dager (eller når du publiserer til YouTube). Opplastinger initieres kun av eieren.",
-    "empty": "Ingen opptak ennå. Start et møte og klikk på Ta opp for å gjøre et opptak.",
+    "empty": "Ingen opptak ennå. Start et møte og klikk på <1>Opptak</1> for å ta ett.",
     "download": "Last ned",
     "downloading": "Laster ned…",
     "publish": "Publiser til YouTube",
@@ -170,7 +207,11 @@
       "running": "kjører",
       "failed": "mislyktes",
       "deleted": "Slettet"
-    }
+    },
+    "loading": "Laster…",
+    "signInFirst": "Logg inn på one.witysk.org først.",
+    "started": "Startet {{when}}",
+    "publishTitle": "Last opp til YouTube og slett den lokale filen ved suksess"
   },
   "settings": {
     "title": "Innstillinger",
@@ -390,5 +431,67 @@
       "confirm": "Tilbakestill alle innstillinger til standard?",
       "doneFlash": "Tilbakestill til standard"
     }
+  },
+  "discover": {
+    "title": "Oppdag",
+    "subtitle": "— møter åpne for å bli med",
+    "join": "Bli med",
+    "maxParticipants": "maks {{n}}",
+    "hostedBy": "Vert ved {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Innstillinger",
+    "close": "Lukk innstillinger",
+    "groupAv": "Lyd og video",
+    "groupDisplay": "Vis",
+    "groupNotifications": "Varsler",
+    "groupAccessibility": "Tilgjengelighet",
+    "groupNetwork": "Nettverk",
+    "groupAppearance": "Utseende",
+    "camOnJoin": "Kamera på når jeg blir med",
+    "micOnJoin": "Mikrofon på når jeg blir med",
+    "noiseSuppression": "Støydemping",
+    "echoCancellation": "Ekkomotstand",
+    "mirrorPreview": "Speil forhåndsvisningen min",
+    "layout": "Oppsett",
+    "layoutAuto": "Automatisk",
+    "layoutGrid": "Rutenett",
+    "layoutSpeaker": "Aktiv høyttaler",
+    "layoutSpotlight": "Spotlight",
+    "mirrorOwn": "Speil min egen video",
+    "hideSelf": "Skjul eget bilde",
+    "showNames": "Vis deltakernavn",
+    "connQuality": "Vis tilkoblingskvalitet",
+    "meetingClock": "Vis møteklokke",
+    "highlightSpeaker": "Uthev aktiv taler",
+    "soundOnJoin": "Lyd når noen blir med",
+    "chatSound": "Lyd på chat-melding",
+    "ignoreOwnJoins": "Ignorer mine egne innmeldinger",
+    "captions": "Direkte undertekster",
+    "captionsSize": "Skriftstørrelse for bildetekster",
+    "fontSmall": "Liten",
+    "fontMedium": "Middels",
+    "fontLarge": "Stor",
+    "fontXl": "Ekstra stor",
+    "reducedMotion": "Redusert bevegelse",
+    "monoAudio": "Mono-lydmiks",
+    "quality": "Foretrukket videokvalitet",
+    "qualityAuto": "Automatisk",
+    "qualityLow": "Lav",
+    "qualityMedium": "Middels",
+    "qualityHigh": "Høy",
+    "simulcast": "Simulcast",
+    "forceRelay": "Tving TURN-relé",
+    "theme": "Tema",
+    "themeSystem": "System",
+    "themeDark": "Mørk",
+    "themeLight": "Lys",
+    "compact": "Kompakt grensesnitt",
+    "moreSettings": "Flere innstillinger finner du på den fulle <1>Innstillinger</1>-siden."
+  },
+  "tile": {
+    "flip": "Speilvend horisontalt",
+    "stopFlip": "Stopp horisontal speiling av video",
+    "unflip": "Snudd"
   }
 }

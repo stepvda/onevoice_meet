@@ -27,6 +27,10 @@ class CreateMeetingBody(BaseModel):
     recording_mode: str = Field(default="manual", pattern="^(manual|auto_on_start|off)$")
     list_for_authenticated: bool = False
     list_for_anonymous: bool = False
+    # Owner's preferred display name resolved from one.witysk.org's
+    # /api/auth/me by the SPA. Stored on the meeting so other viewers
+    # (Discover list, lobby) can see who's hosting.
+    display_name: str | None = Field(default=None, max_length=120)
 
 
 class UpdateMeetingBody(BaseModel):
@@ -42,6 +46,7 @@ class MeetingOut(BaseModel):
     room_name: str
     display_title: str
     owner_user_id: str
+    owner_name: str | None = None
     created_at: datetime
     scheduled_at: datetime | None
     ends_at: datetime | None
@@ -67,6 +72,7 @@ def _to_out(m: Meeting) -> MeetingOut:
         room_name=m.room_name,
         display_title=m.display_title,
         owner_user_id=m.owner_user_id,
+        owner_name=m.owner_name,
         created_at=m.created_at,
         scheduled_at=m.scheduled_at,
         ends_at=m.ends_at,
@@ -90,6 +96,7 @@ def _to_public_out(m: Meeting) -> dict:
         "max_participants": m.max_participants,
         "require_password": bool(m.require_password),
         "branding_url": _branding_url(m),
+        "owner_name": m.owner_name,
     }
 
 
@@ -117,6 +124,7 @@ def create_meeting(body: CreateMeetingBody, user: RequireUser, db: Session = Dep
         display_title=body.display_title,
         owner_user_id=user.user_id,
         owner_email=user.email,
+        owner_name=body.display_name,
         scheduled_at=body.scheduled_at,
         ends_at=body.ends_at,
         max_participants=body.max_participants,
@@ -205,6 +213,10 @@ async def end_or_hide_meeting(meeting_id: str, user: RequireUser, db: Session = 
 class InviteBody(BaseModel):
     emails: list[str] = Field(min_length=1, max_length=20)
     personal_message: str | None = Field(default=None, max_length=1000)
+    # SPA passes the inviter's freshly-fetched display name from
+    # one.witysk.org's /api/auth/me so the invite shows their current
+    # preferred name (and refreshes the snapshot on the meeting row).
+    display_name: str | None = Field(default=None, max_length=120)
 
 
 @router.post("/meetings/{meeting_id}/invite")
@@ -222,13 +234,18 @@ async def invite_by_email(
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
 
+    if body.display_name:
+        m.owner_name = body.display_name
+        db.commit()
+
     join_url = f"{settings.public_url}/{m.room_name}"
     subject, html, text = meeting_invite(
-        inviter_name=user.email or f"User {user.user_id}",
+        inviter_name=m.owner_name or user.email or f"User {user.user_id}",
         inviter_email=user.email,
         meeting_title=m.display_title,
         join_url=join_url,
         personal_message=body.personal_message,
+        branding_url=_branding_url(m),
     )
 
     sent = 0
@@ -406,6 +423,7 @@ def public_room_info(room_name: str, db: Session = Depends(get_db)) -> dict:
         "display_title": m.display_title,
         "require_password": bool(m.require_password),
         "branding_url": _branding_url(m),
+        "owner_name": m.owner_name,
     }
 
 
@@ -433,15 +451,31 @@ def public_room_branding(room_name: str, db: Session = Depends(get_db)) -> FileR
     )
 
 
+class OwnerTokenBody(BaseModel):
+    """Optional payload for the owner-token mint. The SPA passes the owner's
+    current preferred display name (freshly fetched from one.witysk.org's
+    /api/auth/me) so it can both (a) appear in the participant list as their
+    real name and (b) refresh the snapshot stored on the meeting row."""
+    display_name: str | None = Field(default=None, max_length=120)
+
+
 @router.post("/meetings/{meeting_id}/token")
-def mint_owner_token(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
+def mint_owner_token(
+    meeting_id: str,
+    user: RequireUser,
+    body: OwnerTokenBody | None = None,
+    db: Session = Depends(get_db),
+) -> dict:
     m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
     if not m.is_active:
         raise HTTPException(status_code=403, detail="meeting closed")
+    if body and body.display_name:
+        m.owner_name = body.display_name
+        db.commit()
     identity = f"user-{user.user_id}"
-    display_name = user.email or f"Owner {user.user_id}"
+    display_name = m.owner_name or user.email or f"Owner {user.user_id}"
     token = mint_participant_token(
         room_name=m.room_name,
         identity=identity,

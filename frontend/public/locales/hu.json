@@ -23,7 +23,9 @@
     "yes": "Igen",
     "no": "Nem",
     "loading": "Betöltés…",
-    "close": "Bezárás"
+    "close": "Bezárás",
+    "anonymous": "névtelen",
+    "requestFailed": "A kérés sikertelen"
   },
   "createMeeting": {
     "checkingSession": "A(z) one.witysk.org munkamenet ellenőrzése…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Megjelenik a váróteremben és az értekezlet felső sávjában. JPEG, PNG, WebP vagy GIF; legfeljebb 2 MB.",
     "noImage": "Nincs kép kiválasztva",
     "submit": "Értekezlet létrehozása",
-    "submitting": "Létrehozás…"
+    "submitting": "Létrehozás…",
+    "visibility": "Láthatóság",
+    "visibilityHint": "Alapértelmezés szerint csak te látod ezt a találkozót a Kezdőlapodon.",
+    "listForAuth": "Más bejelentkezett felhasználók listája a kezdőlapon",
+    "listForAuthDesc": "Bárki, aki a one.witysk.org oldalon jelentkezett be, megtalálhatja és csatlakozhat.",
+    "listForAnon": "Listázza ki a névtelen (nem bejelentkezett) látogatóknak is",
+    "listForAnonDesc": "Az értekezlet megjelenik a nyilvános kezdőoldalon.",
+    "brandingPreviewAlt": "Márka előnézete",
+    "brandingFieldAlt": "Márkaimázs",
+    "unsupportedImageType": "Nem támogatott képtípus: {{type}}; használj JPEG, PNG, WebP vagy GIF formátumot.",
+    "imageTooLarge": "A kép mérete {{mb}} MB; a maximum 2 MB.",
+    "uploadFailed": "Találkozó létrehozva, de a márka feltöltése sikertelen: {{message}}"
   },
   "myMeetings": {
     "loading": "Találkozók betöltése…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Törlés a listáról",
     "more": "+ még {{count}}",
     "closedLabel": "bezárva",
-    "maxParticipants": "max {{n}}"
+    "maxParticipants": "max {{n}}",
+    "visibilityPublic": "Nyilvános",
+    "visibilityListed": "Felsorolva a bejelentkezett felhasználók számára",
+    "visibilityPrivate": "Csak számomra látható",
+    "visibilityChange": "{{label}} — kattintson a módosításhoz",
+    "copyJoinPrompt": "Másold ki ezt a csatlakozási linket"
   },
   "lobby": {
     "joinMeeting": "Csatlakozás értekezlethez",
@@ -70,7 +88,9 @@
     "emailOptional": "E-mail (opcionális)",
     "passwordIfRequired": "Jelszó (ha szükséges)",
     "join": "Csatlakozás",
-    "joining": "Csatlakozás…"
+    "joining": "Csatlakozás…",
+    "hostedBy": "Házigazda: {{name}}",
+    "brandingAlt": "Találkozó arculati képe"
   },
   "room": {
     "takeStage": "Színpadra lépés",
@@ -89,7 +109,11 @@
     "people": "Személyek",
     "chat": "Csevegés",
     "invite": "Meghívás",
-    "inviteTitle": "Meghívás e-mailben"
+    "inviteTitle": "Meghívás e-mailben",
+    "settings": "Beállítások",
+    "settingsLabel": "Belső beállítások",
+    "topbarBrandingAlt": "Találkozó arculati kép",
+    "requestFailed": "A kérés sikertelen."
   },
   "recordingIndicator": {
     "label": "FELVÉTEL"
@@ -110,7 +134,11 @@
     "upload": "Feltöltés",
     "uploadTitle": "Saját háttérkép feltöltése",
     "tooLarge": "A kép mérete {{mb}} MB; a maximum 4 MB.",
-    "notImage": "Nem kép"
+    "notImage": "Nem kép ({{type}})",
+    "uploadAria": "Tölts fel egy háttérképet",
+    "processorFailed": "Háttéreffektusok nem támogatottak ezen az eszközön.",
+    "custom": "Egyéni: {{name}}",
+    "customDefault": "Egyéni kép"
   },
   "participants": {
     "title": "Résztvevők",
@@ -118,14 +146,21 @@
     "muteMic": "Némítás",
     "makePresenter": "Előadóvá tétel",
     "removeFromMeeting": "Eltávolítás a megbeszélésből",
-    "authenticatedOwner": "Hitelesített tulajdonos"
+    "authenticatedOwner": "Hitelesített tulajdonos",
+    "titleCount": "Résztvevők ({{count}})",
+    "close": "Résztvevők bezárása",
+    "muteName": "Némítás {{name}}",
+    "makeNamePresenter": "Tedd meg {{name}} előadóvá",
+    "removeName": "Távolítsa el {{name}}"
   },
   "chatPanel": {
     "title": "Csevegés",
     "empty": "Még nincsenek üzenetek — köszönj be.",
     "placeholder": "Írjon üzenetet",
     "send": "Küldés",
-    "close": "Csevegés bezárása"
+    "close": "Csevegés bezárása",
+    "ariaLabel": "Értekezlet chat",
+    "messageAria": "Chat üzenet"
   },
   "invite": {
     "title": "Meghívás e-mailben",
@@ -143,12 +178,14 @@
     "tooMany": "Legfeljebb 20 címzett küldésenként.",
     "sentN_one": "Meghívó elküldve: {{count}}.",
     "sentN_other": "{{count}} meghívó elküldve.",
-    "failedSuffix": "Sikertelen: {{list}}"
+    "failedSuffix": "Sikertelen: {{list}}",
+    "cancel": "Mégse",
+    "close": "Bezárás"
   },
   "recordings": {
     "title": "Felvételek",
     "subtitle": "Szerveroldali felvételek a megbeszéléseidről. Helyi fájlok automatikusan törlődnek 30 nap után (vagy amikor közzéteszed YouTube-on). Feltöltés csak a tulajdonos kezdeményezésére lehetséges.",
-    "empty": "Még nincsenek felvételek. Indítson egy megbeszélést, és kattintson a Rögzítés gombra.",
+    "empty": "Még nincsenek felvételek. Indítson egy megbeszélést, és kattintson a <1>Rögzítés</1> gombra az elkészítéséhez.",
     "download": "Letöltés",
     "downloading": "Letöltés…",
     "publish": "Közzététel a YouTube-on",
@@ -170,7 +207,11 @@
       "running": "fut",
       "failed": "Sikertelen",
       "deleted": "törölve"
-    }
+    },
+    "loading": "Betöltés…",
+    "signInFirst": "Először jelentkezz be a one.witysk.org oldalon.",
+    "started": "Elindítva: {{when}}",
+    "publishTitle": "Feltöltés YouTube-ra, és a helyi fájl törlése siker esetén"
   },
   "settings": {
     "title": "Beállítások",
@@ -390,5 +431,67 @@
       "confirm": "Visszaállítja az összes beállítást az alapértelmezettre?",
       "doneFlash": "Visszaállítás alapértelmezettre"
     }
+  },
+  "discover": {
+    "title": "Felfedezés",
+    "subtitle": "— nyílt értekezletek",
+    "join": "Csatlakozás",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Házigazda: {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Beállítások",
+    "close": "Beállítások bezárása",
+    "groupAv": "Hang és videó",
+    "groupDisplay": "Kijelző",
+    "groupNotifications": "Értesítések",
+    "groupAccessibility": "Akadálymentesítés",
+    "groupNetwork": "Hálózat",
+    "groupAppearance": "Megjelenés",
+    "camOnJoin": "Kamera bekapcsolva, amikor csatlakozom",
+    "micOnJoin": "Mikrofon bekapcsolva, amikor csatlakozom",
+    "noiseSuppression": "Zajcsökkentés",
+    "echoCancellation": "Visszhang kioltás",
+    "mirrorPreview": "Tükrözd az előnézetemet",
+    "layout": "Elrendezés",
+    "layoutAuto": "Automatikus",
+    "layoutGrid": "Rács",
+    "layoutSpeaker": "Aktív beszélő",
+    "layoutSpotlight": "Kiemelés",
+    "mirrorOwn": "Tükrözd a saját videómat",
+    "hideSelf": "Saját nézet elrejtése",
+    "showNames": "Résztvevők neveinek megjelenítése",
+    "connQuality": "Kapcsolat minőségének megjelenítése",
+    "meetingClock": "Mutasd az óra megbeszélés közben",
+    "highlightSpeaker": "Aktív beszélő kiemelése",
+    "soundOnJoin": "Hangjelzés, ha valaki csatlakozik",
+    "chatSound": "Hangjelzés chat üzenetnél",
+    "ignoreOwnJoins": "Saját csatlakozásaim figyelmen kívül hagyása",
+    "captions": "Élő feliratok",
+    "captionsSize": "Feliratok betűmérete",
+    "fontSmall": "Kicsi",
+    "fontMedium": "Közepes",
+    "fontLarge": "Nagy",
+    "fontXl": "Extra nagy",
+    "reducedMotion": "Csökkentett mozgás",
+    "monoAudio": "Monó hangkeverés",
+    "quality": "Előnyben részesített videóminőség",
+    "qualityAuto": "Automatikus",
+    "qualityLow": "Alacsony",
+    "qualityMedium": "Közepes",
+    "qualityHigh": "Magas",
+    "simulcast": "Simulcast",
+    "forceRelay": "TURN relé kényszerítése",
+    "theme": "Téma",
+    "themeSystem": "Rendszer",
+    "themeDark": "Sötét",
+    "themeLight": "Világos",
+    "compact": "Kompakt UI",
+    "moreSettings": "Több beállítás található a teljes <1>Beállítások</1> oldalon."
+  },
+  "tile": {
+    "flip": "Vízszintes tükrözés",
+    "stopFlip": "Videó vízszintes tükrözésének leállítása",
+    "unflip": "Visszafordítás"
   }
 }

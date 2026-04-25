@@ -23,7 +23,9 @@
     "yes": "ਹਾਂ",
     "no": "ਨਹੀਂ",
     "loading": "ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ…",
-    "close": "ਬੰਦ ਕਰੋ"
+    "close": "ਬੰਦ ਕਰੋ",
+    "anonymous": "ਅਣਪਛਾਤਾ",
+    "requestFailed": "ਬੇਨਤੀ ਅਸਫਲ ਰਹੀ"
   },
   "createMeeting": {
     "checkingSession": "ਤੁਹਾਡੇ one.witysk.org ਸੈਸ਼ਨ ਦੀ ਜਾਂਚ ਕੀਤੀ ਜਾ ਰਹੀ ਹੈ…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "ਲੌਬੀ ਅਤੇ ਮੀਟਿੰਗ ਦੇ ਉੱਪਰਲੇ ਬਾਰ ਵਿੱਚ ਦਿਖਾਇਆ ਜਾਂਦਾ ਹੈ। JPEG, PNG, WebP ਜਾਂ GIF; 2 MB ਤੱਕ।",
     "noImage": "ਕੋਈ ਤਸਵੀਰ ਨਹੀਂ ਚੁਣੀ ਗਈ",
     "submit": "ਮੀਟਿੰਗ ਬਣਾਓ",
-    "submitting": "ਬਣਾਇਆ ਜਾ ਰਿਹਾ ਹੈ…"
+    "submitting": "ਬਣਾਇਆ ਜਾ ਰਿਹਾ ਹੈ…",
+    "visibility": "ਦਿੱਖ",
+    "visibilityHint": "ਡਿਫਾਲਟ ਤੌਰ 'ਤੇ, ਤੁਸੀਂ ਹੀ ਇਸ ਮੀਟਿੰਗ ਨੂੰ ਆਪਣੇ ਹੋਮ ਪੇਜ 'ਤੇ ਦੇਖਦੇ ਹੋ।",
+    "listForAuth": "ਹੋਰ ਸਾਈਨ-ਇਨ ਕੀਤੇ ਉਪਭੋਗਤਾਵਾਂ ਦੀ ਹੋਮ ਪੇਜ 'ਤੇ ਸੂਚੀ",
+    "listForAuthDesc": "ਕੋਈ ਵੀ ਜੋ one.witysk.org ਰਾਹੀਂ ਸਾਈਨ ਇਨ ਕਰਦਾ ਹੈ, ਲੱਭ ਸਕਦਾ ਹੈ ਅਤੇ ਸ਼ਾਮਲ ਹੋ ਸਕਦਾ ਹੈ।",
+    "listForAnon": "ਅਣਪਛਾਤੇ (ਸਾਈਨ-ਇਨ ਨਾ ਕੀਤੇ) ਵਿਜ਼ਟਰਾਂ ਨੂੰ ਵੀ ਸੂਚੀਬੱਧ ਕਰੋ",
+    "listForAnonDesc": "ਮੀਟਿੰਗ ਪਬਲਿਕ ਲੈਂਡਿੰਗ ਪੇਜ 'ਤੇ ਦਿਖਾਈ ਦਿੰਦੀ ਹੈ।",
+    "brandingPreviewAlt": "ਬ੍ਰਾਂਡਿੰਗ ਪ੍ਰੀਵਿਊ",
+    "brandingFieldAlt": "ਬ੍ਰਾਂਡਿੰਗ ਚਿੱਤਰ",
+    "unsupportedImageType": "ਅਸਮਰਥਿਤ ਚਿੱਤਰ ਕਿਸਮ {{type}}; JPEG, PNG, WebP, ਜਾਂ GIF ਵਰਤੋ।",
+    "imageTooLarge": "ਤਸਵੀਰ {{mb}} MB ਹੈ; ਵੱਧ ਤੋਂ ਵੱਧ 2 MB ਹੈ।",
+    "uploadFailed": "ਮੀਟਿੰਗ ਬਣ ਗਈ ਪਰ ਬ੍ਰਾਂਡਿੰਗ ਅਪਲੋਡ ਅਸਫਲ ਰਹੀ: {{message}}"
   },
   "myMeetings": {
     "loading": "ਤੁਹਾਡੀਆਂ ਮੀਟਿੰਗਾਂ ਲੋਡ ਹੋ ਰਹੀਆਂ ਹਨ…",
@@ -60,7 +73,12 @@
     "deleteTitle": "ਇਸ ਮੀਟਿੰਗ ਨੂੰ ਸੂਚੀ ਵਿੱਚੋਂ ਹਟਾਓ",
     "more": "+ {{count}} ਹੋਰ",
     "closedLabel": "ਬੰਦ",
-    "maxParticipants": "ਵੱਧ {{n}}"
+    "maxParticipants": "ਵੱਧ {{n}}",
+    "visibilityPublic": "ਜਨਤਕ",
+    "visibilityListed": "ਸਾਈਨ-ਇਨ ਕੀਤੇ ਉਪਭੋਗਤਾਵਾਂ ਲਈ ਸੂਚੀਬੱਧ",
+    "visibilityPrivate": "ਸਿਰਫ ਮੈਨੂੰ ਹੀ ਦਿਖਾਈ ਦਿੰਦਾ ਹੈ",
+    "visibilityChange": "{{label}} — ਬਦਲਣ ਲਈ ਕਲਿੱਕ ਕਰੋ",
+    "copyJoinPrompt": "ਇਸ ਜੁਆਇਨ ਲਿੰਕ ਨੂੰ ਕਾਪੀ ਕਰੋ"
   },
   "lobby": {
     "joinMeeting": "ਮੀਟਿੰਗ ਵਿੱਚ ਸ਼ਾਮਲ ਹੋਵੋ",
@@ -70,7 +88,9 @@
     "emailOptional": "ਈਮੇਲ (ਵਿਕਲਪਿਕ)",
     "passwordIfRequired": "ਪਾਸਵਰਡ (ਜੇ ਲੋੜ ਹੋਵੇ)",
     "join": "ਸ਼ਾਮਲ ਹੋਵੋ",
-    "joining": "ਜੁੜ ਰਿਹਾ ਹੈ…"
+    "joining": "ਜੁੜ ਰਿਹਾ ਹੈ…",
+    "hostedBy": "{{name}} ਦੁਆਰਾ ਮੇਜ਼ਬਾਨੀ ਕੀਤੀ ਗਈ",
+    "brandingAlt": "ਮੀਟਿੰਗ ਬ੍ਰਾਂਡਿੰਗ ਚਿੱਤਰ"
   },
   "room": {
     "takeStage": "ਸਟੇਜ ਲਵੋ",
@@ -89,7 +109,11 @@
     "people": "ਲੋਕ",
     "chat": "ਗੱਲਬਾਤ",
     "invite": "ਸੱਦਾ",
-    "inviteTitle": "ਈਮੇਲ ਰਾਹੀਂ ਲੋਕਾਂ ਨੂੰ ਸੱਦਾ ਦਿਓ"
+    "inviteTitle": "ਈਮੇਲ ਰਾਹੀਂ ਲੋਕਾਂ ਨੂੰ ਸੱਦਾ ਦਿਓ",
+    "settings": "ਸੈਟਿੰਗਾਂ",
+    "settingsLabel": "ਮੀਟਿੰਗ ਦੌਰਾਨ ਸੈਟਿੰਗਾਂ",
+    "topbarBrandingAlt": "ਮੀਟਿੰਗ ਬ੍ਰਾਂਡਿੰਗ ਚਿੱਤਰ",
+    "requestFailed": "ਬੇਨਤੀ ਅਸਫਲ ਰਹੀ"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "ਅੱਪਲੋਡ ਕਰੋ",
     "uploadTitle": "ਆਪਣੀ ਪਿਛੋਕੜ ਵਾਲੀ ਤਸਵੀਰ ਅਪਲੋਡ ਕਰੋ",
     "tooLarge": "ਤਸਵੀਰ {{mb}} MB ਹੈ; ਵੱਧ ਤੋਂ ਵੱਧ 4 MB ਹੈ।",
-    "notImage": "ਚਿੱਤਰ ਨਹੀਂ"
+    "notImage": "ਤਸਵੀਰ ਨਹੀਂ ({{type}})",
+    "uploadAria": "ਬੈਕਗ੍ਰਾਊਂਡ ਤਸਵੀਰ ਅਪਲੋਡ ਕਰੋ",
+    "processorFailed": "ਇਸ ਡਿਵਾਈਸ 'ਤੇ ਬੈਕਗ੍ਰਾਊਂਡ ਇਫੈਕਟ ਸਮਰਥਿਤ ਨਹੀਂ ਹਨ।",
+    "custom": "ਕਸਟਮ: {{name}}",
+    "customDefault": "ਕਸਟਮ ਚਿੱਤਰ"
   },
   "participants": {
     "title": "ਭਾਗ ਲੈਣ ਵਾਲੇ",
@@ -118,14 +146,21 @@
     "muteMic": "ਮਾਈਕ ਮਿਊਟ ਕਰੋ",
     "makePresenter": "ਪੇਸ਼ਕਾਰ ਬਣਾਓ",
     "removeFromMeeting": "ਮੀਟਿੰਗ ਤੋਂ ਹਟਾਓ",
-    "authenticatedOwner": "ਪ੍ਰਮਾਣਿਤ ਮਾਲਕ"
+    "authenticatedOwner": "ਪ੍ਰਮਾਣਿਤ ਮਾਲਕ",
+    "titleCount": "ਭਾਗ ਲੈਣ ਵਾਲੇ ({{count}})",
+    "close": "ਭਾਗ ਲੈਣ ਵਾਲਿਆਂ ਨੂੰ ਬੰਦ ਕਰੋ",
+    "muteName": "ਮਿਊਟ ਕਰੋ {{name}}",
+    "makeNamePresenter": "{{name}} ਨੂੰ ਪੇਸ਼ਕਾਰ ਬਣਾਓ",
+    "removeName": "ਹਟਾਓ {{name}}"
   },
   "chatPanel": {
     "title": "ਗੱਲਬਾਤ",
     "empty": "ਅਜੇ ਤੱਕ ਕੋਈ ਸੁਨੇਹਾ ਨਹੀਂ — ਹੈਲੋ ਕਹੋ।",
     "placeholder": "ਸੁਨੇਹਾ ਲਿਖੋ",
     "send": "ਭੇਜੋ",
-    "close": "ਚੈਟ ਬੰਦ ਕਰੋ"
+    "close": "ਚੈਟ ਬੰਦ ਕਰੋ",
+    "ariaLabel": "ਮੀਟਿੰਗ ਚੈਟ",
+    "messageAria": "ਚੈਟ ਸੁਨੇਹਾ"
   },
   "invite": {
     "title": "ਈਮੇਲ ਰਾਹੀਂ ਸੱਦਾ ਦਿਓ",
@@ -143,12 +178,14 @@
     "tooMany": "ਭੇਜਣ ਵੇਲੇ ਵੱਧ ਤੋਂ ਵੱਧ 20 ਪ੍ਰਾਪਤਕਰਤਾ।",
     "sentN_one": "{{count}} ਸੱਦਾ ਭੇਜੋ।",
     "sentN_other": "{{count}} ਸੱਦੇ ਭੇਜੇ।",
-    "failedSuffix": "ਅਸਫਲ: {{list}}"
+    "failedSuffix": "ਅਸਫਲ: {{list}}",
+    "cancel": "ਰੱਦ ਕਰੋ",
+    "close": "ਬੰਦ ਕਰੋ"
   },
   "recordings": {
     "title": "ਰਿਕਾਰਡਿੰਗਾਂ",
     "subtitle": "ਤੁਹਾਡੀਆਂ ਮੀਟਿੰਗਾਂ ਦੀਆਂ ਸਰਵਰ-ਸਾਈਡ ਰਿਕਾਰਡਿੰਗਾਂ। ਸਥਾਨਕ ਫ਼ਾਈਲਾਂ 30 ਦਿਨਾਂ ਬਾਅਦ (ਜਾਂ ਜਦੋਂ ਤੁਸੀਂ YouTube 'ਤੇ ਪ੍ਰਕਾਸ਼ਿਤ ਕਰਦੇ ਹੋ) ਆਪਣੇ-ਆਪ ਮਿਟ ਜਾਂਦੀਆਂ ਹਨ। ਅਪਲੋਡ ਸਿਰਫ਼ ਮਾਲਕ ਦੁਆਰਾ ਸ਼ੁਰੂ ਕੀਤੇ ਜਾਂਦੇ ਹਨ।",
-    "empty": "ਅਜੇ ਤੱਕ ਕੋਈ ਰਿਕਾਰਡਿੰਗ ਨਹੀਂ ਹੈ। ਇੱਕ ਮੀਟਿੰਗ ਸ਼ੁਰੂ ਕਰੋ ਅਤੇ ਇੱਕ ਨੂੰ ਕੈਪਚਰ ਕਰਨ ਲਈ Record 'ਤੇ ਕਲਿੱਕ ਕਰੋ।",
+    "empty": "ਅਜੇ ਤੱਕ ਕੋਈ ਰਿਕਾਰਡਿੰਗ ਨਹੀਂ ਹੈ। ਇੱਕ ਮੀਟਿੰਗ ਸ਼ੁਰੂ ਕਰੋ ਅਤੇ ਇੱਕ ਨੂੰ ਕੈਪਚਰ ਕਰਨ ਲਈ <1>Record</1> 'ਤੇ ਕਲਿੱਕ ਕਰੋ।",
     "download": "ਡਾਊਨਲੋਡ",
     "downloading": "ਡਾਊਨਲੋਡ ਹੋ ਰਿਹਾ ਹੈ…",
     "publish": "YouTube 'ਤੇ ਪ੍ਰਕਾਸ਼ਿਤ ਕਰੋ",
@@ -170,7 +207,11 @@
       "running": "ਚੱਲ ਰਿਹਾ ਹੈ",
       "failed": "ਅਸਫਲ",
       "deleted": "ਮਿਟਾਇਆ ਗਿਆ"
-    }
+    },
+    "loading": "ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ…",
+    "signInFirst": "ਪਹਿਲਾਂ one.witysk.org 'ਤੇ ਸਾਈਨ ਇਨ ਕਰੋ।",
+    "started": "ਸ਼ੁਰੂ ਹੋਇਆ {{when}}",
+    "publishTitle": "YouTube 'ਤੇ ਅੱਪਲੋਡ ਕਰੋ ਅਤੇ ਸਫਲ ਹੋਣ 'ਤੇ ਸਥਾਨਕ ਫ਼ਾਈਲ ਮਿਟਾਓ"
   },
   "settings": {
     "title": "ਸੈਟਿੰਗਾਂ",
@@ -390,5 +431,67 @@
       "confirm": "ਕੀ ਸਾਰੀਆਂ ਤਰਜੀਹਾਂ ਨੂੰ ਮੂਲ ਸੈਟਿੰਗਾਂ 'ਤੇ ਰੀਸੈਟ ਕਰਨਾ ਹੈ?",
       "doneFlash": "ਡਿਫਾਲਟ 'ਤੇ ਰੀਸੈਟ ਕਰੋ"
     }
+  },
+  "discover": {
+    "title": "ਖੋਜੋ",
+    "subtitle": "— ਮੀਟਿੰਗਾਂ ਜੁਆਇਨ ਕਰਨ ਲਈ ਖੁੱਲ੍ਹੀਆਂ",
+    "join": "ਸ਼ਾਮਲ ਹੋਵੋ",
+    "maxParticipants": "ਅਧਿਕਤਮ {{n}}",
+    "hostedBy": "{{name}} ਦੁਆਰਾ ਮੇਜ਼ਬਾਨੀ ਕੀਤੀ ਗਈ"
+  },
+  "inMeetingSettings": {
+    "title": "ਸੈਟਿੰਗਾਂ",
+    "close": "ਸੈਟਿੰਗਾਂ ਬੰਦ ਕਰੋ",
+    "groupAv": "ਆਡੀਓ ਅਤੇ ਵੀਡੀਓ",
+    "groupDisplay": "ਡਿਸਪਲੇ",
+    "groupNotifications": "ਸੂਚਨਾਵਾਂ",
+    "groupAccessibility": "ਪਹੁੰਚਯੋਗਤਾ",
+    "groupNetwork": "ਨੈੱਟਵਰਕ",
+    "groupAppearance": "ਦਿੱਖ",
+    "camOnJoin": "ਜਦੋਂ ਮੈਂ ਸ਼ਾਮਲ ਹੋਵਾਂ ਤਾਂ ਕੈਮਰਾ ਚਾਲੂ ਰੱਖੋ",
+    "micOnJoin": "ਜਦੋਂ ਮੈਂ ਸ਼ਾਮਲ ਹੋਵਾਂ ਤਾਂ ਮਾਈਕ੍ਰੋਫ਼ੋਨ ਚਾਲੂ ਰੱਖੋ",
+    "noiseSuppression": "ਸ਼ੋਰ ਦਬਾਅ",
+    "echoCancellation": "ਈਕੋ ਰੱਦ ਕਰਨਾ",
+    "mirrorPreview": "ਮੇਰੀ ਪ੍ਰੀਵਿਊ ਨੂੰ ਮਿਰਰ ਕਰੋ",
+    "layout": "लेआउट",
+    "layoutAuto": "ਸਵੈ",
+    "layoutGrid": "ਗਰਿੱਡ",
+    "layoutSpeaker": "ਸਰਗਰਮ ਬੁਲਾਰਾ",
+    "layoutSpotlight": "ਸਪੌਟਲਾਈਟ",
+    "mirrorOwn": "ਮੇਰੀ ਆਪਣੀ ਵੀਡੀਓ ਨੂੰ ਮਿਰਰ ਕਰੋ",
+    "hideSelf": "ਆਪਣਾ ਵਿਊ ਲੁਕਾਓ",
+    "showNames": "ਭਾਗ ਲੈਣ ਵਾਲਿਆਂ ਦੇ ਨਾਂ ਦਿਖਾਓ",
+    "connQuality": "ਕੁਨੈਕਸ਼ਨ ਕੁਆਲਿਟੀ ਦਿਖਾਓ",
+    "meetingClock": "ਮੀਟਿੰਘ ਘੜੀ ਦਿਖਾਓ",
+    "highlightSpeaker": "ਸਰਗਰਮ ਬੁਲਾਰੇ ਨੂੰ ਹਾਈਲਾਈਟ ਕਰੋ",
+    "soundOnJoin": "ਜਦੋਂ ਕੋਈ ਜੁੜਦਾ ਹੈ ਤਾਂ ਆਵਾਜ਼",
+    "chatSound": "ਚੈਟ ਸੁਨੇਹੇ 'ਤੇ ਆਵਾਜ਼",
+    "ignoreOwnJoins": "ਮੇਰੇ ਆਪਣੇ ਜੁਆਇਨ ਨੂੰ ਨਜ਼ਰਅੰਦਾਜ਼ ਕਰੋ",
+    "captions": "ਲਾਈਵ ਕੈਪਸ਼ਨ",
+    "captionsSize": "کیپشنز دا فونٹ سائز",
+    "fontSmall": "ਛੋਟਾ",
+    "fontMedium": "ਮੱਧਮ",
+    "fontLarge": "ਵੱਡਾ",
+    "fontXl": "ਬਹੁਤ ਵੱਡਾ",
+    "reducedMotion": "ਘੱਟ ਗਤੀ",
+    "monoAudio": "ਮੋਨੋ ਆਡੀਓ ਮਿਕਸ",
+    "quality": "ਪਸੰਦੀਦਾ ਵੀਡੀਓ ਗੁਣਵੱਤਾ",
+    "qualityAuto": "ਸਵੈ",
+    "qualityLow": "ਘੱਟ",
+    "qualityMedium": "ਮੱਧਮ",
+    "qualityHigh": "ਉੱਚ",
+    "simulcast": "ਸਿਮੁਲਕਾਸਟ",
+    "forceRelay": "TURN ਰਿਲੇਅ ਨੂੰ ਮਜਬੂਰ ਕਰੋ",
+    "theme": "ਥੀਮ",
+    "themeSystem": "ਸਿਸਟਮ",
+    "themeDark": "ਹਨੇਰਾ",
+    "themeLight": "ਹਲਕਾ",
+    "compact": "ਸੰਖੇਪ UI",
+    "moreSettings": "ਹੋਰ ਸੈਟਿੰਗਾਂ ਪੂਰੀ <1>ਸੈਟਿੰਗਾਂ</1> ਪੰਨੇ 'ਤੇ ਮੌਜੂਦ ਹਨ।"
+  },
+  "tile": {
+    "flip": "ਖਿਤਿਜੀ ਰੂਪ ਵਿੱਚ ਫਲਿੱਪ ਕਰੋ",
+    "stopFlip": "ਵੀਡੀਓ ਨੂੰ ਖਿਤਿਜੀ ਫਲਿੱਪ ਕਰਨਾ ਬੰਦ ਕਰੋ",
+    "unflip": "ਫਲਿੱਪ ਵਾਪਸ ਕਰੋ"
   }
 }

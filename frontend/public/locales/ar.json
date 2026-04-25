@@ -23,7 +23,9 @@
     "yes": "نعم",
     "no": "لا",
     "loading": "جارٍ التحميل…",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "anonymous": "مجهول",
+    "requestFailed": "فشل الطلب"
   },
   "createMeeting": {
     "checkingSession": "جارٍ التحقق من جلستك في one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "يظهر في اللوبي والشريط العلوي للاجتماع. JPEG، PNG، WebP أو GIF؛ حتى 2 ميغابايت.",
     "noImage": "لم يتم تحديد صورة",
     "submit": "إنشاء اجتماع",
-    "submitting": "جارٍ الإنشاء…"
+    "submitting": "جارٍ الإنشاء…",
+    "visibility": "الرؤية",
+    "visibilityHint": "افتراضيًا، أنت فقط من يرى هذا الاجتماع في صفحتك الرئيسية.",
+    "listForAuth": "قائمة المستخدمين المسجلين الآخرين في الصفحة الرئيسية",
+    "listForAuthDesc": "يمكن لأي شخص سجّل الدخول عبر one.witysk.org العثور على الاجتماع والانضمام إليه.",
+    "listForAnon": "قم أيضًا بإدراج الزوار المجهولين (غير المسجلين)",
+    "listForAnonDesc": "يظهر الاجتماع في صفحة الهبوط العامة.",
+    "brandingPreviewAlt": "معاينة العلامة التجارية",
+    "brandingFieldAlt": "صورة العلامة التجارية",
+    "unsupportedImageType": "نوع الصورة غير مدعوم {{type}}؛ استخدم JPEG أو PNG أو WebP أو GIF.",
+    "imageTooLarge": "حجم الصورة {{mb}} ميجابايت؛ الحد الأقصى 2 ميجابايت.",
+    "uploadFailed": "تم إنشاء الاجتماع لكن فشل رفع العلامة التجارية: {{message}}"
   },
   "myMeetings": {
     "loading": "جاري تحميل اجتماعاتك…",
@@ -60,7 +73,12 @@
     "deleteTitle": "احذف هذا الاجتماع من القائمة",
     "more": "+ {{count}} إضافي",
     "closedLabel": "مغلق",
-    "maxParticipants": "الحد الأقصى {{n}}"
+    "maxParticipants": "الحد الأقصى {{n}}",
+    "visibilityPublic": "عام",
+    "visibilityListed": "مُدرجة للمستخدمين المسجلين",
+    "visibilityPrivate": "مرئي لي فقط",
+    "visibilityChange": "{{label}} — انقر للتغيير",
+    "copyJoinPrompt": "انسخ رابط الانضمام هذا"
   },
   "lobby": {
     "joinMeeting": "انضم إلى الاجتماع",
@@ -70,7 +88,9 @@
     "emailOptional": "البريد الإلكتروني (اختياري)",
     "passwordIfRequired": "كلمة المرور (إذا لزم الأمر)",
     "join": "انضم",
-    "joining": "جارٍ الانضمام…"
+    "joining": "جارٍ الانضمام…",
+    "hostedBy": "مُستضاف بواسطة {{name}}",
+    "brandingAlt": "صورة العلامة التجارية للاجتماع"
   },
   "room": {
     "takeStage": "خذ المسرح",
@@ -89,7 +109,11 @@
     "people": "أشخاص",
     "chat": "دردشة",
     "invite": "دعوة",
-    "inviteTitle": "دعوة أشخاص عبر البريد الإلكتروني"
+    "inviteTitle": "دعوة أشخاص عبر البريد الإلكتروني",
+    "settings": "الإعدادات",
+    "settingsLabel": "إعدادات الاجتماع",
+    "topbarBrandingAlt": "صورة العلامة التجارية للاجتماع",
+    "requestFailed": "فشل الطلب"
   },
   "recordingIndicator": {
     "label": "سجل"
@@ -110,7 +134,11 @@
     "upload": "رفع",
     "uploadTitle": "رفع صورة خلفية خاصة بك",
     "tooLarge": "حجم الصورة {{mb}} ميجابايت؛ الحد الأقصى 4 ميجابايت.",
-    "notImage": "ليست صورة"
+    "notImage": "ليست صورة ({{type}})",
+    "uploadAria": "تحميل صورة خلفية",
+    "processorFailed": "تأثيرات الخلفية غير مدعومة على هذا الجهاز.",
+    "custom": "مخصص: {{name}}",
+    "customDefault": "صورة مخصصة"
   },
   "participants": {
     "title": "المشاركون",
@@ -118,14 +146,21 @@
     "muteMic": "كتم الميكروفون",
     "makePresenter": "اجعل مقدم العرض",
     "removeFromMeeting": "إزالة من الاجتماع",
-    "authenticatedOwner": "المالك المُوثَّق"
+    "authenticatedOwner": "المالك المُوثَّق",
+    "titleCount": "المشاركون ({{count}})",
+    "close": "إغلاق المشاركين",
+    "muteName": "كتم {{name}}",
+    "makeNamePresenter": "اجعل {{name}} مقدمًا",
+    "removeName": "إزالة {{name}}"
   },
   "chatPanel": {
     "title": "دردشة",
     "empty": "لا توجد رسائل بعد — قل مرحبًا.",
     "placeholder": "اكتب رسالة",
     "send": "إرسال",
-    "close": "إغلاق الدردشة"
+    "close": "إغلاق الدردشة",
+    "ariaLabel": "محادثة الاجتماع",
+    "messageAria": "رسالة الدردشة"
   },
   "invite": {
     "title": "دعوة عبر البريد الإلكتروني",
@@ -143,12 +178,14 @@
     "tooMany": "الحد الأقصى 20 مستلمًا لكل إرسال.",
     "sentN_one": "تم إرسال {{count}} دعوة.",
     "sentN_other": "تم إرسال {{count}} دعوة.",
-    "failedSuffix": "فشل: {{list}}"
+    "failedSuffix": "فشل: {{list}}",
+    "cancel": "إلغاء",
+    "close": "إغلاق"
   },
   "recordings": {
     "title": "التسجيلات",
     "subtitle": "تسجيلات الخوادم لاجتماعاتك. الملفات المحلية تُحذف تلقائيًا بعد 30 يومًا (أو عند النشر على يوتيوب). الرفع يتم فقط بمبادرة من المالك.",
-    "empty": "لا توجد تسجيلات بعد. ابدأ اجتماعًا وانقر على \"تسجيل\" لبدء التسجيل.",
+    "empty": "لا توجد تسجيلات بعد. ابدأ اجتماعًا وانقر على <1>تسجيل</1> لالتقاط واحد.",
     "download": "تحميل",
     "downloading": "جارٍ التحميل…",
     "publish": "نشر إلى يوتيوب",
@@ -170,7 +207,11 @@
       "running": "جارٍ",
       "failed": "فشل",
       "deleted": "تم الحذف"
-    }
+    },
+    "loading": "جارٍ التحميل…",
+    "signInFirst": "سجّل الدخول أولاً على one.witysk.org.",
+    "started": "بدأت {{when}}",
+    "publishTitle": "رفع إلى YouTube وحذف الملف المحلي عند النجاح"
   },
   "settings": {
     "title": "الإعدادات",
@@ -390,5 +431,67 @@
       "confirm": "هل تريد إعادة تعيين جميع التفضيلات إلى الإعدادات الافتراضية؟",
       "doneFlash": "إعادة تعيين إلى الإعدادات الافتراضية"
     }
+  },
+  "discover": {
+    "title": "اكتشف",
+    "subtitle": "— اجتماعات مفتوحة للانضمام",
+    "join": "انضم",
+    "maxParticipants": "الحد الأقصى {{n}}",
+    "hostedBy": "مُستضاف بواسطة {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "الإعدادات",
+    "close": "إغلاق الإعدادات",
+    "groupAv": "الصوت والفيديو",
+    "groupDisplay": "عرض",
+    "groupNotifications": "الإشعارات",
+    "groupAccessibility": "إمكانية الوصول",
+    "groupNetwork": "الشبكة",
+    "groupAppearance": "المظهر",
+    "camOnJoin": "تشغيل الكاميرا عند الانضمام",
+    "micOnJoin": "تشغيل الميكروفون عند الانضمام",
+    "noiseSuppression": "تقليل الضوضاء",
+    "echoCancellation": "إلغاء الصدى",
+    "mirrorPreview": "عكس معاينتي",
+    "layout": "تخطيط",
+    "layoutAuto": "تلقائي",
+    "layoutGrid": "شبكة",
+    "layoutSpeaker": "المتحدث النشط",
+    "layoutSpotlight": "تسليط الضوء",
+    "mirrorOwn": "عكس فيديو خاصتي",
+    "hideSelf": "إخفاء عرض الذات",
+    "showNames": "عرض أسماء المشاركين",
+    "connQuality": "إظهار جودة الاتصال",
+    "meetingClock": "إظهار ساعة الاجتماع",
+    "highlightSpeaker": "تسليط الضوء على المتحدث النشط",
+    "soundOnJoin": "صوت عند انضمام شخص",
+    "chatSound": "تشغيل الصوت عند وصول رسالة في الدردشة",
+    "ignoreOwnJoins": "تجاهل انضماماتي الخاصة",
+    "captions": "التسميات التوضيحية المباشرة",
+    "captionsSize": "حجم خط التسميات التوضيحية",
+    "fontSmall": "صغير",
+    "fontMedium": "متوسط",
+    "fontLarge": "كبير",
+    "fontXl": "كبير جدًا",
+    "reducedMotion": "تقليل الحركة",
+    "monoAudio": "مزيج صوت أحادي",
+    "quality": "جودة الفيديو المفضلة",
+    "qualityAuto": "تلقائي",
+    "qualityLow": "منخفض",
+    "qualityMedium": "متوسط",
+    "qualityHigh": "مرتفع",
+    "simulcast": "البث المتزامن",
+    "forceRelay": "إجبار ترحيل TURN",
+    "theme": "السمة",
+    "themeSystem": "النظام",
+    "themeDark": "داكن",
+    "themeLight": "فاتح",
+    "compact": "واجهة مستخدم مضغوطة",
+    "moreSettings": "توجد إعدادات إضافية في صفحة <1>الإعدادات</1> الكاملة."
+  },
+  "tile": {
+    "flip": "اقلب أفقيًا",
+    "stopFlip": "إيقاف عكس الفيديو أفقيًا",
+    "unflip": "إلغاء التقليب"
   }
 }

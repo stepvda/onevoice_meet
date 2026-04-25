@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocalParticipant } from "@livekit/components-react";
 import { BackgroundBlur, VirtualBackground } from "@livekit/track-processors";
 import { LocalVideoTrack, Track } from "livekit-client";
@@ -14,15 +15,15 @@ import { ImageOff, Upload } from "lucide-react";
  */
 
 const BUILTIN_PRESETS = [
-  { key: "off", label: "Off" },
-  { key: "blur", label: "Blur" },
-  { key: "/backgrounds/office.jpg", label: "Office" },
-  { key: "/backgrounds/park.jpg", label: "Park" },
-  { key: "/backgrounds/isometric.jpg", label: "3D cubes" },
-  { key: "/backgrounds/stacked.jpg", label: "Stacked cubes" },
-  { key: "/backgrounds/cubist.jpg", label: "Cubist" },
-  { key: "/backgrounds/orbs.jpg", label: "Orbs" },
-  { key: "/backgrounds/waves.jpg", label: "Waves" },
+  { key: "off", i18nKey: "background.off" },
+  { key: "blur", i18nKey: "background.blur" },
+  { key: "/backgrounds/office.jpg", i18nKey: "background.office" },
+  { key: "/backgrounds/park.jpg", i18nKey: "background.park" },
+  { key: "/backgrounds/isometric.jpg", i18nKey: "background.isometric" },
+  { key: "/backgrounds/stacked.jpg", i18nKey: "background.stacked" },
+  { key: "/backgrounds/cubist.jpg", i18nKey: "background.cubist" },
+  { key: "/backgrounds/orbs.jpg", i18nKey: "background.orbs" },
+  { key: "/backgrounds/waves.jpg", i18nKey: "background.waves" },
 ] as const;
 
 const MAX_CUSTOM_BYTES = 4 * 1024 * 1024; // 4 MB
@@ -35,6 +36,7 @@ function getCameraTrack(local: ReturnType<typeof useLocalParticipant>["localPart
 }
 
 export default function BackgroundPicker() {
+  const { t } = useTranslation();
   const { localParticipant, cameraTrack } = useLocalParticipant();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const customUrlRef = useRef<string | null>(null);
@@ -78,7 +80,7 @@ export default function BackgroundPicker() {
     setErr(null);
     const track = getCameraTrack(localParticipant);
     if (!track) {
-      setErr("Turn on your camera first.");
+      setErr(t("background.needCameraFirst"));
       return;
     }
     setBusy(true);
@@ -92,7 +94,7 @@ export default function BackgroundPicker() {
       }
       setActive(key);
     } catch (e) {
-      setErr((e as Error).message || "Background effects unsupported on this device.");
+      setErr((e as Error).message || t("background.processorFailed"));
       setActive("off");
     } finally {
       setBusy(false);
@@ -102,11 +104,11 @@ export default function BackgroundPicker() {
   function pickCustom(file: File | null) {
     if (!file) return;
     if (!/^image\//.test(file.type)) {
-      setErr(`Not an image (${file.type || "unknown"})`);
+      setErr(t("background.notImage", { type: file.type || "unknown" }));
       return;
     }
     if (file.size > MAX_CUSTOM_BYTES) {
-      setErr(`Image is ${(file.size / 1_048_576).toFixed(1)} MB; max is 4 MB.`);
+      setErr(t("background.tooLarge", { mb: (file.size / 1_048_576).toFixed(1) }));
       return;
     }
     // Revoke any previous custom URL.
@@ -118,10 +120,13 @@ export default function BackgroundPicker() {
   }
 
   const options: { key: string; label: string }[] = [
-    ...BUILTIN_PRESETS.map((p) => ({ key: p.key, label: p.label })),
+    ...BUILTIN_PRESETS.map((p) => ({ key: p.key, label: t(p.i18nKey) })),
   ];
   if (customUrlRef.current) {
-    options.push({ key: customUrlRef.current, label: customLabel ? `Custom: ${customLabel}` : "Custom image" });
+    options.push({
+      key: customUrlRef.current,
+      label: customLabel ? t("background.custom", { name: customLabel }) : t("background.customDefault"),
+    });
   }
 
   return (
@@ -137,8 +142,8 @@ export default function BackgroundPicker() {
           "focus:outline-none focus:ring-2 focus:ring-primary-500",
           "disabled:opacity-50 disabled:cursor-not-allowed",
         ].join(" ")}
-        title={cameraPresent ? "Background effect" : "Turn on the camera to use backgrounds"}
-        aria-label="Background effect"
+        title={cameraPresent ? t("background.label") : t("background.needCamera")}
+        aria-label={t("background.label")}
       >
         {options.map((p) => (
           <option key={p.key} value={p.key}>
@@ -152,8 +157,8 @@ export default function BackgroundPicker() {
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        aria-label="Upload a background image"
-        title="Upload a background image"
+        aria-label={t("background.uploadAria")}
+        title={t("background.uploadAria")}
         data-testid="background-upload-input"
         onChange={(e) => pickCustom(e.target.files?.[0] ?? null)}
         className="hidden"
@@ -168,10 +173,10 @@ export default function BackgroundPicker() {
           "bg-primary-900/60 text-slate-200 border-primary-700 hover:bg-primary-800",
           "disabled:opacity-50 disabled:cursor-not-allowed",
         ].join(" ")}
-        title="Upload your own background image"
+        title={t("background.uploadTitle")}
       >
         <Upload size={14} />
-        Upload
+        {t("background.upload")}
       </button>
 
       {err && (

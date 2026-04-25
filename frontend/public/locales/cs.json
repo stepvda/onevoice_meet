@@ -23,7 +23,9 @@
     "yes": "Ano",
     "no": "Ne",
     "loading": "Načítání…",
-    "close": "Zavřít"
+    "close": "Zavřít",
+    "anonymous": "anonymní",
+    "requestFailed": "Požadavek selhal"
   },
   "createMeeting": {
     "checkingSession": "Kontrola vaší relace na one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Zobrazeno v lobby a v horní liště schůzky. JPEG, PNG, WebP nebo GIF; max. 2 MB.",
     "noImage": "Nebyl vybrán žádný obrázek",
     "submit": "Vytvořit schůzku",
-    "submitting": "Vytváří se…"
+    "submitting": "Vytváří se…",
+    "visibility": "Viditelnost",
+    "visibilityHint": "Ve výchozím nastavení tuto schůzku na své domovské stránce vidíte pouze vy.",
+    "listForAuth": "Seznam ostatních přihlášených uživatelů na domovské stránce",
+    "listForAuthDesc": "Kdokoli přihlášený přes one.witysk.org může najít a připojit se.",
+    "listForAnon": "Zobrazit také anonymním (nepřihlášeným) návštěvníkům",
+    "listForAnonDesc": "Schůzka se zobrazuje na veřejné úvodní stránce.",
+    "brandingPreviewAlt": "Náhled brandingu",
+    "brandingFieldAlt": "Obrázek značky",
+    "unsupportedImageType": "Nepodporovaný typ obrázku {{type}}; použijte JPEG, PNG, WebP nebo GIF.",
+    "imageTooLarge": "Obrázek má {{mb}} MB; maximum je 2 MB.",
+    "uploadFailed": "Schůzka vytvořena, ale nahrání brandingu selhalo: {{message}}"
   },
   "myMeetings": {
     "loading": "Načítám vaše schůzky…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Odstranit tuto schůzku ze seznamu",
     "more": "+ {{count}} další",
     "closedLabel": "zavřeno",
-    "maxParticipants": "max {{n}}"
+    "maxParticipants": "max {{n}}",
+    "visibilityPublic": "Veřejné",
+    "visibilityListed": "Uvedeno pro přihlášené uživatele",
+    "visibilityPrivate": "Viditelné pouze pro mě",
+    "visibilityChange": "{{label}} — kliknutím změníte",
+    "copyJoinPrompt": "Zkopírovat tento odkaz pro připojení"
   },
   "lobby": {
     "joinMeeting": "Připojit se ke schůzce",
@@ -70,7 +88,9 @@
     "emailOptional": "E-mail (volitelně)",
     "passwordIfRequired": "Heslo (je-li vyžadováno)",
     "join": "Připojit se",
-    "joining": "Připojování…"
+    "joining": "Připojování…",
+    "hostedBy": "Pořádá {{name}}",
+    "brandingAlt": "Obrázek brandingu schůzky"
   },
   "room": {
     "takeStage": "Převzít roli",
@@ -89,7 +109,11 @@
     "people": "Lidé",
     "chat": "Chat",
     "invite": "Pozvat",
-    "inviteTitle": "Pozvat lidi e-mailem"
+    "inviteTitle": "Pozvat lidi e-mailem",
+    "settings": "Nastavení",
+    "settingsLabel": "Nastavení během schůzky",
+    "topbarBrandingAlt": "Obrázek brandingu schůzky",
+    "requestFailed": "Požadavek selhal"
   },
   "recordingIndicator": {
     "label": "NAHRÁVAT"
@@ -110,7 +134,11 @@
     "upload": "Nahrát",
     "uploadTitle": "Nahrát vlastní obrázek na pozadí",
     "tooLarge": "Obrázek má {{mb}} MB; maximum je 4 MB.",
-    "notImage": "Není to obrázek"
+    "notImage": "Není obrázek ({{type}})",
+    "uploadAria": "Nahrát obrázek na pozadí",
+    "processorFailed": "Efekt pozadí není na tomto zařízení podporován.",
+    "custom": "Vlastní: {{name}}",
+    "customDefault": "Vlastní obrázek"
   },
   "participants": {
     "title": "Účastníci",
@@ -118,14 +146,21 @@
     "muteMic": "Ztlumit mikrofon",
     "makePresenter": "Udělat prezentujícím",
     "removeFromMeeting": "Odebrat ze schůzky",
-    "authenticatedOwner": "Ověřený vlastník"
+    "authenticatedOwner": "Ověřený vlastník",
+    "titleCount": "Účastníci ({{count}})",
+    "close": "Zavřít účastníky",
+    "muteName": "Ztlumit {{name}}",
+    "makeNamePresenter": "Nastavit {{name}} jako prezentujícího",
+    "removeName": "Odstranit {{name}}"
   },
   "chatPanel": {
     "title": "Chat",
     "empty": "Zatím žádné zprávy — pozdravte.",
     "placeholder": "Napište zprávu",
     "send": "Odeslat",
-    "close": "Zavřít chat"
+    "close": "Zavřít chat",
+    "ariaLabel": "Chat schůzky",
+    "messageAria": "Zpráva v chatu"
   },
   "invite": {
     "title": "Pozvat e-mailem",
@@ -143,12 +178,14 @@
     "tooMany": "Maximálně 20 příjemců na odeslání.",
     "sentN_one": "Odeslána pozvánka {{count}}.",
     "sentN_other": "Odesláno {{count}} pozvánek.",
-    "failedSuffix": "Selhalo: {{list}}"
+    "failedSuffix": "Selhalo: {{list}}",
+    "cancel": "Zrušit",
+    "close": "Zavřít"
   },
   "recordings": {
     "title": "Nahrávky",
     "subtitle": "Nahrávky vašich schůzek na straně serveru. Místní soubory se automaticky mažou po 30 dnech (nebo po zveřejnění na YouTube). Nahrávání je iniciováno pouze vlastníkem.",
-    "empty": "Zatím žádné nahrávky. Spusťte schůzku a klikněte na Nahrávat pro pořízení jedné.",
+    "empty": "Zatím žádné nahrávky. Zahajte schůzku a klikněte na <1>Nahrát</1> pro pořízení jedné.",
     "download": "Stáhnout",
     "downloading": "Stahování…",
     "publish": "Publikovat na YouTube",
@@ -170,7 +207,11 @@
       "running": "Spuštěno",
       "failed": "selhalo",
       "deleted": "odstraněno"
-    }
+    },
+    "loading": "Načítání…",
+    "signInFirst": "Nejprve se přihlaste na one.witysk.org.",
+    "started": "Zahájeno {{when}}",
+    "publishTitle": "Nahrát na YouTube a po úspěchu smazat lokální soubor"
   },
   "settings": {
     "title": "Nastavení",
@@ -390,5 +431,67 @@
       "confirm": "Obnovit všechna nastavení na výchozí?",
       "doneFlash": "Obnovit výchozí nastavení"
     }
+  },
+  "discover": {
+    "title": "Objevit",
+    "subtitle": "— schůzky otevřené k připojení",
+    "join": "Připojit se",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Pořádá {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Nastavení",
+    "close": "Zavřít nastavení",
+    "groupAv": "Zvuk a video",
+    "groupDisplay": "Zobrazit",
+    "groupNotifications": "Oznámení",
+    "groupAccessibility": "Přístupnost",
+    "groupNetwork": "Síť",
+    "groupAppearance": "Vzhled",
+    "camOnJoin": "Kamera zapnutá při připojení",
+    "micOnJoin": "Mikrofon zapnutý při připojení",
+    "noiseSuppression": "Potlačení šumu",
+    "echoCancellation": "Potlačení ozvěny",
+    "mirrorPreview": "Zrcadlit můj náhled",
+    "layout": "Rozvržení",
+    "layoutAuto": "Automaticky",
+    "layoutGrid": "Mřížka",
+    "layoutSpeaker": "Aktivní mluvčí",
+    "layoutSpotlight": "Zvýraznit",
+    "mirrorOwn": "Zrcadlit můj vlastní video",
+    "hideSelf": "Skrýt vlastní zobrazení",
+    "showNames": "Zobrazit jména účastníků",
+    "connQuality": "Zobrazit kvalitu připojení",
+    "meetingClock": "Zobrazit hodiny schůzky",
+    "highlightSpeaker": "Zvýraznit aktivního mluvčího",
+    "soundOnJoin": "Zvuk při příchodu někoho",
+    "chatSound": "Zvuk při zprávě v chatu",
+    "ignoreOwnJoins": "Ignorovat vlastní připojení",
+    "captions": "Živé titulky",
+    "captionsSize": "Velikost písma titulků",
+    "fontSmall": "Malý",
+    "fontMedium": "Střední",
+    "fontLarge": "Velké",
+    "fontXl": "Extra velký",
+    "reducedMotion": "Omezený pohyb",
+    "monoAudio": "Monofonní mix zvuku",
+    "quality": "Preferovaná kvalita videa",
+    "qualityAuto": "Automaticky",
+    "qualityLow": "Nízká",
+    "qualityMedium": "Střední",
+    "qualityHigh": "Vysoká",
+    "simulcast": "Simulcast",
+    "forceRelay": "Vynutit TURN relay",
+    "theme": "Motiv",
+    "themeSystem": "Systém",
+    "themeDark": "Tmavý",
+    "themeLight": "Světlo",
+    "compact": "Kompaktní UI",
+    "moreSettings": "Další nastavení najdete na stránce <1>Nastavení</1>."
+  },
+  "tile": {
+    "flip": "Převrátit vodorovně",
+    "stopFlip": "Zastavit horizontální převrácení videa",
+    "unflip": "Zrušit převrácení"
   }
 }

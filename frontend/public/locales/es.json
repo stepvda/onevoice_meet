@@ -23,7 +23,9 @@
     "yes": "Sí",
     "no": "No",
     "loading": "Cargando…",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "anonymous": "anónimo",
+    "requestFailed": "Solicitud fallida"
   },
   "createMeeting": {
     "checkingSession": "Verificando tu sesión de one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Se muestra en el vestíbulo y en la barra superior de la reunión. JPEG, PNG, WebP o GIF; hasta 2 MB.",
     "noImage": "Ninguna imagen seleccionada",
     "submit": "Crear reunión",
-    "submitting": "Creando…"
+    "submitting": "Creando…",
+    "visibility": "Visibilidad",
+    "visibilityHint": "De forma predeterminada, solo tú ves esta reunión en tu página de inicio.",
+    "listForAuth": "Lista en la página de inicio de otros usuarios conectados",
+    "listForAuthDesc": "Cualquier persona que haya iniciado sesión a través de one.witysk.org puede encontrar y unirse.",
+    "listForAnon": "También listar a visitantes anónimos (no registrados)",
+    "listForAnonDesc": "La reunión aparece en la página pública de inicio.",
+    "brandingPreviewAlt": "Vista previa de la marca",
+    "brandingFieldAlt": "Imagen de marca",
+    "unsupportedImageType": "Tipo de imagen no compatible {{type}}; usa JPEG, PNG, WebP o GIF.",
+    "imageTooLarge": "La imagen es de {{mb}} MB; el máximo es 2 MB.",
+    "uploadFailed": "Reunión creada pero falló la carga de la marca: {{message}}"
   },
   "myMeetings": {
     "loading": "Cargando tus reuniones…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Eliminar esta reunión de la lista",
     "more": "+ {{count}} más",
     "closedLabel": "cerrado",
-    "maxParticipants": "máx. {{n}}"
+    "maxParticipants": "máx. {{n}}",
+    "visibilityPublic": "Público",
+    "visibilityListed": "Listado para usuarios que han iniciado sesión",
+    "visibilityPrivate": "Solo visible para mí",
+    "visibilityChange": "{{label}} — haz clic para cambiar",
+    "copyJoinPrompt": "Copia este enlace de unión"
   },
   "lobby": {
     "joinMeeting": "Unirse a la reunión",
@@ -70,7 +88,9 @@
     "emailOptional": "Correo electrónico (opcional)",
     "passwordIfRequired": "Contraseña (si es necesaria)",
     "join": "Unirse",
-    "joining": "Uniéndose…"
+    "joining": "Uniéndose…",
+    "hostedBy": "Organizado por {{name}}",
+    "brandingAlt": "Imagen de marca de la reunión"
   },
   "room": {
     "takeStage": "Subir al escenario",
@@ -89,7 +109,11 @@
     "people": "Personas",
     "chat": "Charla",
     "invite": "Invitar",
-    "inviteTitle": "Invitar personas por correo electrónico"
+    "inviteTitle": "Invitar personas por correo electrónico",
+    "settings": "Configuración",
+    "settingsLabel": "Configuración de la reunión",
+    "topbarBrandingAlt": "Imagen de marca de la reunión",
+    "requestFailed": "La solicitud falló"
   },
   "recordingIndicator": {
     "label": "GRABACIÓN"
@@ -110,7 +134,11 @@
     "upload": "Subir",
     "uploadTitle": "Sube tu propia imagen de fondo",
     "tooLarge": "La imagen es de {{mb}} MB; el máximo es 4 MB.",
-    "notImage": "No es una imagen"
+    "notImage": "No es una imagen ({{type}})",
+    "uploadAria": "Subir una imagen de fondo",
+    "processorFailed": "Efectos de fondo no compatibles en este dispositivo.",
+    "custom": "Personalizado: {{name}}",
+    "customDefault": "Imagen personalizada"
   },
   "participants": {
     "title": "Participantes",
@@ -118,14 +146,21 @@
     "muteMic": "Silenciar micrófono",
     "makePresenter": "Hacer presentador",
     "removeFromMeeting": "Eliminar de la reunión",
-    "authenticatedOwner": "Propietario autenticado"
+    "authenticatedOwner": "Propietario autenticado",
+    "titleCount": "Participantes ({{count}})",
+    "close": "Cerrar participantes",
+    "muteName": "Silenciar {{name}}",
+    "makeNamePresenter": "Hacer que {{name}} sea presentador",
+    "removeName": "Eliminar {{name}}"
   },
   "chatPanel": {
     "title": "Charla",
     "empty": "Aún no hay mensajes — saluda.",
     "placeholder": "Escribe un mensaje",
     "send": "Enviar",
-    "close": "Cerrar chat"
+    "close": "Cerrar chat",
+    "ariaLabel": "Chat de la reunión",
+    "messageAria": "Mensaje de chat"
   },
   "invite": {
     "title": "Invitar por correo electrónico",
@@ -143,12 +178,14 @@
     "tooMany": "Máximo 20 destinatarios por envío.",
     "sentN_one": "Invitación enviada a {{count}}.",
     "sentN_other": "Invitaciones enviadas: {{count}}",
-    "failedSuffix": "Falló: {{list}}"
+    "failedSuffix": "Falló: {{list}}",
+    "cancel": "Cancelar",
+    "close": "Cerrar"
   },
   "recordings": {
     "title": "Grabaciones",
     "subtitle": "Grabaciones del lado del servidor de tus reuniones. Los archivos locales se eliminan automáticamente después de 30 días (o cuando publicas en YouTube). Las subidas solo las inicia el propietario.",
-    "empty": "Aún no hay grabaciones. Inicia una reunión y haz clic en Grabar para capturar una.",
+    "empty": "Aún no hay grabaciones. Inicia una reunión y haz clic en <1>Grabar</1> para capturar una.",
     "download": "Descargar",
     "downloading": "Descargando…",
     "publish": "Publicar en YouTube",
@@ -170,7 +207,11 @@
       "running": "ejecutando",
       "failed": "falló",
       "deleted": "eliminado"
-    }
+    },
+    "loading": "Cargando…",
+    "signInFirst": "Inicia sesión primero en one.witysk.org.",
+    "started": "Iniciado {{when}}",
+    "publishTitle": "Subir a YouTube y eliminar el archivo local si se sube correctamente"
   },
   "settings": {
     "title": "Configuración",
@@ -390,5 +431,67 @@
       "confirm": "¿Restablecer todas las preferencias a los valores predeterminados?",
       "doneFlash": "Restablecer valores predeterminados"
     }
+  },
+  "discover": {
+    "title": "Descubrir",
+    "subtitle": "— reuniones abiertas para unirse",
+    "join": "Unirse",
+    "maxParticipants": "máx. {{n}}",
+    "hostedBy": "Organizado por {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Configuración",
+    "close": "Cerrar configuración",
+    "groupAv": "Audio y Video",
+    "groupDisplay": "Mostrar",
+    "groupNotifications": "Notificaciones",
+    "groupAccessibility": "Accesibilidad",
+    "groupNetwork": "Red",
+    "groupAppearance": "Apariencia",
+    "camOnJoin": "Cámara encendida al unirme",
+    "micOnJoin": "Micrófono encendido al unirme",
+    "noiseSuppression": "Supresión de ruido",
+    "echoCancellation": "Cancelación de eco",
+    "mirrorPreview": "Reflejar mi vista previa",
+    "layout": "Diseño",
+    "layoutAuto": "Automático",
+    "layoutGrid": "Cuadrícula",
+    "layoutSpeaker": "Orador activo",
+    "layoutSpotlight": "Destacar",
+    "mirrorOwn": "Reflejar mi propio video",
+    "hideSelf": "Ocultar mi vista",
+    "showNames": "Mostrar nombres de participantes",
+    "connQuality": "Mostrar calidad de conexión",
+    "meetingClock": "Mostrar reloj de la reunión",
+    "highlightSpeaker": "Resaltar orador activo",
+    "soundOnJoin": "Sonido al unirse alguien",
+    "chatSound": "Sonido al recibir mensaje",
+    "ignoreOwnJoins": "Ignorar mis propias uniones",
+    "captions": "Subtítulos en vivo",
+    "captionsSize": "Tamaño de fuente de los subtítulos",
+    "fontSmall": "Pequeño",
+    "fontMedium": "Medio",
+    "fontLarge": "Grande",
+    "fontXl": "Extra grande",
+    "reducedMotion": "Movimiento reducido",
+    "monoAudio": "Mezcla de audio mono",
+    "quality": "Calidad de video preferida",
+    "qualityAuto": "Automático",
+    "qualityLow": "Bajo",
+    "qualityMedium": "Medio",
+    "qualityHigh": "Alto",
+    "simulcast": "Simulcast",
+    "forceRelay": "Forzar retransmisión TURN",
+    "theme": "Tema",
+    "themeSystem": "Sistema",
+    "themeDark": "Oscuro",
+    "themeLight": "Claro",
+    "compact": "Interfaz compacta",
+    "moreSettings": "Más ajustes están disponibles en la página completa de <1>Configuración</1>."
+  },
+  "tile": {
+    "flip": "Voltear horizontalmente",
+    "stopFlip": "Dejar de voltear el video horizontalmente",
+    "unflip": "Voltear"
   }
 }

@@ -23,7 +23,9 @@
     "yes": "Ja",
     "no": "Nein",
     "loading": "Lädt…",
-    "close": "Schließen"
+    "close": "Schließen",
+    "anonymous": "anonym",
+    "requestFailed": "Anfrage fehlgeschlagen"
   },
   "createMeeting": {
     "checkingSession": "Überprüfe deine one.witysk.org-Sitzung…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Wird in der Lobby und der oberen Meeting-Leiste angezeigt. JPEG, PNG, WebP oder GIF; bis zu 2 MB.",
     "noImage": "Kein Bild ausgewählt",
     "submit": "Besprechung erstellen",
-    "submitting": "Erstelle…"
+    "submitting": "Erstelle…",
+    "visibility": "Sichtbarkeit",
+    "visibilityHint": "Standardmäßig siehst du dieses Meeting nur auf deiner Startseite.",
+    "listForAuth": "Liste der anderen angemeldeten Benutzer auf der Startseite",
+    "listForAuthDesc": "Jeder, der über one.witysk.org angemeldet ist, kann finden und beitreten.",
+    "listForAnon": "Auch für anonyme (nicht angemeldete) Besucher auflisten",
+    "listForAnonDesc": "Das Meeting erscheint auf der öffentlichen Landingpage.",
+    "brandingPreviewAlt": "Marken-Vorschau",
+    "brandingFieldAlt": "Markenbild",
+    "unsupportedImageType": "Nicht unterstützter Bildtyp {{type}}; verwenden Sie JPEG, PNG, WebP oder GIF.",
+    "imageTooLarge": "Bild ist {{mb}} MB; maximal 2 MB.",
+    "uploadFailed": "Meeting erstellt, aber Branding-Upload fehlgeschlagen: {{message}}"
   },
   "myMeetings": {
     "loading": "Deine Besprechungen werden geladen…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Dieses Meeting aus der Liste löschen",
     "more": "+ {{count}} weitere",
     "closedLabel": "geschlossen",
-    "maxParticipants": "max {{n}}"
+    "maxParticipants": "max {{n}}",
+    "visibilityPublic": "Öffentlich",
+    "visibilityListed": "Für angemeldete Nutzer aufgelistet",
+    "visibilityPrivate": "Nur für mich sichtbar",
+    "visibilityChange": "{{label}} — klicken zum Ändern",
+    "copyJoinPrompt": "Diesen Beitrittslink kopieren"
   },
   "lobby": {
     "joinMeeting": "Besprechung beitreten",
@@ -70,7 +88,9 @@
     "emailOptional": "E-Mail (optional)",
     "passwordIfRequired": "Passwort (falls erforderlich)",
     "join": "Beitreten",
-    "joining": "Beitrete…"
+    "joining": "Beitrete…",
+    "hostedBy": "Gehostet von {{name}}",
+    "brandingAlt": "Besprechungs-Branding-Bild"
   },
   "room": {
     "takeStage": "Bühne betreten",
@@ -89,7 +109,11 @@
     "people": "Personen",
     "chat": "Chat",
     "invite": "Einladen",
-    "inviteTitle": "Personen per E-Mail einladen"
+    "inviteTitle": "Personen per E-Mail einladen",
+    "settings": "Einstellungen",
+    "settingsLabel": "In-Meeting-Einstellungen",
+    "topbarBrandingAlt": "Branding-Bild für Besprechungen",
+    "requestFailed": "Anfrage fehlgeschlagen"
   },
   "recordingIndicator": {
     "label": "AUFNAHME"
@@ -110,7 +134,11 @@
     "upload": "Hochladen",
     "uploadTitle": "Eigenes Hintergrundbild hochladen",
     "tooLarge": "Bild ist {{mb}} MB; maximal 4 MB.",
-    "notImage": "Kein Bild"
+    "notImage": "Kein Bild ({{type}})",
+    "uploadAria": "Hintergrundbild hochladen",
+    "processorFailed": "Hintergrundeffekte werden auf diesem Gerät nicht unterstützt.",
+    "custom": "Benutzerdefiniert: {{name}}",
+    "customDefault": "Benutzerdefiniertes Bild"
   },
   "participants": {
     "title": "Teilnehmer",
@@ -118,14 +146,21 @@
     "muteMic": "Mikrofon stumm",
     "makePresenter": "Präsentator festlegen",
     "removeFromMeeting": "Aus dem Meeting entfernen",
-    "authenticatedOwner": "Authentifizierter Eigentümer"
+    "authenticatedOwner": "Authentifizierter Eigentümer",
+    "titleCount": "Teilnehmer ({{count}})",
+    "close": "Teilnehmer schließen",
+    "muteName": "Stummschalten {{name}}",
+    "makeNamePresenter": "Machen Sie {{name}} zum Präsentator",
+    "removeName": "Entferne {{name}}"
   },
   "chatPanel": {
     "title": "Chat",
     "empty": "Noch keine Nachrichten — sag Hallo.",
     "placeholder": "Nachricht eingeben",
     "send": "Senden",
-    "close": "Chat schließen"
+    "close": "Chat schließen",
+    "ariaLabel": "Besprechungs-Chat",
+    "messageAria": "Chat-Nachricht"
   },
   "invite": {
     "title": "Per E-Mail einladen",
@@ -143,12 +178,14 @@
     "tooMany": "Maximal 20 Empfänger pro Sendung.",
     "sentN_one": "Einladung an {{count}} gesendet.",
     "sentN_other": "{{count}} Einladungen versendet.",
-    "failedSuffix": "Fehlgeschlagen: {{list}}"
+    "failedSuffix": "Fehlgeschlagen: {{list}}",
+    "cancel": "Abbrechen",
+    "close": "Schließen"
   },
   "recordings": {
     "title": "Aufnahmen",
     "subtitle": "Serverseitige Aufzeichnungen Ihrer Meetings. Lokale Dateien werden nach 30 Tagen automatisch gelöscht (oder wenn Sie auf YouTube veröffentlichen). Uploads werden nur vom Besitzer initiiert.",
-    "empty": "Noch keine Aufnahmen. Starten Sie eine Besprechung und klicken Sie auf „Aufnehmen“, um eine zu erstellen.",
+    "empty": "Noch keine Aufnahmen. Starten Sie eine Besprechung und klicken Sie auf <1>Aufzeichnen</1>, um eine zu erstellen.",
     "download": "Herunterladen",
     "downloading": "Wird heruntergeladen…",
     "publish": "Auf YouTube veröffentlichen",
@@ -170,7 +207,11 @@
       "running": "Läuft",
       "failed": "fehlgeschlagen",
       "deleted": "gelöscht"
-    }
+    },
+    "loading": "Lädt…",
+    "signInFirst": "Melden Sie sich zuerst auf one.witysk.org an.",
+    "started": "Gestartet {{when}}",
+    "publishTitle": "Auf YouTube hochladen und lokale Datei bei Erfolg löschen"
   },
   "settings": {
     "title": "Einstellungen",
@@ -390,5 +431,67 @@
       "confirm": "Alle Einstellungen auf Standard zurücksetzen?",
       "doneFlash": "Auf Standard zurücksetzen"
     }
+  },
+  "discover": {
+    "title": "Entdecken",
+    "subtitle": "— Besprechungen, die beigetreten werden können",
+    "join": "Beitreten",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Gehostet von {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Einstellungen",
+    "close": "Einstellungen schließen",
+    "groupAv": "Audio & Video",
+    "groupDisplay": "Anzeige",
+    "groupNotifications": "Benachrichtigungen",
+    "groupAccessibility": "Barrierefreiheit",
+    "groupNetwork": "Netzwerk",
+    "groupAppearance": "Erscheinungsbild",
+    "camOnJoin": "Kamera einschalten, wenn ich beitrete",
+    "micOnJoin": "Mikrofon eingeschaltet, wenn ich beitrete",
+    "noiseSuppression": "Rauschunterdrückung",
+    "echoCancellation": "Echounterdrückung",
+    "mirrorPreview": "Vorschau spiegeln",
+    "layout": "Layout",
+    "layoutAuto": "Automatisch",
+    "layoutGrid": "Raster",
+    "layoutSpeaker": "Aktiver Sprecher",
+    "layoutSpotlight": "Spotlight",
+    "mirrorOwn": "Eigenes Video spiegeln",
+    "hideSelf": "Eigenansicht ausblenden",
+    "showNames": "Teilnehmernamen anzeigen",
+    "connQuality": "Verbindungsqualität anzeigen",
+    "meetingClock": "Besprechungsuhr anzeigen",
+    "highlightSpeaker": "Aktiven Sprecher hervorheben",
+    "soundOnJoin": "Ton beim Beitritt",
+    "chatSound": "Chat-Nachrichtenton",
+    "ignoreOwnJoins": "Eigene Beitritte ignorieren",
+    "captions": "Live-Untertitel",
+    "captionsSize": "Schriftgröße der Untertitel",
+    "fontSmall": "Klein",
+    "fontMedium": "Mittel",
+    "fontLarge": "Groß",
+    "fontXl": "Extragroß",
+    "reducedMotion": "Reduzierte Bewegung",
+    "monoAudio": "Mono-Audiomischung",
+    "quality": "Bevorzugte Videoqualität",
+    "qualityAuto": "Automatisch",
+    "qualityLow": "Niedrig",
+    "qualityMedium": "Mittel",
+    "qualityHigh": "Hoch",
+    "simulcast": "Simulcast",
+    "forceRelay": "TURN-Relay erzwingen",
+    "theme": "Design",
+    "themeSystem": "System",
+    "themeDark": "Dunkel",
+    "themeLight": "Hell",
+    "compact": "Kompakte Benutzeroberfläche",
+    "moreSettings": "Weitere Einstellungen findest du auf der vollständigen Seite <1>Einstellungen</1>."
+  },
+  "tile": {
+    "flip": "Horizontal spiegeln",
+    "stopFlip": "Horizontale Spiegelung des Videos beenden",
+    "unflip": "Spiegelung aufheben"
   }
 }

@@ -23,7 +23,9 @@
     "yes": "Yes",
     "no": "No",
     "loading": "Loading…",
-    "close": "Close"
+    "close": "Close",
+    "anonymous": "anonymous",
+    "requestFailed": "Request failed"
   },
   "createMeeting": {
     "checkingSession": "Checking your one.witysk.org session…",
@@ -43,7 +45,25 @@
     "fieldBrandingHint": "Shown in the lobby and the meeting top bar. JPEG, PNG, WebP or GIF; up to 2 MB.",
     "noImage": "No image selected",
     "submit": "Create meeting",
-    "submitting": "Creating…"
+    "submitting": "Creating…",
+    "visibility": "Visibility",
+    "visibilityHint": "By default, only you see this meeting on your Home page.",
+    "listForAuth": "List on the Home page of other signed-in users",
+    "listForAuthDesc": "Anyone signed in via one.witysk.org can find and join.",
+    "listForAnon": "Also list to anonymous (non-signed-in) visitors",
+    "listForAnonDesc": "The meeting appears on the public landing page.",
+    "brandingPreviewAlt": "Branding preview",
+    "brandingFieldAlt": "Branding image",
+    "unsupportedImageType": "Unsupported image type {{type}}; use JPEG, PNG, WebP, or GIF.",
+    "imageTooLarge": "Image is {{mb}} MB; max is 2 MB.",
+    "uploadFailed": "Meeting created but branding upload failed: {{message}}"
+  },
+  "discover": {
+    "title": "Discover",
+    "subtitle": "— meetings open to join",
+    "join": "Join",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Hosted by {{name}}"
   },
   "myMeetings": {
     "loading": "Loading your meetings…",
@@ -60,17 +80,24 @@
     "deleteTitle": "Delete this meeting from the list",
     "more": "+ {{count}} more",
     "closedLabel": "closed",
-    "maxParticipants": "max {{n}}"
+    "maxParticipants": "max {{n}}",
+    "visibilityPublic": "Public",
+    "visibilityListed": "Listed for signed-in users",
+    "visibilityPrivate": "Only visible to me",
+    "visibilityChange": "{{label}} — click to change",
+    "copyJoinPrompt": "Copy this join link"
   },
   "lobby": {
     "joinMeeting": "Join meeting",
     "room": "Room:",
     "host": "— you are the host",
+    "hostedBy": "Hosted by {{name}}",
     "yourName": "Your name",
     "emailOptional": "Email (optional)",
     "passwordIfRequired": "Password (if required)",
     "join": "Join",
-    "joining": "Joining…"
+    "joining": "Joining…",
+    "brandingAlt": "Meeting branding image"
   },
   "room": {
     "takeStage": "Take stage",
@@ -89,10 +116,69 @@
     "people": "People",
     "chat": "Chat",
     "invite": "Invite",
-    "inviteTitle": "Invite people by email"
+    "inviteTitle": "Invite people by email",
+    "settings": "Settings",
+    "settingsLabel": "In-meeting settings",
+    "topbarBrandingAlt": "Meeting branding image",
+    "requestFailed": "request failed"
+  },
+  "inMeetingSettings": {
+    "title": "Settings",
+    "close": "Close settings",
+    "groupAv": "Audio & Video",
+    "groupDisplay": "Display",
+    "groupNotifications": "Notifications",
+    "groupAccessibility": "Accessibility",
+    "groupNetwork": "Network",
+    "groupAppearance": "Appearance",
+    "camOnJoin": "Camera on when I join",
+    "micOnJoin": "Microphone on when I join",
+    "noiseSuppression": "Noise suppression",
+    "echoCancellation": "Echo cancellation",
+    "mirrorPreview": "Mirror my preview",
+    "layout": "Layout",
+    "layoutAuto": "Auto",
+    "layoutGrid": "Grid",
+    "layoutSpeaker": "Active speaker",
+    "layoutSpotlight": "Spotlight",
+    "mirrorOwn": "Mirror my own video",
+    "hideSelf": "Hide self view",
+    "showNames": "Show participant names",
+    "connQuality": "Show connection quality",
+    "meetingClock": "Show meeting clock",
+    "highlightSpeaker": "Highlight active speaker",
+    "soundOnJoin": "Sound when someone joins",
+    "chatSound": "Sound on chat message",
+    "ignoreOwnJoins": "Ignore my own joins",
+    "captions": "Live captions",
+    "captionsSize": "Captions font size",
+    "fontSmall": "Small",
+    "fontMedium": "Medium",
+    "fontLarge": "Large",
+    "fontXl": "Extra large",
+    "reducedMotion": "Reduced motion",
+    "monoAudio": "Mono audio mix",
+    "quality": "Preferred video quality",
+    "qualityAuto": "Auto",
+    "qualityLow": "Low",
+    "qualityMedium": "Medium",
+    "qualityHigh": "High",
+    "simulcast": "Simulcast",
+    "forceRelay": "Force TURN relay",
+    "theme": "Theme",
+    "themeSystem": "System",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "compact": "Compact UI",
+    "moreSettings": "More settings live on the full <1>Settings</1> page."
   },
   "recordingIndicator": {
     "label": "REC"
+  },
+  "tile": {
+    "flip": "Flip horizontally",
+    "stopFlip": "Stop flipping video horizontally",
+    "unflip": "Un-flip"
   },
   "background": {
     "label": "Background effect",
@@ -109,15 +195,24 @@
     "waves": "Waves",
     "upload": "Upload",
     "uploadTitle": "Upload your own background image",
+    "uploadAria": "Upload a background image",
     "tooLarge": "Image is {{mb}} MB; max is 4 MB.",
-    "notImage": "Not an image"
+    "notImage": "Not an image ({{type}})",
+    "processorFailed": "Background effects unsupported on this device.",
+    "custom": "Custom: {{name}}",
+    "customDefault": "Custom image"
   },
   "participants": {
     "title": "Participants",
+    "titleCount": "Participants ({{count}})",
+    "close": "Close participants",
     "you": "(you)",
     "muteMic": "Mute mic",
+    "muteName": "Mute {{name}}",
     "makePresenter": "Make presenter",
+    "makeNamePresenter": "Make {{name}} presenter",
     "removeFromMeeting": "Remove from meeting",
+    "removeName": "Remove {{name}}",
     "authenticatedOwner": "Authenticated owner"
   },
   "chatPanel": {
@@ -125,7 +220,9 @@
     "empty": "No messages yet — say hello.",
     "placeholder": "Type a message",
     "send": "Send",
-    "close": "Close chat"
+    "close": "Close chat",
+    "ariaLabel": "Meeting chat",
+    "messageAria": "Chat message"
   },
   "invite": {
     "title": "Invite by email",
@@ -143,12 +240,18 @@
     "tooMany": "At most 20 recipients per send.",
     "sentN_one": "Sent {{count}} invite.",
     "sentN_other": "Sent {{count}} invites.",
-    "failedSuffix": " Failed: {{list}}"
+    "failedSuffix": " Failed: {{list}}",
+    "cancel": "Cancel",
+    "close": "Close"
   },
   "recordings": {
     "title": "Recordings",
     "subtitle": "Server-side recordings of your meetings. Local files auto-delete after 30 days (or when you publish to YouTube). Uploads are owner-initiated only.",
-    "empty": "No recordings yet. Start a meeting and click Record to capture one.",
+    "empty": "No recordings yet. Start a meeting and click <1>Record</1> to capture one.",
+    "loading": "Loading…",
+    "signInFirst": "Sign in on one.witysk.org first.",
+    "started": "Started {{when}}",
+    "publishTitle": "Upload to YouTube and delete the local file on success",
     "download": "Download",
     "downloading": "Downloading…",
     "publish": "Publish to YouTube",

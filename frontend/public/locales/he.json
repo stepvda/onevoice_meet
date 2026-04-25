@@ -23,7 +23,9 @@
     "yes": "כן",
     "no": "לא",
     "loading": "טוען…",
-    "close": "סגור"
+    "close": "סגור",
+    "anonymous": "אנונימי",
+    "requestFailed": "הבקשה נכשלה"
   },
   "createMeeting": {
     "checkingSession": "בודק את הסשן שלך ב-one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "מוצג בלובי ובשורת הכותרת העליונה של הפגישה. JPEG, PNG, WebP או GIF; עד 2 מגה-בייט.",
     "noImage": "לא נבחרה תמונה",
     "submit": "צור פגישה",
-    "submitting": "יוצר…"
+    "submitting": "יוצר…",
+    "visibility": "נראות",
+    "visibilityHint": "כברירת מחדל, רק אתה רואה את הפגישה הזו בדף הבית שלך.",
+    "listForAuth": "רשימת משתמשים מחוברים אחרים בדף הבית",
+    "listForAuthDesc": "כל מי שנכנס דרך one.witysk.org יכול למצוא ולהצטרף.",
+    "listForAnon": "הצג גם למבקרים אנונימיים (לא מחוברים)",
+    "listForAnonDesc": "הפגישה מופיעה בדף הנחיתה הציבורי.",
+    "brandingPreviewAlt": "תצוגה מקדימה של המותג",
+    "brandingFieldAlt": "תמונת מיתוג",
+    "unsupportedImageType": "סוג תמונה לא נתמך {{type}}; השתמש ב-JPEG, PNG, WebP או GIF.",
+    "imageTooLarge": "התמונה היא {{mb}} מגה-בייט; המקסימום הוא 2 מגה-בייט.",
+    "uploadFailed": "הפגישה נוצרה אך העלאת המיתוג נכשלה: {{message}}"
   },
   "myMeetings": {
     "loading": "טוען את הפגישות שלך…",
@@ -60,7 +73,12 @@
     "deleteTitle": "מחק פגישה זו מהרשימה",
     "more": "+ {{count}} נוספים",
     "closedLabel": "סגור",
-    "maxParticipants": "מקס {{n}}"
+    "maxParticipants": "מקס {{n}}",
+    "visibilityPublic": "ציבורי",
+    "visibilityListed": "רשום למשתמשים מחוברים",
+    "visibilityPrivate": "גלוי רק לי",
+    "visibilityChange": "{{label}} — לחץ לשינוי",
+    "copyJoinPrompt": "העתק קישור הצטרפות זה"
   },
   "lobby": {
     "joinMeeting": "הצטרף לפגישה",
@@ -70,7 +88,9 @@
     "emailOptional": "אימייל (אופציונלי)",
     "passwordIfRequired": "סיסמה (אם נדרש)",
     "join": "הצטרף",
-    "joining": "מתחבר…"
+    "joining": "מתחבר…",
+    "hostedBy": "מארח: {{name}}",
+    "brandingAlt": "תמונת מיתוג לפגישה"
   },
   "room": {
     "takeStage": "עלה לבמה",
@@ -89,7 +109,11 @@
     "people": "אנשים",
     "chat": "צ'אט",
     "invite": "הזמן",
-    "inviteTitle": "הזמן אנשים באמצעות דוא\"ל"
+    "inviteTitle": "הזמן אנשים באמצעות דוא\"ל",
+    "settings": "הגדרות",
+    "settingsLabel": "הגדרות בפגישה",
+    "topbarBrandingAlt": "תמונת מיתוג לפגישה",
+    "requestFailed": "הבקשה נכשלה"
   },
   "recordingIndicator": {
     "label": "הקלט"
@@ -110,7 +134,11 @@
     "upload": "העלאה",
     "uploadTitle": "העלה תמונת רקע משלך",
     "tooLarge": "התמונה היא {{mb}} מגה-בייט; המקסימום הוא 4 מגה-בייט.",
-    "notImage": "לא תמונה"
+    "notImage": "לא תמונה ({{type}})",
+    "uploadAria": "העלה תמונת רקע",
+    "processorFailed": "אפקטי רקע אינם נתמכים במכשיר זה.",
+    "custom": "מותאם אישית: {{name}}",
+    "customDefault": "תמונה מותאמת אישית"
   },
   "participants": {
     "title": "משתתפים",
@@ -118,14 +146,21 @@
     "muteMic": "השתק מיקרופון",
     "makePresenter": "הפוך למציג",
     "removeFromMeeting": "הסר מהפגישה",
-    "authenticatedOwner": "בעלים מאומתים"
+    "authenticatedOwner": "בעלים מאומתים",
+    "titleCount": "משתתפים ({{count}})",
+    "close": "סגור משתתפים",
+    "muteName": "השתק {{name}}",
+    "makeNamePresenter": "הפוך את {{name}} למציג",
+    "removeName": "הסר את {{name}}"
   },
   "chatPanel": {
     "title": "שיחה",
     "empty": "עדיין אין הודעות — תגיד שלום.",
     "placeholder": "הקלד הודעה",
     "send": "שלח",
-    "close": "סגור צ׳אט"
+    "close": "סגור צ׳אט",
+    "ariaLabel": "צ'אט הפגישה",
+    "messageAria": "הודעת צ'אט"
   },
   "invite": {
     "title": "הזמנה באמצעות דוא\"ל",
@@ -143,12 +178,14 @@
     "tooMany": "עד 20 נמענים לשליחה.",
     "sentN_one": "נשלחה הזמנה {{count}}.",
     "sentN_other": "נשלחו {{count}} הזמנות.",
-    "failedSuffix": "נכשל: {{list}}"
+    "failedSuffix": "נכשל: {{list}}",
+    "cancel": "ביטול",
+    "close": "סגור"
   },
   "recordings": {
     "title": "הקלטות",
     "subtitle": "הקלטות מצד השרת של הפגישות שלך. קבצים מקומיים נמחקים אוטומטית לאחר 30 יום (או כשאתה מפרסם ליוטיוב). העלאות מתבצעות רק ביוזמת הבעלים.",
-    "empty": "אין הקלטות עדיין. התחל פגישה ולחץ על הקלטה כדי ליצור אחת.",
+    "empty": "עדיין אין הקלטות. התחל פגישה ולחץ על <1>הקלט</1> כדי ללכוד אחת.",
     "download": "הורדה",
     "downloading": "מוריד…",
     "publish": "פרסם ל-YouTube",
@@ -170,7 +207,11 @@
       "running": "פועל",
       "failed": "נכשל",
       "deleted": "נמחק"
-    }
+    },
+    "loading": "טוען…",
+    "signInFirst": "היכנס תחילה לאתר one.witysk.org.",
+    "started": "החל {{when}}",
+    "publishTitle": "העלה ל-YouTube ומחק את הקובץ המקומי בהצלחה"
   },
   "settings": {
     "title": "הגדרות",
@@ -390,5 +431,67 @@
       "confirm": "לאפס את כל ההעדפות לברירת המחדל?",
       "doneFlash": "איפוס לברירות מחדל"
     }
+  },
+  "discover": {
+    "title": "גלה",
+    "subtitle": "— פגישות פתוחות להצטרפות",
+    "join": "הצטרף",
+    "maxParticipants": "מקסימום {{n}}",
+    "hostedBy": "מארח: {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "הגדרות",
+    "close": "סגור הגדרות",
+    "groupAv": "אודיו ווידאו",
+    "groupDisplay": "הצג",
+    "groupNotifications": "התראות",
+    "groupAccessibility": "נגישות",
+    "groupNetwork": "רשת",
+    "groupAppearance": "מראה",
+    "camOnJoin": "מצלמה דלוקה כשאני מצטרף",
+    "micOnJoin": "מיקרופון דולק כשאני מצטרף",
+    "noiseSuppression": "דיכוי רעשים",
+    "echoCancellation": "ביטול הד",
+    "mirrorPreview": "שקף את התצוגה המקדימה שלי",
+    "layout": "פריסה",
+    "layoutAuto": "אוטומטי",
+    "layoutGrid": "רשת",
+    "layoutSpeaker": "דובר פעיל",
+    "layoutSpotlight": "ספוטלייט",
+    "mirrorOwn": "שקף את הווידאו שלי",
+    "hideSelf": "הסתר תצוגה עצמית",
+    "showNames": "הצגת שמות משתתפים",
+    "connQuality": "הצגת איכות חיבור",
+    "meetingClock": "הצג שעון פגישה",
+    "highlightSpeaker": "הדגשת הדובר הפעיל",
+    "soundOnJoin": "צליל כשמישהו מצטרף",
+    "chatSound": "צליל בהודעת צ'אט",
+    "ignoreOwnJoins": "התעלם מהצטרפותי שלי",
+    "captions": "כתוביות חיות",
+    "captionsSize": "גודל גופן כתוביות",
+    "fontSmall": "קטן",
+    "fontMedium": "בינוני",
+    "fontLarge": "גדול",
+    "fontXl": "גדול במיוחד",
+    "reducedMotion": "הפחתת תנועה",
+    "monoAudio": "מיקס אודיו מונו",
+    "quality": "איכות וידאו מועדפת",
+    "qualityAuto": "אוטומטי",
+    "qualityLow": "נמוך",
+    "qualityMedium": "בינוני",
+    "qualityHigh": "גבוה",
+    "simulcast": "שידור מקביל",
+    "forceRelay": "אלץ ממסר TURN",
+    "theme": "ערכת נושא",
+    "themeSystem": "מערכת",
+    "themeDark": "כהה",
+    "themeLight": "אור",
+    "compact": "ממשק משתמש קומפקטי",
+    "moreSettings": "הגדרות נוספות זמינות בעמוד <1>הגדרות</1> המלא."
+  },
+  "tile": {
+    "flip": "הפוך אופקית",
+    "stopFlip": "הפסק להפוך את הווידאו אופקית",
+    "unflip": "ביטול היפוך"
   }
 }

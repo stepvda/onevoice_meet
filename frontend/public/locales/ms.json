@@ -23,7 +23,9 @@
     "yes": "Ya",
     "no": "Tidak",
     "loading": "Memuatkan…",
-    "close": "Tutup"
+    "close": "Tutup",
+    "anonymous": "anonymous",
+    "requestFailed": "Permintaan gagal"
   },
   "createMeeting": {
     "checkingSession": "Menyemak sesi one.witysk.org anda…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Ditunjukkan di lobi dan bar atas mesyuarat. JPEG, PNG, WebP atau GIF; sehingga 2 MB.",
     "noImage": "Tiada imej dipilih",
     "submit": "Cipta mesyuarat",
-    "submitting": "Mencipta…"
+    "submitting": "Mencipta…",
+    "visibility": "Keterlihatan",
+    "visibilityHint": "Secara lalai, hanya anda yang melihat mesyuarat ini pada halaman Laman Utama anda.",
+    "listForAuth": "Senarai pengguna lain yang telah log masuk di halaman Utama",
+    "listForAuthDesc": "Sesiapa yang log masuk melalui one.witysk.org boleh mencari dan menyertai.",
+    "listForAnon": "Juga senaraikan kepada pelawat tanpa nama (yang tidak log masuk)",
+    "listForAnonDesc": "Mesyuarat ini dipaparkan pada halaman pendaratan awam.",
+    "brandingPreviewAlt": "Pratonton penjenamaan",
+    "brandingFieldAlt": "Imej jenama",
+    "unsupportedImageType": "Jenis imej tidak disokong {{type}}; gunakan JPEG, PNG, WebP, atau GIF.",
+    "imageTooLarge": "Imej adalah {{mb}} MB; maksimum 2 MB.",
+    "uploadFailed": "Mesyuarat berjaya dicipta tetapi muat naik penjenamaan gagal: {{message}}"
   },
   "myMeetings": {
     "loading": "Memuatkan mesyuarat anda…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Padamkan mesyuarat ini daripada senarai",
     "more": "+ {{count}} lagi",
     "closedLabel": "Ditutup",
-    "maxParticipants": "maks {{n}}"
+    "maxParticipants": "maks {{n}}",
+    "visibilityPublic": "Awam",
+    "visibilityListed": "Disenaraikan untuk pengguna yang telah log masuk",
+    "visibilityPrivate": "Hanya boleh dilihat oleh saya",
+    "visibilityChange": "{{label}} — klik untuk menukar",
+    "copyJoinPrompt": "Salin pautan penyertaan ini"
   },
   "lobby": {
     "joinMeeting": "Sertai mesyuarat",
@@ -70,7 +88,9 @@
     "emailOptional": "E-mel (pilihan)",
     "passwordIfRequired": "Kata laluan (jika diperlukan)",
     "join": "Sertai",
-    "joining": "Menyertai…"
+    "joining": "Menyertai…",
+    "hostedBy": "Dianjurkan oleh {{name}}",
+    "brandingAlt": "Imej penjenamaan mesyuarat"
   },
   "room": {
     "takeStage": "Naik pentas",
@@ -89,7 +109,11 @@
     "people": "Orang",
     "chat": "Sembang",
     "invite": "Jemput",
-    "inviteTitle": "Jemput orang melalui e-mel"
+    "inviteTitle": "Jemput orang melalui e-mel",
+    "settings": "Tetapan",
+    "settingsLabel": "Tetapan dalam mesyuarat",
+    "topbarBrandingAlt": "Imej penjenamaan mesyuarat",
+    "requestFailed": "Permintaan gagal"
   },
   "recordingIndicator": {
     "label": "RAKAM"
@@ -110,7 +134,11 @@
     "upload": "Muat Naik",
     "uploadTitle": "Muat naik imej latar belakang anda sendiri",
     "tooLarge": "Imej ialah {{mb}} MB; maksimum 4 MB.",
-    "notImage": "Bukan imej"
+    "notImage": "Bukan imej ({{type}})",
+    "uploadAria": "Muat naik gambar latar",
+    "processorFailed": "Kesan latar belakang tidak disokong pada peranti ini.",
+    "custom": "Kustom: {{name}}",
+    "customDefault": "Imej tersuai"
   },
   "participants": {
     "title": "Peserta",
@@ -118,14 +146,21 @@
     "muteMic": "Bisukan mikrofon",
     "makePresenter": "Jadikan pembentang",
     "removeFromMeeting": "Keluarkan dari mesyuarat",
-    "authenticatedOwner": "Pemilik yang disahkan"
+    "authenticatedOwner": "Pemilik yang disahkan",
+    "titleCount": "Peserta ({{count}})",
+    "close": "Tutup peserta",
+    "muteName": "Bisukan {{name}}",
+    "makeNamePresenter": "Jadikan {{name}} pembentang",
+    "removeName": "Alih keluar {{name}}"
   },
   "chatPanel": {
     "title": "Sembang",
     "empty": "Tiada mesej lagi — ucapkan salam.",
     "placeholder": "Taip mesej",
     "send": "Hantar",
-    "close": "Tutup sembang"
+    "close": "Tutup sembang",
+    "ariaLabel": "Sembang Mesyuarat",
+    "messageAria": "Mesej sembang"
   },
   "invite": {
     "title": "Jemput melalui e-mel",
@@ -143,12 +178,14 @@
     "tooMany": "Maksimum 20 penerima setiap hantaran.",
     "sentN_one": "Hantar jemputan {{count}}.",
     "sentN_other": "Hantar {{count}} jemputan.",
-    "failedSuffix": "Gagal: {{list}}"
+    "failedSuffix": "Gagal: {{list}}",
+    "cancel": "Batal",
+    "close": "Tutup"
   },
   "recordings": {
     "title": "Rakaman",
     "subtitle": "Rakaman mesyuarat di sisi pelayan. Fail tempatan dipadam automatik selepas 30 hari (atau apabila anda terbitkan ke YouTube). Muat naik hanya dimulakan oleh pemilik.",
-    "empty": "Tiada rakaman lagi. Mulakan mesyuarat dan klik Rakam untuk merakamnya.",
+    "empty": "Tiada rakaman lagi. Mulakan mesyuarat dan klik <1>Rakam</1> untuk merakamnya.",
     "download": "Muat turun",
     "downloading": "Muat turun…",
     "publish": "Terbitkan ke YouTube",
@@ -170,7 +207,11 @@
       "running": "berjalan",
       "failed": "gagal",
       "deleted": "dipadamkan"
-    }
+    },
+    "loading": "Memuatkan…",
+    "signInFirst": "Log masuk di one.witysk.org dahulu.",
+    "started": "Bermula {{when}}",
+    "publishTitle": "Muat naik ke YouTube dan padamkan fail tempatan jika berjaya"
   },
   "settings": {
     "title": "Tetapan",
@@ -390,5 +431,67 @@
       "confirm": "Set semula semua keutamaan kepada lalai?",
       "doneFlash": "Set semula kepada lalai"
     }
+  },
+  "discover": {
+    "title": "Terokai",
+    "subtitle": "— mesyuarat terbuka untuk disertai",
+    "join": "Sertai",
+    "maxParticipants": "maks {{n}}",
+    "hostedBy": "Dianjurkan oleh {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Tetapan",
+    "close": "Tutup tetapan",
+    "groupAv": "Audio & Video",
+    "groupDisplay": "Paparan",
+    "groupNotifications": "Pemberitahuan",
+    "groupAccessibility": "Kebolehcapaian",
+    "groupNetwork": "Rangkaian",
+    "groupAppearance": "Penampilan",
+    "camOnJoin": "Kamera dihidupkan apabila saya menyertai",
+    "micOnJoin": "Mikrofon dihidupkan apabila saya menyertai",
+    "noiseSuppression": "Penyekatan bunyi",
+    "echoCancellation": "Pembatalan gema",
+    "mirrorPreview": "Cerminkan pratonton saya",
+    "layout": "Susun Atur",
+    "layoutAuto": "Automatik",
+    "layoutGrid": "Grid",
+    "layoutSpeaker": "Pembesar suara aktif",
+    "layoutSpotlight": "Sorotan",
+    "mirrorOwn": "Cerminkan video saya sendiri",
+    "hideSelf": "Sembunyikan paparan sendiri",
+    "showNames": "Tunjukkan nama peserta",
+    "connQuality": "Tunjukkan kualiti sambungan",
+    "meetingClock": "Tunjukkan jam mesyuarat",
+    "highlightSpeaker": "Serlahkan pembesar suara aktif",
+    "soundOnJoin": "Bunyi apabila seseorang menyertai",
+    "chatSound": "Bunyi pada mesej sembang",
+    "ignoreOwnJoins": "Abai penyertaan saya sendiri",
+    "captions": "Kapsyen langsung",
+    "captionsSize": "Saiz fon kapsyen",
+    "fontSmall": "Kecil",
+    "fontMedium": "Sederhana",
+    "fontLarge": "Besar",
+    "fontXl": "Sangat besar",
+    "reducedMotion": "Gerakan dikurangkan",
+    "monoAudio": "Campuran audio mono",
+    "quality": "Kualiti video pilihan",
+    "qualityAuto": "Automatik",
+    "qualityLow": "Rendah",
+    "qualityMedium": "Sederhana",
+    "qualityHigh": "Tinggi",
+    "simulcast": "Simulcast",
+    "forceRelay": "Paksa geganti TURN",
+    "theme": "Tema",
+    "themeSystem": "Sistem",
+    "themeDark": "Gelap",
+    "themeLight": "Ringan",
+    "compact": "UI Padat",
+    "moreSettings": "Lagi tetapan tersedia di halaman <1>Tetapan</1> penuh."
+  },
+  "tile": {
+    "flip": "Balikkan secara melintang",
+    "stopFlip": "Berhenti membalikkan video secara mendatar",
+    "unflip": "Nyah-songsang"
   }
 }

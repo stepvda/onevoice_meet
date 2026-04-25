@@ -23,7 +23,9 @@
     "yes": "بله",
     "no": "خیر",
     "loading": "در حال بارگذاری…",
-    "close": "بستن"
+    "close": "بستن",
+    "anonymous": "ناشناس",
+    "requestFailed": "درخواست ناموفق بود"
   },
   "createMeeting": {
     "checkingSession": "در حال بررسی نشست one.witysk.org شما…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "نمایش در لابی و نوار بالای جلسه. JPEG، PNG، WebP یا GIF؛ حداکثر ۲ مگابایت.",
     "noImage": "تصویری انتخاب نشده است",
     "submit": "ساخت جلسه",
-    "submitting": "در حال ایجاد…"
+    "submitting": "در حال ایجاد…",
+    "visibility": "قابلیت مشاهده",
+    "visibilityHint": "به‌طور پیش‌فرض، فقط شما این جلسه را در صفحه خانه خود می‌بینید.",
+    "listForAuth": "فهرست کاربران واردشده دیگر در صفحه اصلی",
+    "listForAuthDesc": "هر کسی که از طریق one.witysk.org وارد شده باشد می‌تواند پیدا کند و بپیوندد.",
+    "listForAnon": "همچنین برای بازدیدکنندگان ناشناس (ورود نکرده) فهرست شود",
+    "listForAnonDesc": "جلسه در صفحه فرود عمومی نمایش داده می‌شود.",
+    "brandingPreviewAlt": "پیش‌نمایش برند",
+    "brandingFieldAlt": "تصویر برند",
+    "unsupportedImageType": "نوع تصویر پشتیبانی‌نشده {{type}}؛ از JPEG، PNG، WebP یا GIF استفاده کنید.",
+    "imageTooLarge": "حجم تصویر {{mb}} مگابایت است؛ حداکثر ۲ مگابایت.",
+    "uploadFailed": "جلسه ایجاد شد اما بارگذاری برندینگ ناموفق بود: {{message}}"
   },
   "myMeetings": {
     "loading": "در حال بارگذاری جلسات شما…",
@@ -60,7 +73,12 @@
     "deleteTitle": "حذف این جلسه از لیست",
     "more": "{{count}} بیشتر",
     "closedLabel": "بسته",
-    "maxParticipants": "حداکثر {{n}}"
+    "maxParticipants": "حداکثر {{n}}",
+    "visibilityPublic": "عمومی",
+    "visibilityListed": "فهرست شده برای کاربران وارد شده",
+    "visibilityPrivate": "فقط برای من قابل مشاهده است",
+    "visibilityChange": "{{label}} — برای تغییر کلیک کنید",
+    "copyJoinPrompt": "این لینک پیوستن را کپی کنید"
   },
   "lobby": {
     "joinMeeting": "پیوستن به جلسه",
@@ -70,7 +88,9 @@
     "emailOptional": "ایمیل (اختیاری)",
     "passwordIfRequired": "رمز عبور (در صورت نیاز)",
     "join": "پیوستن",
-    "joining": "در حال پیوستن…"
+    "joining": "در حال پیوستن…",
+    "hostedBy": "میزبانی شده توسط {{name}}",
+    "brandingAlt": "تصویر برندینگ جلسه"
   },
   "room": {
     "takeStage": "صحنه را بگیر",
@@ -89,7 +109,11 @@
     "people": "افراد",
     "chat": "گفتگو",
     "invite": "دعوت",
-    "inviteTitle": "دعوت از افراد از طریق ایمیل"
+    "inviteTitle": "دعوت از افراد از طریق ایمیل",
+    "settings": "تنظیمات",
+    "settingsLabel": "تنظیمات جلسه",
+    "topbarBrandingAlt": "تصویر برندینگ جلسه",
+    "requestFailed": "درخواست ناموفق بود"
   },
   "recordingIndicator": {
     "label": "ضبط"
@@ -110,7 +134,11 @@
     "upload": "آپلود",
     "uploadTitle": "بارگذاری تصویر پس‌زمینه‌ی خود",
     "tooLarge": "حجم تصویر {{mb}} مگابایت است؛ حداکثر ۴ مگابایت.",
-    "notImage": "تصویر نیست"
+    "notImage": "تصویر نیست ({{type}})",
+    "uploadAria": "بارگذاری تصویر پس‌زمینه",
+    "processorFailed": "این دستگاه از افکت‌های پس‌زمینه پشتیبانی نمی‌کند.",
+    "custom": "سفارشی: {{name}}",
+    "customDefault": "تصویر سفارشی"
   },
   "participants": {
     "title": "شرکت‌کنندگان",
@@ -118,14 +146,21 @@
     "muteMic": "قطع کردن میکروفون",
     "makePresenter": "ارائه‌دهنده را انتخاب کنید",
     "removeFromMeeting": "حذف از جلسه",
-    "authenticatedOwner": "مالک تأییدشده"
+    "authenticatedOwner": "مالک تأییدشده",
+    "titleCount": "شرکت‌کنندگان ({{count}})",
+    "close": "بستن شرکت‌کنندگان",
+    "muteName": "بی‌صدا کردن {{name}}",
+    "makeNamePresenter": "{{name}} را ارائه‌دهنده کنید",
+    "removeName": "حذف {{name}}"
   },
   "chatPanel": {
     "title": "گفتگو",
     "empty": "هنوز پیامی نیست — سلام بگو.",
     "placeholder": "پیام خود را بنویسید",
     "send": "ارسال",
-    "close": "بستن چت"
+    "close": "بستن چت",
+    "ariaLabel": "چت جلسه",
+    "messageAria": "پیام چت"
   },
   "invite": {
     "title": "دعوت از طریق ایمیل",
@@ -143,12 +178,14 @@
     "tooMany": "حداکثر ۲۰ گیرنده در هر ارسال.",
     "sentN_one": "ارسال دعوتنامه برای {{count}}",
     "sentN_other": "{{count}} دعوت‌نامه ارسال شد.",
-    "failedSuffix": "ناموفق: {{list}}"
+    "failedSuffix": "ناموفق: {{list}}",
+    "cancel": "لغو",
+    "close": "بستن"
   },
   "recordings": {
     "title": "ضبط‌ها",
     "subtitle": "ضبط‌های سمت سرور جلسات شما. فایل‌های محلی پس از ۳۰ روز (یا پس از انتشار در یوتیوب) به‌طور خودکار حذف می‌شوند. بارگذاری‌ها فقط توسط مالک انجام می‌شود.",
-    "empty": "هنوز هیچ ضبطی وجود ندارد. یک جلسه شروع کنید و روی «ضبط» کلیک کنید تا یکی را ذخیره کنید.",
+    "empty": "هنوز هیچ ضبطی وجود ندارد. یک جلسه شروع کنید و روی <1>ضبط</1> کلیک کنید تا یکی را ذخیره کنید.",
     "download": "دانلود",
     "downloading": "در حال دانلود…",
     "publish": "انتشار در یوتیوب",
@@ -170,7 +207,11 @@
       "running": "در حال اجرا",
       "failed": "ناموفق",
       "deleted": "حذف شد"
-    }
+    },
+    "loading": "در حال بارگذاری…",
+    "signInFirst": "ابتدا در one.witysk.org وارد شوید.",
+    "started": "شروع شد {{when}}",
+    "publishTitle": "آپلود در YouTube و حذف فایل محلی در صورت موفقیت"
   },
   "settings": {
     "title": "تنظیمات",
@@ -390,5 +431,67 @@
       "confirm": "آیا همه تنظیمات به حالت پیش‌فرض بازنشانی شوند؟",
       "doneFlash": "بازنشانی به پیش‌فرض‌ها"
     }
+  },
+  "discover": {
+    "title": "کشف",
+    "subtitle": "— جلسات قابل پیوستن",
+    "join": "پیوستن",
+    "maxParticipants": "حداکثر {{n}}",
+    "hostedBy": "میزبانی شده توسط {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "تنظیمات",
+    "close": "بستن تنظیمات",
+    "groupAv": "صوت و تصویر",
+    "groupDisplay": "نمایش",
+    "groupNotifications": "اعلان‌ها",
+    "groupAccessibility": "دسترسیپذیری",
+    "groupNetwork": "شبکه",
+    "groupAppearance": "ظاهر",
+    "camOnJoin": "دوربین هنگام ورود روشن باشد",
+    "micOnJoin": "میکروفون هنگام ورود روشن باشد",
+    "noiseSuppression": "حذف نویز",
+    "echoCancellation": "حذف پژواک",
+    "mirrorPreview": "پیش‌نمایش من را آینه کن",
+    "layout": "طرحبندی",
+    "layoutAuto": "خودکار",
+    "layoutGrid": "شبکه",
+    "layoutSpeaker": "گوینده فعال",
+    "layoutSpotlight": "اسپاتلایت",
+    "mirrorOwn": "تصویر ویدیوی خودم را آینه کن",
+    "hideSelf": "مخفی کردن نمای خودم",
+    "showNames": "نمایش نام شرکت‌کنندگان",
+    "connQuality": "نمایش کیفیت اتصال",
+    "meetingClock": "نمایش ساعت جلسه",
+    "highlightSpeaker": "برجسته‌سازی سخنران فعال",
+    "soundOnJoin": "صدای ورود فرد",
+    "chatSound": "صدای پیام چت",
+    "ignoreOwnJoins": "پیوستن‌های خودم را نادیده بگیر",
+    "captions": "زیرنویس زنده",
+    "captionsSize": "اندازه فونت زیرنویس‌ها",
+    "fontSmall": "کوچک",
+    "fontMedium": "متوسط",
+    "fontLarge": "بزرگ",
+    "fontXl": "فوق العاده بزرگ",
+    "reducedMotion": "حرکت کاهش‌یافته",
+    "monoAudio": "میکس صدای مونو",
+    "quality": "کیفیت ویدیوی ترجیحی",
+    "qualityAuto": "خودکار",
+    "qualityLow": "کم",
+    "qualityMedium": "متوسط",
+    "qualityHigh": "بالا",
+    "simulcast": "سیمولکست",
+    "forceRelay": "اجبار به استفاده از رله TURN",
+    "theme": "پوسته",
+    "themeSystem": "سیستم",
+    "themeDark": "تیره",
+    "themeLight": "روشن",
+    "compact": "رابط کاربری فشرده",
+    "moreSettings": "تنظیمات بیشتر در صفحه کامل <1>تنظیمات</1> موجود است."
+  },
+  "tile": {
+    "flip": "چرخش افقی",
+    "stopFlip": "توقف آینه‌سازی افقی ویدیو",
+    "unflip": "برگرداندن"
   }
 }

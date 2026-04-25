@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ParticipantTile,
   TrackRefContext,
@@ -16,6 +17,7 @@ import { FlipHorizontal2 } from "lucide-react";
  * style on the matching DOM nodes when the flip flag is true.
  */
 export default function FlippableTile() {
+  const { t } = useTranslation();
   const ref = useEnsureTrackRef();
   const [flipped, setFlipped] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -57,7 +59,7 @@ export default function FlippableTile() {
             setFlipped((v) => !v);
           }}
           aria-pressed={flipped ? "true" : "false"}
-          aria-label={flipped ? "Stop flipping video horizontally" : "Flip video horizontally"}
+          aria-label={flipped ? t("tile.stopFlip") : t("tile.flip")}
           data-testid={`tile-flip-${identity}`}
           className={[
             "absolute top-2 right-2 z-10 p-1.5 rounded-md",
@@ -66,7 +68,7 @@ export default function FlippableTile() {
             "transition-opacity",
             flipped ? "ring-2 ring-accent-500 opacity-100" : "",
           ].join(" ")}
-          title={flipped ? "Un-flip" : "Flip horizontally"}
+          title={flipped ? t("tile.unflip") : t("tile.flip")}
         >
           <FlipHorizontal2 size={14} />
         </button>

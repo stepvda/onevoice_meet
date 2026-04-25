@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Download, ExternalLink, Loader2, Trash2, Upload, Video } from "lucide-react";
 import { api } from "../lib/api";
 import { bootstrapFromOneWitysk, isAuthenticated } from "../lib/auth";
@@ -7,6 +8,7 @@ import { Button, Card } from "../components/ui";
 interface Recording {
   id: string;
   meeting_id: string;
+  branding_url: string | null;
   status: string;
   started_at: string;
   ended_at: string | null;
@@ -23,6 +25,7 @@ interface Recording {
 type YtPrivacy = "public" | "unlisted" | "private";
 
 export default function Recordings() {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<Recording[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +47,7 @@ export default function Recordings() {
         const tok = await bootstrapFromOneWitysk();
         if (!tok) {
           if (!cancelled) {
-            setErr("Sign in on one.witysk.org first.");
+            setErr(t("recordings.signInFirst"));
             setLoading(false);
           }
           return;
@@ -66,13 +69,10 @@ export default function Recordings() {
 
   async function publishToYouTube(r: Recording) {
     const privacy = (
-      prompt('Privacy: "public", "unlisted", or "private"', "unlisted") || ""
+      prompt(t("recordings.publishPrivacyPrompt"), "unlisted") || ""
     ).toLowerCase();
     if (!["public", "unlisted", "private"].includes(privacy)) return;
-    if (!confirm(
-      `Upload this recording to YouTube as ${privacy}?\n` +
-      `On success the local file will be deleted; only the YouTube link will remain.`
-    )) return;
+    if (!confirm(t("recordings.publishConfirm", { privacy }))) return;
 
     setBusyId(r.id);
     setErr(null);
@@ -107,7 +107,7 @@ export default function Recordings() {
   }
 
   async function deleteRow(r: Recording) {
-    if (!confirm("Delete this recording? The local file (if any) is removed but the YouTube link is kept.")) return;
+    if (!confirm(t("recordings.deleteConfirm"))) return;
     setBusyId(r.id);
     try {
       await api.deleteRecording(r.id);
@@ -122,12 +122,9 @@ export default function Recordings() {
   return (
     <div className="p-4 lg:p-8 max-w-4xl mx-auto" data-testid="recordings-page">
       <h1 className="text-2xl font-bold text-slate-50 mb-1 flex items-center gap-3">
-        <Video size={22} className="text-accent-500" /> Recordings
+        <Video size={22} className="text-accent-500" /> {t("recordings.title")}
       </h1>
-      <p className="text-slate-400 mb-6">
-        Server-side recordings of your meetings. Local files auto-delete after 30 days
-        (or when you publish to YouTube). Uploads are owner-initiated only.
-      </p>
+      <p className="text-slate-400 mb-6">{t("recordings.subtitle")}</p>
 
       {err && (
         <Card>
@@ -139,14 +136,14 @@ export default function Recordings() {
 
       {loading && !err && (
         <Card>
-          <p className="text-slate-300">Loading…</p>
+          <p className="text-slate-300">{t("recordings.loading")}</p>
         </Card>
       )}
 
       {!loading && !err && rows.length === 0 && (
         <Card data-testid="recordings-empty">
           <p className="text-slate-300">
-            No recordings yet. Start a meeting and click <b>Record</b> to capture one.
+            <Trans i18nKey="recordings.empty" components={{ 1: <b /> }} />
           </p>
         </Card>
       )}
@@ -156,6 +153,14 @@ export default function Recordings() {
           {rows.map((r) => (
             <Card key={r.id} data-testid={`rec-row-${r.id}`}>
               <div className="flex items-start justify-between gap-4 flex-wrap">
+                {r.branding_url && (
+                  <img
+                    src={r.branding_url}
+                    alt=""
+                    data-testid={`rec-branding-${r.id}`}
+                    className="h-12 w-12 object-cover rounded-md border border-primary-700 flex-shrink-0"
+                  />
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <code className="text-sm text-slate-200">{r.id}</code>
@@ -163,12 +168,13 @@ export default function Recordings() {
                     {r.youtube_status && <YtBadge status={r.youtube_status} />}
                   </div>
                   <div className="text-xs text-slate-400 mt-1">
-                    Started {new Date(r.started_at).toLocaleString()}
+                    {t("recordings.started", { when: new Date(r.started_at).toLocaleString() })}
                     {r.duration_seconds !== null && ` · ${formatDuration(r.duration_seconds)}`}
                     {r.file_size_bytes !== null && ` · ${formatBytes(r.file_size_bytes)}`}
                     {r.expires_in_seconds !== null && r.has_local_file && (
                       <span className="ml-2 text-slate-500">
-                        (file expires in {Math.max(0, Math.floor(r.expires_in_seconds / 86400))} days)
+                        {" "}
+                        {t("recordings.expiresInDays", { count: Math.max(0, Math.floor(r.expires_in_seconds / 86400)) })}
                       </span>
                     )}
                   </div>
@@ -186,7 +192,7 @@ export default function Recordings() {
                   )}
                   {r.youtube_status === "failed" && r.youtube_error && (
                     <div className="text-xs text-red-400 mt-2" data-testid={`rec-yt-err-${r.id}`}>
-                      Last upload failed: {r.youtube_error}
+                      {t("recordings.lastUploadFailed", { message: r.youtube_error })}
                     </div>
                   )}
                 </div>
@@ -202,7 +208,7 @@ export default function Recordings() {
                       data-testid={`rec-download-${r.id}`}
                     >
                       <Download size={16} />
-                      {busyId === `dl-${r.id}` ? "Downloading…" : "Download"}
+                      {busyId === `dl-${r.id}` ? t("recordings.downloading") : t("recordings.download")}
                     </Button>
                   )}
                   {r.status === "completed" && r.has_local_file && r.youtube_status !== "published" && (
@@ -213,17 +219,17 @@ export default function Recordings() {
                       disabled={busyId === r.id || r.youtube_status === "uploading"}
                       onClick={() => publishToYouTube(r)}
                       data-testid={`rec-publish-${r.id}`}
-                      title="Upload to YouTube and delete the local file on success"
+                      title={t("recordings.publishTitle")}
                     >
                       {busyId === r.id || r.youtube_status === "uploading" ? (
                         <>
                           <Loader2 size={16} className="animate-spin" />
-                          Uploading…
+                          {t("recordings.uploading")}
                         </>
                       ) : (
                         <>
                           <Upload size={16} />
-                          Publish to YouTube
+                          {t("recordings.publish")}
                         </>
                       )}
                     </Button>
@@ -235,7 +241,7 @@ export default function Recordings() {
                     onClick={() => deleteRow(r)}
                     disabled={busyId === r.id}
                     data-testid={`rec-delete-${r.id}`}
-                    title="Delete this recording"
+                    title={t("recordings.deleteTitle")}
                   >
                     <Trash2 size={16} />
                   </Button>
@@ -250,29 +256,29 @@ export default function Recordings() {
 }
 
 function Badge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const styles: Record<string, string> = {
     completed: "bg-accent-500/20 text-accent-500 border-accent-500/40",
     running: "bg-amber-500/20 text-amber-300 border-amber-500/40",
     failed: "bg-red-500/20 text-red-300 border-red-500/40",
     deleted: "bg-slate-600/20 text-slate-400 border-slate-600",
   };
+  const label = t(`recordings.status.${status}`, { defaultValue: status });
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full border ${styles[status] ?? styles.deleted}`}>
-      {status}
+      {label}
     </span>
   );
 }
 
 function YtBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const styles: Record<string, string> = {
     uploading: "bg-amber-500/20 text-amber-300 border-amber-500/40",
     published: "bg-red-600/20 text-red-300 border-red-600/40",
     failed: "bg-red-500/20 text-red-300 border-red-500/40",
   };
-  const label =
-    status === "uploading" ? "YouTube uploading…" :
-    status === "published" ? "on YouTube" :
-    status === "failed" ? "YouTube failed" : status;
+  const label = t(`recordings.ytStatus.${status}`, { defaultValue: status });
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full border ${styles[status] ?? styles.failed}`}>
       {label}

@@ -23,7 +23,9 @@
     "yes": "Evet",
     "no": "Hayır",
     "loading": "Yükleniyor…",
-    "close": "Kapat"
+    "close": "Kapat",
+    "anonymous": "anonim",
+    "requestFailed": "İstek başarısız oldu"
   },
   "createMeeting": {
     "checkingSession": "Bir dakika, one.witysk.org oturumunuz kontrol ediliyor…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Lobide ve toplantı üst çubuğunda gösterilir. JPEG, PNG, WebP veya GIF; en fazla 2 MB.",
     "noImage": "Görsel seçilmedi",
     "submit": "Toplantı oluştur",
-    "submitting": "Oluşturuluyor…"
+    "submitting": "Oluşturuluyor…",
+    "visibility": "Görünürlük",
+    "visibilityHint": "Varsayılan olarak, bu toplantıyı Ana sayfanızda yalnızca siz görürsünüz.",
+    "listForAuth": "Oturum açmış diğer kullanıcıların Ana sayfadaki listesi",
+    "listForAuthDesc": "one.witysk.org üzerinden giriş yapan herkes bulup katılabilir.",
+    "listForAnon": "Ayrıca anonim (oturum açmamış) ziyaretçilere de listele",
+    "listForAnonDesc": "Toplantı, herkese açık giriş sayfasında görünür.",
+    "brandingPreviewAlt": "Marka önizlemesi",
+    "brandingFieldAlt": "Marka görseli",
+    "unsupportedImageType": "Desteklenmeyen resim türü {{type}}; JPEG, PNG, WebP veya GIF kullanın.",
+    "imageTooLarge": "Görsel {{mb}} MB; maksimum 2 MB.",
+    "uploadFailed": "Toplantı oluşturuldu ancak marka yüklemesi başarısız oldu: {{message}}"
   },
   "myMeetings": {
     "loading": "Toplantılarınız yükleniyor…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Bu toplantıyı listeden sil",
     "more": "+ {{count}} daha fazla",
     "closedLabel": "kapalı",
-    "maxParticipants": "en fazla {{n}}"
+    "maxParticipants": "en fazla {{n}}",
+    "visibilityPublic": "Genel",
+    "visibilityListed": "Oturum açmış kullanıcılar için listelenmiştir",
+    "visibilityPrivate": "Yalnızca bana görünür",
+    "visibilityChange": "{{label}} — değiştirmek için tıklayın",
+    "copyJoinPrompt": "Bu katılım bağlantısını kopyala"
   },
   "lobby": {
     "joinMeeting": "Toplantıya Katıl",
@@ -70,7 +88,9 @@
     "emailOptional": "E-posta (isteğe bağlı)",
     "passwordIfRequired": "Şifre (gerekliyse)",
     "join": "Katıl",
-    "joining": "Katılıyor…"
+    "joining": "Katılıyor…",
+    "hostedBy": "{{name}} tarafından barındırılıyor",
+    "brandingAlt": "Toplantı marka görseli"
   },
   "room": {
     "takeStage": "Sahneye çık",
@@ -89,7 +109,11 @@
     "people": "Kişiler",
     "chat": "Sohbet",
     "invite": "Davet Et",
-    "inviteTitle": "E-posta ile kişileri davet et"
+    "inviteTitle": "E-posta ile kişileri davet et",
+    "settings": "Ayarlar",
+    "settingsLabel": "Toplantı içi ayarlar",
+    "topbarBrandingAlt": "Toplantı marka görseli",
+    "requestFailed": "istek başarısız oldu"
   },
   "recordingIndicator": {
     "label": "KAYIT"
@@ -110,7 +134,11 @@
     "upload": "Yükle",
     "uploadTitle": "Kendi arka plan resmini yükle",
     "tooLarge": "Görsel {{mb}} MB; maksimum 4 MB.",
-    "notImage": "Bir resim değil"
+    "notImage": "Bir görsel değil ({{type}})",
+    "uploadAria": "Bir arka plan resmi yükle",
+    "processorFailed": "Bu cihazda arka plan efektleri desteklenmiyor.",
+    "custom": "Özel: {{name}}",
+    "customDefault": "Özel resim"
   },
   "participants": {
     "title": "Katılımcılar",
@@ -118,14 +146,21 @@
     "muteMic": "Mikrofonu kapat",
     "makePresenter": "Sunum yapan kişi yap",
     "removeFromMeeting": "Toplantıdan çıkar",
-    "authenticatedOwner": "Kimlik doğrulaması yapılmış sahip"
+    "authenticatedOwner": "Kimlik doğrulaması yapılmış sahip",
+    "titleCount": "Katılımcılar ({{count}})",
+    "close": "Katılımcıları kapat",
+    "muteName": "Sessize al {{name}}",
+    "makeNamePresenter": "{{name}} sunucu yap",
+    "removeName": "{{name}} kaldır"
   },
   "chatPanel": {
     "title": "Sohbet",
     "empty": "Henüz mesaj yok — merhaba de.",
     "placeholder": "Bir mesaj yazın",
     "send": "Gönder",
-    "close": "Sohbeti kapat"
+    "close": "Sohbeti kapat",
+    "ariaLabel": "Toplantı sohbeti",
+    "messageAria": "Sohbet mesajı"
   },
   "invite": {
     "title": "E-posta ile davet et",
@@ -143,12 +178,14 @@
     "tooMany": "Gönderim başına en fazla 20 alıcı.",
     "sentN_one": "{{count}} davetiye gönderildi.",
     "sentN_other": "{{count}} davetiye gönderildi.",
-    "failedSuffix": "Başarısız: {{list}}"
+    "failedSuffix": "Başarısız: {{list}}",
+    "cancel": "İptal",
+    "close": "Kapat"
   },
   "recordings": {
     "title": "Kayıtlar",
     "subtitle": "Toplantılarınızın sunucu tarafındaki kayıtları. Yerel dosyalar 30 gün sonra (veya YouTube'a yayınladığınızda) otomatik olarak silinir. Yüklemeler yalnızca sahibi tarafından başlatılır.",
-    "empty": "Henüz kayıt yok. Bir toplantı başlatın ve kaydetmek için Kaydet'e tıklayın.",
+    "empty": "Henüz kayıt yok. Bir toplantı başlatın ve kaydetmek için <1>Kaydet</1> düğmesine tıklayın.",
     "download": "İndir",
     "downloading": "İndiriliyor…",
     "publish": "YouTube'da Yayınla",
@@ -170,7 +207,11 @@
       "running": "çalışıyor",
       "failed": "başarısız",
       "deleted": "(silindi)"
-    }
+    },
+    "loading": "Yükleniyor…",
+    "signInFirst": "Önce one.witysk.org adresinde oturum açın.",
+    "started": "{{when}} başlatıldı",
+    "publishTitle": "YouTube'a yükle ve başarılı olursa yerel dosyayı sil"
   },
   "settings": {
     "title": "Ayarlar",
@@ -390,5 +431,67 @@
       "confirm": "Tüm tercihler varsayılana sıfırlansın mı?",
       "doneFlash": "Varsayılanlara sıfırla"
     }
+  },
+  "discover": {
+    "title": "Keşfet",
+    "subtitle": "— katılmaya açık toplantılar",
+    "join": "Katıl",
+    "maxParticipants": "en fazla {{n}}",
+    "hostedBy": "{{name}} tarafından barındırılıyor"
+  },
+  "inMeetingSettings": {
+    "title": "Ayarlar",
+    "close": "Ayarları kapat",
+    "groupAv": "Ses ve Görüntü",
+    "groupDisplay": "Görüntüle",
+    "groupNotifications": "Bildirimler",
+    "groupAccessibility": "Erişilebilirlik",
+    "groupNetwork": "Ağ",
+    "groupAppearance": "Görünüm",
+    "camOnJoin": "Katıldığımda kameram açık olsun",
+    "micOnJoin": "Katıldığımda mikrofon açık olsun",
+    "noiseSuppression": "Gürültü bastırma",
+    "echoCancellation": "Yankı giderme",
+    "mirrorPreview": "Aynamı göster",
+    "layout": "Düzen",
+    "layoutAuto": "Otomatik",
+    "layoutGrid": "Izgara",
+    "layoutSpeaker": "Aktif konuşmacı",
+    "layoutSpotlight": "Spotlight",
+    "mirrorOwn": "Kendi videomu yansıt",
+    "hideSelf": "Kendimi gizle",
+    "showNames": "Katılımcı adlarını göster",
+    "connQuality": "Bağlantı kalitesini göster",
+    "meetingClock": "Toplantı saatini göster",
+    "highlightSpeaker": "Aktif konuşmacıyı vurgula",
+    "soundOnJoin": "Birisi katıldığında ses",
+    "chatSound": "Sohbet mesajında ses",
+    "ignoreOwnJoins": "Kendi katılımlarımı yok say",
+    "captions": "Canlı altyazılar",
+    "captionsSize": "Altyazı yazı tipi boyutu",
+    "fontSmall": "Küçük",
+    "fontMedium": "Orta",
+    "fontLarge": "Büyük",
+    "fontXl": "Çok büyük",
+    "reducedMotion": "Hareket azaltıldı",
+    "monoAudio": "Tek ses karışımı",
+    "quality": "Tercih edilen video kalitesi",
+    "qualityAuto": "Otomatik",
+    "qualityLow": "Düşük",
+    "qualityMedium": "Orta",
+    "qualityHigh": "Yüksek",
+    "simulcast": "Simulcast",
+    "forceRelay": "TURN rölesini zorla",
+    "theme": "Tema",
+    "themeSystem": "Sistem",
+    "themeDark": "Koyu",
+    "themeLight": "Işık",
+    "compact": "Kompakt Arayüz",
+    "moreSettings": "Daha fazla ayar, tam <1>Ayarlar</1> sayfasında yer alır."
+  },
+  "tile": {
+    "flip": "Yatay çevir",
+    "stopFlip": "Video'yu yatay çevirmeyi durdur",
+    "unflip": "Ters çevir"
   }
 }

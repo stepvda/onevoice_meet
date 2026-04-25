@@ -23,7 +23,9 @@
     "yes": "ใช่",
     "no": "ไม่",
     "loading": "กำลังโหลด…",
-    "close": "ปิด"
+    "close": "ปิด",
+    "anonymous": "ไม่ระบุชื่อ",
+    "requestFailed": "คำขอไม่สำเร็จ"
   },
   "createMeeting": {
     "checkingSession": "กำลังตรวจสอบเซสชัน one.witysk.org ของคุณ…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "แสดงในล็อบบี้และแถบด้านบนของการประชุม JPEG, PNG, WebP หรือ GIF; สูงสุด 2 MB",
     "noImage": "ไม่ได้เลือกรูปภาพ",
     "submit": "สร้างการประชุม",
-    "submitting": "กำลังสร้าง…"
+    "submitting": "กำลังสร้าง…",
+    "visibility": "การมองเห็น",
+    "visibilityHint": "โดยค่าเริ่มต้น มีเพียงคุณเท่านั้นที่เห็นการประชุมนี้ในหน้าแรกของคุณ",
+    "listForAuth": "รายชื่อผู้ใช้ที่เข้าสู่ระบบแล้วคนอื่นๆ บนหน้าแรก",
+    "listForAuthDesc": "ผู้ที่เข้าสู่ระบบผ่าน one.witysk.org สามารถค้นหาและเข้าร่วมได้",
+    "listForAnon": "แสดงต่อผู้เยี่ยมชมที่ไม่ระบุตัวตน (ไม่ได้ลงชื่อเข้าใช้) ด้วย",
+    "listForAnonDesc": "การประชุมจะปรากฏบนหน้าแลนดิ้งสาธารณะ",
+    "brandingPreviewAlt": "ตัวอย่างตราสินค้า",
+    "brandingFieldAlt": "รูปภาพแบรนด์",
+    "unsupportedImageType": "ไม่รองรับประเภทภาพ {{type}}; ให้ใช้ JPEG, PNG, WebP หรือ GIF",
+    "imageTooLarge": "รูปภาพมีขนาด {{mb}} MB; สูงสุดที่ 2 MB",
+    "uploadFailed": "สร้างการประชุมแล้ว แต่การอัปโหลดแบรนด์ล้มเหลว: {{message}}"
   },
   "myMeetings": {
     "loading": "กำลังโหลดการประชุมของคุณ…",
@@ -60,7 +73,12 @@
     "deleteTitle": "ลบการประชุมนี้ออกจากรายการ",
     "more": "+ {{count}} เพิ่มเติม",
     "closedLabel": "ปิด",
-    "maxParticipants": "สูงสุด {{n}}"
+    "maxParticipants": "สูงสุด {{n}}",
+    "visibilityPublic": "สาธารณะ",
+    "visibilityListed": "แสดงสำหรับผู้ใช้ที่เข้าสู่ระบบแล้ว",
+    "visibilityPrivate": "เฉพาะฉันเท่านั้นที่เห็น",
+    "visibilityChange": "{{label}} — คลิกเพื่อเปลี่ยน",
+    "copyJoinPrompt": "คัดลอกลิงก์เข้าร่วมนี้"
   },
   "lobby": {
     "joinMeeting": "เข้าร่วมการประชุม",
@@ -70,7 +88,9 @@
     "emailOptional": "อีเมล (ไม่บังคับ)",
     "passwordIfRequired": "รหัสผ่าน (ถ้าต้องการ)",
     "join": "เข้าร่วม",
-    "joining": "กำลังเข้าร่วม…"
+    "joining": "กำลังเข้าร่วม…",
+    "hostedBy": "ดำเนินรายการโดย {{name}}",
+    "brandingAlt": "รูปภาพแบรนด์ของการประชุม"
   },
   "room": {
     "takeStage": "ขึ้นเวที",
@@ -89,7 +109,11 @@
     "people": "ผู้คน",
     "chat": "แชท",
     "invite": "เชิญ",
-    "inviteTitle": "เชิญผู้คนทางอีเมล"
+    "inviteTitle": "เชิญผู้คนทางอีเมล",
+    "settings": "การตั้งค่า",
+    "settingsLabel": "การตั้งค่าในห้องประชุม",
+    "topbarBrandingAlt": "รูปภาพแบรนด์ของการประชุม",
+    "requestFailed": "คำขอไม่สำเร็จ"
   },
   "recordingIndicator": {
     "label": "บันทึก"
@@ -110,7 +134,11 @@
     "upload": "อัปโหลด",
     "uploadTitle": "อัปโหลดภาพพื้นหลังของคุณเอง",
     "tooLarge": "รูปภาพมีขนาด {{mb}} MB; สูงสุด 4 MB",
-    "notImage": "ไม่ใช่รูปภาพ"
+    "notImage": "ไม่ใช่รูปภาพ ({{type}})",
+    "uploadAria": "อัปโหลดภาพพื้นหลัง",
+    "processorFailed": "อุปกรณ์นี้ไม่รองรับเอฟเฟกต์พื้นหลัง",
+    "custom": "กำหนดเอง: {{name}}",
+    "customDefault": "รูปภาพที่กำหนดเอง"
   },
   "participants": {
     "title": "ผู้เข้าร่วม",
@@ -118,14 +146,21 @@
     "muteMic": "ปิดไมค์",
     "makePresenter": "ทำให้เป็นผู้นำเสนอ",
     "removeFromMeeting": "นำออกจากการประชุม",
-    "authenticatedOwner": "เจ้าของที่ยืนยันตัวตนแล้ว"
+    "authenticatedOwner": "เจ้าของที่ยืนยันตัวตนแล้ว",
+    "titleCount": "ผู้เข้าร่วม ({{count}})",
+    "close": "ปิดผู้เข้าร่วม",
+    "muteName": "ปิดเสียง {{name}}",
+    "makeNamePresenter": "ทำให้ {{name}} เป็นผู้นำเสนอ",
+    "removeName": "ลบ {{name}}"
   },
   "chatPanel": {
     "title": "แชท",
     "empty": "ยังไม่มีข้อความ — ทักทายกันหน่อย",
     "placeholder": "พิมพ์ข้อความ",
     "send": "ส่ง",
-    "close": "ปิดแชท"
+    "close": "ปิดแชท",
+    "ariaLabel": "แชทการประชุม",
+    "messageAria": "ข้อความแชท"
   },
   "invite": {
     "title": "เชิญทางอีเมล",
@@ -143,12 +178,14 @@
     "tooMany": "ส่งได้สูงสุด 20 คนต่อครั้ง",
     "sentN_one": "ส่งคำเชิญ {{count}} แล้ว",
     "sentN_other": "ส่งคำเชิญ {{count}} แล้ว",
-    "failedSuffix": "ล้มเหลว: {{list}}"
+    "failedSuffix": "ล้มเหลว: {{list}}",
+    "cancel": "ยกเลิก",
+    "close": "ปิด"
   },
   "recordings": {
     "title": "การบันทึก",
     "subtitle": "บันทึกการประชุมฝั่งเซิร์ฟเวอร์ ไฟล์ในเครื่องจะถูกลบอัตโนมัติหลังจาก 30 วัน (หรือเมื่อคุณเผยแพร่ไปยัง YouTube) การอัปโหลดจะเริ่มโดยเจ้าของเท่านั้น",
-    "empty": "ยังไม่มีการบันทึก เริ่มการประชุมแล้วคลิกบันทึกเพื่อบันทึกวิดีโอ",
+    "empty": "ยังไม่มีการบันทึกใดๆ เริ่มการประชุมแล้วคลิก <1>บันทึก</1> เพื่อบันทึกวิดีโอ",
     "download": "ดาวน์โหลด",
     "downloading": "กำลังดาวน์โหลด…",
     "publish": "เผยแพร่ไปยัง YouTube",
@@ -170,7 +207,11 @@
       "running": "กำลังทำงาน",
       "failed": "ล้มเหลว",
       "deleted": "ลบแล้ว"
-    }
+    },
+    "loading": "กำลังโหลด…",
+    "signInFirst": "กรุณาเข้าสู่ระบบที่ one.witysk.org ก่อน",
+    "started": "เริ่มต้นแล้ว {{when}}",
+    "publishTitle": "อัปโหลดไปยัง YouTube และลบไฟล์ในเครื่องเมื่อสำเร็จ"
   },
   "settings": {
     "title": "การตั้งค่า",
@@ -390,5 +431,67 @@
       "confirm": "รีเซ็ตการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น?",
       "doneFlash": "รีเซ็ตเป็นค่าเริ่มต้น"
     }
+  },
+  "discover": {
+    "title": "ค้นพบ",
+    "subtitle": "— การประชุมที่เปิดให้เข้าร่วม",
+    "join": "เข้าร่วม",
+    "maxParticipants": "สูงสุด {{n}}",
+    "hostedBy": "ดำเนินรายการโดย {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "การตั้งค่า",
+    "close": "ปิดการตั้งค่า",
+    "groupAv": "เสียงและวิดีโอ",
+    "groupDisplay": "แสดง",
+    "groupNotifications": "การแจ้งเตือน",
+    "groupAccessibility": "การช่วยเหลือการเข้าถึง",
+    "groupNetwork": "เครือข่าย",
+    "groupAppearance": "ลักษณะที่ปรากฏ",
+    "camOnJoin": "เปิดกล้องเมื่อฉันเข้าร่วม",
+    "micOnJoin": "เปิดไมโครโฟนเมื่อฉันเข้าร่วม",
+    "noiseSuppression": "ลดเสียงรบกวน",
+    "echoCancellation": "ตัดเสียงก้อง",
+    "mirrorPreview": "สะท้อนตัวอย่างของฉัน",
+    "layout": "เค้าโครง",
+    "layoutAuto": "อัตโนมัติ",
+    "layoutGrid": "ตาราง",
+    "layoutSpeaker": "ผู้พูดที่กำลังพูดอยู่",
+    "layoutSpotlight": "สปอตไลท์",
+    "mirrorOwn": "สะท้อนวิดีโอของฉัน",
+    "hideSelf": "ซ่อนมุมมองของตัวเอง",
+    "showNames": "แสดงชื่อผู้เข้าร่วม",
+    "connQuality": "แสดงคุณภาพการเชื่อมต่อ",
+    "meetingClock": "แสดงนาฬิกาประชุม",
+    "highlightSpeaker": "เน้นผู้พูดที่กำลังพูดอยู่",
+    "soundOnJoin": "เสียงเมื่อมีคนเข้าร่วม",
+    "chatSound": "เปิดเสียงเมื่อมีข้อความแชท",
+    "ignoreOwnJoins": "ละเว้นการเข้าร่วมของฉันเอง",
+    "captions": "คำบรรยายสด",
+    "captionsSize": "ขนาดตัวอักษรคำบรรยาย",
+    "fontSmall": "เล็ก",
+    "fontMedium": "ปานกลาง",
+    "fontLarge": "ใหญ่",
+    "fontXl": "พิเศษใหญ่",
+    "reducedMotion": "ลดการเคลื่อนไหว",
+    "monoAudio": "มิกซ์เสียงโมโน",
+    "quality": "คุณภาพวิดีโอที่ต้องการ",
+    "qualityAuto": "อัตโนมัติ",
+    "qualityLow": "ต่ำ",
+    "qualityMedium": "ปานกลาง",
+    "qualityHigh": "สูง",
+    "simulcast": "Simulcast",
+    "forceRelay": "บังคับใช้ TURN relay",
+    "theme": "ธีม",
+    "themeSystem": "ระบบ",
+    "themeDark": "มืด",
+    "themeLight": "สว่าง",
+    "compact": "UI ขนาดกะทัดรัด",
+    "moreSettings": "การตั้งค่าเพิ่มเติมอยู่ในหน้า <1>การตั้งค่า</1> แบบเต็ม"
+  },
+  "tile": {
+    "flip": "พลิกแนวนอน",
+    "stopFlip": "หยุดกลับด้านวิดีโอแนวนอน",
+    "unflip": "กลับด้าน"
   }
 }

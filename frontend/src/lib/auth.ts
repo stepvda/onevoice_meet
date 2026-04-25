@@ -110,6 +110,30 @@ export function logoutFromOneWitysk(): Promise<{ ok: boolean }> {
   });
 }
 
+/**
+ * Fetch the signed-in user's preferred display name from one.witysk.org's
+ * `/api/auth/me`. Returns `name || username || email || null`.
+ *
+ * Not cached: callers should hit this every time they need a fresh name
+ * (e.g. on meeting creation and every owner-token mint), because the user
+ * may have updated their preferred name in one.witysk.org since last fetch.
+ */
+export async function fetchOneWityskName(): Promise<string | null> {
+  const tok = getAccessToken();
+  if (!tok) return null;
+  try {
+    const res = await fetch(`${ONE_WITYSK}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${tok}` },
+      credentials: "omit",
+    });
+    if (!res.ok) return null;
+    const me = (await res.json()) as { name?: string | null; username?: string | null; email?: string | null };
+    return me.name || me.username || me.email || null;
+  } catch {
+    return null;
+  }
+}
+
 let bootstrapInFlight: Promise<string | null> | null = null;
 
 /**

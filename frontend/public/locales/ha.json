@@ -23,7 +23,9 @@
     "yes": "Ee",
     "no": "A'a",
     "loading": "Ana lodi...",
-    "close": "Rufe"
+    "close": "Rufe",
+    "anonymous": "anonymous",
+    "requestFailed": "Buƙatar ta gaza"
   },
   "createMeeting": {
     "checkingSession": "Ana duba zaman ku na one.witysk.org…",
@@ -43,7 +45,18 @@
     "fieldBrandingHint": "Ana nunawa a falon da kuma babban sandar taro. JPEG, PNG, WebP ko GIF; har zuwa 2 MB.",
     "noImage": "Babu hoton da aka zaɓa",
     "submit": "Ƙirƙiri taro",
-    "submitting": "Ana ƙirƙira…"
+    "submitting": "Ana ƙirƙira…",
+    "visibility": "Ganewa",
+    "visibilityHint": "Ta hanyar tsohuwa, kai kaɗai ne kake ganin wannan taron a shafin Gida naka.",
+    "listForAuth": "Jera sunayen masu amfani da suka shiga a shafin Gida",
+    "listForAuthDesc": "Duk wanda ya shiga ta one.witysk.org zai iya nema da shiga.",
+    "listForAnon": "Hakanan jera ga baƙi (waɗanda ba su shiga ba)",
+    "listForAnonDesc": "Taron yana bayyana a shafin saukarwa na jama'a.",
+    "brandingPreviewAlt": "Samfurin alamar kamfani",
+    "brandingFieldAlt": "Hoton alamar kamfani",
+    "unsupportedImageType": "Nau'in hoton da ba a tallafawa {{type}}; yi amfani da JPEG, PNG, WebP, ko GIF.",
+    "imageTooLarge": "Hoton yana da {{mb}} MB; mafi girma shine 2 MB.",
+    "uploadFailed": "An ƙirƙiri taron amma ɗora alamar ya gaza: {{message}}"
   },
   "myMeetings": {
     "loading": "Ana loda tarurrukanku…",
@@ -60,7 +73,12 @@
     "deleteTitle": "Cire wannan taro daga jerin",
     "more": "+ {{count}} ƙari",
     "closedLabel": "Rufe",
-    "maxParticipants": "max {{n}}"
+    "maxParticipants": "max {{n}}",
+    "visibilityPublic": "Jama'a",
+    "visibilityListed": "Jera ga masu amfani da suka shiga",
+    "visibilityPrivate": "Ga ni kawai",
+    "visibilityChange": "{{label}} — danna don canzawa",
+    "copyJoinPrompt": "Kwafi wannan hanyar haɗin shiga"
   },
   "lobby": {
     "joinMeeting": "Shiga taron",
@@ -70,7 +88,9 @@
     "emailOptional": "Imel (na zaɓi)",
     "passwordIfRequired": "Kalmar sirri (idan an buƙata)",
     "join": "Shiga",
-    "joining": "Shiga…"
+    "joining": "Shiga…",
+    "hostedBy": "Mai shiryawa {{name}}",
+    "brandingAlt": "Hoton alamar taro"
   },
   "room": {
     "takeStage": "Dauki mataki",
@@ -89,7 +109,11 @@
     "people": "Mutane",
     "chat": "Hira",
     "invite": "Gayyato",
-    "inviteTitle": "Ka gayyaci mutane ta hanyar imel"
+    "inviteTitle": "Ka gayyaci mutane ta hanyar imel",
+    "settings": "Saituna",
+    "settingsLabel": "Saitunan taro",
+    "topbarBrandingAlt": "Hoton alamar taro",
+    "requestFailed": "buƙatar ta gaza"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -110,7 +134,11 @@
     "upload": "Loda",
     "uploadTitle": "Loda hoton bayanka da kanka",
     "tooLarge": "Hoton yana da {{mb}} MB; mafi girma shine 4 MB.",
-    "notImage": "Ba hoto ba"
+    "notImage": "Ba hoto ba ({{type}})",
+    "uploadAria": "Loda hoton baya",
+    "processorFailed": "Ba a goyan bayan tasirin baya akan wannan na'urar ba.",
+    "custom": "Na musamman: {{name}}",
+    "customDefault": "Hoton da kuka zaɓa"
   },
   "participants": {
     "title": "Mahalarta",
@@ -118,14 +146,21 @@
     "muteMic": "Kashe makirarfo",
     "makePresenter": "Mai gabatarwa",
     "removeFromMeeting": "Cire daga taron",
-    "authenticatedOwner": "Mai shi da aka tabbatar"
+    "authenticatedOwner": "Mai shi da aka tabbatar",
+    "titleCount": "Mahalarta ({{count}})",
+    "close": "Rufe mahalarta",
+    "muteName": "Kashe {{name}}",
+    "makeNamePresenter": "Sanya {{name}} mai gabatarwa",
+    "removeName": "Cire {{name}}"
   },
   "chatPanel": {
     "title": "Hira",
     "empty": "Babu saƙonni har yanzu — yi sallama.",
     "placeholder": "Rubuta sako",
     "send": "Aika",
-    "close": "Rufe hira"
+    "close": "Rufe hira",
+    "ariaLabel": "Tattaunawar taro",
+    "messageAria": "Saƙon tattaunawa"
   },
   "invite": {
     "title": "Gayyato ta hanyar imel",
@@ -143,12 +178,14 @@
     "tooMany": "Mafi yawan masu karɓa 20 a kowane aika.",
     "sentN_one": "An aika gayyatar {{count}}.",
     "sentN_other": "An aika gayyata {{count}}.",
-    "failedSuffix": "An kasa: {{list}}"
+    "failedSuffix": "An kasa: {{list}}",
+    "cancel": "Soke",
+    "close": "Rufe"
   },
   "recordings": {
     "title": "Rikodi",
     "subtitle": "Rikodin taron ku daga uwar garken. Fayilolin gida suna gogewa kai tsaye bayan kwanaki 30 (ko lokacin da kuka buga zuwa YouTube). Ana yin lodin ne kawai ta mai shi.",
-    "empty": "Babu rikodi tukuna. Fara taro kuma danna Rikodi don ɗaukar ɗaya.",
+    "empty": "Babu rikodin har yanzu. Fara taro kuma danna <1>Rikodi</1> don ɗaukar ɗaya.",
     "download": "Zazzage",
     "downloading": "Ana saukewa…",
     "publish": "Buga zuwa YouTube",
@@ -170,7 +207,11 @@
       "running": "Gudu",
       "failed": "ya kasa",
       "deleted": "an share"
-    }
+    },
+    "loading": "Ana lodi...",
+    "signInFirst": "Da farko shiga one.witysk.org.",
+    "started": "An fara {{when}}",
+    "publishTitle": "Loda zuwa YouTube kuma share fayil ɗin gida idan an yi nasara."
   },
   "settings": {
     "title": "Saituna",
@@ -390,5 +431,67 @@
       "confirm": "Sake duk zaɓuɓɓuka zuwa tsoho?",
       "doneFlash": "Sake saita zuwa tsoho"
     }
+  },
+  "discover": {
+    "title": "Gano",
+    "subtitle": "— tarurruka da aka bude don shiga",
+    "join": "Shiga",
+    "maxParticipants": "max {{n}}",
+    "hostedBy": "Mai shiryawa {{name}}"
+  },
+  "inMeetingSettings": {
+    "title": "Saituna",
+    "close": "Rufe saituna",
+    "groupAv": "Sauti & Bidiyo",
+    "groupDisplay": "Nunawa",
+    "groupNotifications": "Sanarwa",
+    "groupAccessibility": "Samun dama",
+    "groupNetwork": "Sadarwa",
+    "groupAppearance": "Bayyanawa",
+    "camOnJoin": "Kunna kyamara lokacin da na shiga",
+    "micOnJoin": "Mai lasifika yana kunne idan na shiga",
+    "noiseSuppression": "Mai kashe surutu",
+    "echoCancellation": "Soke amsawar murya",
+    "mirrorPreview": "Nuna min hotona",
+    "layout": "Shimfada",
+    "layoutAuto": "Mota",
+    "layoutGrid": "Grid",
+    "layoutSpeaker": "Mai magana mai aiki",
+    "layoutSpotlight": "Haske",
+    "mirrorOwn": "Nuna hoton bidiyo na",
+    "hideSelf": "Boye kallon kanka",
+    "showNames": "Nuna sunayen mahalarta",
+    "connQuality": "Nuna ingancin haɗin kai",
+    "meetingClock": "Nuna agogon taro",
+    "highlightSpeaker": "Nuna mai magana mai aiki",
+    "soundOnJoin": "Sauti lokacin da wani ya shiga",
+    "chatSound": "Sauti akan saƙon hira",
+    "ignoreOwnJoins": "Yi watsi da shigowata",
+    "captions": "Bayanan magana kai tsaye",
+    "captionsSize": "Girman rubutun taken",
+    "fontSmall": "Karami",
+    "fontMedium": "Matsakaici",
+    "fontLarge": "Babba",
+    "fontXl": "Mai girma sosai",
+    "reducedMotion": "Rage rage",
+    "monoAudio": "Haɗa sauti guda ɗaya",
+    "quality": "Ingancin bidiyo da aka fi so",
+    "qualityAuto": "Mota",
+    "qualityLow": "Ƙananan",
+    "qualityMedium": "Matsakaici",
+    "qualityHigh": "Babba",
+    "simulcast": "Simulcast",
+    "forceRelay": "Tilasta relay na TURN",
+    "theme": "Jigo",
+    "themeSystem": "Tsarin",
+    "themeDark": "Duhu",
+    "themeLight": "Hasken wuta",
+    "compact": "Ƙaramin UI",
+    "moreSettings": "Ƙarin saituna suna nan a cikakken shafin <1>Settings</1>."
+  },
+  "tile": {
+    "flip": "Juyawa a kwance",
+    "stopFlip": "Dakatar da jujjuya bidiyo a kwance",
+    "unflip": "Juyar da"
   }
 }
