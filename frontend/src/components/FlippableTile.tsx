@@ -58,7 +58,7 @@ export default function FlippableTile() {
             e.stopPropagation();
             setFlipped((v) => !v);
           }}
-          aria-pressed={flipped ? "true" : "false"}
+          aria-pressed={flipped}
           aria-label={flipped ? t("tile.stopFlip") : t("tile.flip")}
           data-testid={`tile-flip-${identity}`}
           className={[

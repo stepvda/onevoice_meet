@@ -31,7 +31,18 @@ webhook:
 
 room:
   auto_create: true
-  empty_timeout: 300
+  # Effectively disabled: meetings stay open until the owner clicks "End
+  # meeting" (which calls room.delete_room and triggers room_finished).
+  # Two distinct knobs in LiveKit:
+  #   empty_timeout      — applies when the room exists but never had any
+  #                        participant.
+  #   departure_timeout  — applies once everyone has left (this is what
+  #                        kicked in earlier and closed empty rooms after
+  #                        ~30-90 min — LiveKit's default for this is short).
+  # Both must be set huge for "stay open until owner explicitly ends".
+  # 0 falls back to LiveKit defaults, so we use ~68 years instead.
+  empty_timeout: 2147483647
+  departure_timeout: 2147483647
   max_participants: 50
   enabled_codecs:
     - mime: audio/opus

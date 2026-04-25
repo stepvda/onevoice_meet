@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     recordings_dir: str = "/var/lib/meet/recordings"
     branding_dir: str = "/var/lib/meet/branding"
     branding_max_bytes: int = 2 * 1024 * 1024  # 2 MB cap for upload
+    chat_attachments_dir: str = "/var/lib/meet/chat-attachments"
+    chat_attachment_max_bytes: int = 5 * 1024 * 1024  # 5 MB cap per image
     recording_retention_days: int = 30
     # When the filesystem holding `recordings_dir` reaches this fraction of
     # capacity, the oldest completed recordings are deleted to make room.

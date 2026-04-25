@@ -17,9 +17,18 @@
   );
 }
 
-/* Main content soft-gradient background (dark) */
+/* Main content soft-gradient background — dark blue-gray with a ~60%-lighter
+ * highlight in the middle of the viewport. Center colour is primary-900
+ * raised by ~60 lightness points (≈ primary-200 / #b6c7dd); falls off
+ * through primary-500 at mid-radius to primary-900 at the edges. */
 .bg-witysk-page {
-  background: radial-gradient(ellipse at top, #12253E 0%, #0E1E33 60%, #0b0b0f 100%);
+  background: radial-gradient(
+    ellipse at center,
+    #b6c7dd 0%,
+    #1E3A5F 50%,
+    #0E1E33 100%
+  );
+  background-attachment: fixed;
 }
 
 html, body, #root { height: 100%; }

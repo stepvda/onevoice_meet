@@ -114,9 +114,15 @@ export function logoutFromOneWitysk(): Promise<{ ok: boolean }> {
  * Fetch the signed-in user's preferred display name from one.witysk.org's
  * `/api/auth/me`. Returns `name || username || email || null`.
  *
+ * Browser-to-server: the JWT is bound to the browser's IP, so the call MUST
+ * originate from the user's browser (a server-to-server call from meet's
+ * backend would either fail validation or trip session-revocation rules).
+ *
  * Not cached: callers should hit this every time they need a fresh name
- * (e.g. on meeting creation and every owner-token mint), because the user
- * may have updated their preferred name in one.witysk.org since last fetch.
+ * (e.g. on meeting creation, every owner-token mint, and invite-send),
+ * because the user may have updated their preferred name since last fetch.
+ *
+ * Requires `https://meet.witysk.org` in one.witysk.org's CORS allow_origins.
  */
 export async function fetchOneWityskName(): Promise<string | null> {
   const tok = getAccessToken();

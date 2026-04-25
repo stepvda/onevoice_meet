@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { Download, ExternalLink, Loader2, Trash2, Upload, Video } from "lucide-react";
+import { Download, ExternalLink, Trash2, Video } from "lucide-react";
 import { api } from "../lib/api";
 import { bootstrapFromOneWitysk, isAuthenticated } from "../lib/auth";
 import { Button, Card } from "../components/ui";
@@ -22,23 +22,12 @@ interface Recording {
   youtube_error: string | null;
 }
 
-type YtPrivacy = "public" | "unlisted" | "private";
-
 export default function Recordings() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<Recording[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-
-  async function refresh() {
-    try {
-      const r = await api.listRecordings();
-      setRows(r as Recording[]);
-    } catch (e) {
-      setErr((e as Error).message);
-    }
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -66,33 +55,6 @@ export default function Recordings() {
       cancelled = true;
     };
   }, []);
-
-  async function publishToYouTube(r: Recording) {
-    const privacy = (
-      prompt(t("recordings.publishPrivacyPrompt"), "unlisted") || ""
-    ).toLowerCase();
-    if (!["public", "unlisted", "private"].includes(privacy)) return;
-    if (!confirm(t("recordings.publishConfirm", { privacy }))) return;
-
-    setBusyId(r.id);
-    setErr(null);
-    try {
-      const result = await api.publishYoutube(r.id, { privacy: privacy as YtPrivacy });
-      // Optimistically update the row, then re-fetch the canonical state.
-      setRows((cur) =>
-        cur.map((x) =>
-          x.id === r.id
-            ? { ...x, youtube_url: result.url, youtube_status: "published", has_local_file: false }
-            : x
-        )
-      );
-      await refresh();
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusyId(null);
-    }
-  }
 
   async function downloadRecording(r: Recording) {
     setBusyId(`dl-${r.id}`);
@@ -209,29 +171,6 @@ export default function Recordings() {
                     >
                       <Download size={16} />
                       {busyId === `dl-${r.id}` ? t("recordings.downloading") : t("recordings.download")}
-                    </Button>
-                  )}
-                  {r.status === "completed" && r.has_local_file && r.youtube_status !== "published" && (
-                    <Button
-                      type="button"
-                      variant="accent"
-                      size="sm"
-                      disabled={busyId === r.id || r.youtube_status === "uploading"}
-                      onClick={() => publishToYouTube(r)}
-                      data-testid={`rec-publish-${r.id}`}
-                      title={t("recordings.publishTitle")}
-                    >
-                      {busyId === r.id || r.youtube_status === "uploading" ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          {t("recordings.uploading")}
-                        </>
-                      ) : (
-                        <>
-                          <Upload size={16} />
-                          {t("recordings.publish")}
-                        </>
-                      )}
                     </Button>
                   )}
                   <Button

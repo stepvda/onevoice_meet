@@ -48,6 +48,31 @@ export interface UserPreferencesOut {
   language_set_manually: boolean;
 }
 
+export interface ChatReactionDTO {
+  emoji: string;
+  reactor_identity: string;
+  reactor_name: string;
+}
+
+export interface ChatMessageDTO {
+  id: number;
+  sender_identity: string;
+  sender_name: string;
+  message: string;
+  reply_to_id: number | null;
+  sent_at: string;
+  attachment: {
+    url: string;
+    type: string | null;
+    name: string | null;
+    size: number | null;
+  } | null;
+  reactions: ChatReactionDTO[];
+}
+
+export const CHAT_REACTIONS = ["😊", "👍", "😂", "😢", "😠", "🤓", "❤️", "👎"] as const;
+export type ChatReactionEmoji = (typeof CHAT_REACTIONS)[number];
+
 async function fetchOnce(path: string, init: RequestInit, token: string | null): Promise<Response> {
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -162,6 +187,80 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ participant_identity }),
     }),
+
+  listChat: (roomName: string) =>
+    request<ChatMessageDTO[]>(`/api/v1/rooms/${roomName}/chat`),
+
+  /** Owner-only — fetch a closed (or active) meeting's chat by id, for the
+   * post-meeting transcript view from MyMeetings. */
+  listMeetingChat: (meetingId: string) =>
+    request<ChatMessageDTO[]>(`/api/v1/meetings/${meetingId}/chat`),
+
+  postChat: (
+    roomName: string,
+    body: {
+      sender_identity: string;
+      sender_name: string;
+      message: string;
+      reply_to_id?: number | null;
+    }
+  ) =>
+    request<ChatMessageDTO>(`/api/v1/rooms/${roomName}/chat`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  /** Multipart attachment upload — image-only, 5 MB cap server-side. */
+  async postChatAttachment(
+    roomName: string,
+    fields: {
+      sender_identity: string;
+      sender_name: string;
+      message?: string;
+      reply_to_id?: number | null;
+      file: File;
+    }
+  ): Promise<ChatMessageDTO> {
+    const fd = new FormData();
+    fd.append("sender_identity", fields.sender_identity);
+    fd.append("sender_name", fields.sender_name);
+    if (fields.message) fd.append("message", fields.message);
+    if (fields.reply_to_id != null) fd.append("reply_to_id", String(fields.reply_to_id));
+    fd.append("file", fields.file);
+    const res = await fetch(`/api/v1/rooms/${roomName}/chat/attachment`, {
+      method: "POST",
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = res.statusText;
+      try {
+        const j = await res.clone().json();
+        detail = j.detail ?? detail;
+      } catch {
+        /* not JSON */
+      }
+      throw new Error(detail);
+    }
+    return (await res.json()) as ChatMessageDTO;
+  },
+
+  putChatReaction: (
+    roomName: string,
+    messageId: number,
+    body: { reactor_identity: string; reactor_name: string; emoji: string }
+  ) =>
+    request<{ ok: boolean }>(
+      `/api/v1/rooms/${roomName}/chat/${messageId}/reaction`,
+      { method: "PUT", body: JSON.stringify(body) }
+    ),
+
+  deleteChatReaction: (roomName: string, messageId: number, reactorIdentity: string) =>
+    request<void>(
+      `/api/v1/rooms/${roomName}/chat/${messageId}/reaction?reactor_identity=${encodeURIComponent(
+        reactorIdentity
+      )}`,
+      { method: "DELETE" }
+    ),
 
   startRecording: (meetingId: string) =>
     request(`/api/v1/meetings/${meetingId}/recordings:start`, { method: "POST" }),

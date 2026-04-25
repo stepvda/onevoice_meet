@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -27,9 +27,10 @@ class CreateMeetingBody(BaseModel):
     recording_mode: str = Field(default="manual", pattern="^(manual|auto_on_start|off)$")
     list_for_authenticated: bool = False
     list_for_anonymous: bool = False
-    # Owner's preferred display name resolved from one.witysk.org's
-    # /api/auth/me by the SPA. Stored on the meeting so other viewers
-    # (Discover list, lobby) can see who's hosting.
+    # Owner's preferred display name. The SPA fetches it from
+    # one.witysk.org's /api/auth/me (browser-to-server, IP-bound JWT
+    # validates correctly) and passes it here. Stored on the meeting so
+    # other viewers (Discover, lobby) see who's hosting.
     display_name: str | None = Field(default=None, max_length=120)
 
 
@@ -220,7 +221,7 @@ async def end_or_hide_meeting(meeting_id: str, user: RequireUser, db: Session = 
         finally:
             await lk.aclose()
         m.is_active = False
-        m.closed_at = datetime.utcnow()
+        m.closed_at = datetime.now(timezone.utc)
     else:
         m.hidden = True
 
@@ -231,7 +232,7 @@ class InviteBody(BaseModel):
     emails: list[str] = Field(min_length=1, max_length=20)
     personal_message: str | None = Field(default=None, max_length=1000)
     # SPA passes the inviter's freshly-fetched display name from
-    # one.witysk.org's /api/auth/me so the invite shows their current
+    # one.witysk.org's /api/auth/me so the email shows their current
     # preferred name (and refreshes the snapshot on the meeting row).
     display_name: str | None = Field(default=None, max_length=120)
 

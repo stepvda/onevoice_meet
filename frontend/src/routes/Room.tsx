@@ -31,6 +31,7 @@ import ChatPanel from "../components/ChatPanel";
 import ParticipantsPanel from "../components/ParticipantsPanel";
 import InMeetingSettings from "../components/InMeetingSettings";
 import InviteModal from "../components/InviteModal";
+import AudioWaveform from "../components/AudioWaveform";
 
 interface InnerProps {
   meetingId: string | null;
@@ -142,7 +143,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
         data-testid="room-topbar"
         className="flex items-center gap-2 px-3 py-2 bg-primary-900/90 backdrop-blur border-b border-primary-700 flex-wrap flex-shrink-0"
       >
-        <div className="flex items-center gap-3 mr-2 min-w-0 max-w-[40%]">
+        <div className="flex items-center gap-3 mr-2 min-w-0 max-w-[55%]">
           {brandingUrl && (
             <img
               src={brandingUrl}
@@ -161,6 +162,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
             </div>
             <div className="text-xs text-slate-400">meet.witysk.org</div>
           </div>
+          <AudioWaveform width={120} height={28} className="flex-shrink-0" />
           <RecordingIndicator />
         </div>
 

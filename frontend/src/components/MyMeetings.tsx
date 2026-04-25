@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Copy, Eye, EyeOff, Globe, LogIn, Lock, Mail, RotateCcw, Trash2, Video } from "lucide-react";
+import { Copy, Eye, EyeOff, Globe, LogIn, Lock, Mail, MessageSquare, RotateCcw, Trash2, Video } from "lucide-react";
 import { api, MeetingOut } from "../lib/api";
 import { Button, Card } from "./ui";
 import InviteModal from "./InviteModal";
@@ -240,6 +240,16 @@ export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) 
                   </div>
                 </div>
                 <span className="text-xs text-slate-500">{t("myMeetings.closedLabel")}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/meetings/${m.id}/chat`)}
+                  data-testid={`closed-chat-${m.id}`}
+                  title={t("myMeetings.viewChatTitle", { defaultValue: "View this meeting's chat history" })}
+                >
+                  <MessageSquare size={14} /> {t("myMeetings.viewChat", { defaultValue: "Chat" })}
+                </Button>
                 <Button
                   type="button"
                   variant="accent"

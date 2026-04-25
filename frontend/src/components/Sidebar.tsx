@@ -2,8 +2,8 @@ import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  CheckCircle,
   Home,
+  LogIn,
   LogOut,
   Menu,
   Settings as SettingsIcon,
@@ -20,9 +20,12 @@ interface NavItem {
   end?: boolean;
 }
 
-const items: NavItem[] = [
+const primaryItems: NavItem[] = [
   { to: "/", i18nKey: "nav.home", icon: Home, end: true },
   { to: "/recordings", i18nKey: "nav.recordings", icon: Video },
+];
+
+const secondaryItems: NavItem[] = [
   { to: "/settings", i18nKey: "nav.settings", icon: SettingsIcon },
 ];
 
@@ -33,7 +36,8 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // Hide sidebar entirely while the user is in a live meeting.
+  // Hide sidebar entirely while the user is in a live meeting, and on the
+  // headless egress recorder template so it doesn't appear in recordings.
   if (pathname.startsWith("/r/")) return null;
 
   const signedIn = isAuthenticated();
@@ -95,7 +99,7 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-          {items.map(({ to, i18nKey, icon: Icon, end }) => (
+          {primaryItems.map(({ to, i18nKey, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -116,36 +120,48 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 px-5 py-4 text-xs">
-          <div className="flex items-center gap-2">
-            <CheckCircle
-              size={14}
-              className={signedIn ? "text-accent-500" : "text-white/40"}
-            />
-            <span className={signedIn ? "text-accent-500" : "text-white/60"}>
-              {signedIn ? t("nav.signedIn") : t("nav.notSignedIn")}
-            </span>
-          </div>
-          {!signedIn && (
-            <a
-              href="https://one.witysk.org"
-              className="mt-2 block text-primary-200 underline hover:text-white"
+        <div className="border-t border-white/10 px-3 py-2 space-y-1">
+          {secondaryItems.map(({ to, i18nKey, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              onClick={() => setMobileOpen(false)}
+              className={({ isActive }) =>
+                [
+                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                  isActive
+                    ? "bg-white/15 text-white font-semibold shadow-inner"
+                    : "text-white/70 hover:bg-white/10 hover:text-white",
+                ].join(" ")
+              }
             >
-              {t("nav.signIn")}
-            </a>
-          )}
-          {signedIn && (
+              <Icon size={20} />
+              <span>{t(i18nKey)}</span>
+            </NavLink>
+          ))}
+
+          {signedIn ? (
             <button
               type="button"
               onClick={handleLogout}
               disabled={loggingOut}
               data-testid="sidebar-logout"
-              className="mt-2 inline-flex items-center gap-1.5 text-white/70 hover:text-white disabled:opacity-50"
-              title="Log off here and on one.witysk.org"
+              title={t("nav.logoffTitle", { defaultValue: "Log off here and on one.witysk.org" })}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-white/10 hover:text-red-400 transition-colors disabled:opacity-50"
             >
-              <LogOut size={14} />
-              {loggingOut ? t("nav.loggingOff") : t("nav.logoff")}
+              <LogOut size={20} />
+              <span>{loggingOut ? t("nav.loggingOff") : t("nav.logoff")}</span>
             </button>
+          ) : (
+            <a
+              href="https://one.witysk.org"
+              data-testid="sidebar-login"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-accent-500 hover:bg-white/10 hover:text-accent-400 transition-colors"
+            >
+              <LogIn size={20} />
+              <span>{t("nav.signIn")}</span>
+            </a>
           )}
         </div>
       </aside>

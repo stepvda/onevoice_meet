@@ -58,6 +58,13 @@ def lightweight_migrate() -> None:
                 ("list_for_anonymous", "ALTER TABLE meetings ADD COLUMN list_for_anonymous BOOLEAN DEFAULT 0 NOT NULL"),
                 ("owner_name", "ALTER TABLE meetings ADD COLUMN owner_name TEXT"),
             )),
+            ("chat_messages", (
+                ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),
+                ("attachment_path", "ALTER TABLE chat_messages ADD COLUMN attachment_path TEXT"),
+                ("attachment_type", "ALTER TABLE chat_messages ADD COLUMN attachment_type TEXT"),
+                ("attachment_name", "ALTER TABLE chat_messages ADD COLUMN attachment_name TEXT"),
+                ("attachment_size", "ALTER TABLE chat_messages ADD COLUMN attachment_size INTEGER"),
+            )),
         ):
             try:
                 cols = _existing_columns(conn, table)

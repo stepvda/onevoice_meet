@@ -6,6 +6,7 @@ import Room from "./routes/Room";
 import CreateMeeting from "./routes/CreateMeeting";
 import Recordings from "./routes/Recordings";
 import Settings from "./routes/Settings";
+import MeetingChat from "./routes/MeetingChat";
 import { bootstrapFromOneWitysk } from "./lib/auth";
 import { syncServerLanguage } from "./i18n";
 
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/" element={<CreateMeeting />} />
           <Route path="/recordings" element={<Recordings />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/meetings/:meetingId/chat" element={<MeetingChat />} />
           {/* Live meeting view */}
           <Route path="/r/:roomName" element={<Room />} />
           {/* Backward-compat: old links in the wild are /j/<slug> */}

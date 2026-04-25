@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -115,3 +115,44 @@ class ModerationAudit(Base):
     target_identity: Mapped[str | None] = mapped_column(String)
     details: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class ChatMessage(Base):
+    """Persistent meeting chat. Source of truth for all chat content (text,
+    replies, attachments). Real-time fan-out is handled by a small "refetch"
+    signal sent over LiveKit's data channel by the writing client; readers
+    pull state from this table.
+
+    Mirrors the shape of onevoice's `messages` table (DM) so the on-screen
+    behaviour matches what users already know from one.witysk.org."""
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), nullable=False, index=True)
+    sender_identity: Mapped[str] = mapped_column(String, nullable=False)
+    sender_name: Mapped[str] = mapped_column(String, nullable=False)
+    message: Mapped[str] = mapped_column(String, nullable=False, default="")
+    reply_to_id: Mapped[int | None] = mapped_column(ForeignKey("chat_messages.id"), nullable=True, index=True)
+    attachment_path: Mapped[str | None] = mapped_column(String)
+    attachment_type: Mapped[str | None] = mapped_column(String)
+    attachment_name: Mapped[str | None] = mapped_column(String)
+    attachment_size: Mapped[int | None] = mapped_column(Integer)
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
+
+
+class ChatReaction(Base):
+    """Per-message reaction. One reaction per (message, reactor_identity);
+    re-reacting with a different emoji replaces the previous one (matches
+    onevoice's MessageReaction unique-constraint behaviour)."""
+    __tablename__ = "chat_reactions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    message_id: Mapped[int] = mapped_column(ForeignKey("chat_messages.id", ondelete="CASCADE"), nullable=False, index=True)
+    reactor_identity: Mapped[str] = mapped_column(String, nullable=False)
+    reactor_name: Mapped[str] = mapped_column(String, nullable=False)
+    emoji: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("message_id", "reactor_identity", name="uq_chat_reaction_msg_user"),
+    )
