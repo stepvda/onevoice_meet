@@ -1,0 +1,170 @@
+import {
+  useLocalParticipant,
+  useRemoteParticipants,
+} from "@livekit/components-react";
+import { Crown, Mic, MicOff, Users, Video, VideoOff, X } from "lucide-react";
+import { Track } from "livekit-client";
+import type { Participant } from "livekit-client";
+import { api } from "../lib/api";
+import { useState } from "react";
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  meetingId: string | null;
+  isOwner: boolean;
+}
+
+export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }: Props) {
+  const { localParticipant } = useLocalParticipant();
+  const remotes = useRemoteParticipants();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (!open) return null;
+
+  async function withBusy(label: string, fn: () => Promise<unknown>) {
+    setBusyId(label);
+    setErr(null);
+    try {
+      await fn();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function audioOn(p: Participant): boolean {
+    const pub = p.getTrackPublication(Track.Source.Microphone);
+    return !!pub && !pub.isMuted;
+  }
+  function videoOn(p: Participant): boolean {
+    const pub = p.getTrackPublication(Track.Source.Camera);
+    return !!pub && !pub.isMuted;
+  }
+
+  const all = [localParticipant, ...remotes].filter(Boolean) as Participant[];
+
+  return (
+    <aside
+      data-testid="participants-panel"
+      className="h-full w-full sm:w-72 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col"
+      role="complementary"
+      aria-label="Participants"
+    >
+      <header className="flex items-center justify-between px-4 py-3 border-b border-primary-700">
+        <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+          <Users size={16} /> Participants ({all.length})
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close participants"
+          data-testid="participants-close"
+          className="p-1 rounded hover:bg-primary-700 text-slate-300"
+        >
+          <X size={18} />
+        </button>
+      </header>
+
+      <ul
+        className="flex-1 overflow-y-auto py-1"
+        data-testid="participants-list"
+      >
+        {all.map((p) => {
+          const me = p.identity === localParticipant?.identity;
+          const name = p.name || p.identity || "anonymous";
+          return (
+            <li
+              key={p.identity}
+              data-testid={`participant-${p.identity}`}
+              className="px-3 py-2 flex items-center gap-3 hover:bg-primary-800/60"
+            >
+              <div className="flex-shrink-0 h-7 w-7 rounded-full bg-primary-600 flex items-center justify-center text-xs font-semibold text-slate-50">
+                {name.slice(0, 1).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-slate-100 truncate flex items-center gap-1.5">
+                  <span className="truncate">{name}</span>
+                  {me && <span className="text-xs text-slate-400">(you)</span>}
+                  {p.permissions?.canPublishData && p.permissions?.recorder !== true && (
+                    /* heuristic: roomAdmin grants canPublishData; this is just a visual hint */
+                    null
+                  )}
+                  {p.identity?.startsWith("user-") && (
+                    <span title="Authenticated owner" className="text-amber-400">
+                      <Crown size={12} />
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+                  {audioOn(p) ? (
+                    <Mic size={12} className="text-accent-500" />
+                  ) : (
+                    <MicOff size={12} className="text-slate-500" />
+                  )}
+                  {videoOn(p) ? (
+                    <Video size={12} className="text-accent-500" />
+                  ) : (
+                    <VideoOff size={12} className="text-slate-500" />
+                  )}
+                </div>
+              </div>
+              {/* Owner-only per-participant controls (not on self). */}
+              {isOwner && !me && meetingId && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    title="Mute mic"
+                    aria-label={`Mute ${name}`}
+                    data-testid={`participant-mute-${p.identity}`}
+                    disabled={busyId !== null}
+                    onClick={() =>
+                      withBusy(p.identity, () =>
+                        api.mute(meetingId, { participant_identity: p.identity, mute: true })
+                      )
+                    }
+                    className="p-1.5 rounded hover:bg-primary-700 text-slate-300 disabled:opacity-50"
+                  >
+                    <MicOff size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Make presenter"
+                    aria-label={`Make ${name} presenter`}
+                    data-testid={`participant-present-${p.identity}`}
+                    disabled={busyId !== null}
+                    onClick={() =>
+                      withBusy(p.identity, () => api.setPresenter(meetingId, p.identity))
+                    }
+                    className="p-1.5 rounded hover:bg-primary-700 text-slate-300 disabled:opacity-50"
+                  >
+                    <Crown size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Remove from meeting"
+                    aria-label={`Remove ${name}`}
+                    data-testid={`participant-kick-${p.identity}`}
+                    disabled={busyId !== null}
+                    onClick={() => withBusy(p.identity, () => api.kick(meetingId, p.identity))}
+                    className="p-1.5 rounded hover:bg-red-700/40 text-red-300 disabled:opacity-50"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {err && (
+        <div className="px-3 py-2 text-xs text-red-400 border-t border-primary-700">
+          {err}
+        </div>
+      )}
+    </aside>
+  );
+}

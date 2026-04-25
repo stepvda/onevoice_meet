@@ -36,8 +36,8 @@ export default function ChatPanel({ open, onClose }: Props) {
   return (
     <aside
       data-testid="chat-panel"
-      className="fixed top-0 right-0 h-screen w-full sm:w-96 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col z-30"
-      role="dialog"
+      className="h-full w-full sm:w-96 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col"
+      role="complementary"
       aria-label="Meeting chat"
     >
       <header className="flex items-center justify-between px-4 py-3 border-b border-primary-700">

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import scheduler
 from app.config import settings
-from app.db import engine
+from app.db import engine, lightweight_migrate
 from app.models import Base
 from app.routes import health, meetings, moderation, recordings, tokens
 from app.webhooks import router as webhook_router
@@ -14,6 +14,7 @@ from app.webhooks import router as webhook_router
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    lightweight_migrate()
     scheduler.start()
     try:
         yield

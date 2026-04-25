@@ -13,6 +13,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from livekit import api
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from ulid import ULID
 
@@ -165,16 +166,26 @@ async def stop_recording(meeting_id: str, user: RequireUser, db: Session = Depen
 @router.get("/meetings/{meeting_id}/recordings")
 def list_meeting_recordings(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> list[dict]:
     _require_owner(meeting_id, user.user_id, db)
-    rows = db.query(Recording).filter_by(meeting_id=meeting_id).order_by(Recording.started_at.desc()).all()
+    rows = (
+        db.query(Recording)
+        .filter(Recording.meeting_id == meeting_id)
+        .filter(Recording.status != "deleted")
+        .order_by(Recording.started_at.desc())
+        .all()
+    )
     return [_recording_out(r) for r in rows]
 
 
 @router.get("/recordings")
 def list_all_my_recordings(user: RequireUser, db: Session = Depends(get_db)) -> list[dict]:
+    """Lists the user's recordings. Hides rows with status='deleted' (the file
+    is gone, the row only exists for audit). YouTube-published rows are kept
+    visible because they still carry a useful URL."""
     rows = (
         db.query(Recording)
         .join(Meeting, Meeting.id == Recording.meeting_id)
         .filter(Meeting.owner_user_id == user.user_id)
+        .filter(Recording.status != "deleted")
         .order_by(Recording.started_at.desc())
         .all()
     )
@@ -203,6 +214,89 @@ def download_recording(rec_id: str, user: RequireUser, db: Session = Depends(get
     )
 
 
+class PublishYoutubeBody(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    privacy: str | None = None  # "public" | "unlisted" | "private"
+
+
+@router.post("/recordings/{rec_id}/publish-youtube")
+async def publish_to_youtube(
+    rec_id: str,
+    body: PublishYoutubeBody,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Manually upload a completed recording to YouTube. On success, the local
+    file is deleted (the YouTube URL becomes the system of record) but the
+    Recording row remains so it stays visible in the user's list."""
+    from app.services.youtube import YouTubeError, upload_recording
+
+    r = (
+        db.query(Recording)
+        .join(Meeting, Meeting.id == Recording.meeting_id)
+        .filter(Recording.id == rec_id, Meeting.owner_user_id == user.user_id)
+        .first()
+    )
+    if not r:
+        raise HTTPException(status_code=404, detail="recording not found")
+    if r.status != "completed":
+        raise HTTPException(status_code=409, detail=f"recording is {r.status}, not completed")
+    if r.youtube_status == "published" and r.youtube_url:
+        return {"ok": True, "already_published": True, "url": r.youtube_url}
+    if not r.file_path:
+        raise HTTPException(status_code=410, detail="local file is no longer available")
+    path = Path(r.file_path)
+    if not path.exists():
+        raise HTTPException(status_code=410, detail="recording file missing on disk")
+
+    # Default title/description from the meeting metadata.
+    meeting = db.query(Meeting).filter_by(id=r.meeting_id).first()
+    default_title = body.title or (meeting.display_title if meeting else f"meet.witysk recording {r.id}")
+    default_desc = body.description or (
+        f"Recorded via meet.witysk.org\n"
+        f"Meeting: {meeting.display_title if meeting else r.meeting_id}\n"
+        f"Started: {r.started_at.isoformat() if r.started_at else 'unknown'}"
+    )
+
+    r.youtube_status = "uploading"
+    r.youtube_error = None
+    db.commit()
+
+    try:
+        result = await upload_recording(
+            file_path=path,
+            title=default_title,
+            description=default_desc,
+            privacy=body.privacy,
+        )
+    except YouTubeError as e:
+        r.youtube_status = "failed"
+        r.youtube_error = str(e)[:500]
+        db.commit()
+        raise HTTPException(status_code=502, detail=f"YouTube upload failed: {e}") from e
+    except Exception as e:  # noqa: BLE001
+        r.youtube_status = "failed"
+        r.youtube_error = f"unexpected: {e}"[:500]
+        db.commit()
+        raise HTTPException(status_code=500, detail="unexpected upload error") from e
+
+    # Success: store URL, delete local file, free disk.
+    r.youtube_video_id = result.video_id
+    r.youtube_url = result.url
+    r.youtube_status = "published"
+    try:
+        path.unlink(missing_ok=True)
+        r.file_path = None
+    except OSError:
+        # Don't fail the API call if the unlink itself fails — the upload
+        # is the important part. The disk-cap job will clean up later.
+        pass
+    db.add(ModerationAudit(meeting_id=r.meeting_id, actor_user_id=user.user_id, action="youtube_publish", details=result.video_id))
+    db.commit()
+    return {"ok": True, "url": result.url, "video_id": result.video_id}
+
+
 @router.delete("/recordings/{rec_id}", status_code=204)
 def delete_recording(rec_id: str, user: RequireUser, db: Session = Depends(get_db)) -> None:
     r = (
@@ -220,9 +314,18 @@ def delete_recording(rec_id: str, user: RequireUser, db: Session = Depends(get_d
     db.commit()
 
 
+def _aware_utc(dt):
+    """SQLite stores datetimes naive. Treat anything we read back as UTC so
+    arithmetic with `datetime.now(timezone.utc)` is safe."""
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
 def _recording_out(r: Recording) -> dict:
     now = datetime.now(timezone.utc)
-    expires_in = (r.expires_at - now).total_seconds() if r.expires_at else None
+    expires_at = _aware_utc(r.expires_at)
+    expires_in = (expires_at - now).total_seconds() if expires_at else None
     return {
         "id": r.id,
         "meeting_id": r.meeting_id,
@@ -233,6 +336,10 @@ def _recording_out(r: Recording) -> dict:
         "expires_in_seconds": int(expires_in) if expires_in is not None else None,
         "file_size_bytes": r.file_size_bytes,
         "duration_seconds": r.duration_seconds,
+        "has_local_file": bool(r.file_path),
+        "youtube_url": r.youtube_url,
+        "youtube_status": r.youtube_status,
+        "youtube_error": r.youtube_error,
     }
 
 

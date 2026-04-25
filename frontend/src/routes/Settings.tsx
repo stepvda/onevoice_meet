@@ -18,7 +18,7 @@ import {
   Wifi,
   type LucideIcon,
 } from "lucide-react";
-import { usePreferences } from "../lib/preferences";
+import { LANGUAGES, usePreferences } from "../lib/preferences";
 import type {
   BackgroundEffect,
   DateFormat,
@@ -448,11 +448,12 @@ export default function Settings() {
         <Section icon={<Languages size={18} />} title="Language & locale" testId="section-locale">
           <Field id="pref-lang" label="Interface language">
             <Select id="pref-lang" data-testid="pref-lang" value={prefs.locale.language} onChange={(e) => { prefs.setLocale({ language: e.target.value as Language }); saved(); }}>
-              <option value="en">English</option>
-              <option value="fr">Français</option>
-              <option value="nl">Nederlands</option>
-              <option value="de">Deutsch</option>
-              <option value="es">Español</option>
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.native}
+                  {l.native !== l.english ? ` (${l.english})` : ""}
+                </option>
+              ))}
             </Select>
           </Field>
           <Field id="pref-time-format" label="Time format">

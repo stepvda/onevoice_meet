@@ -77,17 +77,46 @@ async def livekit_webhook(request: Request, db: Session = Depends(get_db)) -> di
             db.commit()
 
     elif etype in ("egress_started", "egress_updated", "egress_ended") and event.egress_info:
-        rec = db.query(Recording).filter_by(egress_id=event.egress_info.egress_id).first()
+        info = event.egress_info
+        rec = db.query(Recording).filter_by(egress_id=info.egress_id).first()
         if rec:
             if etype == "egress_ended":
-                rec.status = "completed" if event.egress_info.status == 3 else "failed"  # EGRESS_COMPLETE=3 in proto
+                # EgressStatus: 3 = EGRESS_COMPLETE; anything else means failure.
+                rec.status = "completed" if info.status == 3 else "failed"
                 rec.ended_at = _now()
                 rec.expires_at = _now() + timedelta(days=settings.recording_retention_days)
-                # Populate size/duration from egress_info.file if present.
-                if event.egress_info.file:
-                    rec.file_size_bytes = event.egress_info.file.size or None
-                if event.egress_info.duration:
-                    rec.duration_seconds = int(event.egress_info.duration / 1_000_000_000)  # ns → s
+
+                # Size: newer LiveKit puts this in `file_results[0]`, older in `file`.
+                size = None
+                fr = list(getattr(info, "file_results", []) or [])
+                if fr:
+                    size = getattr(fr[0], "size", None) or None
+                if not size:
+                    f = getattr(info, "file", None)
+                    if f is not None:
+                        size = getattr(f, "size", None) or None
+                if size:
+                    rec.file_size_bytes = size
+
+                # Duration in seconds. The proto doesn't have a top-level
+                # `duration` field; compute from started_at / ended_at (both
+                # in nanoseconds since epoch).
+                started_ns = getattr(info, "started_at", 0) or 0
+                ended_ns = getattr(info, "ended_at", 0) or 0
+                if started_ns and ended_ns and ended_ns >= started_ns:
+                    rec.duration_seconds = int((ended_ns - started_ns) / 1_000_000_000)
+                else:
+                    # Fall back to file_results[0].duration if available.
+                    if fr:
+                        d_ns = getattr(fr[0], "duration", 0) or 0
+                        if d_ns:
+                            rec.duration_seconds = int(d_ns / 1_000_000_000)
+
+                # If egress reported an error, surface it.
+                if info.status != 3:
+                    err = getattr(info, "error", "")
+                    if err:
+                        rec.youtube_error = (rec.youtube_error or "") + f"egress: {err[:300]}"
             db.commit()
 
     return {"ok": True, "event": etype}

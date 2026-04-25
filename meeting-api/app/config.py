@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     meeting_api_port: int = 8080
     database_url: str = "sqlite:////var/lib/meet/meet.db"
     recordings_dir: str = "/var/lib/meet/recordings"
+    branding_dir: str = "/var/lib/meet/branding"
+    branding_max_bytes: int = 2 * 1024 * 1024  # 2 MB cap for upload
     recording_retention_days: int = 30
     # When the filesystem holding `recordings_dir` reaches this fraction of
     # capacity, the oldest completed recordings are deleted to make room.
@@ -43,6 +45,20 @@ class Settings(BaseSettings):
 
     # Public URL (for join links in responses)
     public_url: str = "https://meet.witysk.org"
+
+    # Resend (email). Source the key from one.witysk.org's RESEND_API_KEY.
+    # `from_email` follows onevoice's convention (FROM_EMAIL env var); supports
+    # the standard "Display Name <addr@domain>" format.
+    resend_api_key: str = ""
+    from_email: str = "meet@witysk.org"
+    invite_reply_to: str = ""
+
+    # YouTube — manual per-recording publish.
+    # OAuth2 desktop client; obtain refresh_token via a one-time flow.
+    youtube_client_id: str = ""
+    youtube_client_secret: str = ""
+    youtube_refresh_token: str = ""
+    youtube_default_privacy: str = "unlisted"  # public | unlisted | private
 
 
 settings = Settings()

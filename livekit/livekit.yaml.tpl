@@ -13,14 +13,21 @@ turn:
   enabled: false
 
 # Redis reached via 127.0.0.1 because livekit runs with network_mode: host.
-# The redis container publishes 6379 on loopback (see docker-compose.yml).
 redis:
   address: 127.0.0.1:6379
 
-# Keys and webhook config are set via env vars (LIVEKIT_KEYS,
-# LIVEKIT_WEBHOOK_API_KEY, LIVEKIT_WEBHOOK_URLS) — docker-compose interpolates
-# values from .env into the `environment:` block, which LiveKit then reads.
-# DO NOT put ${VAR} placeholders in this file; they are NOT interpolated here.
+# Placeholders are substituted at container start by the entrypoint sed
+# pipeline (see docker-compose.yml `command:` for the livekit service).
+# Putting webhook config here (not in env) is the only reliable path for
+# `[]string` slice fields like webhook.urls — viper does not auto-split env
+# vars into slices.
+keys:
+  __API_KEY__: __API_SECRET__
+
+webhook:
+  api_key: __WEBHOOK_KEY__
+  urls:
+    - http://127.0.0.1:8080/api/v1/webhooks/livekit
 
 room:
   auto_create: true

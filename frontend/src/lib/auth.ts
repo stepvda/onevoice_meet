@@ -43,6 +43,73 @@ export function isAuthenticated(): boolean {
   return !!getAccessToken();
 }
 
+/**
+ * Log out everywhere — invalidate one.witysk.org's server-side sessions,
+ * clear its localStorage, then clear meet's localStorage. Resolves once both
+ * sides are clean (or the timeout fires).
+ *
+ * Implementation: load a hidden iframe to one.witysk.org/sso-bootstrap.html,
+ * send `witysk-sso-logout`. The iframe POSTs /api/auth/logout (same-origin)
+ * and clears its localStorage, then posts back `{ logout: "ok" | "failed" }`.
+ * Either way we clear meet's local cache so the user is signed out here.
+ */
+export function logoutFromOneWitysk(): Promise<{ ok: boolean }> {
+  return new Promise((resolve) => {
+    let done = false;
+    let iframe: HTMLIFrameElement | null = null;
+
+    function finish(ok: boolean) {
+      if (done) return;
+      done = true;
+      window.removeEventListener("message", onMessage);
+      try {
+        if (iframe) iframe.remove();
+      } catch {
+        /* ignore */
+      }
+      clearAccessToken();
+      try {
+        // Clear any ancillary keys we use, just in case.
+        localStorage.removeItem("refresh_token");
+      } catch {
+        /* ignore */
+      }
+      resolve({ ok });
+    }
+
+    const onMessage = (ev: MessageEvent) => {
+      if (ev.origin !== ONE_WITYSK) return;
+      if (!ev.data || typeof ev.data !== "object") return;
+      if ((ev.data as { type?: string }).type !== "witysk-sso") return;
+      const logout = (ev.data as { logout?: string }).logout;
+      if (logout) {
+        finish(logout === "ok");
+      }
+    };
+
+    iframe = document.createElement("iframe");
+    iframe.src = `${ONE_WITYSK}/sso-bootstrap.html`;
+    iframe.style.display = "none";
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.setAttribute("title", "SSO logout");
+    iframe.addEventListener("load", () => {
+      try {
+        iframe?.contentWindow?.postMessage(
+          { type: "witysk-sso-logout" },
+          ONE_WITYSK
+        );
+      } catch {
+        finish(false);
+      }
+    });
+    window.addEventListener("message", onMessage);
+    document.body.appendChild(iframe);
+
+    // Hard timeout — if one.witysk.org doesn't respond, still log out locally.
+    window.setTimeout(() => finish(false), 6000);
+  });
+}
+
 let bootstrapInFlight: Promise<string | null> | null = null;
 
 /**

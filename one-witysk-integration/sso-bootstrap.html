@@ -2,20 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>SSO bootstrap</title>
 </head>
 <body>
 <!--
-  This page is loaded as a hidden iframe by other witysk.org subdomains
-  (e.g. meet.witysk.org) so they can read the access_token that the onevoice
-  SPA stores in this origin's localStorage.
+  Loaded as a hidden iframe by witysk.org subdomains (e.g. meet.witysk.org).
+  It can do two things on behalf of the parent:
 
-  It sends the token to the parent window via postMessage with an EXPLICIT
-  target origin (never "*"). Only origins in ALLOWED_ORIGINS receive the
-  message.
+    1. SSO bootstrap — read this origin's localStorage tokens and post them
+       back to the parent so it can sign in without a separate login.
 
-  Add new witysk.org subdomains to ALLOWED_ORIGINS as they appear.
+    2. SSO logout — accept a logout request from the parent, call
+       /api/auth/logout (server-side session invalidation), clear this
+       origin's localStorage, and confirm.
+
+  Allowed parent origins are explicitly listed; we never use postMessage with
+  targetOrigin "*". Add new witysk.org subdomains as they appear.
 -->
 <script>
 (function () {
@@ -35,6 +39,13 @@
     }
   }
 
+  function clearTokens() {
+    try {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+    } catch (e) { /* ignore */ }
+  }
+
   function send(origin, payload) {
     try {
       window.parent.postMessage(
@@ -46,16 +57,50 @@
     }
   }
 
-  // On load, push current state to every allowed parent.
+  // On load, push current state to every allowed parent (sign-in bootstrap).
   var snapshot = read();
   ALLOWED_ORIGINS.forEach(function (o) { send(o, snapshot); });
 
-  // Also respond to a polling request so the parent can re-fetch if the user
-  // logs in/out after the iframe was already mounted.
+  // Respond to runtime messages from a parent.
   window.addEventListener("message", function (ev) {
     if (ALLOWED_ORIGINS.indexOf(ev.origin) === -1) return;
-    if (!ev.data || ev.data.type !== "witysk-sso-request") return;
-    send(ev.origin, read());
+    if (!ev.data || typeof ev.data !== "object") return;
+
+    // Polling: parent asks us to re-send the current localStorage state.
+    if (ev.data.type === "witysk-sso-request") {
+      send(ev.origin, read());
+      return;
+    }
+
+    // Logout: parent wants us to invalidate the server-side session AND
+    // clear this origin's localStorage. We post back { logout: 'ok' | 'failed' }.
+    if (ev.data.type === "witysk-sso-logout") {
+      var token;
+      try { token = localStorage.getItem("access_token"); } catch (e) { token = null; }
+
+      function reply(ok) {
+        clearTokens();
+        send(ev.origin, { logout: ok ? "ok" : "failed" });
+      }
+
+      if (!token) {
+        // Already logged out client-side; nothing to invalidate server-side.
+        reply(true);
+        return;
+      }
+
+      // Same-origin fetch — no CORS gymnastics required.
+      fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token },
+        credentials: "include",
+      }).then(function (r) {
+        reply(r.ok || r.status === 401); // 401 = already invalid; same end state.
+      }).catch(function () {
+        reply(false);
+      });
+      return;
+    }
   });
 })();
 </script>

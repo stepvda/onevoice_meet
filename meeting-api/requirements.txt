@@ -15,3 +15,6 @@ apscheduler==3.10.4
 python-multipart==0.0.10
 pytest==8.3.3
 pytest-asyncio==0.24.0
+
+# YouTube manual upload — keep deps minimal: httpx already used; we hand-roll
+# the OAuth + resumable-upload flow rather than pulling google-api-python-client.

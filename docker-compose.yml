@@ -32,17 +32,17 @@ services:
     # publishing thousands of -p mappings. Signaling is still reverse-proxied
     # through Caddy at /rtc so clients only need 443.
     network_mode: host
-    command: ["--config", "/etc/livekit.yaml"]
+    # Template-substitute the API key/secret/webhook key at container start.
+    # We can't use ${VAR} placeholders in the YAML directly (Compose doesn't
+    # interpolate mounted files) and viper doesn't auto-split env vars into
+    # slice fields like webhook.urls — so the YAML is the only correct path.
+    entrypoint:
+      - sh
+      - -c
+      - 'sed -e "s|__API_KEY__|$$LIVEKIT_API_KEY|g" -e "s|__API_SECRET__|$$LIVEKIT_API_SECRET|g" -e "s|__WEBHOOK_KEY__|$$LIVEKIT_WEBHOOK_KEY|g" /etc/livekit.yaml.tpl > /tmp/livekit.yaml; exec /livekit-server --config /tmp/livekit.yaml'
     volumes:
-      - ./livekit/livekit.yaml:/etc/livekit.yaml:ro
-    environment:
-      # Keys are interpolated by Compose from .env at parse time. LiveKit reads
-      # LIVEKIT_KEYS directly (format: "<api_key>: <api_secret>").
-      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
-      # Webhook config also via env so Compose can interpolate values.
-      LIVEKIT_WEBHOOK_API_KEY: "${LIVEKIT_WEBHOOK_KEY}"
-      # LiveKit is on host networking; meeting-api publishes 127.0.0.1:8080.
-      LIVEKIT_WEBHOOK_URLS: "http://127.0.0.1:8080/api/v1/webhooks/livekit"
+      - ./livekit/livekit.yaml.tpl:/etc/livekit.yaml.tpl:ro
+    env_file: .env
     depends_on:
       - redis
 
@@ -63,9 +63,24 @@ services:
         storage:
           local:
             enabled: true
-            path: /out
+            path: /var/lib/meet/recordings
+        # The Hetzner box has 2 vCPUs. LiveKit Egress's default per-job CPU
+        # cost is 4.0 for room composite, which makes it refuse to claim any
+        # job. Lowering the costs lets it accept; H.264 720p30 + AAC fits in
+        # roughly 1 core. Quality may degrade with concurrent recordings on
+        # this size box — bump to 4 vCPUs for production-grade recording.
+        cpu_cost:
+          room_composite_cpu_cost: 1.0
+          web_cpu_cost: 1.0
+          participant_cpu_cost: 1.0
+          track_composite_cpu_cost: 0.5
+          track_cpu_cost: 0.5
+          audio_only_cpu_cost: 0.25
+    # Mount the host's recordings directory at the SAME path inside the
+    # container so absolute filepaths set by meeting-api work without
+    # translation. The dir on the host must be writable by uid 1001 (egress).
     volumes:
-      - /var/lib/meet/recordings:/out
+      - /var/lib/meet/recordings:/var/lib/meet/recordings
     # Needed so egress (bridge network) can reach livekit (host network).
     extra_hosts:
       - "host.docker.internal:host-gateway"

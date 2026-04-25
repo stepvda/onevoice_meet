@@ -29,6 +29,20 @@ class Meeting(Base):
     recording_mode: Mapped[str] = mapped_column(String, default="manual")  # manual | auto_on_start | off
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Owner has removed this meeting from their list (soft-delete). Recordings
+    # belonging to it stay reachable so historical files don't disappear.
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Optional branding image displayed in the lobby and meeting top bar.
+    # Stored under /var/lib/meet/branding/<id>.<ext>; served via the public
+    # /api/v1/rooms/{room_name}/branding endpoint.
+    branding_image_path: Mapped[str | None] = mapped_column(String)
+    # Discoverability — opt-in. Default: only the owner sees the meeting on
+    # their Home page. When list_for_authenticated=True, any signed-in user
+    # of meet.witysk.org sees it in their Discover list. When
+    # list_for_anonymous=True, even unauthenticated visitors see it on the
+    # public landing page (implies authenticated visibility too).
+    list_for_authenticated: Mapped[bool] = mapped_column(Boolean, default=False)
+    list_for_anonymous: Mapped[bool] = mapped_column(Boolean, default=False)
 
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")
@@ -63,6 +77,13 @@ class Recording(Base):
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String, nullable=False)  # running | completed | failed | deleted
+
+    # YouTube manual publish — set when an owner clicks "Publish to YouTube".
+    # `youtube_status`: null (never tried) | 'uploading' | 'published' | 'failed'
+    youtube_url: Mapped[str | None] = mapped_column(String)
+    youtube_video_id: Mapped[str | None] = mapped_column(String)
+    youtube_status: Mapped[str | None] = mapped_column(String)
+    youtube_error: Mapped[str | None] = mapped_column(String)
 
     meeting: Mapped[Meeting] = relationship(back_populates="recordings")
 

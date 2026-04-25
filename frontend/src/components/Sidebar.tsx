@@ -1,37 +1,57 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   CheckCircle,
   Home,
+  LogOut,
   Menu,
   Settings as SettingsIcon,
   Video,
   X,
   type LucideIcon,
 } from "lucide-react";
-import { isAuthenticated } from "../lib/auth";
+import { isAuthenticated, logoutFromOneWitysk } from "../lib/auth";
 
 interface NavItem {
   to: string;
-  label: string;
+  i18nKey: string;
   icon: LucideIcon;
   end?: boolean;
 }
 
 const items: NavItem[] = [
-  { to: "/", label: "Home", icon: Home, end: true },
-  { to: "/recordings", label: "Recordings", icon: Video },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
+  { to: "/", i18nKey: "nav.home", icon: Home, end: true },
+  { to: "/recordings", i18nKey: "nav.recordings", icon: Video },
+  { to: "/settings", i18nKey: "nav.settings", icon: SettingsIcon },
 ];
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Hide sidebar entirely while the user is in a live meeting.
   if (pathname.startsWith("/r/")) return null;
 
   const signedIn = isAuthenticated();
+
+  async function handleLogout() {
+    if (loggingOut) return;
+    if (!confirm(t("nav.logoffConfirm"))) return;
+    setLoggingOut(true);
+    try {
+      await logoutFromOneWitysk();
+    } finally {
+      setLoggingOut(false);
+      // Navigate home and force a remount so the auth-gated UI rerenders
+      // without the (now-cleared) cached token.
+      navigate("/", { replace: true });
+      window.location.reload();
+    }
+  }
 
   return (
     <>
@@ -75,7 +95,7 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-          {items.map(({ to, label, icon: Icon, end }) => (
+          {items.map(({ to, i18nKey, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -91,7 +111,7 @@ export default function Sidebar() {
               }
             >
               <Icon size={20} />
-              <span>{label}</span>
+              <span>{t(i18nKey)}</span>
             </NavLink>
           ))}
         </nav>
@@ -103,7 +123,7 @@ export default function Sidebar() {
               className={signedIn ? "text-accent-500" : "text-white/40"}
             />
             <span className={signedIn ? "text-accent-500" : "text-white/60"}>
-              {signedIn ? "signed in via one.witysk.org" : "not signed in"}
+              {signedIn ? t("nav.signedIn") : t("nav.notSignedIn")}
             </span>
           </div>
           {!signedIn && (
@@ -111,8 +131,21 @@ export default function Sidebar() {
               href="https://one.witysk.org"
               className="mt-2 block text-primary-200 underline hover:text-white"
             >
-              Sign in →
+              {t("nav.signIn")}
             </a>
+          )}
+          {signedIn && (
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              data-testid="sidebar-logout"
+              className="mt-2 inline-flex items-center gap-1.5 text-white/70 hover:text-white disabled:opacity-50"
+              title="Log off here and on one.witysk.org"
+            >
+              <LogOut size={14} />
+              {loggingOut ? t("nav.loggingOff") : t("nav.logoff")}
+            </button>
           )}
         </div>
       </aside>

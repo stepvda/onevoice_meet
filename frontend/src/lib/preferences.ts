@@ -17,7 +17,67 @@ export type BackgroundEffect = "off" | "blur" | "light-blur" | "image";
 export type RecordingMode = "manual" | "auto_on_start" | "off";
 export type VideoQuality = "low" | "medium" | "high" | "auto";
 export type Theme = "system" | "dark" | "light";
-export type Language = "en" | "fr" | "nl" | "de" | "es";
+// All 50 locales we ship translations for (matches frontend/public/locales/).
+export type Language =
+  | "am" | "ar" | "bg" | "bn" | "cs" | "da" | "de" | "el" | "en" | "es"
+  | "fa" | "fi" | "fil" | "fr" | "gu" | "ha" | "he" | "hi" | "hr" | "hu"
+  | "id" | "it" | "ja" | "kk" | "ko" | "mr" | "ms" | "my" | "ne" | "nl"
+  | "no" | "pa" | "pl" | "pt" | "ro" | "ru" | "sk" | "sl" | "sr" | "sv"
+  | "sw" | "ta" | "te" | "th" | "tr" | "uk" | "ur" | "uz" | "vi" | "zh";
+
+/** Native-name + English-label pairs for the language picker. */
+export const LANGUAGES: { code: Language; native: string; english: string }[] = [
+  { code: "en",  native: "English",        english: "English" },
+  { code: "ar",  native: "العربية",        english: "Arabic" },
+  { code: "am",  native: "አማርኛ",          english: "Amharic" },
+  { code: "bg",  native: "Български",      english: "Bulgarian" },
+  { code: "bn",  native: "বাংলা",          english: "Bengali" },
+  { code: "cs",  native: "Čeština",        english: "Czech" },
+  { code: "da",  native: "Dansk",          english: "Danish" },
+  { code: "de",  native: "Deutsch",        english: "German" },
+  { code: "el",  native: "Ελληνικά",       english: "Greek" },
+  { code: "es",  native: "Español",        english: "Spanish" },
+  { code: "fa",  native: "فارسی",          english: "Persian" },
+  { code: "fi",  native: "Suomi",          english: "Finnish" },
+  { code: "fil", native: "Filipino",       english: "Filipino" },
+  { code: "fr",  native: "Français",       english: "French" },
+  { code: "gu",  native: "ગુજરાતી",        english: "Gujarati" },
+  { code: "ha",  native: "Hausa",          english: "Hausa" },
+  { code: "he",  native: "עברית",          english: "Hebrew" },
+  { code: "hi",  native: "हिन्दी",          english: "Hindi" },
+  { code: "hr",  native: "Hrvatski",       english: "Croatian" },
+  { code: "hu",  native: "Magyar",         english: "Hungarian" },
+  { code: "id",  native: "Bahasa Indonesia", english: "Indonesian" },
+  { code: "it",  native: "Italiano",       english: "Italian" },
+  { code: "ja",  native: "日本語",          english: "Japanese" },
+  { code: "kk",  native: "Қазақша",         english: "Kazakh" },
+  { code: "ko",  native: "한국어",          english: "Korean" },
+  { code: "mr",  native: "मराठी",          english: "Marathi" },
+  { code: "ms",  native: "Bahasa Melayu",  english: "Malay" },
+  { code: "my",  native: "မြန်မာ",          english: "Burmese" },
+  { code: "ne",  native: "नेपाली",          english: "Nepali" },
+  { code: "nl",  native: "Nederlands",     english: "Dutch" },
+  { code: "no",  native: "Norsk",          english: "Norwegian" },
+  { code: "pa",  native: "ਪੰਜਾਬੀ",         english: "Punjabi" },
+  { code: "pl",  native: "Polski",         english: "Polish" },
+  { code: "pt",  native: "Português",      english: "Portuguese" },
+  { code: "ro",  native: "Română",         english: "Romanian" },
+  { code: "ru",  native: "Русский",        english: "Russian" },
+  { code: "sk",  native: "Slovenčina",     english: "Slovak" },
+  { code: "sl",  native: "Slovenščina",    english: "Slovenian" },
+  { code: "sr",  native: "Српски",         english: "Serbian" },
+  { code: "sv",  native: "Svenska",        english: "Swedish" },
+  { code: "sw",  native: "Kiswahili",      english: "Swahili" },
+  { code: "ta",  native: "தமிழ்",          english: "Tamil" },
+  { code: "te",  native: "తెలుగు",         english: "Telugu" },
+  { code: "th",  native: "ไทย",            english: "Thai" },
+  { code: "tr",  native: "Türkçe",         english: "Turkish" },
+  { code: "uk",  native: "Українська",     english: "Ukrainian" },
+  { code: "ur",  native: "اردو",           english: "Urdu" },
+  { code: "uz",  native: "O‘zbek",         english: "Uzbek" },
+  { code: "vi",  native: "Tiếng Việt",     english: "Vietnamese" },
+  { code: "zh",  native: "中文",           english: "Chinese" },
+];
 export type TimeFormat = "12h" | "24h";
 export type DateFormat = "YYYY-MM-DD" | "DD/MM/YYYY" | "MM/DD/YYYY";
 export type FontSize = "small" | "medium" | "large" | "xl";
@@ -349,6 +409,21 @@ interface PreferencesState extends Preferences {
   setDeveloper: Setter<"developer">;
 }
 
+// Lazily import i18n only after initialization to avoid circular import order.
+// `usePreferences.subscribe` (configured below) calls `i18n.changeLanguage`
+// whenever the user picks a new language in Settings.
+let _i18n: { changeLanguage: (lng: string) => void } | null = null;
+function notifyLanguageChange(lng: string) {
+  if (!_i18n) {
+    void import("../i18n").then((m) => {
+      _i18n = m.default;
+      _i18n.changeLanguage(lng);
+    });
+  } else {
+    _i18n.changeLanguage(lng);
+  }
+}
+
 export const usePreferences = create<PreferencesState>()(
   persist(
     (set) => ({
@@ -364,7 +439,14 @@ export const usePreferences = create<PreferencesState>()(
       setAccessibility: (p) => set((s) => ({ accessibility: { ...s.accessibility, ...p } })),
       setKeyboard: (p) => set((s) => ({ keyboard: { ...s.keyboard, ...p } })),
       setNetwork: (p) => set((s) => ({ network: { ...s.network, ...p } })),
-      setLocale: (p) => set((s) => ({ locale: { ...s.locale, ...p } })),
+      setLocale: (p) =>
+        set((s) => {
+          const next = { ...s.locale, ...p };
+          if (p.language && p.language !== s.locale.language) {
+            notifyLanguageChange(p.language);
+          }
+          return { locale: next };
+        }),
       setChat: (p) => set((s) => ({ chat: { ...s.chat, ...p } })),
       setAppearance: (p) => set((s) => ({ appearance: { ...s.appearance, ...p } })),
       setDeveloper: (p) => set((s) => ({ developer: { ...s.developer, ...p } })),
