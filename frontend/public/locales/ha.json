@@ -78,7 +78,9 @@
     "visibilityListed": "Jera ga masu amfani da suka shiga",
     "visibilityPrivate": "Ga ni kawai",
     "visibilityChange": "{{label}} — danna don canzawa",
-    "copyJoinPrompt": "Kwafi wannan hanyar haɗin shiga"
+    "copyJoinPrompt": "Kwafi wannan hanyar haɗin shiga",
+    "restart": "Sake farawa",
+    "restartTitle": "Sake buɗe wannan taro (yana kiyaye hanyar haɗi ɗaya)"
   },
   "lobby": {
     "joinMeeting": "Shiga taron",

@@ -78,7 +78,9 @@
     "visibilityListed": "サインインユーザー向けに表示",
     "visibilityPrivate": "自分のみ表示",
     "visibilityChange": "{{label}} — クリックして変更",
-    "copyJoinPrompt": "この参加リンクをコピー"
+    "copyJoinPrompt": "この参加リンクをコピー",
+    "restart": "再起動",
+    "restartTitle": "この会議を再開する（同じリンクを使用）"
   },
   "lobby": {
     "joinMeeting": "ミーティングに参加",

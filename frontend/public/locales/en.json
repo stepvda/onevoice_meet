@@ -85,7 +85,9 @@
     "visibilityListed": "Listed for signed-in users",
     "visibilityPrivate": "Only visible to me",
     "visibilityChange": "{{label}} — click to change",
-    "copyJoinPrompt": "Copy this join link"
+    "copyJoinPrompt": "Copy this join link",
+    "restart": "Restart",
+    "restartTitle": "Reopen this meeting (keeps the same link)"
   },
   "lobby": {
     "joinMeeting": "Join meeting",

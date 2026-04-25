@@ -78,7 +78,9 @@
     "visibilityListed": "Imeorodheshwa kwa watumiaji walioingia",
     "visibilityPrivate": "Inaonekana kwangu pekee",
     "visibilityChange": "{{label}} — bofya kubadilisha",
-    "copyJoinPrompt": "Nakili kiungo hiki cha kujiunga"
+    "copyJoinPrompt": "Nakili kiungo hiki cha kujiunga",
+    "restart": "Anzisha upya",
+    "restartTitle": "Fungua tena mkutano huu (huhifadhi kiungo kile kile)"
   },
   "lobby": {
     "joinMeeting": "Jiunga na mkutano",

@@ -78,7 +78,9 @@
     "visibilityListed": "Đã liệt kê cho người dùng đã đăng nhập",
     "visibilityPrivate": "Chỉ mình tôi thấy",
     "visibilityChange": "{{label}} — nhấp để thay đổi",
-    "copyJoinPrompt": "Sao chép liên kết tham gia này"
+    "copyJoinPrompt": "Sao chép liên kết tham gia này",
+    "restart": "Khởi động lại",
+    "restartTitle": "Mở lại cuộc họp này (giữ nguyên liên kết)"
   },
   "lobby": {
     "joinMeeting": "Tham gia cuộc họp",

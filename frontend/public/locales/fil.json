@@ -78,7 +78,9 @@
     "visibilityListed": "Nakalista para sa mga naka-sign in na user",
     "visibilityPrivate": "Ako lang ang nakakakita",
     "visibilityChange": "{{label}} — pindutin para palitan",
-    "copyJoinPrompt": "Kopyahin ang link na ito para sumali"
+    "copyJoinPrompt": "Kopyahin ang link na ito para sumali",
+    "restart": "Muling Simulan",
+    "restartTitle": "Buksan muli ang pulong na ito (mananatili ang parehong link)"
   },
   "lobby": {
     "joinMeeting": "Sumali sa meeting",

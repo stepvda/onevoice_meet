@@ -78,7 +78,9 @@
     "visibilityListed": "Visas för inloggade användare",
     "visibilityPrivate": "Endast synlig för mig",
     "visibilityChange": "{{label}} — klicka för att ändra",
-    "copyJoinPrompt": "Kopiera denna anslutningslänk"
+    "copyJoinPrompt": "Kopiera denna anslutningslänk",
+    "restart": "Starta om",
+    "restartTitle": "Öppna mötet igen (behåller samma länk)"
   },
   "lobby": {
     "joinMeeting": "Gå med i möte",

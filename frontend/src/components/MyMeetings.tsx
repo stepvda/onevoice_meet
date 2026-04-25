@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Copy, Eye, EyeOff, Globe, LogIn, Lock, Mail, Trash2, Video } from "lucide-react";
+import { Copy, Eye, EyeOff, Globe, LogIn, Lock, Mail, RotateCcw, Trash2, Video } from "lucide-react";
 import { api, MeetingOut } from "../lib/api";
 import { Button, Card } from "./ui";
 import InviteModal from "./InviteModal";
@@ -40,6 +40,18 @@ export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) 
     setBusyId(m.id);
     try {
       const updated = await api.updateMeeting(m.id, next);
+      setRows((cur) => (cur ? cur.map((x) => (x.id === m.id ? { ...x, ...updated } : x)) : cur));
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function restartMeeting(m: MeetingOut) {
+    setBusyId(m.id);
+    try {
+      const updated = await api.reopenMeeting(m.id);
       setRows((cur) => (cur ? cur.map((x) => (x.id === m.id ? { ...x, ...updated } : x)) : cur));
     } catch (e) {
       setErr((e as Error).message);
@@ -228,6 +240,17 @@ export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) 
                   </div>
                 </div>
                 <span className="text-xs text-slate-500">{t("myMeetings.closedLabel")}</span>
+                <Button
+                  type="button"
+                  variant="accent"
+                  size="sm"
+                  disabled={busyId === m.id}
+                  onClick={() => restartMeeting(m)}
+                  data-testid={`closed-restart-${m.id}`}
+                  title={t("myMeetings.restartTitle")}
+                >
+                  <RotateCcw size={14} /> {t("myMeetings.restart")}
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"

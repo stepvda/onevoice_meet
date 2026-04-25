@@ -78,7 +78,9 @@
     "visibilityListed": "Vist for loggede ind-brugere",
     "visibilityPrivate": "Kun synlig for mig",
     "visibilityChange": "{{label}} — klik for at ændre",
-    "copyJoinPrompt": "Kopier dette deltagelseslink"
+    "copyJoinPrompt": "Kopier dette deltagelseslink",
+    "restart": "Genstart",
+    "restartTitle": "Genåbn dette møde (bevarer samme link)"
   },
   "lobby": {
     "joinMeeting": "Deltag i møde",

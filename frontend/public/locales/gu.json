@@ -78,7 +78,9 @@
     "visibilityListed": "સાઇન ઇન કરેલા વપરાશકર્તાઓ માટે સૂચિબદ્ધ",
     "visibilityPrivate": "ફક્ત મારા માટે જ દૃશ્યમાન",
     "visibilityChange": "{{label}} — ફેરફાર કરવા ક્લિક કરો",
-    "copyJoinPrompt": "આ જોડાણ લિંક કૉપિ કરો"
+    "copyJoinPrompt": "આ જોડાણ લિંક કૉપિ કરો",
+    "restart": "પુનઃશરૂ કરો",
+    "restartTitle": "આ મીટિંગ ફરીથી ખોલો (સમાન લિંક રાખે છે)"
   },
   "lobby": {
     "joinMeeting": "મીટિંગમાં જોડાઓ",

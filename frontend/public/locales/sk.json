@@ -78,7 +78,9 @@
     "visibilityListed": "Uvedené pre prihlásených používateľov",
     "visibilityPrivate": "Viditeľné iba pre mňa",
     "visibilityChange": "{{label}} — kliknutím zmeníte",
-    "copyJoinPrompt": "Skopírovať tento odkaz na pripojenie"
+    "copyJoinPrompt": "Skopírovať tento odkaz na pripojenie",
+    "restart": "Reštartovať",
+    "restartTitle": "Znovu otvoriť toto stretnutie (zachováva rovnaký odkaz)"
   },
   "lobby": {
     "joinMeeting": "Pripojiť sa k stretnutiu",

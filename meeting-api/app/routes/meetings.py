@@ -176,6 +176,23 @@ def get_meeting(meeting_id: str, user: RequireUser, db: Session = Depends(get_db
     return _to_out(m).model_dump()
 
 
+@router.post("/meetings/{meeting_id}/reopen")
+def reopen_meeting(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
+    """Reopen a closed meeting. Flips `is_active` back to True and clears
+    `closed_at`. The room_name is unchanged so existing share links keep
+    working. The LiveKit room is recreated on demand when the first
+    participant joins (auto_create on the LiveKit server)."""
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="meeting not found")
+    if not m.is_active:
+        m.is_active = True
+        m.closed_at = None
+        m.hidden = False
+        db.commit()
+    return _to_out(m).model_dump()
+
+
 @router.delete("/meetings/{meeting_id}", status_code=204)
 async def end_or_hide_meeting(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> None:
     """DELETE on a meeting has two semantics depending on state:

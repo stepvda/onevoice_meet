@@ -78,7 +78,9 @@
     "visibilityListed": "Navedeno za prijavljene korisnike",
     "visibilityPrivate": "Vidljivo samo meni",
     "visibilityChange": "{{label}} — kliknite za promenu",
-    "copyJoinPrompt": "Kopiraj ovaj link za pridruživanje"
+    "copyJoinPrompt": "Kopiraj ovaj link za pridruživanje",
+    "restart": "Ponovo pokreni",
+    "restartTitle": "Ponovo otvori ovaj sastanak (zadržava isti link)"
   },
   "lobby": {
     "joinMeeting": "Придружи се састанку",

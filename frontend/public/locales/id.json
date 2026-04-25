@@ -78,7 +78,9 @@
     "visibilityListed": "Terdaftar untuk pengguna yang masuk",
     "visibilityPrivate": "Hanya terlihat oleh saya",
     "visibilityChange": "{{label}} — klik untuk mengubah",
-    "copyJoinPrompt": "Salin tautan bergabung ini"
+    "copyJoinPrompt": "Salin tautan bergabung ini",
+    "restart": "Mulai Ulang",
+    "restartTitle": "Buka kembali rapat ini (tetap menggunakan tautan yang sama)"
   },
   "lobby": {
     "joinMeeting": "Gabung rapat",

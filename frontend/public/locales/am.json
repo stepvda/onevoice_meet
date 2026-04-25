@@ -78,7 +78,9 @@
     "visibilityListed": "ለተመዘገቡ ተጠቃሚዎች ብቻ የተዘረዘረ",
     "visibilityPrivate": "ለእኔ ብቻ የሚታይ",
     "visibilityChange": "{{label}} — ለመቀየር ጠቅ ያድርጉ",
-    "copyJoinPrompt": "ይህን የመቀላቀል ሊንክ ቅዳ"
+    "copyJoinPrompt": "ይህን የመቀላቀል ሊንክ ቅዳ",
+    "restart": "እንደገና ጀምር",
+    "restartTitle": "ይህን ስብሰባ እንደገና ይክፈቱ (ተመሳሳይ አገናኝ ይቆያል)"
   },
   "lobby": {
     "joinMeeting": "ስብሰባ ይቀላቀሉ",

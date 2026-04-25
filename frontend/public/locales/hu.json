@@ -78,7 +78,9 @@
     "visibilityListed": "Felsorolva a bejelentkezett felhasználók számára",
     "visibilityPrivate": "Csak számomra látható",
     "visibilityChange": "{{label}} — kattintson a módosításhoz",
-    "copyJoinPrompt": "Másold ki ezt a csatlakozási linket"
+    "copyJoinPrompt": "Másold ki ezt a csatlakozási linket",
+    "restart": "Újraindítás",
+    "restartTitle": "Találkozó újranyitása (ugyanaz a link marad)"
   },
   "lobby": {
     "joinMeeting": "Csatlakozás értekezlethez",

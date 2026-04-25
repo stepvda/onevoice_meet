@@ -78,7 +78,9 @@
     "visibilityListed": "แสดงสำหรับผู้ใช้ที่เข้าสู่ระบบแล้ว",
     "visibilityPrivate": "เฉพาะฉันเท่านั้นที่เห็น",
     "visibilityChange": "{{label}} — คลิกเพื่อเปลี่ยน",
-    "copyJoinPrompt": "คัดลอกลิงก์เข้าร่วมนี้"
+    "copyJoinPrompt": "คัดลอกลิงก์เข้าร่วมนี้",
+    "restart": "เริ่มต้นใหม่",
+    "restartTitle": "เปิดการประชุมนี้อีกครั้ง (ใช้ลิงก์เดิม)"
   },
   "lobby": {
     "joinMeeting": "เข้าร่วมการประชุม",

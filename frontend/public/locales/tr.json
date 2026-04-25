@@ -78,7 +78,9 @@
     "visibilityListed": "Oturum açmış kullanıcılar için listelenmiştir",
     "visibilityPrivate": "Yalnızca bana görünür",
     "visibilityChange": "{{label}} — değiştirmek için tıklayın",
-    "copyJoinPrompt": "Bu katılım bağlantısını kopyala"
+    "copyJoinPrompt": "Bu katılım bağlantısını kopyala",
+    "restart": "Yeniden Başlat",
+    "restartTitle": "Bu toplantıyı yeniden aç (aynı bağlantıyı korur)"
   },
   "lobby": {
     "joinMeeting": "Toplantıya Katıl",

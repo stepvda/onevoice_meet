@@ -78,7 +78,9 @@
     "visibilityListed": "လက်မှတ်ထိုးဝင်ထားသော အသုံးပြုသူများအတွက် စာရင်းပြုစုထားသည်",
     "visibilityPrivate": "ကျွန်ုပ်တစ်ဦးတည်းသာမြင်နိုင်",
     "visibilityChange": "{{label}} — ပြောင်းလဲရန် နှိပ်ပါ",
-    "copyJoinPrompt": "ဤ join link ကို ကူးယူပါ"
+    "copyJoinPrompt": "ဤ join link ကို ကူးယူပါ",
+    "restart": "ပြန်စတင်မည်",
+    "restartTitle": "ဤအစည်းအဝေးကို ပြန်ဖွင့်ပါ (link တူညီနေမည်)"
   },
   "lobby": {
     "joinMeeting": "အစည်းအဝေးသို့ဝင်ရန်",

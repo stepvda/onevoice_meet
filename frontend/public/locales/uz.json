@@ -78,7 +78,9 @@
     "visibilityListed": "Ro‘yxatga olingan, faqat tizimga kirgan foydalanuvchilar uchun",
     "visibilityPrivate": "Faqat menga ko‘rinadi",
     "visibilityChange": "{{label}} — o‘zgartirish uchun bosing",
-    "copyJoinPrompt": "Ushbu qo‘shilish havolasini nusxalash"
+    "copyJoinPrompt": "Ushbu qo‘shilish havolasini nusxalash",
+    "restart": "Qayta ishga tushirish",
+    "restartTitle": "Uchrashuvni qayta ochish (bir xil havola saqlanadi)"
   },
   "lobby": {
     "joinMeeting": "Uchrashuvga qo‘shilish",

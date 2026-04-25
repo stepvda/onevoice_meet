@@ -78,7 +78,9 @@
     "visibilityListed": "Listattu sisäänkirjautuneille käyttäjille",
     "visibilityPrivate": "Vain minulle näkyvä",
     "visibilityChange": "{{label}} — napsauta vaihtaaksesi",
-    "copyJoinPrompt": "Kopioi tämä liittymislinkki"
+    "copyJoinPrompt": "Kopioi tämä liittymislinkki",
+    "restart": "Käynnistä uudelleen",
+    "restartTitle": "Avaa tämä kokous uudelleen (sama linkki säilyy)"
   },
   "lobby": {
     "joinMeeting": "Liity kokoukseen",

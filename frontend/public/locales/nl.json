@@ -78,7 +78,9 @@
     "visibilityListed": "Vermeld voor ingelogde gebruikers",
     "visibilityPrivate": "Alleen zichtbaar voor mij",
     "visibilityChange": "{{label}} — klik om te wijzigen",
-    "copyJoinPrompt": "Kopieer deze deelnamelink"
+    "copyJoinPrompt": "Kopieer deze deelnamelink",
+    "restart": "Opnieuw starten",
+    "restartTitle": "Deze vergadering heropenen (behoudt dezelfde link)"
   },
   "lobby": {
     "joinMeeting": "Vergadering bijwonen",

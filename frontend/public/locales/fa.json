@@ -78,7 +78,9 @@
     "visibilityListed": "فهرست شده برای کاربران وارد شده",
     "visibilityPrivate": "فقط برای من قابل مشاهده است",
     "visibilityChange": "{{label}} — برای تغییر کلیک کنید",
-    "copyJoinPrompt": "این لینک پیوستن را کپی کنید"
+    "copyJoinPrompt": "این لینک پیوستن را کپی کنید",
+    "restart": "راه‌اندازی مجدد",
+    "restartTitle": "بازگشایی این جلسه (با حفظ لینک قبلی)"
   },
   "lobby": {
     "joinMeeting": "پیوستن به جلسه",

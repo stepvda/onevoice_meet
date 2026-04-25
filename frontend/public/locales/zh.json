@@ -78,7 +78,9 @@
     "visibilityListed": "仅限已登录用户使用",
     "visibilityPrivate": "仅自己可见",
     "visibilityChange": "{{label}} — 点击切换",
-    "copyJoinPrompt": "复制此加入链接"
+    "copyJoinPrompt": "复制此加入链接",
+    "restart": "重新启动",
+    "restartTitle": "重新开启此会议（保持相同链接）"
   },
   "lobby": {
     "joinMeeting": "加入会议",

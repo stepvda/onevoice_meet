@@ -78,7 +78,9 @@
     "visibilityListed": "Oppført for innloggede brukere",
     "visibilityPrivate": "Kun synlig for meg",
     "visibilityChange": "{{label}} — klikk for å endre",
-    "copyJoinPrompt": "Kopier denne deltakerlenken"
+    "copyJoinPrompt": "Kopier denne deltakerlenken",
+    "restart": "Start på nytt",
+    "restartTitle": "Gjenåpne dette møtet (beholder samme lenke)"
   },
   "lobby": {
     "joinMeeting": "Bli med i møte",

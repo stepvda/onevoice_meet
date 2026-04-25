@@ -78,7 +78,9 @@
     "visibilityListed": "Elencato per utenti connessi",
     "visibilityPrivate": "Visibile solo a me",
     "visibilityChange": "{{label}} — clicca per cambiare",
-    "copyJoinPrompt": "Copia questo link di invito"
+    "copyJoinPrompt": "Copia questo link di invito",
+    "restart": "Riavvia",
+    "restartTitle": "Riapri questa riunione (mantiene lo stesso link)"
   },
   "lobby": {
     "joinMeeting": "Partecipa alla riunione",

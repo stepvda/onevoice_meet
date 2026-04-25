@@ -78,7 +78,9 @@
     "visibilityListed": "مُدرجة للمستخدمين المسجلين",
     "visibilityPrivate": "مرئي لي فقط",
     "visibilityChange": "{{label}} — انقر للتغيير",
-    "copyJoinPrompt": "انسخ رابط الانضمام هذا"
+    "copyJoinPrompt": "انسخ رابط الانضمام هذا",
+    "restart": "إعادة تشغيل",
+    "restartTitle": "إعادة فتح هذا الاجتماع (يحتفظ بنفس الرابط)"
   },
   "lobby": {
     "joinMeeting": "انضم إلى الاجتماع",

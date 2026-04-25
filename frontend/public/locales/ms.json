@@ -78,7 +78,9 @@
     "visibilityListed": "Disenaraikan untuk pengguna yang telah log masuk",
     "visibilityPrivate": "Hanya boleh dilihat oleh saya",
     "visibilityChange": "{{label}} — klik untuk menukar",
-    "copyJoinPrompt": "Salin pautan penyertaan ini"
+    "copyJoinPrompt": "Salin pautan penyertaan ini",
+    "restart": "Mulakan semula",
+    "restartTitle": "Buka semula mesyuarat ini (kekal pautan yang sama)"
   },
   "lobby": {
     "joinMeeting": "Sertai mesyuarat",

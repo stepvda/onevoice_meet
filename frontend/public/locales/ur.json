@@ -78,7 +78,9 @@
     "visibilityListed": "سائن ان صارفین کے لیے درج",
     "visibilityPrivate": "صرف مجھے نظر آتا ہے",
     "visibilityChange": "{{label}} — تبدیل کرنے کے لیے کلک کریں",
-    "copyJoinPrompt": "اس جوائن لنک کو کاپی کریں"
+    "copyJoinPrompt": "اس جوائن لنک کو کاپی کریں",
+    "restart": "دوبارہ شروع کریں",
+    "restartTitle": "یہ میٹنگ دوبارہ کھولیں (وہی لنک رہے گا)"
   },
   "lobby": {
     "joinMeeting": "میٹنگ میں شامل ہوں",

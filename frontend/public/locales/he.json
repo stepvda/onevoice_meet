@@ -78,7 +78,9 @@
     "visibilityListed": "רשום למשתמשים מחוברים",
     "visibilityPrivate": "גלוי רק לי",
     "visibilityChange": "{{label}} — לחץ לשינוי",
-    "copyJoinPrompt": "העתק קישור הצטרפות זה"
+    "copyJoinPrompt": "העתק קישור הצטרפות זה",
+    "restart": "הפעל מחדש",
+    "restartTitle": "פתח מחדש את הפגישה הזו (שומר על אותו קישור)"
   },
   "lobby": {
     "joinMeeting": "הצטרף לפגישה",

@@ -154,6 +154,9 @@ export const api = {
   deleteMeeting: (meetingId: string) =>
     request(`/api/v1/meetings/${meetingId}`, { method: "DELETE" }),
 
+  reopenMeeting: (meetingId: string) =>
+    request<MeetingOut>(`/api/v1/meetings/${meetingId}/reopen`, { method: "POST" }),
+
   setPresenter: (meetingId: string, participant_identity: string | null) =>
     request(`/api/v1/meetings/${meetingId}/presenter`, {
       method: "POST",

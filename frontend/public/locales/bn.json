@@ -78,7 +78,9 @@
     "visibilityListed": "সাইন-ইন করা ব্যবহারকারীদের জন্য তালিকাভুক্ত",
     "visibilityPrivate": "শুধু আমার কাছে দৃশ্যমান",
     "visibilityChange": "{{label}} — পরিবর্তন করতে ক্লিক করুন",
-    "copyJoinPrompt": "এই জয়েন লিংকটি কপি করুন"
+    "copyJoinPrompt": "এই জয়েন লিংকটি কপি করুন",
+    "restart": "পুনরায় শুরু করুন",
+    "restartTitle": "এই মিটিং পুনরায় খুলুন (একই লিংক থাকবে)"
   },
   "lobby": {
     "joinMeeting": "মিটিংয়ে যোগ দিন",

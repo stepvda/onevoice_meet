@@ -78,7 +78,9 @@
     "visibilityListed": "Listat pentru utilizatorii autentificați",
     "visibilityPrivate": "Vizibil doar pentru mine",
     "visibilityChange": "{{label}} — apasă pentru a schimba",
-    "copyJoinPrompt": "Copiază acest link de participare"
+    "copyJoinPrompt": "Copiază acest link de participare",
+    "restart": "Repornește",
+    "restartTitle": "Redeschide această întâlnire (păstrează același link)"
   },
   "lobby": {
     "joinMeeting": "Participă la întâlnire",

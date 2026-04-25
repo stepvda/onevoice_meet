@@ -78,7 +78,9 @@
     "visibilityListed": "로그인한 사용자에게 표시됨",
     "visibilityPrivate": "나만 볼 수 있음",
     "visibilityChange": "{{label}} — 클릭하여 변경",
-    "copyJoinPrompt": "이 참가 링크를 복사하세요"
+    "copyJoinPrompt": "이 참가 링크를 복사하세요",
+    "restart": "다시 시작",
+    "restartTitle": "이 회의 다시 열기 (동일한 링크 유지)"
   },
   "lobby": {
     "joinMeeting": "회의 참가",

@@ -78,7 +78,9 @@
     "visibilityListed": "Für angemeldete Nutzer aufgelistet",
     "visibilityPrivate": "Nur für mich sichtbar",
     "visibilityChange": "{{label}} — klicken zum Ändern",
-    "copyJoinPrompt": "Diesen Beitrittslink kopieren"
+    "copyJoinPrompt": "Diesen Beitrittslink kopieren",
+    "restart": "Neustart",
+    "restartTitle": "Dieses Meeting wiedereröffnen (behält denselben Link)"
   },
   "lobby": {
     "joinMeeting": "Besprechung beitreten",
