@@ -527,7 +527,8 @@
       "muteSpeaker": "Bisukan pembicara",
       "unmuteSpeaker": "Aktifkan suara pembicara",
       "liveCount_one": "{{count}} langsung",
-      "liveCount_other": "{{count}} langsung"
+      "liveCount_other": "{{count}} langsung",
+      "volumeSlider": "Volume output"
     }
   },
   "signInPrompt": {

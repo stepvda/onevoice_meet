@@ -527,7 +527,8 @@
       "muteSpeaker": "စပီကာ အသံပိတ်မည်",
       "unmuteSpeaker": "စပီကာကို အသံဖွင့်ပါ",
       "liveCount_one": "{{count}} တိုက်ရိုက်",
-      "liveCount_other": "{{count}} တိုက်ရိုက်"
+      "liveCount_other": "{{count}} တိုက်ရိုက်",
+      "volumeSlider": "အသံထွက်အား"
     }
   },
   "signInPrompt": {

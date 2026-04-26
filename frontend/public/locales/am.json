@@ -527,7 +527,8 @@
       "muteSpeaker": "ተናጋሪውን ዝም አድርግ",
       "unmuteSpeaker": "የተናጋሪውን ድምጽ አስጀምር",
       "liveCount_one": "{{count}} ቀጥታ ስርጭት",
-      "liveCount_other": "{{count}} ቀጥታ ስርጭት"
+      "liveCount_other": "{{count}} ቀጥታ ስርጭት",
+      "volumeSlider": "የውጤት ድምጽ"
     }
   },
   "signInPrompt": {

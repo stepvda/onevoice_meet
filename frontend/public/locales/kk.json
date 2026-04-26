@@ -527,7 +527,8 @@
       "muteSpeaker": "Дыбысты өшіру",
       "unmuteSpeaker": "Дыбысты қосу",
       "liveCount_one": "{{count}} тікелей эфир",
-      "liveCount_other": "{{count}} тікелей эфир"
+      "liveCount_other": "{{count}} тікелей эфир",
+      "volumeSlider": "Шығыс дыбыс деңгейі"
     }
   },
   "signInPrompt": {

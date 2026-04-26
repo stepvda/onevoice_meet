@@ -527,7 +527,8 @@
       "muteSpeaker": "Zima sauti ya mzungumzaji",
       "unmuteSpeaker": "Ondoa ukimya wa spika",
       "liveCount_one": "{{count}} moja kwa moja",
-      "liveCount_other": "{{count}} moja kwa moja"
+      "liveCount_other": "{{count}} moja kwa moja",
+      "volumeSlider": "Kiasi cha pato"
     }
   },
   "signInPrompt": {

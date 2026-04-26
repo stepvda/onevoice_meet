@@ -527,7 +527,8 @@
       "muteSpeaker": "스피커 음소거",
       "unmuteSpeaker": "스피커 음소거 해제",
       "liveCount_one": "{{count}} 라이브",
-      "liveCount_other": "{{count}} 라이브"
+      "liveCount_other": "{{count}} 라이브",
+      "volumeSlider": "출력 볼륨"
     }
   },
   "signInPrompt": {

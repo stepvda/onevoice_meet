@@ -31,12 +31,18 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS: same-origin in production (Caddy serves frontend + proxies /api on
-# meet.witysk.org), so allow_origins is only relevant for local dev where
-# Vite runs on :5173.
+# CORS: same-origin in production for meet.witysk.org (Caddy serves frontend
+# + proxies /api), plus the OneVoice app at one.witysk.org which integrates
+# the TI Café widget directly in the browser (calls /api/v1/ti-cafe/token and
+# /api/v1/ti-cafe/live with the shared-secret JWT). localhost:5173 is the
+# Vite dev origin used by both frontends.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.public_url, "http://localhost:5173"],
+    allow_origins=[
+        settings.public_url,
+        "https://one.witysk.org",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],

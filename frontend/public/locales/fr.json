@@ -527,7 +527,8 @@
       "muteSpeaker": "Couper le son de l’intervenant",
       "unmuteSpeaker": "Activer le micro de l’intervenant",
       "liveCount_one": "{{count}} en direct",
-      "liveCount_other": "{{count}} en direct"
+      "liveCount_other": "{{count}} en direct",
+      "volumeSlider": "Volume de sortie"
     }
   },
   "signInPrompt": {

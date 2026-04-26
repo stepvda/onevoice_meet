@@ -527,7 +527,8 @@
       "muteSpeaker": "Demp høyttaler",
       "unmuteSpeaker": "Slå på lyd for foredragsholder",
       "liveCount_one": "{{count}} direkte",
-      "liveCount_other": "{{count}} direkte"
+      "liveCount_other": "{{count}} direkte",
+      "volumeSlider": "Utgangsvolum"
     }
   },
   "signInPrompt": {

@@ -527,7 +527,8 @@
       "muteSpeaker": "Tysta talare",
       "unmuteSpeaker": "Ljud på talare",
       "liveCount_one": "{{count}} live",
-      "liveCount_other": "{{count}} live"
+      "liveCount_other": "{{count}} live",
+      "volumeSlider": "Uteffekt"
     }
   },
   "signInPrompt": {

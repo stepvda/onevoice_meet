@@ -527,7 +527,8 @@
       "muteSpeaker": "Kashe muryar mai magana",
       "unmuteSpeaker": "Bude muryar mai magana",
       "liveCount_one": "{{count}} kai tsaye",
-      "liveCount_other": "{{count}} kai tsaye"
+      "liveCount_other": "{{count}} kai tsaye",
+      "volumeSlider": "Ƙarfin fitarwa"
     }
   },
   "signInPrompt": {

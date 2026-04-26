@@ -527,7 +527,8 @@
       "muteSpeaker": "స్పీకర్ను మ్యూట్ చేయండి",
       "unmuteSpeaker": "స్పీకర్ను అన్మ్యూట్ చేయండి",
       "liveCount_one": "{{count}} ప్రత్యక్ష ప్రసారం",
-      "liveCount_other": "{{count}} ప్రత్యక్ష ప్రసారం"
+      "liveCount_other": "{{count}} ప్రత్యక్ష ప్రసారం",
+      "volumeSlider": "అవుట్పుట్ వాల్యూమ్"
     }
   },
   "signInPrompt": {

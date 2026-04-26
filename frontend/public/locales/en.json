@@ -42,6 +42,7 @@
       "unmuteMic": "Unmute my microphone",
       "muteSpeaker": "Mute speaker",
       "unmuteSpeaker": "Unmute speaker",
+      "volumeSlider": "Output volume",
       "liveCount_one": "{{count}} live",
       "liveCount_other": "{{count}} live"
     }

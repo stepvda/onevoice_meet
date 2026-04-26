@@ -527,7 +527,8 @@
       "muteSpeaker": "Konuşmacıyı sustur",
       "unmuteSpeaker": "Hoparlörün sesini aç",
       "liveCount_one": "{{count}} canlı",
-      "liveCount_other": "{{count}} canlı"
+      "liveCount_other": "{{count}} canlı",
+      "volumeSlider": "Çıkış ses seviyesi"
     }
   },
   "signInPrompt": {

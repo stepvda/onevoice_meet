@@ -527,7 +527,8 @@
       "muteSpeaker": "સ્પીકર મ્યૂટ કરો",
       "unmuteSpeaker": "સ્પીકરને અનમ્યૂટ કરો",
       "liveCount_one": "{{count}} લાઇવ",
-      "liveCount_other": "{{count}} લાઇવ"
+      "liveCount_other": "{{count}} લાઇવ",
+      "volumeSlider": "આઉટપુટ વોલ્યુમ"
     }
   },
   "signInPrompt": {

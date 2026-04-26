@@ -527,7 +527,8 @@
       "muteSpeaker": "Dezactivează microfonul vorbitorului",
       "unmuteSpeaker": "Deblocare microfon difuzor",
       "liveCount_one": "{{count}} în direct",
-      "liveCount_other": "{{count}} live"
+      "liveCount_other": "{{count}} live",
+      "volumeSlider": "Volum de ieșire"
     }
   },
   "signInPrompt": {

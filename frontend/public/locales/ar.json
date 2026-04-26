@@ -527,7 +527,8 @@
       "muteSpeaker": "كتم المتحدث",
       "unmuteSpeaker": "إلغاء كتم المتحدث",
       "liveCount_one": "{{count}} مباشر",
-      "liveCount_other": "{{count}} مباشر"
+      "liveCount_other": "{{count}} مباشر",
+      "volumeSlider": "مستوى الصوت"
     }
   },
   "signInPrompt": {

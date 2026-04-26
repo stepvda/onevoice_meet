@@ -527,7 +527,8 @@
       "muteSpeaker": "Mykistä puhuja",
       "unmuteSpeaker": "Poista mykistys puhujalta",
       "liveCount_one": "{{count}} suorana",
-      "liveCount_other": "{{count}} suorana"
+      "liveCount_other": "{{count}} suorana",
+      "volumeSlider": "Äänenvoimakkuus"
     }
   },
   "signInPrompt": {

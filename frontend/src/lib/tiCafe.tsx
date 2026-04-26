@@ -38,7 +38,20 @@ import { api } from "./api";
 import { isAuthenticated } from "./auth";
 
 const SS_MIC = "ti-cafe:mic-on";
-const SS_SPEAKER = "ti-cafe:speaker-on";
+const SS_VOLUME = "ti-cafe:volume"; // 0..1; "0" means muted
+// Persisted across browser sessions: did the user toggle TI Café "on"? If
+// so, we re-establish the connection on every page load (and on reconnects
+// after a network drop). Cleared only on explicit user disconnect or logout.
+// localStorage rather than sessionStorage so it survives a full browser quit
+// — the audio room is meant to feel "always on" while the user is signed in.
+const LS_DESIRED = "ti-cafe:desired-on";
+
+// Reconnect backoff schedule (ms). The last value caps repeats.
+const RECONNECT_BACKOFF_MS = [800, 1500, 3000, 6000, 12000, 30000];
+// How long after Provider mount we'll keep polling for an SSO token before
+// giving up the auto-rejoin attempt.
+const AUTH_WAIT_MS = 5000;
+const AUTH_POLL_MS = 250;
 
 function readBool(key: string, fallback: boolean): boolean {
   try {
@@ -58,6 +71,43 @@ function writeBool(key: string, value: boolean): void {
   }
 }
 
+function readVolume(fallback: number): number {
+  try {
+    const v = sessionStorage.getItem(SS_VOLUME);
+    if (v === null) return fallback;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(0, Math.min(1, n));
+  } catch {
+    return fallback;
+  }
+}
+
+function writeVolume(value: number): void {
+  try {
+    sessionStorage.setItem(SS_VOLUME, String(value));
+  } catch {
+    /* ignore */
+  }
+}
+
+function readDesired(): boolean {
+  try {
+    return localStorage.getItem(LS_DESIRED) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeDesired(value: boolean): void {
+  try {
+    if (value) localStorage.setItem(LS_DESIRED, "1");
+    else localStorage.removeItem(LS_DESIRED);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Number of spectrum bands the bar's waveform consumes. */
 export const SPECTRUM_BANDS = 24;
 
@@ -66,8 +116,9 @@ interface TICafeContextShape {
   connecting: boolean;
   /** Mic publishing — false = muted (slash overlay in UI). */
   micOn: boolean;
-  /** Output audio enabled — false = muted (slash overlay). */
-  speakerOn: boolean;
+  /** Output audio level. 0 = muted, 1 = full volume. The bar's vertical
+   *  slider drives this. */
+  volume: number;
   /** Smoothed log-scaled spectrum (0..1 per band) of the current loudest
    *  speaker's audio. Length is always SPECTRUM_BANDS. */
   spectrum: number[];
@@ -78,7 +129,7 @@ interface TICafeContextShape {
   connect: () => Promise<void>;
   disconnect: () => void;
   setMic: (on: boolean) => void;
-  setSpeaker: (on: boolean) => void;
+  setVolume: (v: number) => void;
 }
 
 const TICafeContext = createContext<TICafeContextShape | null>(null);
@@ -95,24 +146,35 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  // Reconnect bookkeeping. attemptRef tracks the next backoff index; both are
+  // reset to zero on a clean Connected and on user-initiated disconnect.
+  const reconnectTimerRef = useRef<number | null>(null);
+  const reconnectAttemptRef = useRef<number>(0);
 
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [micOn, setMicOn] = useState<boolean>(() => readBool(SS_MIC, false));
-  const [speakerOn, setSpeakerOn] = useState<boolean>(() => readBool(SS_SPEAKER, true));
+  const [volume, setVolumeState] = useState<number>(() => readVolume(1));
   const [spectrum, setSpectrum] = useState<number[]>(() => new Array(SPECTRUM_BANDS).fill(0));
   const [participantCount, setParticipantCount] = useState(0);
   const [selfIdentity, setSelfIdentity] = useState<string | null>(null);
-  // Mirror of speakerOn that the TrackSubscribed handler can read without
+  // Mirror of volume that the TrackSubscribed handler can read without
   // capturing a stale closure each time the listener was registered.
-  const speakerOnRef = useRef<boolean>(speakerOn);
+  const volumeRef = useRef<number>(volume);
+  // micOn mirror — kept so connect() can read the latest mic preference
+  // without itself depending on micOn (which would rebuild the callback each
+  // time the user toggles mic, churning the reconnect timer).
+  const micOnRef = useRef<boolean>(micOn);
 
-  // Persist mute toggles across in-app navigation (same tab session).
+  // Persist preferences across in-app navigation (same tab session).
   useEffect(() => writeBool(SS_MIC, micOn), [micOn]);
-  useEffect(() => writeBool(SS_SPEAKER, speakerOn), [speakerOn]);
+  useEffect(() => writeVolume(volume), [volume]);
   useEffect(() => {
-    speakerOnRef.current = speakerOn;
-  }, [speakerOn]);
+    volumeRef.current = volume;
+  }, [volume]);
+  useEffect(() => {
+    micOnRef.current = micOn;
+  }, [micOn]);
 
   // ── Spectrum analyser. The AnalyserNode is rewired on each
   // ActiveSpeakersChanged so it tracks whoever's loudest — local or remote.
@@ -195,9 +257,36 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
     };
   }, [connected]);
 
+  // Schedule a reconnect with exponential backoff. Bails if the user has
+  // disconnected (desired flag cleared) or signed out in the meantime.
+  // Defined as a regular function (not a useCallback) so it always reads the
+  // latest refs without churning the event handlers that capture it.
+  function scheduleReconnect() {
+    if (!readDesired() || !isAuthenticated()) return;
+    if (reconnectTimerRef.current) {
+      window.clearTimeout(reconnectTimerRef.current);
+    }
+    const idx = Math.min(reconnectAttemptRef.current, RECONNECT_BACKOFF_MS.length - 1);
+    const delay = RECONNECT_BACKOFF_MS[idx];
+    reconnectAttemptRef.current += 1;
+    reconnectTimerRef.current = window.setTimeout(() => {
+      reconnectTimerRef.current = null;
+      // Re-check desired in case the user clicked Disconnect while we waited.
+      if (readDesired()) void connect();
+    }, delay);
+  }
+
   const connect = useCallback(async () => {
     if (!isAuthenticated()) return;
     if (roomRef.current && roomRef.current.state !== ConnectionState.Disconnected) return;
+    // Mark intent immediately. If this attempt fails mid-flight, the
+    // backoff loop should still try again — user clicking Connect already
+    // committed to the room.
+    writeDesired(true);
+    if (reconnectTimerRef.current) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
     setConnecting(true);
     try {
       const cfg = await api.tiCafeToken();
@@ -225,6 +314,11 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
       room.on(RoomEvent.ConnectionStateChanged, (state) => {
         setConnected(state === ConnectionState.Connected);
         setConnecting(state === ConnectionState.Connecting || state === ConnectionState.Reconnecting);
+        if (state === ConnectionState.Connected) {
+          // Successful (re)connect — reset the backoff counter so the next
+          // accidental drop starts fresh.
+          reconnectAttemptRef.current = 0;
+        }
       });
       const refreshCount = () => {
         const total = (room.numParticipants ?? room.remoteParticipants.size) + 1;
@@ -248,7 +342,8 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
         el.dataset.tiCafeAudio = "1";
         el.dataset.tiCafeIdentity = participant.identity;
         el.autoplay = true;
-        el.muted = !speakerOnRef.current;
+        el.volume = volumeRef.current;
+        el.muted = volumeRef.current === 0;
         // Detach from layout — these are pure audio elements.
         el.style.display = "none";
         document.body.appendChild(el);
@@ -289,14 +384,21 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
         document
           .querySelectorAll<HTMLAudioElement>("audio[data-ti-cafe-audio]")
           .forEach((el) => el.remove());
+        // The Room is dead. If the user still wants to be in the café,
+        // schedule a reconnect; if they explicitly clicked Disconnect (or
+        // logged out), the desired flag is already cleared and we bail.
+        roomRef.current = null;
+        scheduleReconnect();
       });
 
       await room.connect(cfg.livekit_url, cfg.token, {
         autoSubscribe: true,
       });
       setSelfIdentity(room.localParticipant.identity);
-      // Apply current mic/speaker preferences.
-      await room.localParticipant.setMicrophoneEnabled(micOn);
+      // Apply current mic/speaker preferences. Use the ref so reconnects
+      // (which run inside a callback captured at room-creation time) read
+      // the latest user preference rather than a stale value.
+      await room.localParticipant.setMicrophoneEnabled(micOnRef.current);
       // Speaker = global mute on the audio renderer; LiveKit doesn't expose a
       // single switch, so we leave actual <audio> elements playing and toggle
       // their volume via setSpeaker().
@@ -312,12 +414,24 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
       roomRef.current = null;
       setConnected(false);
       setSelfIdentity(null);
+      // Schedule a backoff retry. Desired is still set (we set it at the
+      // top of connect), so this kicks the auto-reconnect loop.
+      scheduleReconnect();
     } finally {
       setConnecting(false);
     }
-  }, [micOn, wireAnalyser]);
+  }, [wireAnalyser]);
 
   const disconnect = useCallback(() => {
+    // User-initiated disconnect: clear the persisted intent FIRST so the
+    // Room.Disconnected handler that fires below sees desired=false and
+    // doesn't schedule a reconnect.
+    writeDesired(false);
+    if (reconnectTimerRef.current) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    reconnectAttemptRef.current = 0;
     const room = roomRef.current;
     roomRef.current = null;
     setConnected(false);
@@ -344,13 +458,17 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const setSpeaker = useCallback((on: boolean) => {
-    setSpeakerOn(on);
-    // Mute every <audio> element we attached for TI Café tracks.
+  const setVolume = useCallback((v: number) => {
+    const clamped = Math.max(0, Math.min(1, v));
+    setVolumeState(clamped);
+    // Apply to every <audio> element we attached for TI Café tracks. Setting
+    // both `volume` and `muted` means a slider at 0 produces guaranteed
+    // silence even on browsers that floor very low volumes.
     document
       .querySelectorAll<HTMLAudioElement>("audio[data-ti-cafe-audio]")
       .forEach((el) => {
-        el.muted = !on;
+        el.volume = clamped;
+        el.muted = clamped === 0;
       });
   }, []);
 
@@ -362,9 +480,44 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("ti-cafe-logout", onLogout);
   }, [disconnect]);
 
+  // Auto-rejoin on app mount if the user was last seen connected. Polls for
+  // an SSO token for up to AUTH_WAIT_MS so the rejoin works even when
+  // bootstrapFromOneWitysk in App.tsx hasn't finished writing the token to
+  // localStorage yet on first paint.
+  useEffect(() => {
+    if (!readDesired()) return;
+    let cancelled = false;
+    const start = Date.now();
+    let timer: number | null = null;
+
+    const tryConnect = () => {
+      if (cancelled) return;
+      if (isAuthenticated()) {
+        void connect();
+        return;
+      }
+      if (Date.now() - start > AUTH_WAIT_MS) return; // give up; user can click toggle
+      timer = window.setTimeout(tryConnect, AUTH_POLL_MS);
+    };
+
+    // Tiny delay so other mount effects (App-level SSO bootstrap) get a head
+    // start. The poll above will pick up the token as soon as it appears.
+    timer = window.setTimeout(tryConnect, 200);
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+    // Intentionally one-shot on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Tear down on unmount of the entire app (rare; reload counts).
   useEffect(() => {
     return () => {
+      if (reconnectTimerRef.current) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
       const room = roomRef.current;
       if (room) {
         void room.disconnect().catch(() => {
@@ -385,16 +538,16 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
       connected,
       connecting,
       micOn,
-      speakerOn,
+      volume,
       spectrum,
       participantCount,
       selfIdentity,
       connect,
       disconnect,
       setMic,
-      setSpeaker,
+      setVolume,
     }),
-    [connected, connecting, micOn, speakerOn, spectrum, participantCount, selfIdentity, connect, disconnect, setMic, setSpeaker]
+    [connected, connecting, micOn, volume, spectrum, participantCount, selfIdentity, connect, disconnect, setMic, setVolume]
   );
 
   return <TICafeContext.Provider value={value}>{children}</TICafeContext.Provider>;

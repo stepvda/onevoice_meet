@@ -3,20 +3,25 @@
  * "Currently online" card.
  *
  * Layout (left → right):
- *   [logo] [main toggle] [mic toggle] [speaker toggle] [count] ... [waveform]
+ *   [logo] [main toggle] [mic toggle] [volume button] [count] ... [waveform]
+ *
+ * The volume button opens a vertical slider popover (max 150 px tall) with
+ * the top of the slider = full volume and the bottom = muted.
  *
  * The audio session is owned by <TICafeProvider>, not this component, so
  * navigating away from /ti-cafe doesn't drop the call. This bar just talks
  * to the provider via useTICafe().
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Mic, Volume2 } from "lucide-react";
+import { Mic, Volume2, VolumeX } from "lucide-react";
 import { useTICafe } from "../lib/tiCafe";
+
+const SLIDER_HEIGHT = 150; // px — spec'd cap.
 
 export default function TICafeBar({ liveCount }: { liveCount: number }) {
   const { t } = useTranslation();
-  const { connected, connecting, micOn, speakerOn, spectrum, connect, disconnect, setMic, setSpeaker } = useTICafe();
+  const { connected, connecting, micOn, volume, spectrum, connect, disconnect, setMic, setVolume } = useTICafe();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
   // Latest spectrum stays in a ref so the draw loop reads the current value
@@ -36,7 +41,6 @@ export default function TICafeBar({ liveCount }: { liveCount: number }) {
     const dpr = window.devicePixelRatio || 1;
     const W = c.width;
     const H = c.height;
-    // Pre-built gradient (cheap; one fillStyle per frame).
     const grad = ctx.createLinearGradient(0, H, 0, 0);
     grad.addColorStop(0, "#22c55e");
     grad.addColorStop(0.6, "#facc15");
@@ -125,15 +129,7 @@ export default function TICafeBar({ liveCount }: { liveCount: number }) {
         <Mic size={18} />
       </SlashedButton>
 
-      <SlashedButton
-        active={speakerOn}
-        disabled={!connected}
-        title={speakerOn ? t("tiCafe.bar.muteSpeaker") : t("tiCafe.bar.unmuteSpeaker")}
-        testId="ti-cafe-speaker"
-        onClick={() => setSpeaker(!speakerOn)}
-      >
-        <Volume2 size={18} />
-      </SlashedButton>
+      <VolumeControl volume={volume} onChange={setVolume} disabled={!connected} />
 
       <span
         data-testid="ti-cafe-live-count"
@@ -194,7 +190,6 @@ function SlashedButton({
     >
       {children}
       {!active && (
-        // Diagonal slash — pure SVG so it sits on top of the icon and scales.
         <svg
           viewBox="0 0 24 24"
           aria-hidden="true"
@@ -207,5 +202,106 @@ function SlashedButton({
         </svg>
       )}
     </button>
+  );
+}
+
+/**
+ * Speaker icon button + click-to-open vertical volume slider popover.
+ * Top of slider = full volume (1.0); bottom = muted (0). When volume is 0
+ * the button shows the muted icon; otherwise the regular volume icon.
+ *
+ * Slider is implemented as a native range input rotated 90° — gives us free
+ * keyboard support, ARIA semantics, and touch behavior on mobile.
+ */
+function VolumeControl({
+  volume,
+  onChange,
+  disabled,
+}: {
+  volume: number;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  // Close the popover on outside click / Esc.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!wrapperRef.current) return;
+      if (!wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const muted = volume === 0;
+  const Icon = muted ? VolumeX : Volume2;
+  const label = muted ? t("tiCafe.bar.unmuteSpeaker") : t("tiCafe.bar.muteSpeaker");
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <button
+        type="button"
+        onClick={() => !disabled && setOpen((v) => !v)}
+        disabled={disabled}
+        data-testid="ti-cafe-volume"
+        title={label}
+        aria-haspopup="dialog"
+        aria-expanded={open ? "true" : "false"}
+        aria-label={label}
+        className={[
+          "relative inline-flex items-center justify-center h-9 w-9 rounded-lg border",
+          "focus:outline-none focus:ring-2 focus:ring-accent-500",
+          muted
+            ? "bg-primary-900/60 text-slate-400 border-primary-700 hover:bg-primary-800"
+            : "bg-primary-700 text-slate-100 border-primary-600 hover:bg-primary-600",
+          disabled ? "opacity-50 cursor-not-allowed" : "",
+        ].join(" ")}
+      >
+        <Icon size={18} />
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label={t("tiCafe.bar.volumeSlider")}
+          data-testid="ti-cafe-volume-popover"
+          className="absolute z-20 left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-3 rounded-lg bg-primary-900 border border-primary-700 shadow-xl flex flex-col items-center gap-2"
+        >
+          {/* Vertical native range, rotated -90deg. Width becomes height. */}
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={Math.round(volume * 100)}
+            onChange={(e) => onChange(Number(e.target.value) / 100)}
+            data-testid="ti-cafe-volume-slider"
+            aria-label={t("tiCafe.bar.volumeSlider")}
+            aria-orientation="vertical"
+            className="ti-cafe-vol-slider"
+            style={{
+              writingMode: "vertical-lr" as unknown as undefined,
+              direction: "rtl",
+              width: 24,
+              height: SLIDER_HEIGHT,
+            }}
+          />
+          <div className="text-[10px] font-medium text-slate-400 tabular-nums">
+            {Math.round(volume * 100)}%
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

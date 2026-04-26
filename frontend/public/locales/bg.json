@@ -527,7 +527,8 @@
       "muteSpeaker": "Заглуши говорителя",
       "unmuteSpeaker": "Включи звука на говорителя",
       "liveCount_one": "{{count}} на живо",
-      "liveCount_other": "{{count}} на живо"
+      "liveCount_other": "{{count}} на живо",
+      "volumeSlider": "Изходен звук"
     }
   },
   "signInPrompt": {

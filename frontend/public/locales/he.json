@@ -527,7 +527,8 @@
       "muteSpeaker": "השתק רמקול",
       "unmuteSpeaker": "בטל השתקת דובר",
       "liveCount_one": "{{count}} בשידור חי",
-      "liveCount_other": "{{count}} בשידור חי"
+      "liveCount_other": "{{count}} בשידור חי",
+      "volumeSlider": "עוצמת פלט"
     }
   },
   "signInPrompt": {

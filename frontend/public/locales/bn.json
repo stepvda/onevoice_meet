@@ -527,7 +527,8 @@
       "muteSpeaker": "স্পিকার মিউট করুন",
       "unmuteSpeaker": "স্পিকার আনমিউট করুন",
       "liveCount_one": "{{count}} লাইভ",
-      "liveCount_other": "{{count}} লাইভ"
+      "liveCount_other": "{{count}} লাইভ",
+      "volumeSlider": "আউটপুট ভলিউম"
     }
   },
   "signInPrompt": {

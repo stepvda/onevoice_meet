@@ -527,7 +527,8 @@
       "muteSpeaker": "Utišaj govorca",
       "unmuteSpeaker": "Omogoči zvok govorca",
       "liveCount_one": "{{count}} v živo",
-      "liveCount_other": "{{count}} v živo"
+      "liveCount_other": "{{count}} v živo",
+      "volumeSlider": "Izhodna glasnost"
     }
   },
   "signInPrompt": {

@@ -527,7 +527,8 @@
       "muteSpeaker": "Σίγαση ομιλητή",
       "unmuteSpeaker": "Κατάργηση σίγασης ομιλητή",
       "liveCount_one": "{{count}} ζωντανή",
-      "liveCount_other": "{{count}} ζωντανή"
+      "liveCount_other": "{{count}} ζωντανή",
+      "volumeSlider": "Ένταση εξόδου"
     }
   },
   "signInPrompt": {

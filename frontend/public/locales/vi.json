@@ -527,7 +527,8 @@
       "muteSpeaker": "Tắt tiếng người nói",
       "unmuteSpeaker": "Bật tiếng người nói",
       "liveCount_one": "{{count}} trực tiếp",
-      "liveCount_other": "{{count}} trực tiếp"
+      "liveCount_other": "{{count}} trực tiếp",
+      "volumeSlider": "Âm lượng đầu ra"
     }
   },
   "signInPrompt": {

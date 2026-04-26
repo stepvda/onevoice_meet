@@ -527,7 +527,8 @@
       "muteSpeaker": "قطع کردن صدای بلندگو",
       "unmuteSpeaker": "رفع صدا از بلندگو",
       "liveCount_one": "{{count}} زنده",
-      "liveCount_other": "{{count}} زنده"
+      "liveCount_other": "{{count}} زنده",
+      "volumeSlider": "صدای خروجی"
     }
   },
   "signInPrompt": {

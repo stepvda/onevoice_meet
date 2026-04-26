@@ -527,7 +527,8 @@
       "muteSpeaker": "話者をミュート",
       "unmuteSpeaker": "ミュート解除",
       "liveCount_one": "{{count}} ライブ配信中",
-      "liveCount_other": "{{count}} ライブ配信中"
+      "liveCount_other": "{{count}} ライブ配信中",
+      "volumeSlider": "出力音量"
     }
   },
   "signInPrompt": {

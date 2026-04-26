@@ -527,7 +527,8 @@
       "muteSpeaker": "ปิดเสียงผู้พูด",
       "unmuteSpeaker": "เปิดเสียงผู้พูด",
       "liveCount_one": "{{count}} ถ่ายทอดสด",
-      "liveCount_other": "{{count}} ถ่ายทอดสด"
+      "liveCount_other": "{{count}} ถ่ายทอดสด",
+      "volumeSlider": "ระดับเสียงเอาต์พุต"
     }
   },
   "signInPrompt": {

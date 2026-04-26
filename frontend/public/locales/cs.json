@@ -527,7 +527,8 @@
       "muteSpeaker": "Ztlumit reproduktor",
       "unmuteSpeaker": "Zapnout mikrofon mluvčího",
       "liveCount_one": "{{count}} živě",
-      "liveCount_other": "{{count}} živě"
+      "liveCount_other": "{{count}} živě",
+      "volumeSlider": "Výstupní hlasitost"
     }
   },
   "signInPrompt": {

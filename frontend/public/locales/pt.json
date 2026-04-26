@@ -527,7 +527,8 @@
       "muteSpeaker": "Silenciar orador",
       "unmuteSpeaker": "Ativar som do orador",
       "liveCount_one": "{{count}} ao vivo",
-      "liveCount_other": "{{count}} ao vivo"
+      "liveCount_other": "{{count}} ao vivo",
+      "volumeSlider": "Volume de saída"
     }
   },
   "signInPrompt": {

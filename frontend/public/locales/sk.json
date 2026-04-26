@@ -527,7 +527,8 @@
       "muteSpeaker": "Stlmiť rečníka",
       "unmuteSpeaker": "Zrušiť stlmenie rečníka",
       "liveCount_one": "{{count}} naživo",
-      "liveCount_other": "{{count}} naživo"
+      "liveCount_other": "{{count}} naživo",
+      "volumeSlider": "Výstupná hlasitosť"
     }
   },
   "signInPrompt": {

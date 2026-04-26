@@ -527,7 +527,8 @@
       "muteSpeaker": "Karnayni o‘chirish",
       "unmuteSpeaker": "Ovozni yoqish",
       "liveCount_one": "{{count}} jonli",
-      "liveCount_other": "{{count}} jonli efir"
+      "liveCount_other": "{{count}} jonli efir",
+      "volumeSlider": "Chiqish ovozi"
     }
   },
   "signInPrompt": {

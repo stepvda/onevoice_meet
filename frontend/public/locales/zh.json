@@ -527,7 +527,8 @@
       "muteSpeaker": "静音发言者",
       "unmuteSpeaker": "取消静音",
       "liveCount_one": "{{count}} 直播",
-      "liveCount_other": "{{count}} 直播"
+      "liveCount_other": "{{count}} 直播",
+      "volumeSlider": "输出音量"
     }
   },
   "signInPrompt": {

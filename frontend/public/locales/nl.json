@@ -527,7 +527,8 @@
       "muteSpeaker": "Dempen",
       "unmuteSpeaker": "Dempen opheffen",
       "liveCount_one": "{{count}} live",
-      "liveCount_other": "{{count}} live"
+      "liveCount_other": "{{count}} live",
+      "volumeSlider": "Uitvoervolume"
     }
   },
   "signInPrompt": {

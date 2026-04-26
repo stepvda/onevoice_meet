@@ -527,7 +527,8 @@
       "muteSpeaker": "اسپیکر کو خاموش کریں",
       "unmuteSpeaker": "اسپیکر کو انمٹ کریں",
       "liveCount_one": "{{count}} لائیو",
-      "liveCount_other": "{{count}} لائیو"
+      "liveCount_other": "{{count}} لائیو",
+      "volumeSlider": "آؤٹ پٹ والیوم"
     }
   },
   "signInPrompt": {

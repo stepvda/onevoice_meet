@@ -527,7 +527,8 @@
       "muteSpeaker": "Hangtalanítás",
       "unmuteSpeaker": "Némítás feloldása",
       "liveCount_one": "{{count}} élő",
-      "liveCount_other": "{{count}} élő"
+      "liveCount_other": "{{count}} élő",
+      "volumeSlider": "Kimeneti hangerő"
     }
   },
   "signInPrompt": {

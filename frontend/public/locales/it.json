@@ -527,7 +527,8 @@
       "muteSpeaker": "Disattiva altoparlante",
       "unmuteSpeaker": "Riattiva audio relatore",
       "liveCount_one": "{{count}} in diretta",
-      "liveCount_other": "{{count}} in diretta"
+      "liveCount_other": "{{count}} in diretta",
+      "volumeSlider": "Volume di uscita"
     }
   },
   "signInPrompt": {

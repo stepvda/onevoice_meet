@@ -527,7 +527,8 @@
       "muteSpeaker": "Wycisz mówcę",
       "unmuteSpeaker": "Wyłącz wyciszenie mówcy",
       "liveCount_one": "{{count}} na żywo",
-      "liveCount_other": "{{count}} na żywo"
+      "liveCount_other": "{{count}} na żywo",
+      "volumeSlider": "Głośność wyjściowa"
     }
   },
   "signInPrompt": {

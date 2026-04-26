@@ -527,7 +527,8 @@
       "muteSpeaker": "Slå lyden fra for taleren",
       "unmuteSpeaker": "Slå lyden til for taleren",
       "liveCount_one": "{{count}} live",
-      "liveCount_other": "{{count}} live"
+      "liveCount_other": "{{count}} live",
+      "volumeSlider": "Output volume"
     }
   },
   "signInPrompt": {
