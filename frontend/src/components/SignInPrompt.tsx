@@ -7,8 +7,7 @@
 import { useTranslation } from "react-i18next";
 import { LogIn, type LucideIcon } from "lucide-react";
 import { Card } from "./ui";
-
-const ONE_WITYSK = "https://one.witysk.org";
+import { startSsoRedirect } from "../lib/auth";
 
 interface Props {
   icon: LucideIcon;
@@ -29,15 +28,14 @@ export default function SignInPrompt({ icon: Icon, title, body, testId }: Props)
           <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
           <p className="text-sm text-slate-400 mt-1 max-w-md">{body}</p>
         </div>
-        <a
-          href={ONE_WITYSK}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => startSsoRedirect()}
           data-testid="signin-prompt-button"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold"
         >
           <LogIn size={16} /> {t("signInPrompt.button")}
-        </a>
+        </button>
       </div>
     </Card>
   );

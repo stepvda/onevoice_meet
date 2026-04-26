@@ -12,7 +12,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { isAuthenticated, logoutFromOneWitysk } from "../lib/auth";
+import { isAuthenticated, logoutFromOneWitysk, startSsoRedirect } from "../lib/auth";
 
 interface NavItem {
   to: string;
@@ -122,7 +122,7 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 px-3 py-2 space-y-1">
+        <div className="border-t border-white/10 px-3 py-2 space-y-1 mb-[70px]">
           {secondaryItems.map(({ to, i18nKey, icon: Icon, end }) => (
             <NavLink
               key={to}
@@ -156,14 +156,15 @@ export default function Sidebar() {
               <span>{loggingOut ? t("nav.loggingOff") : t("nav.logoff")}</span>
             </button>
           ) : (
-            <a
-              href="https://one.witysk.org"
+            <button
+              type="button"
+              onClick={() => startSsoRedirect()}
               data-testid="sidebar-login"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-accent-500 hover:bg-white/10 hover:text-accent-400 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-accent-500 hover:bg-white/10 hover:text-accent-400 transition-colors"
             >
               <LogIn size={20} />
               <span>{t("nav.signIn")}</span>
-            </a>
+            </button>
           )}
         </div>
       </aside>

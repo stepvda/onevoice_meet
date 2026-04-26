@@ -8,6 +8,7 @@ import Recordings from "./routes/Recordings";
 import Settings from "./routes/Settings";
 import MeetingChat from "./routes/MeetingChat";
 import TICafe from "./routes/TICafe";
+import SsoCallback from "./routes/SsoCallback";
 import { bootstrapFromOneWitysk } from "./lib/auth";
 import { syncServerLanguage } from "./i18n";
 import { TICafeProvider } from "./lib/tiCafe";
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/recordings" element={<Recordings />} />
           <Route path="/ti-cafe" element={<TICafe />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/sso-callback" element={<SsoCallback />} />
           <Route path="/meetings/:meetingId/chat" element={<MeetingChat />} />
           {/* Live meeting view */}
           <Route path="/r/:roomName" element={<Room />} />

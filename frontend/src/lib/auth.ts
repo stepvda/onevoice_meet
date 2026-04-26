@@ -13,7 +13,11 @@
 
 const ONE_WITYSK = "https://one.witysk.org";
 const STORAGE_KEY = "access_token";
-const BOOTSTRAP_TIMEOUT_MS = 4000;
+// Iframe SSO is the silent fast-path for desktop browsers that allow third-
+// party storage access. On Safari / mobile / private modes it can't read
+// one.witysk.org's localStorage at all, so we fail fast and rely on the
+// explicit redirect-based flow (see startSsoRedirect below) instead.
+const BOOTSTRAP_TIMEOUT_MS = 1500;
 
 export function getAccessToken(): string | null {
   try {
@@ -41,6 +45,34 @@ export function clearAccessToken(): void {
 
 export function isAuthenticated(): boolean {
   return !!getAccessToken();
+}
+
+/**
+ * Top-level redirect SSO. Use this whenever the silent iframe bootstrap is
+ * known to have failed or is too unreliable (mobile Safari, ITP-strict
+ * browsers, private browsing).
+ *
+ * Flow:
+ *   1. We navigate the user to one.witysk.org/sso-redirect.html?return_url=…
+ *   2. That page reads its own first-party access_token from localStorage
+ *      (works on every browser because top-level navigation is never
+ *      treated as third-party).
+ *   3. It bounces back to /sso-callback#access_token=<token> here.
+ *   4. SsoCallback reads the fragment, stores the token, and navigates the
+ *      user back to where they came from.
+ *
+ * Pass `returnTo` as a path-with-search (default: current URL) and we'll
+ * land the user there after sign-in completes.
+ */
+export function startSsoRedirect(returnTo?: string): void {
+  const ret = returnTo ?? window.location.pathname + window.location.search;
+  const callback = new URL("/sso-callback", window.location.origin);
+  callback.searchParams.set("next", ret);
+  const url = new URL(`${ONE_WITYSK}/sso-redirect.html`);
+  url.searchParams.set("return_url", callback.toString());
+  // Preserve the original navigation target via replace() so the user can
+  // hit Back from the destination page and land where they were before.
+  window.location.assign(url.toString());
 }
 
 /**
