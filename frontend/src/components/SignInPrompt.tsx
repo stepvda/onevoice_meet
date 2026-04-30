@@ -1,11 +1,12 @@
 /**
  * Friendly "you need to sign in on one.witysk.org" card. Used by routes that
- * 401 against an upstream API when the user is not authenticated (TI Café,
+ * 401 against an upstream API when the user is not authenticated (Café,
  * Recordings, …). Same look everywhere; pages supply their own headline icon
  * and copy.
  */
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LogIn, type LucideIcon } from "lucide-react";
+import { LogIn, UserPlus, type LucideIcon } from "lucide-react";
 import { Card } from "./ui";
 import { startSsoRedirect } from "../lib/auth";
 
@@ -36,6 +37,24 @@ export default function SignInPrompt({ icon: Icon, title, body, testId }: Props)
         >
           <LogIn size={16} /> {t("signInPrompt.button")}
         </button>
+        <div className="text-xs text-slate-500 flex items-center gap-3">
+          <Link
+            to="/signup"
+            data-testid="signin-prompt-signup"
+            className="inline-flex items-center gap-1 text-accent-500 hover:underline"
+          >
+            <UserPlus size={12} />
+            {t("signInPrompt.signup", { defaultValue: "Create a meet account" })}
+          </Link>
+          <span>·</span>
+          <Link
+            to="/login"
+            data-testid="signin-prompt-login"
+            className="text-accent-500 hover:underline"
+          >
+            {t("signInPrompt.login", { defaultValue: "Sign in with email" })}
+          </Link>
+        </div>
       </div>
     </Card>
   );

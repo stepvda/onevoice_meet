@@ -1,5 +1,5 @@
 /**
- * TI Café audio context — a single, app-global LiveKit Room that survives
+ * Café audio context — a single, app-global LiveKit Room that survives
  * navigation between meet pages. The Room object is created lazily on
  * `connect()` and torn down only on `disconnect()` or logout.
  *
@@ -39,7 +39,7 @@ import { isAuthenticated } from "./auth";
 
 const SS_MIC = "ti-cafe:mic-on";
 const SS_VOLUME = "ti-cafe:volume"; // 0..1; "0" means muted
-// Persisted across browser sessions: did the user toggle TI Café "on"? If
+// Persisted across browser sessions: did the user toggle Café "on"? If
 // so, we re-establish the connection on every page load (and on reconnects
 // after a network drop). Cleared only on explicit user disconnect or logout.
 // localStorage rather than sessionStorage so it survives a full browser quit
@@ -119,9 +119,6 @@ interface TICafeContextShape {
   /** Output audio level. 0 = muted, 1 = full volume. The bar's vertical
    *  slider drives this. */
   volume: number;
-  /** Smoothed log-scaled spectrum (0..1 per band) of the current loudest
-   *  speaker's audio. Length is always SPECTRUM_BANDS. */
-  spectrum: number[];
   /** Total participant count (including self when connected). */
   participantCount: number;
   /** Self LiveKit identity, e.g. "user-42", once connected. */
@@ -133,10 +130,20 @@ interface TICafeContextShape {
 }
 
 const TICafeContext = createContext<TICafeContextShape | null>(null);
+// The spectrum updates ~60×/sec while audio is flowing. Keep it on its own
+// context so the bar's visualizer is the only consumer that re-renders at
+// that rate; the rest of the app uses the stable control context above.
+const TICafeSpectrumContext = createContext<number[] | null>(null);
 
 export function useTICafe(): TICafeContextShape {
   const ctx = useContext(TICafeContext);
   if (!ctx) throw new Error("useTICafe must be used inside <TICafeProvider>");
+  return ctx;
+}
+
+export function useTICafeSpectrum(): number[] {
+  const ctx = useContext(TICafeSpectrumContext);
+  if (!ctx) throw new Error("useTICafeSpectrum must be used inside <TICafeProvider>");
   return ctx;
 }
 
@@ -290,6 +297,12 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
     setConnecting(true);
     try {
       const cfg = await api.tiCafeToken();
+      // The user may have clicked Disconnect during the token round-trip.
+      // If so, abandon — don't construct a Room we'd then have to tear down.
+      if (!readDesired()) {
+        setConnecting(false);
+        return;
+      }
       const room = new Room({
         adaptiveStream: false,
         dynacast: true,
@@ -394,6 +407,17 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
       await room.connect(cfg.livekit_url, cfg.token, {
         autoSubscribe: true,
       });
+      // Late-disconnect check: if disconnect() ran while we were inside
+      // room.connect(), tear this room down instead of leaving it live.
+      if (!readDesired() || roomRef.current !== room) {
+        try {
+          await room.disconnect();
+        } catch {
+          /* ignore */
+        }
+        if (roomRef.current === room) roomRef.current = null;
+        return;
+      }
       setSelfIdentity(room.localParticipant.identity);
       // Apply current mic/speaker preferences. Use the ref so reconnects
       // (which run inside a callback captured at room-creation time) read
@@ -405,7 +429,7 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
       refreshCount();
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.warn("TI Café connect failed:", e);
+      console.warn("Café connect failed:", e);
       try {
         await roomRef.current?.disconnect();
       } catch {
@@ -461,7 +485,7 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
   const setVolume = useCallback((v: number) => {
     const clamped = Math.max(0, Math.min(1, v));
     setVolumeState(clamped);
-    // Apply to every <audio> element we attached for TI Café tracks. Setting
+    // Apply to every <audio> element we attached for Café tracks. Setting
     // both `volume` and `muted` means a slider at 0 produces guaranteed
     // silence even on browsers that floor very low volumes.
     document
@@ -539,7 +563,6 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
       connecting,
       micOn,
       volume,
-      spectrum,
       participantCount,
       selfIdentity,
       connect,
@@ -547,8 +570,14 @@ export function TICafeProvider({ children }: { children: ReactNode }) {
       setMic,
       setVolume,
     }),
-    [connected, connecting, micOn, volume, spectrum, participantCount, selfIdentity, connect, disconnect, setMic, setVolume]
+    [connected, connecting, micOn, volume, participantCount, selfIdentity, connect, disconnect, setMic, setVolume]
   );
 
-  return <TICafeContext.Provider value={value}>{children}</TICafeContext.Provider>;
+  return (
+    <TICafeContext.Provider value={value}>
+      <TICafeSpectrumContext.Provider value={spectrum}>
+        {children}
+      </TICafeSpectrumContext.Provider>
+    </TICafeContext.Provider>
+  );
 }

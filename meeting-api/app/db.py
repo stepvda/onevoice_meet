@@ -65,6 +65,23 @@ def lightweight_migrate() -> None:
                 ("attachment_name", "ALTER TABLE chat_messages ADD COLUMN attachment_name TEXT"),
                 ("attachment_size", "ALTER TABLE chat_messages ADD COLUMN attachment_size INTEGER"),
             )),
+            ("vouchers", (
+                # Backfill with a far-future date so any vouchers already
+                # issued before this column existed remain redeemable.
+                ("expires_at", "ALTER TABLE vouchers ADD COLUMN expires_at TIMESTAMP DEFAULT '2099-12-31 23:59:59'"),
+            )),
+            ("paypal_orders", (
+                # Pre-existing one-shot orders were all annual; backfill
+                # accordingly so capture-time entitlement granting picks
+                # the right duration on legacy rows.
+                ("kind", "ALTER TABLE paypal_orders ADD COLUMN kind TEXT DEFAULT 'annual' NOT NULL"),
+            )),
+            ("users", (
+                ("totp_secret", "ALTER TABLE users ADD COLUMN totp_secret TEXT"),
+                ("totp_enabled", "ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT 0 NOT NULL"),
+                ("totp_recovery_hashes", "ALTER TABLE users ADD COLUMN totp_recovery_hashes TEXT"),
+                ("email_otp_enabled", "ALTER TABLE users ADD COLUMN email_otp_enabled BOOLEAN DEFAULT 0 NOT NULL"),
+            )),
         ):
             try:
                 cols = _existing_columns(conn, table)
@@ -73,3 +90,17 @@ def lightweight_migrate() -> None:
             for name, ddl in additions:
                 if name not in cols:
                     conn.exec_driver_sql(ddl)
+
+        # Composite indexes on hot query paths. `metadata.create_all` doesn't
+        # add indexes to pre-existing tables, so we issue these explicitly.
+        # CREATE INDEX IF NOT EXISTS is a no-op once the index is in place.
+        for ddl in (
+            "CREATE INDEX IF NOT EXISTS ix_meetings_discover "
+            "ON meetings (is_active, hidden, list_for_anonymous, list_for_authenticated)",
+            "CREATE INDEX IF NOT EXISTS ix_chat_messages_meeting_sent "
+            "ON chat_messages (meeting_id, sent_at)",
+        ):
+            try:
+                conn.exec_driver_sql(ddl)
+            except Exception:
+                continue

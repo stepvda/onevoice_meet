@@ -186,7 +186,7 @@ export default function Recordings() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      disabled={busyId === r.id}
+                      disabled={busyId === `dl-${r.id}`}
                       onClick={() => downloadRecording(r)}
                       data-testid={`rec-download-${r.id}`}
                     >

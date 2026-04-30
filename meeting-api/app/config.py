@@ -21,6 +21,35 @@ class Settings(BaseSettings):
     branding_max_bytes: int = 2 * 1024 * 1024  # 2 MB cap for upload
     chat_attachments_dir: str = "/var/lib/meet/chat-attachments"
     chat_attachment_max_bytes: int = 5 * 1024 * 1024  # 5 MB cap per image
+    facepics_dir: str = "/var/lib/meet/facepics"
+    facepic_max_bytes: int = 5 * 1024 * 1024  # 5 MB
+    # HMAC key for voucher codes. Set to a long random string in .env. Vouchers
+    # issued before this key was set become un-redeemable, which is the
+    # intended behaviour if the key is rotated.
+    voucher_signing_key: str = ""
+    # one.witysk.org user_ids that can issue / list vouchers. Hard-coded by spec.
+    voucher_admin_user_ids: list[str] = ["1", "404"]
+
+    # PayPal billing — set these in `.env` from the PayPal Business account's
+    # Developer dashboard. Plan and prices are spec'd by the operator:
+    #   €2 / month  (recurring subscription) — `paypal_plan_id_monthly`
+    #   €20 / year  (one-shot Order)         — handled inline at checkout
+    paypal_client_id: str = ""
+    paypal_client_secret: str = ""
+    # Sandbox: api-m.sandbox.paypal.com / Live: api-m.paypal.com
+    paypal_api_base: str = "https://api-m.paypal.com"
+    paypal_plan_id_monthly: str = ""
+    paypal_plan_id_annual: str = ""
+    # Webhook ID (from the PayPal dashboard) — used to verify incoming
+    # webhook signatures. If empty, signature checks are skipped (insecure;
+    # only acceptable in dev / sandbox).
+    paypal_webhook_id: str = ""
+    # One-shot prices + currency. Monthly = bill-once (2€, 30 days, no
+    # auto-renewal — the alternative to subscribing). Annual = 20€, 365 days.
+    paypal_monthly_price: str = "2.00"
+    paypal_annual_price: str = "20.00"
+    paypal_annual_currency: str = "EUR"
+    paypal_monthly_currency: str = "EUR"
     recording_retention_days: int = 30
     # When the filesystem holding `recordings_dir` reaches this fraction of
     # capacity, the oldest completed recordings are deleted to make room.

@@ -134,7 +134,7 @@ def list_chat_for_meeting(
 ) -> list[dict]:
     """Owner-only transcript access — used to view a closed meeting's chat
     history from MyMeetings without re-joining the room."""
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
     return _history_for_meeting(m.id, m.room_name, db)

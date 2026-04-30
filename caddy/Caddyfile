@@ -60,6 +60,9 @@ meet.witysk.org {
         #   cdn.jsdelivr.net           — @livekit/track-processors loads MediaPipe wasm
         #   storage.googleapis.com     — MediaPipe selfie_segmenter .tflite model
         #   one.witysk.org             — SSO bootstrap iframe + connect for postMessage origin
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://storage.googleapis.com; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org https://cdn.jsdelivr.net https://storage.googleapis.com; frame-src https://one.witysk.org; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        #   www.paypal.com / www.paypalobjects.com — PayPal Buttons SDK (script,
+        #     style, image, iframe, connect). Sandbox + live API hosts allowed
+        #     in connect-src so the SDK can talk to its backends from the page.
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://www.paypalobjects.com; img-src 'self' data: blob: https://storage.googleapis.com https://www.paypal.com https://www.paypalobjects.com https://t.paypal.com; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org https://cdn.jsdelivr.net https://storage.googleapis.com https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.sandbox.paypal.com https://t.paypal.com; frame-src https://one.witysk.org https://www.paypal.com https://www.sandbox.paypal.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     }
 }

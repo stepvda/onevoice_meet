@@ -3,16 +3,22 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Coffee,
+  CreditCard,
   Home,
   LogIn,
   LogOut,
   Menu,
   Settings as SettingsIcon,
+  Ticket,
+  User as UserIcon,
+  UserPlus,
   Video,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { isAuthenticated, logoutFromOneWitysk, startSsoRedirect } from "../lib/auth";
+import { useMe } from "../lib/me";
+import Footer from "./Footer";
 
 interface NavItem {
   to: string;
@@ -27,7 +33,16 @@ const primaryItems: NavItem[] = [
   { to: "/ti-cafe", i18nKey: "nav.tiCafe", icon: Coffee },
 ];
 
-const secondaryItems: NavItem[] = [
+// Items shown only when signed in. Settings stays for everyone (it gates
+// itself); account / upgrade only matter once you have an identity to
+// manage.
+const authedSecondaryItems: NavItem[] = [
+  { to: "/account", i18nKey: "nav.account", icon: UserIcon },
+  { to: "/upgrade", i18nKey: "nav.upgrade", icon: CreditCard },
+  { to: "/settings", i18nKey: "nav.settings", icon: SettingsIcon },
+];
+
+const anonSecondaryItems: NavItem[] = [
   { to: "/settings", i18nKey: "nav.settings", icon: SettingsIcon },
 ];
 
@@ -38,11 +53,37 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // Hide sidebar entirely while the user is in a live meeting, and on the
-  // headless egress recorder template so it doesn't appear in recordings.
+  // ALL hooks must run before any conditional return, otherwise React's
+  // Rules of Hooks are violated when navigating between /r/<room> (early
+  // return null) and other routes (full hook list). Putting the early
+  // return below the useMe() call kept the order stable within each
+  // render but unstable BETWEEN renders, which is what was causing the
+  // SSO `/account` + `/upgrade` to leak through — useMe was returning
+  // stale state.
+  const signedIn = isAuthenticated();
+  const { me } = useMe();
+  // Hide sidebar entirely while the user is in a live meeting (the only
+  // route where the rest of this component shouldn't render).
   if (pathname.startsWith("/r/")) return null;
 
-  const signedIn = isAuthenticated();
+  // SSO accounts manage profile + facepic on one.witysk.org and always have
+  // admin rights, so /account and /upgrade aren't useful — hide them. Native
+  // users (and signed-out users) get the full secondary list.
+  const isSso = me?.kind === "sso";
+  const isVoucherAdmin = !!me?.is_voucher_admin;
+  const baseSecondary = signedIn ? authedSecondaryItems : anonSecondaryItems;
+  // Inject the /vouchers entry above /settings for the two privileged
+  // one.witysk.org user_ids (Stephane = 1, David = 404).
+  const withVouchers = isVoucherAdmin
+    ? [
+        ...baseSecondary.filter((it) => it.to !== "/settings"),
+        { to: "/vouchers", i18nKey: "nav.vouchers", icon: Ticket } as NavItem,
+        { to: "/settings", i18nKey: "nav.settings", icon: SettingsIcon } as NavItem,
+      ]
+    : baseSecondary;
+  const secondaryForUser = withVouchers.filter(
+    (item) => !(isSso && (item.to === "/account" || item.to === "/upgrade"))
+  );
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -123,7 +164,7 @@ export default function Sidebar() {
         </nav>
 
         <div className="border-t border-white/10 px-3 py-2 space-y-1 mb-[70px]">
-          {secondaryItems.map(({ to, i18nKey, icon: Icon, end }) => (
+          {secondaryForUser.map(({ to, i18nKey, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -156,15 +197,50 @@ export default function Sidebar() {
               <span>{loggingOut ? t("nav.loggingOff") : t("nav.logoff")}</span>
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={() => startSsoRedirect()}
-              data-testid="sidebar-login"
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-accent-500 hover:bg-white/10 hover:text-accent-400 transition-colors"
-            >
-              <LogIn size={20} />
-              <span>{t("nav.signIn")}</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => startSsoRedirect()}
+                data-testid="sidebar-login-sso"
+                title={t("nav.signInSsoTitle", { defaultValue: "Sign in with your one.witysk.org account" })}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-accent-500 hover:bg-white/10 hover:text-accent-400 transition-colors"
+              >
+                <LogIn size={20} />
+                <span>{t("nav.signInSso", { defaultValue: "Sign in with witysk.org" })}</span>
+              </button>
+              <NavLink
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                data-testid="sidebar-login-native"
+                className={({ isActive }) =>
+                  [
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                    isActive
+                      ? "bg-white/15 text-white font-semibold shadow-inner"
+                      : "text-white/70 hover:bg-white/10 hover:text-white",
+                  ].join(" ")
+                }
+              >
+                <LogIn size={20} />
+                <span>{t("nav.signIn", { defaultValue: "Sign in" })}</span>
+              </NavLink>
+              <NavLink
+                to="/signup"
+                onClick={() => setMobileOpen(false)}
+                data-testid="sidebar-signup"
+                className={({ isActive }) =>
+                  [
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                    isActive
+                      ? "bg-white/15 text-white font-semibold shadow-inner"
+                      : "text-white/70 hover:bg-white/10 hover:text-white",
+                  ].join(" ")
+                }
+              >
+                <UserPlus size={20} />
+                <span>{t("nav.signUp", { defaultValue: "Create account" })}</span>
+              </NavLink>
+            </>
           )}
         </div>
       </aside>
@@ -183,15 +259,14 @@ export default function Sidebar() {
 export function MainArea({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const inMeeting = pathname.startsWith("/r/");
+  if (inMeeting) {
+    return <main className="h-screen w-screen">{children}</main>;
+  }
+  // flex-col so the footer sticks to the bottom even on short pages.
   return (
-    <main
-      className={
-        inMeeting
-          ? "h-screen w-screen"
-          : "lg:pl-64 pt-14 lg:pt-0 min-h-screen"
-      }
-    >
-      {children}
+    <main className="lg:pl-64 pt-14 lg:pt-0 min-h-screen flex flex-col">
+      <div className="flex-1">{children}</div>
+      <Footer />
     </main>
   );
 }

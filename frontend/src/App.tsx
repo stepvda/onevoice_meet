@@ -9,6 +9,16 @@ import Settings from "./routes/Settings";
 import MeetingChat from "./routes/MeetingChat";
 import TICafe from "./routes/TICafe";
 import SsoCallback from "./routes/SsoCallback";
+import SignUp from "./routes/SignUp";
+import Login from "./routes/Login";
+import Account from "./routes/Account";
+import Terms from "./routes/Terms";
+import Privacy from "./routes/Privacy";
+import Legal from "./routes/Legal";
+import Vouchers from "./routes/Vouchers";
+import Upgrade from "./routes/Upgrade";
+import ForgotPassword from "./routes/ForgotPassword";
+import ResetPassword from "./routes/ResetPassword";
 import { bootstrapFromOneWitysk } from "./lib/auth";
 import { syncServerLanguage } from "./i18n";
 import { TICafeProvider } from "./lib/tiCafe";
@@ -43,6 +53,16 @@ export default function App() {
           <Route path="/recordings" element={<Recordings />} />
           <Route path="/ti-cafe" element={<TICafe />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/legal" element={<Legal />} />
+          <Route path="/vouchers" element={<Vouchers />} />
+          <Route path="/upgrade" element={<Upgrade />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/sso-callback" element={<SsoCallback />} />
           <Route path="/meetings/:meetingId/chat" element={<MeetingChat />} />
           {/* Live meeting view */}

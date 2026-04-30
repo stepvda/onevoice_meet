@@ -20,7 +20,7 @@ class PreferencesUpdate(BaseModel):
 
 @router.get("/me/preferences")
 def get_my_preferences(user: RequireUser, db: Session = Depends(get_db)) -> PreferencesOut:
-    row = db.get(UserPreferences, user.user_id)
+    row = db.get(UserPreferences, user.sub)
     if not row:
         return PreferencesOut(language=None, language_set_manually=False)
     return PreferencesOut(language=row.language, language_set_manually=row.language_set_manually)
@@ -32,9 +32,9 @@ def update_my_preferences(
     user: RequireUser,
     db: Session = Depends(get_db),
 ) -> PreferencesOut:
-    row = db.get(UserPreferences, user.user_id)
+    row = db.get(UserPreferences, user.sub)
     if not row:
-        row = UserPreferences(user_id=user.user_id)
+        row = UserPreferences(user_id=user.sub)
         db.add(row)
 
     if body.language is not None:

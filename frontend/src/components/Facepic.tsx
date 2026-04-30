@@ -2,7 +2,7 @@
  * Facepic — circular user avatar fetched authenticated from one.witysk.org.
  * Reusable wherever we render someone's face. Supports a `live` flag that
  * decorates the circle with a 2 px purple/pink ring and a "LIVE" pill at the
- * bottom — the visual marker for users currently in the TI Café.
+ * bottom — the visual marker for users currently in the Café.
  *
  * Image bytes are fetched with the same Bearer token used elsewhere; the
  * fetch happens client-side so the session's IP-binding stays valid (no
@@ -25,7 +25,7 @@ export interface FacepicUser {
 
 interface Props {
   user: FacepicUser;
-  size?: number; // px, default 40 (matches existing TI Café list)
+  size?: number; // px, default 40 (matches existing Café list)
   live?: boolean;
   className?: string;
 }
@@ -55,9 +55,15 @@ export default function Facepic({ user, size = 40, live = false, className = "" 
         return r.blob();
       })
       .then((b) => {
-        if (cancelled) return;
-        blob = URL.createObjectURL(b);
-        setBlobUrl(blob);
+        // The cleanup may have already run by now (component unmount); if so,
+        // create the URL only to immediately revoke it so the Blob isn't leaked.
+        const objUrl = URL.createObjectURL(b);
+        if (cancelled) {
+          URL.revokeObjectURL(objUrl);
+          return;
+        }
+        blob = objUrl;
+        setBlobUrl(objUrl);
         setErrorDetail(null);
       })
       .catch((e) => {

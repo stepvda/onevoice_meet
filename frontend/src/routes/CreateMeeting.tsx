@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ImagePlus, Video, X } from "lucide-react";
+import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { bootstrapFromOneWitysk, fetchOneWityskName, isAuthenticated } from "../lib/auth";
+import { useMe } from "../lib/me";
 import { usePreferences } from "../lib/preferences";
 import { Button, Card, Field, Input, Label, Toggle } from "../components/ui";
 import MyMeetings from "../components/MyMeetings";
@@ -14,10 +16,33 @@ const ALLOWED_BRANDING_TYPES = ["image/jpeg", "image/png", "image/webp", "image/
 
 type AuthState = "bootstrapping" | "authenticated" | "anonymous";
 
+/**
+ * Reusable home-page description card. Same copy regardless of auth state
+ * — we want the value proposition visible to anonymous, bootstrapping, and
+ * signed-in viewers alike. Kept ≤ 50 words per the operator brief.
+ */
+function HomeDescription() {
+  const { t } = useTranslation();
+  return (
+    <Card data-testid="home-intro">
+      <h1 className="text-xl font-bold text-slate-50 mb-1">
+        {t("home.tagline", { defaultValue: "meet.witysk.org" })}
+      </h1>
+      <p className="text-sm text-slate-300 leading-relaxed">
+        {t("home.description", {
+          defaultValue:
+            "Free, browser-based video meetings for the witysk.org community. Audio Café, screen-share, persistent chat with images, and 30-day recordings — up to 50 participants per room, no install. Sign in with one.witysk.org or create a meet account for a 10-day free trial.",
+        })}
+      </p>
+    </Card>
+  );
+}
+
 export default function CreateMeeting() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const prefs = usePreferences((s) => s.meetingDefaults);
+  const { me } = useMe();
   const [title, setTitle] = useState("");
   const [password, setPassword] = useState("");
   const [usePassword, setUsePassword] = useState(prefs.requirePassword);
@@ -67,10 +92,10 @@ export default function CreateMeeting() {
 
   if (authState === "bootstrapping") {
     return (
-      <div className="p-4 lg:p-8 max-w-xl mx-auto">
+      <div className="p-4 lg:p-8 max-w-2xl mx-auto flex flex-col gap-6">
+        <HomeDescription />
         <Card>
-          <h1 className="text-2xl font-bold">meet.witysk.org</h1>
-          <p className="text-slate-300 mt-2">{t("createMeeting.checkingSession")}</p>
+          <p className="text-slate-300">{t("createMeeting.checkingSession")}</p>
         </Card>
       </div>
     );
@@ -78,11 +103,19 @@ export default function CreateMeeting() {
 
   if (authState === "anonymous") {
     return (
-      <div className="p-4 lg:p-8 max-w-xl mx-auto flex flex-col gap-6">
+      <div className="p-4 lg:p-8 max-w-2xl mx-auto flex flex-col gap-6">
+        <HomeDescription />
         <Card>
-          <h1 className="text-2xl font-bold">meet.witysk.org</h1>
-          <p className="mt-2 text-slate-200">{t("createMeeting.needSignIn")}</p>
+          <p className="text-slate-200">{t("createMeeting.needSignIn")}</p>
           <p className="mt-2 text-slate-400">{t("createMeeting.haveJoinLink")}</p>
+          <div className="mt-3 flex flex-wrap gap-3 text-sm">
+            <Link to="/signup" className="text-accent-500 hover:underline">
+              {t("home.cta.signup", { defaultValue: "Create an account" })}
+            </Link>
+            <Link to="/login" className="text-accent-500 hover:underline">
+              {t("home.cta.login", { defaultValue: "Sign in" })}
+            </Link>
+          </div>
         </Card>
         <DiscoverableMeetings />
       </div>
@@ -120,10 +153,37 @@ export default function CreateMeeting() {
     }
   }
 
+  // Native users without an active entitlement (trial expired, no voucher, no
+  // paid sub) shouldn't see the create-meeting form at all — show an upsell
+  // pointing to /upgrade instead. SSO and trial-active / paid users see the
+  // full form. While `me` is still loading we keep the form hidden so we
+  // don't briefly flash it for a no-rights user.
+  const canCreate = me?.is_admin === true;
+
   return (
     <div className="p-4 lg:p-8 max-w-2xl mx-auto flex flex-col gap-6">
+      <HomeDescription />
       <MyMeetings refreshKey={busy ? 0 : 1} />
       <DiscoverableMeetings />
+      {!canCreate && me && me.kind === "native" && (
+        <Card data-testid="home-upsell">
+          <h2 className="text-lg font-semibold text-slate-100">
+            {t("home.upsellTitle", { defaultValue: "Meeting creation is locked" })}
+          </h2>
+          <p className="text-sm text-slate-400 mt-1">
+            {t("home.upsellBody", {
+              defaultValue:
+                "Your free trial has ended. Redeem a voucher or subscribe to keep creating meetings. Joining meetings, audio Café, and chat stay free.",
+            })}
+          </p>
+          <div className="mt-3">
+            <Link to="/upgrade" className="inline-flex items-center px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold">
+              {t("home.upsellCta", { defaultValue: "View options" })}
+            </Link>
+          </div>
+        </Card>
+      )}
+      {canCreate && (
       <Card>
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 rounded-lg bg-accent-500/20 text-accent-500">
@@ -255,6 +315,7 @@ export default function CreateMeeting() {
           </div>
         </form>
       </Card>
+      )}
     </div>
   );
 }

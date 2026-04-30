@@ -67,7 +67,7 @@ async def _mute_all_audio_tracks(lk: api.LiveKitAPI, room_name: str, identity: s
 
 @router.post("/meetings/{meeting_id}/mute")
 async def mute(meeting_id: str, body: MuteBody, user: RequireUser, db: Session = Depends(get_db)) -> dict:
-    m = _require_owner(meeting_id, user.user_id, db)
+    m = _require_owner(meeting_id, user.sub, db)
     lk = livekit_api()
     try:
         if body.track_sid:
@@ -84,13 +84,13 @@ async def mute(meeting_id: str, body: MuteBody, user: RequireUser, db: Session =
             count = await _mute_all_audio_tracks(lk, m.room_name, body.participant_identity, body.mute)
     finally:
         await lk.aclose()
-    _audit(db, m.id, user.user_id, "mute", target=body.participant_identity, details=f"mute={body.mute},count={count}")
+    _audit(db, m.id, user.sub, "mute", target=body.participant_identity, details=f"mute={body.mute},count={count}")
     return {"ok": True, "tracks_affected": count}
 
 
 @router.post("/meetings/{meeting_id}/kick")
 async def kick(meeting_id: str, body: KickBody, user: RequireUser, db: Session = Depends(get_db)) -> dict:
-    m = _require_owner(meeting_id, user.user_id, db)
+    m = _require_owner(meeting_id, user.sub, db)
     lk = livekit_api()
     try:
         await lk.room.remove_participant(
@@ -98,7 +98,7 @@ async def kick(meeting_id: str, body: KickBody, user: RequireUser, db: Session =
         )
     finally:
         await lk.aclose()
-    _audit(db, m.id, user.user_id, "kick", target=body.participant_identity)
+    _audit(db, m.id, user.sub, "kick", target=body.participant_identity)
     return {"ok": True}
 
 
@@ -120,8 +120,8 @@ async def _update_metadata(lk: api.LiveKitAPI, room_name: str, **patch) -> None:
 @router.post("/meetings/{meeting_id}/mute-all")
 async def mute_all(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
     """Mute every audio track of every non-owner participant in the room."""
-    m = _require_owner(meeting_id, user.user_id, db)
-    owner_identity = f"user-{user.user_id}"
+    m = _require_owner(meeting_id, user.sub, db)
+    owner_identity = f"user-{user.sub}"
     lk = livekit_api()
     affected = 0
     try:
@@ -139,17 +139,17 @@ async def mute_all(meeting_id: str, user: RequireUser, db: Session = Depends(get
                     affected += 1
     finally:
         await lk.aclose()
-    _audit(db, m.id, user.user_id, "mute_all", details=f"count={affected}")
+    _audit(db, m.id, user.sub, "mute_all", details=f"count={affected}")
     return {"ok": True, "tracks_muted": affected}
 
 
 @router.post("/meetings/{meeting_id}/presenter")
 async def set_presenter(meeting_id: str, body: PresenterBody, user: RequireUser, db: Session = Depends(get_db)) -> dict:
-    m = _require_owner(meeting_id, user.user_id, db)
+    m = _require_owner(meeting_id, user.sub, db)
     lk = livekit_api()
     try:
         await _update_metadata(lk, m.room_name, presenter_identity=body.participant_identity)
     finally:
         await lk.aclose()
-    _audit(db, m.id, user.user_id, "presenter", target=body.participant_identity)
+    _audit(db, m.id, user.sub, "presenter", target=body.participant_identity)
     return {"ok": True, "presenter_identity": body.participant_identity}

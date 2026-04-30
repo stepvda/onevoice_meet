@@ -48,6 +48,37 @@ export interface UserPreferencesOut {
   language_set_manually: boolean;
 }
 
+export interface MeOut {
+  id: number;
+  kind: "sso" | "native";
+  external_id: string | null;
+  email: string | null;
+  username: string | null;
+  name: string | null;
+  facepic_path: string | null;
+  is_admin: boolean;
+  is_voucher_admin: boolean;
+  trial_used: boolean;
+  trial_days_remaining: number | null;
+  entitlement_kind: string | null;
+  entitlement_expires_at: string | null;
+  totp_enabled: boolean;
+  totp_recovery_remaining: number;
+  email_otp_enabled: boolean;
+}
+
+export type LoginResult =
+  | { kind: "ok"; access_token: string; user: MeOut }
+  | {
+      kind: "2fa";
+      challenge_token: string;
+      totp_enabled: boolean;
+      email_otp_enabled: boolean;
+      // Set when the backend already auto-mailed a fresh code on login (i.e.
+      // the user's only second factor is email). Masked address for display.
+      email_otp_sent_to: string | null;
+    };
+
 export interface ChatReactionDTO {
   emoji: string;
   reactor_identity: string;
@@ -72,6 +103,18 @@ export interface ChatMessageDTO {
 
 export const CHAT_REACTIONS = ["😊", "👍", "😂", "😢", "😠", "🤓", "❤️", "👎"] as const;
 export type ChatReactionEmoji = (typeof CHAT_REACTIONS)[number];
+
+export interface VoucherOut {
+  id: number;
+  code: string;
+  duration_days: number;
+  note: string | null;
+  issued_by: string;
+  redeemed_by_user_id: number | null;
+  redeemed_at: string | null;
+  created_at: string;
+  expires_at: string;
+}
 
 async function fetchOnce(path: string, init: RequestInit, token: string | null): Promise<Response> {
   const headers = new Headers(init.headers);
@@ -182,7 +225,7 @@ export const api = {
   reopenMeeting: (meetingId: string) =>
     request<MeetingOut>(`/api/v1/meetings/${meetingId}/reopen`, { method: "POST" }),
 
-  // TI Café — always-on audio room. The token bears `room: "ti-cafe"`; LiveKit
+  // Café — always-on audio room. The token bears `room: "ti-cafe"`; LiveKit
   // auto-creates the room on first join.
   tiCafeToken: () =>
     request<AnonTokenResponse>("/api/v1/ti-cafe/token", { method: "POST" }),
@@ -195,6 +238,204 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ participant_identity }),
     }),
+
+  // ─── Native auth ─────────────────────────────────────────────────────
+  signup: (body: { email: string; username: string; password: string; name?: string | null }) =>
+    request<{ access_token: string; user: MeOut }>("/api/v1/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  /** Login may return either a normal access token + user, or, when the
+   * account has 2FA enabled, a short-lived challenge token that must be
+   * exchanged via `loginVerify2fa` together with a TOTP code. The wrapper
+   * normalises both shapes into a discriminated union. */
+  async login(body: { handle: string; password: string }): Promise<LoginResult> {
+    const r = await request<
+      | { access_token: string; user: MeOut }
+      | {
+          requires_2fa: true;
+          challenge_token: string;
+          totp_enabled: boolean;
+          email_otp_enabled: boolean;
+          email_otp_sent_to: string | null;
+        }
+    >("/api/v1/auth/login", { method: "POST", body: JSON.stringify(body) });
+    if ("requires_2fa" in r && r.requires_2fa) {
+      return {
+        kind: "2fa",
+        challenge_token: r.challenge_token,
+        totp_enabled: r.totp_enabled,
+        email_otp_enabled: r.email_otp_enabled,
+        email_otp_sent_to: r.email_otp_sent_to,
+      };
+    }
+    const ok = r as { access_token: string; user: MeOut };
+    return { kind: "ok", access_token: ok.access_token, user: ok.user };
+  },
+
+  loginVerify2fa: (body: { challenge_token: string; code: string }) =>
+    request<{ access_token: string; user: MeOut }>("/api/v1/auth/login/2fa", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  loginSendEmailOtp: (challenge_token: string) =>
+    request<{ ok: boolean; sent_to: string }>("/api/v1/auth/login/email-otp/send", {
+      method: "POST",
+      body: JSON.stringify({ challenge_token }),
+    }),
+
+  logout: () => request<{ ok: boolean }>("/api/v1/auth/logout", { method: "POST" }),
+
+  me: () => request<MeOut>("/api/v1/me"),
+
+  updateMe: (body: { name?: string | null; email?: string | null; username?: string | null }) =>
+    request<MeOut>("/api/v1/me", { method: "PATCH", body: JSON.stringify(body) }),
+
+  changePassword: (body: { current_password: string; new_password: string }) =>
+    request<{ ok: boolean }>("/api/v1/me/password", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  /** Native-user facepic upload — multipart, image-only, 5 MB cap server-side. */
+  async uploadFacepic(file: File): Promise<MeOut> {
+    const tok = getAccessToken();
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/v1/me/facepic", {
+      method: "POST",
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = res.statusText;
+      try {
+        const j = await res.clone().json();
+        detail = j.detail ?? detail;
+      } catch {
+        /* not JSON */
+      }
+      throw new Error(detail);
+    }
+    return (await res.json()) as MeOut;
+  },
+
+  deleteFacepic: () => request<MeOut>("/api/v1/me/facepic", { method: "DELETE" }),
+
+  // ─── Vouchers ────────────────────────────────────────────────────────
+  issueVoucher: (body: { duration_days: number; note?: string | null }) =>
+    request<VoucherOut>("/api/v1/vouchers", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  listVouchers: () => request<VoucherOut[]>("/api/v1/vouchers"),
+
+  revokeVoucher: (code: string) =>
+    request<{ ok: boolean; revoked_user_id: number | null }>(
+      `/api/v1/vouchers/${encodeURIComponent(code)}`,
+      { method: "DELETE" }
+    ),
+
+  redeemVoucher: (code: string) =>
+    request<{ ok: boolean; duration_days: number; entitlement_expires_at: string }>(
+      "/api/v1/vouchers/redeem",
+      { method: "POST", body: JSON.stringify({ code }) }
+    ),
+
+  // ─── Password reset + account deletion ──────────────────────────────
+  requestPasswordReset: (email: string) =>
+    request<{ ok: boolean }>("/api/v1/auth/password-reset/request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  confirmPasswordReset: (token: string, new_password: string) =>
+    request<{ ok: boolean }>("/api/v1/auth/password-reset/confirm", {
+      method: "POST",
+      body: JSON.stringify({ token, new_password }),
+    }),
+
+  deleteMyAccount: (password: string) =>
+    request<{ ok: boolean }>("/api/v1/me", {
+      method: "DELETE",
+      body: JSON.stringify({ password }),
+    }),
+
+  startTrial: () => request<MeOut>("/api/v1/me/start-trial", { method: "POST" }),
+
+  // ─── 2FA (TOTP) ─────────────────────────────────────────────────────
+  totpSetup: () =>
+    request<{ secret: string; otpauth_uri: string }>("/api/v1/me/2fa/setup", { method: "POST" }),
+
+  totpEnable: (code: string) =>
+    request<{ ok: boolean; recovery_codes: string[] }>("/api/v1/me/2fa/enable", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
+  totpDisable: (body: { password: string; code: string }) =>
+    request<{ ok: boolean }>("/api/v1/me/2fa/disable", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  totpRegenerateRecovery: (code: string) =>
+    request<{ ok: boolean; recovery_codes: string[] }>("/api/v1/me/2fa/recovery-regenerate", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
+  emailOtpStart: () =>
+    request<{ ok: boolean; sent_to: string }>("/api/v1/me/2fa/email/start", { method: "POST" }),
+
+  emailOtpConfirm: (code: string) =>
+    request<{ ok: boolean }>("/api/v1/me/2fa/email/confirm", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
+  emailOtpDisable: (password: string) =>
+    request<{ ok: boolean }>("/api/v1/me/2fa/email/disable", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
+
+  // ─── PayPal billing ─────────────────────────────────────────────────
+  billingConfig: () =>
+    request<{
+      enabled: boolean;
+      client_id: string;
+      plan_id_monthly: string;
+      plan_id_annual: string;
+      monthly_price: string;
+      monthly_currency: string;
+      annual_price: string;
+      annual_currency: string;
+    }>("/api/v1/billing/config"),
+
+  createPaypalOrder: (kind: "monthly" | "annual" = "annual") =>
+    request<{ order_id: string; kind: string }>("/api/v1/billing/orders", {
+      method: "POST",
+      body: JSON.stringify({ kind }),
+    }),
+
+  capturePaypalOrder: (orderId: string) =>
+    request<{ ok: boolean; status?: string; already_captured?: boolean; kind?: string }>(
+      `/api/v1/billing/orders/${encodeURIComponent(orderId)}/capture`,
+      { method: "POST" }
+    ),
+
+  activatePaypalSubscription: (subscriptionId: string, plan: "monthly" | "annual" = "monthly") =>
+    request<{ ok: boolean; status: string; plan: string }>("/api/v1/billing/subscriptions/activated", {
+      method: "POST",
+      body: JSON.stringify({ subscription_id: subscriptionId, plan }),
+    }),
+
+  cancelPaypalSubscription: () =>
+    request<{ ok: boolean }>("/api/v1/billing/subscriptions/cancel", { method: "POST" }),
 
   listChat: (roomName: string) =>
     request<ChatMessageDTO[]>(`/api/v1/rooms/${roomName}/chat`),

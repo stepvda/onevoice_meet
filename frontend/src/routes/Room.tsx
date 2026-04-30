@@ -372,10 +372,14 @@ export default function Room() {
   const pending = loadPendingToken();
   const meta = loadRoomMeta();
 
-  if (!pending) {
-    navigate(`/${roomName}`, { replace: true });
-    return null;
-  }
+  // No token in sessionStorage → user reached /r/ directly. Bounce them back
+  // to the lobby. Calling `navigate()` during render is a React anti-pattern
+  // (warns in dev, can double-fire); defer to an effect instead.
+  useEffect(() => {
+    if (!pending) navigate(`/${roomName}`, { replace: true });
+  }, [pending, roomName, navigate]);
+
+  if (!pending) return null;
 
   const cfg = roomOptions(pending);
   const ownerMeetingId = sessionStorage.getItem(`owner:${roomName}`);

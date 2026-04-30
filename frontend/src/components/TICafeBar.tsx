@@ -15,13 +15,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Mic, Volume2, VolumeX } from "lucide-react";
-import { useTICafe } from "../lib/tiCafe";
+import { useTICafe, useTICafeSpectrum } from "../lib/tiCafe";
 
 const SLIDER_HEIGHT = 150; // px — spec'd cap.
 
 export default function TICafeBar({ liveCount }: { liveCount: number }) {
   const { t } = useTranslation();
-  const { connected, connecting, micOn, volume, spectrum, connect, disconnect, setMic, setVolume } = useTICafe();
+  const { connected, connecting, micOn, volume, connect, disconnect, setMic, setVolume } = useTICafe();
+  // Spectrum is on its own context so 60×/sec updates only re-render this bar,
+  // not every other useTICafe() consumer in the app.
+  const spectrum = useTICafeSpectrum();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
   // Latest spectrum stays in a ref so the draw loop reads the current value
@@ -84,7 +87,7 @@ export default function TICafeBar({ liveCount }: { liveCount: number }) {
     >
       <img
         src="/ti_cafe_transparent.png"
-        alt="TI Café"
+        alt="Café"
         className="h-12 w-12 object-contain flex-shrink-0"
       />
 

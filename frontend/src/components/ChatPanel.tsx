@@ -182,8 +182,27 @@ export default function ChatPanel({ open, onClose }: Props) {
     const msg = byId.get(messageId);
     if (!msg) return;
     const mine = msg.reactions.find((r) => r.reactor_identity === myIdentity);
+    const removing = !!(mine && mine.emoji === emoji);
+    // Optimistic update — apply locally first, then send and broadcast.
+    // Avoids a full `listChat` refetch (was O(n=1000) per click) and the
+    // resulting flicker when concurrent peers post messages.
+    setMessages((cur) =>
+      cur.map((m) => {
+        if (m.id !== messageId) return m;
+        const without = m.reactions.filter((r) => r.reactor_identity !== myIdentity);
+        return removing
+          ? { ...m, reactions: without }
+          : {
+              ...m,
+              reactions: [
+                ...without,
+                { emoji, reactor_identity: myIdentity, reactor_name: myName },
+              ],
+            };
+      })
+    );
     try {
-      if (mine && mine.emoji === emoji) {
+      if (removing) {
         await api.deleteChatReaction(roomName, messageId, myIdentity);
       } else {
         await api.putChatReaction(roomName, messageId, {
@@ -192,10 +211,11 @@ export default function ChatPanel({ open, onClose }: Props) {
           emoji,
         });
       }
-      await refetch();
       await broadcastRefetch();
     } catch (e) {
+      // On failure, fall back to a refetch to recover the authoritative state.
       setErr((e as Error).message);
+      await refetch();
     } finally {
       setReactionTargetId(null);
     }

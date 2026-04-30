@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from livekit import api
 from pydantic import BaseModel
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, contains_eager, joinedload
 from ulid import ULID
 
 from app.auth import RequireUser
@@ -85,7 +85,7 @@ def _encoding_options() -> "api.EncodingOptions":
 
 @router.post("/meetings/{meeting_id}/recordings:start")
 async def start_recording(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
-    m = _require_owner(meeting_id, user.user_id, db)
+    m = _require_owner(meeting_id, user.sub, db)
     if not m.is_active:
         raise HTTPException(status_code=403, detail="meeting closed")
 
@@ -139,14 +139,14 @@ async def start_recording(meeting_id: str, user: RequireUser, db: Session = Depe
         status="running",
     )
     db.add(rec)
-    db.add(ModerationAudit(meeting_id=m.id, actor_user_id=user.user_id, action="recording_start", details=rec_id))
+    db.add(ModerationAudit(meeting_id=m.id, actor_user_id=user.sub, action="recording_start", details=rec_id))
     db.commit()
     return {"ok": True, "recording_id": rec_id, "egress_id": egress_info.egress_id}
 
 
 @router.post("/meetings/{meeting_id}/recordings:stop")
 async def stop_recording(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
-    m = _require_owner(meeting_id, user.user_id, db)
+    m = _require_owner(meeting_id, user.sub, db)
     rec = db.query(Recording).filter_by(meeting_id=m.id, status="running").first()
     if not rec:
         raise HTTPException(status_code=404, detail="no active recording")
@@ -161,7 +161,7 @@ async def stop_recording(meeting_id: str, user: RequireUser, db: Session = Depen
     finally:
         await lk.aclose()
 
-    db.add(ModerationAudit(meeting_id=m.id, actor_user_id=user.user_id, action="recording_stop", details=rec.id))
+    db.add(ModerationAudit(meeting_id=m.id, actor_user_id=user.sub, action="recording_stop", details=rec.id))
     db.commit()
     # status stays 'running' until the egress_ended webhook flips it to 'completed'.
     return {"ok": True, "recording_id": rec.id}
@@ -169,7 +169,7 @@ async def stop_recording(meeting_id: str, user: RequireUser, db: Session = Depen
 
 @router.get("/meetings/{meeting_id}/recordings")
 def list_meeting_recordings(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> list[dict]:
-    _require_owner(meeting_id, user.user_id, db)
+    _require_owner(meeting_id, user.sub, db)
     rows = (
         db.query(Recording)
         .options(joinedload(Recording.meeting))
@@ -186,11 +186,14 @@ def list_all_my_recordings(user: RequireUser, db: Session = Depends(get_db)) -> 
     """Lists the user's recordings. Hides rows with status='deleted' (the file
     is gone, the row only exists for audit). YouTube-published rows are kept
     visible because they still carry a useful URL."""
+    # `contains_eager` instead of `joinedload` so the explicit join below is
+    # the one that hydrates `Recording.meeting` — using both made SQLAlchemy
+    # re-issue per-row meeting lookups in some versions.
     rows = (
         db.query(Recording)
-        .options(joinedload(Recording.meeting))
         .join(Meeting, Meeting.id == Recording.meeting_id)
-        .filter(Meeting.owner_user_id == user.user_id)
+        .options(contains_eager(Recording.meeting))
+        .filter(Meeting.owner_user_id == user.sub)
         .filter(Recording.status != "deleted")
         .order_by(Recording.started_at.desc())
         .all()
@@ -203,7 +206,7 @@ def download_recording(rec_id: str, user: RequireUser, db: Session = Depends(get
     r = (
         db.query(Recording)
         .join(Meeting, Meeting.id == Recording.meeting_id)
-        .filter(Recording.id == rec_id, Meeting.owner_user_id == user.user_id)
+        .filter(Recording.id == rec_id, Meeting.owner_user_id == user.sub)
         .first()
     )
     if not r:
@@ -241,7 +244,7 @@ async def publish_to_youtube(
     r = (
         db.query(Recording)
         .join(Meeting, Meeting.id == Recording.meeting_id)
-        .filter(Recording.id == rec_id, Meeting.owner_user_id == user.user_id)
+        .filter(Recording.id == rec_id, Meeting.owner_user_id == user.sub)
         .first()
     )
     if not r:
@@ -298,7 +301,7 @@ async def publish_to_youtube(
         # Don't fail the API call if the unlink itself fails — the upload
         # is the important part. The disk-cap job will clean up later.
         pass
-    db.add(ModerationAudit(meeting_id=r.meeting_id, actor_user_id=user.user_id, action="youtube_publish", details=result.video_id))
+    db.add(ModerationAudit(meeting_id=r.meeting_id, actor_user_id=user.sub, action="youtube_publish", details=result.video_id))
     db.commit()
     return {"ok": True, "url": result.url, "video_id": result.video_id}
 
@@ -308,7 +311,7 @@ def delete_recording(rec_id: str, user: RequireUser, db: Session = Depends(get_d
     r = (
         db.query(Recording)
         .join(Meeting, Meeting.id == Recording.meeting_id)
-        .filter(Recording.id == rec_id, Meeting.owner_user_id == user.user_id)
+        .filter(Recording.id == rec_id, Meeting.owner_user_id == user.sub)
         .first()
     )
     if not r:

@@ -7,7 +7,7 @@ from app import scheduler
 from app.config import settings
 from app.db import engine, lightweight_migrate
 from app.models import Base
-from app.routes import chat, health, meetings, moderation, recordings, ti_cafe, tokens, users
+from app.routes import auth_native, billing, chat, health, meetings, moderation, recordings, ti_cafe, tokens, totp, users, vouchers
 from app.webhooks import router as webhook_router
 
 
@@ -33,7 +33,7 @@ app = FastAPI(
 
 # CORS: same-origin in production for meet.witysk.org (Caddy serves frontend
 # + proxies /api), plus the OneVoice app at one.witysk.org which integrates
-# the TI Café widget directly in the browser (calls /api/v1/ti-cafe/token and
+# the Café widget directly in the browser (calls /api/v1/ti-cafe/token and
 # /api/v1/ti-cafe/live with the shared-secret JWT). localhost:5173 is the
 # Vite dev origin used by both frontends.
 app.add_middleware(
@@ -56,4 +56,8 @@ app.include_router(recordings.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(ti_cafe.router, prefix="/api")
+app.include_router(auth_native.router, prefix="/api")
+app.include_router(totp.router, prefix="/api")
+app.include_router(vouchers.router, prefix="/api")
+app.include_router(billing.router, prefix="/api")
 app.include_router(webhook_router, prefix="/api")

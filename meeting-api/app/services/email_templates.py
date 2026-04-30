@@ -134,3 +134,104 @@ def meeting_invite(
         "— meet.witysk.org",
     ]
     return subject, _wrap(preview=subject, body_html=body_html), "\n".join(text_lines)
+
+
+def account_welcome(*, name: str | None, username: str, signup_url: str) -> tuple[str, str, str]:
+    """Sent right after a successful native sign-up. Same chrome as the invite
+    template (dark gradient, accent green CTA) so the brand stays consistent."""
+    label = (name or username).strip()
+    subject = "Welcome to meet.witysk.org"
+    body_html = f"""
+<h1 style="margin:0 0 12px 0;font-size:22px;font-weight:600;color:#ffffff;">Welcome, {escape(label)}.</h1>
+<p style="margin:0 0 14px 0;color:#b6c7dd;">
+  Your meet.witysk.org account is ready. You're on a free <b style="color:#dde6f2;">10-day trial</b>
+  during which you can create unlimited meetings — after that, redeem a voucher
+  or subscribe to keep meeting-creation rights. Joining meetings, audio Café,
+  chat and recording playback always remain free.
+</p>
+<p style="margin:0 0 14px 0;color:#b6c7dd;">
+  Sign in at any time at:
+</p>
+{_btn("Open meet.witysk.org", signup_url)}
+<hr style="border:0;border-top:1px solid #1A3354;margin:22px 0;">
+<p style="margin:0;font-size:13px;color:#7f9dbf;">
+  If you didn't create this account, just ignore this email — the account stays
+  inert until someone signs in to it.
+</p>"""
+    text_lines = [
+        f"Welcome, {label}.",
+        "",
+        "Your meet.witysk.org account is ready.",
+        "You're on a free 10-day trial during which you can create unlimited meetings.",
+        "",
+        f"Open: {signup_url}",
+        "",
+        "— meet.witysk.org",
+    ]
+    return subject, _wrap(preview=subject, body_html=body_html), "\n".join(text_lines)
+
+
+def login_otp(*, name: str | None, username: str, code: str, expires_in_minutes: int) -> tuple[str, str, str]:
+    """One-time login code (email-based 2FA). The code is single-use and
+    short-lived; same-style typography as password_reset for consistency."""
+    label = (name or username).strip()
+    subject = "Your meet.witysk.org login code"
+    body_html = f"""
+<h1 style="margin:0 0 12px 0;font-size:22px;font-weight:600;color:#ffffff;">Your login code</h1>
+<p style="margin:0 0 14px 0;color:#b6c7dd;">
+  Hi {escape(label)} — use this code to finish signing in to meet.witysk.org.
+  It expires in <b style="color:#dde6f2;">{expires_in_minutes} minutes</b>
+  and can only be used once.
+</p>
+<p style="margin:18px 0;font-size:32px;font-weight:700;letter-spacing:8px;color:#ffffff;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;">{escape(code)}</p>
+<hr style="border:0;border-top:1px solid #1A3354;margin:22px 0;">
+<p style="margin:0;font-size:13px;color:#7f9dbf;">
+  If you didn't try to sign in, you can safely ignore this email — your
+  account stays as it is.
+</p>"""
+    text_lines = [
+        f"Hi {label} — your meet.witysk.org login code:",
+        code,
+        "",
+        f"Expires in {expires_in_minutes} minutes. One-time use.",
+        "If you didn't try to sign in, ignore this email.",
+        "",
+        "— meet.witysk.org",
+    ]
+    return subject, _wrap(preview=subject, body_html=body_html), "\n".join(text_lines)
+
+
+def password_reset(*, name: str | None, username: str, reset_url: str, expires_in_minutes: int) -> tuple[str, str, str]:
+    """Single-use password-reset link. Token is in the URL fragment; the page
+    handler sends it to the API to actually reset the password."""
+    label = (name or username).strip()
+    subject = "Reset your meet.witysk.org password"
+    body_html = f"""
+<h1 style="margin:0 0 12px 0;font-size:22px;font-weight:600;color:#ffffff;">Reset your password</h1>
+<p style="margin:0 0 14px 0;color:#b6c7dd;">
+  Hi {escape(label)} — we received a request to reset the password on your
+  meet.witysk.org account. Click the button below to choose a new one.
+  This link expires in <b style="color:#dde6f2;">{expires_in_minutes} minutes</b>
+  and can only be used once.
+</p>
+{_btn("Reset password", reset_url)}
+<p style="margin:8px 0 0 0;font-size:13px;color:#7f9dbf;">
+  Or paste this URL into your browser:
+  <br>
+  <a href="{escape(reset_url, quote=True)}" style="color:#7f9dbf;word-break:break-all;">{escape(reset_url)}</a>
+</p>
+<hr style="border:0;border-top:1px solid #1A3354;margin:22px 0;">
+<p style="margin:0;font-size:13px;color:#7f9dbf;">
+  If you didn't request a reset, you can safely ignore this email — your
+  password stays unchanged. The link expires automatically.
+</p>"""
+    text_lines = [
+        f"Hi {label} — reset your meet.witysk.org password:",
+        reset_url,
+        "",
+        f"Expires in {expires_in_minutes} minutes. One-time use.",
+        "If you didn't request this, ignore the email.",
+        "",
+        "— meet.witysk.org",
+    ]
+    return subject, _wrap(preview=subject, body_html=body_html), "\n".join(text_lines)

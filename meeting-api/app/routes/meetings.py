@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from ulid import ULID
 
-from app.auth import AuthUser, RequireUser
+from app.auth import AuthUser, RequireAdmin, RequireUser
 from app.config import settings
 from app.db import get_db
 from app.livekit_client import livekit_api, mint_participant_token, short_lived_turn_credentials
@@ -118,12 +118,19 @@ def _fresh_room_name(db: Session) -> str:
 
 
 @router.post("/meetings", status_code=201)
-def create_meeting(body: CreateMeetingBody, user: RequireUser, db: Session = Depends(get_db)) -> dict:
+def create_meeting(body: CreateMeetingBody, user: RequireAdmin, db: Session = Depends(get_db)) -> dict:
+    """Create a new meeting. Gated on admin rights:
+      - SSO (one.witysk.org) accounts always pass.
+      - Native accounts pass while their 10-day trial, voucher-granted
+        entitlement, or paid PayPal subscription is still active.
+    Native users with no active entitlement get a 403 from RequireAdmin
+    with a message telling them to renew.
+    """
     meeting = Meeting(
         id=str(ULID()),
         room_name=_fresh_room_name(db),
         display_title=body.display_title,
-        owner_user_id=user.user_id,
+        owner_user_id=user.sub,
         owner_email=user.email,
         owner_name=body.display_name,
         scheduled_at=body.scheduled_at,
@@ -139,15 +146,8 @@ def create_meeting(body: CreateMeetingBody, user: RequireUser, db: Session = Dep
     db.commit()
     db.refresh(meeting)
 
-    # Pre-create the room in LiveKit so auto_create=false doesn't reject joins.
-    # Fire-and-forget; the room is also recreated on demand if missing.
-    try:
-        api = livekit_api()
-        # livekit-api is async; in sync route, we schedule via httpx call or skip.
-        # For now, leave auto_create=true on LiveKit side as a pragmatic default
-        # and revisit this once LiveKit async client is wired in.
-    except Exception:  # noqa: BLE001
-        pass
+    # The LiveKit room is auto-created on first participant join (auto_create
+    # is on in livekit.yaml.tpl), so no pre-creation step is needed here.
 
     return {
         "meeting": _to_out(meeting).model_dump(),
@@ -161,7 +161,7 @@ def create_meeting(body: CreateMeetingBody, user: RequireUser, db: Session = Dep
 def list_my_meetings(user: RequireUser, db: Session = Depends(get_db)) -> list[dict]:
     rows = (
         db.query(Meeting)
-        .filter(Meeting.owner_user_id == user.user_id)
+        .filter(Meeting.owner_user_id == user.sub)
         .filter(Meeting.hidden.is_(False))
         .order_by(Meeting.created_at.desc())
         .all()
@@ -171,7 +171,7 @@ def list_my_meetings(user: RequireUser, db: Session = Depends(get_db)) -> list[d
 
 @router.get("/meetings/{meeting_id}")
 def get_meeting(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
     return _to_out(m).model_dump()
@@ -183,7 +183,7 @@ def reopen_meeting(meeting_id: str, user: RequireUser, db: Session = Depends(get
     `closed_at`. The room_name is unchanged so existing share links keep
     working. The LiveKit room is recreated on demand when the first
     participant joins (auto_create on the LiveKit server)."""
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
     if not m.is_active:
@@ -207,7 +207,7 @@ async def end_or_hide_meeting(meeting_id: str, user: RequireUser, db: Session = 
     """
     from livekit import api as lkapi
 
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
 
@@ -248,7 +248,7 @@ async def invite_by_email(
     from app.services.email import send_email
     from app.services.email_templates import meeting_invite
 
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
 
@@ -258,7 +258,7 @@ async def invite_by_email(
 
     join_url = f"{settings.public_url}/{m.room_name}"
     subject, html, text = meeting_invite(
-        inviter_name=m.owner_name or user.email or f"User {user.user_id}",
+        inviter_name=m.owner_name or user.email or f"User {user.sub}",
         inviter_email=user.email,
         meeting_title=m.display_title,
         join_url=join_url,
@@ -307,7 +307,7 @@ async def upload_branding(
     """Upload (or replace) a branding image for the meeting. The image is
     served publicly via /api/v1/rooms/{room_name}/branding so the lobby can
     show it before auth."""
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
 
@@ -344,7 +344,7 @@ async def upload_branding(
 
 @router.delete("/meetings/{meeting_id}/branding", status_code=204)
 def delete_branding(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> None:
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
     if m.branding_image_path:
@@ -364,7 +364,7 @@ def update_meeting(
     db: Session = Depends(get_db),
 ) -> dict:
     """Owner updates editable fields on a meeting (visibility, title, recording mode)."""
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
 
@@ -401,7 +401,7 @@ def list_discoverable(user: RequireUser, db: Session = Depends(get_db)) -> list[
         db.query(Meeting)
         .filter(Meeting.is_active.is_(True))
         .filter(Meeting.hidden.is_(False))
-        .filter(Meeting.owner_user_id != user.user_id)
+        .filter(Meeting.owner_user_id != user.sub)
         .filter(
             (Meeting.list_for_authenticated.is_(True))
             | (Meeting.list_for_anonymous.is_(True))
@@ -484,7 +484,7 @@ def mint_owner_token(
     body: OwnerTokenBody | None = None,
     db: Session = Depends(get_db),
 ) -> dict:
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.user_id).first()
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
     if not m.is_active:
@@ -492,8 +492,8 @@ def mint_owner_token(
     if body and body.display_name:
         m.owner_name = body.display_name
         db.commit()
-    identity = f"user-{user.user_id}"
-    display_name = m.owner_name or user.email or f"Owner {user.user_id}"
+    identity = f"user-{user.sub}"
+    display_name = m.owner_name or user.email or f"Owner {user.sub}"
     token = mint_participant_token(
         room_name=m.room_name,
         identity=identity,

@@ -1,0 +1,25 @@
+# meet.witysk.org — robots.txt
+# Allow public discovery of the marketing surface (home, signup, login).
+# Block authenticated app routes and per-meeting URLs from being indexed
+# (those are private, ephemeral, and would just produce dead links once a
+# meeting closes).
+
+User-agent: *
+Allow: /$
+Allow: /signup$
+Allow: /login$
+Allow: /terms$
+Allow: /privacy$
+Allow: /legal$
+Disallow: /account
+Disallow: /settings
+Disallow: /recordings
+Disallow: /meetings/
+Disallow: /r/
+Disallow: /j/
+Disallow: /record
+Disallow: /sso-callback
+Disallow: /ti-cafe
+Disallow: /api/
+
+Sitemap: https://meet.witysk.org/sitemap.xml

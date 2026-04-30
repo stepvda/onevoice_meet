@@ -1,12 +1,12 @@
 /**
- * TI Café — surfaces the "currently online" panel from one.witysk.org's
+ * Café — surfaces the "currently online" panel from one.witysk.org's
  * Dashboard inside meet.witysk.org, and adds the always-on audio control bar
  * at the bottom (TICafeBar).
  *
  * Integration approach (no replication of presence/auth state):
  *   - Online users come from one.witysk.org/api/users/online (Bearer-authed,
  *     called from the browser so the session's IP-binding stays valid).
- *   - "Live in TI Café" set comes from meet-api /api/v1/ti-cafe/live, polled
+ *   - "Live in Café" set comes from meet-api /api/v1/ti-cafe/live, polled
  *     every 5 seconds. The flag is passed into <Facepic live={...}> so the
  *     purple ring + LIVE pill render anywhere we draw the user's circle.
  *   - The audio session itself is owned by <TICafeProvider>, which lives
@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { Coffee, ExternalLink, MessageSquare, Smartphone } from "lucide-react";
 import { api } from "../lib/api";
 import { bootstrapFromOneWitysk, clearAccessToken, getAccessToken, isAuthenticated } from "../lib/auth";
+import { useMe } from "../lib/me";
 import { useTICafe } from "../lib/tiCafe";
 import { Button, Card, CardHeader } from "../components/ui";
 import Facepic from "../components/Facepic";
@@ -59,9 +60,57 @@ async function fetchOnlineUsers(): Promise<OnlineUser[]> {
   return (await res.json()) as OnlineUser[];
 }
 
+/** The signed-in user's own one.witysk.org profile. /api/users/online sometimes
+ * filters out the requester (presence depends on activity, not just having a
+ * session), but the viewer expects to see themselves in the list — especially
+ * once they've toggled the Café audio on. We fetch /api/auth/me alongside and
+ * merge by id. Returns null if either the call fails or the user has no
+ * one.witysk.org identity (native account). */
+async function fetchSelf(): Promise<OnlineUser | null> {
+  const tok = getAccessToken();
+  if (!tok) return null;
+  try {
+    const res = await fetch(`${ONE_WITYSK}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${tok}` },
+    });
+    if (!res.ok) return null;
+    const me = (await res.json()) as {
+      id?: number;
+      username?: string;
+      name?: string | null;
+      facepic_path?: string | null;
+    };
+    if (typeof me.id !== "number" || !me.username) return null;
+    return {
+      id: me.id,
+      username: me.username,
+      name: me.name ?? null,
+      facepic_path: me.facepic_path ?? null,
+      is_mobile: false,
+      is_birthday: false,
+      vouch_count: 0,
+      open_to_talk: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function mergeSelfIntoList(list: OnlineUser[], self: OnlineUser | null): OnlineUser[] {
+  if (!self) return list;
+  if (list.some((u) => u.id === self.id)) return list;
+  return [self, ...list];
+}
+
 export default function TICafe() {
   const { t } = useTranslation();
   const ticafe = useTICafe();
+  const { me } = useMe();
+  // The "online users" list comes from one.witysk.org and only authenticates
+  // SSO users — native meet accounts don't exist over there. We still let
+  // them join the audio Café (LiveKit room is local to meet), they just
+  // don't see the witysk online list.
+  const isNative = me?.kind === "native";
   const [users, setUsers] = useState<OnlineUser[] | null>(null);
   const [liveIds, setLiveIds] = useState<Set<number>>(new Set());
   const [err, setErr] = useState<string | null>(null);
@@ -84,15 +133,22 @@ export default function TICafe() {
     };
   }, [authState]);
 
-  // Online users — poll the onevoice endpoint every 30 s.
+  // Online users — poll the onevoice endpoint every 30 s. Skipped for
+  // native meet accounts: they have no one.witysk.org identity, so the
+  // list is empty for them by definition (and the call would 401).
   useEffect(() => {
     if (authState !== "ok") return;
+    if (isNative) return;
     let cancelled = false;
     const tick = async () => {
       try {
-        const r = await fetchOnlineUsers();
+        // Run both fetches in parallel; the merge ensures the viewer is
+        // always visible in their own list (one.witysk.org's /users/online
+        // depends on activity-recency, so it can omit the requester even
+        // though they're clearly signed in).
+        const [r, self] = await Promise.all([fetchOnlineUsers(), fetchSelf()]);
         if (!cancelled) {
-          setUsers(r);
+          setUsers(mergeSelfIntoList(r, self));
           setErr(null);
         }
       } catch (e) {
@@ -115,9 +171,9 @@ export default function TICafe() {
       cancelled = true;
       if (usersTimer.current) window.clearInterval(usersTimer.current);
     };
-  }, [authState, t]);
+  }, [authState, isNative, t]);
 
-  // TI Café live presence — poll meet-api every 5 s.
+  // Café live presence — poll meet-api every 5 s.
   useEffect(() => {
     if (authState !== "ok") return;
     let cancelled = false;
@@ -181,23 +237,36 @@ export default function TICafe() {
           }
         />
 
-        {err && (
+        {/* Native meet accounts have no one.witysk.org identity, so the
+            online-users list isn't available to them. Show a small note
+            instead of the "couldn't reach" red error. The audio bar below
+            still works and lets them join the Café normally. */}
+        {isNative && (
+          <p className="text-slate-400 text-sm" data-testid="ti-cafe-native-note">
+            {t("tiCafe.nativeNote", {
+              defaultValue:
+                "Online-users list is only visible for one.witysk.org accounts. You can still join the audio Café below.",
+            })}
+          </p>
+        )}
+
+        {!isNative && err && (
           <p className="text-red-400 text-sm" data-testid="ti-cafe-error">
             {err}
           </p>
         )}
 
-        {!err && users === null && (
+        {!isNative && !err && users === null && (
           <p className="text-slate-300">{t("recordings.loading")}</p>
         )}
 
-        {!err && users !== null && users.length === 0 && (
+        {!isNative && !err && users !== null && users.length === 0 && (
           <p className="text-slate-400" data-testid="ti-cafe-empty">
             {t("tiCafe.empty")}
           </p>
         )}
 
-        {!err && users && users.length > 0 && (
+        {!isNative && !err && users && users.length > 0 && (
           <ul className="flex flex-col divide-y divide-primary-700">
             {users.map((u) => (
               <li
