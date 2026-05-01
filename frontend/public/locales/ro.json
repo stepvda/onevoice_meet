@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Înregistrări",
     "subtitle": "Înregistrări ale întâlnirilor tale pe server. Fișierele locale se șterg automat după 30 de zile (sau când publici pe YouTube). Încărcările sunt inițiate doar de proprietar.",
-    "empty": "Nicio înregistrare încă. Începe o întâlnire și apasă <1>Înregistrează</1> pentru a captura una.",
+    "empty": "Încă nu există înregistrări. Începe o întâlnire și apasă <1>Înregistrează</1> pentru a captura una.",
     "loading": "Se încarcă…",
     "signInFirst": "Conectează-te mai întâi pe one.witysk.org.",
     "signInTitle": "Conectează-te pentru a vedea înregistrările tale",
@@ -757,5 +757,27 @@
     "sending": "Se trimite…",
     "emailSentTo": "Cod trimis la {{to}}. Introdu-l mai jos pentru a activa codurile prin email.",
     "resend": "Retrimite"
+  },
+  "subStatus": {
+    "title": "Abonament",
+    "planMonthlySub": "Abonament lunar (reînnoire automată)",
+    "planAnnualSub": "Abonament anual (reînnoire automată)",
+    "planMonthlyOnce": "Abonament lunar (unic)",
+    "planAnnual": "Abonament anual (unic)",
+    "planVoucher": "Voucher",
+    "planUnknown": "Plan activ",
+    "renewsOn": "Se reînnoiește pe {{date}}.",
+    "accessUntil": "Acces până la {{date}}.",
+    "daysLeft": "{{count}} zi(le) rămase.",
+    "manage": "Gestionează abonamentul",
+    "extend": "Extinde sau modifică abonamentul",
+    "noActive": "Niciun plan activ.",
+    "viewPlans": "Vezi planurile",
+    "historyTitle": "Istoric",
+    "histMonthlyOnce": "Abonament lunar (unic)",
+    "histAnnualOnce": "Abonament anual (plată unică)",
+    "histMonthlySub": "Abonament lunar",
+    "histAnnualSub": "Abonament anual",
+    "histVoucher": "Voucher"
   }
 }

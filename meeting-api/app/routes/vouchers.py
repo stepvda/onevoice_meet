@@ -202,9 +202,12 @@ def redeem_voucher(
         raise HTTPException(status_code=410, detail="voucher has expired")
 
     now = datetime.now(timezone.utc)
-    base = u.entitlement_expires_at if u.entitlement_expires_at and u.entitlement_expires_at > now else now
-    if base.tzinfo is None:
-        base = base.replace(tzinfo=timezone.utc)
+    # SQLite strips tzinfo on read; normalise the stored expiry to UTC-aware
+    # before comparing against `now`, otherwise the > raises TypeError.
+    cur = u.entitlement_expires_at
+    if cur is not None and cur.tzinfo is None:
+        cur = cur.replace(tzinfo=timezone.utc)
+    base = cur if cur and cur > now else now
     new_expiry = base + timedelta(days=v.duration_days)
 
     u.entitlement_kind = "voucher"

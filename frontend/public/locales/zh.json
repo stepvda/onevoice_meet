@@ -293,7 +293,7 @@
   "recordings": {
     "title": "录制",
     "subtitle": "会议服务端录制。本地文件30天后自动删除（或发布至YouTube后删除）。仅限会议所有者发起上传。",
-    "empty": "暂无录制内容。开始会议并点击<1>录制</1>即可捕捉。",
+    "empty": "暂无录制内容。开始会议并点击<1>录制</1>即可捕获。",
     "loading": "加载中…",
     "signInFirst": "请先在 one.witysk.org 上登录。",
     "signInTitle": "登录以查看您的录制内容",
@@ -757,5 +757,27 @@
     "sending": "发送中…",
     "emailSentTo": "验证码已发送至 {{to}}。请在下方输入以启用邮箱验证码。",
     "resend": "重新发送"
+  },
+  "subStatus": {
+    "title": "订阅",
+    "planMonthlySub": "月度订阅（自动续费）",
+    "planAnnualSub": "年度订阅（自动续费）",
+    "planMonthlyOnce": "月度通行证（一次性）",
+    "planAnnual": "年度通行证（一次性）",
+    "planVoucher": "代金券",
+    "planUnknown": "当前方案",
+    "renewsOn": "在 {{date}} 续期。",
+    "accessUntil": "访问权限至 {{date}}。",
+    "daysLeft": "{{count}} 天后到期。",
+    "manage": "管理订阅",
+    "extend": "扩展或更改套餐",
+    "noActive": "无活跃套餐。",
+    "viewPlans": "查看套餐",
+    "historyTitle": "历史记录",
+    "histMonthlyOnce": "月度通行证（一次性）",
+    "histAnnualOnce": "年度通行证（一次性）",
+    "histMonthlySub": "月度订阅",
+    "histAnnualSub": "年度订阅",
+    "histVoucher": "代金券"
   }
 }

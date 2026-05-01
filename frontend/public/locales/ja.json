@@ -293,7 +293,7 @@
   "recordings": {
     "title": "録画",
     "subtitle": "サーバー側で会議を録画。ローカルファイルは30日後（またはYouTube公開時）に自動削除。アップロードは所有者のみ実行可能。",
-    "empty": "まだ録画はありません。会議を開始し、<1>録画</1>をクリックしてキャプチャしてください。",
+    "empty": "まだ録画はありません。ミーティングを開始し、<1>録画</1>をクリックして録画してください。",
     "loading": "読み込み中…",
     "signInFirst": "まず one.witysk.org にサインインしてください。",
     "signInTitle": "サインインして録画を確認",
@@ -757,5 +757,27 @@
     "sending": "送信中…",
     "emailSentTo": "コードを {{to}} に送信しました。メールコードを有効にするには、以下に入力してください。",
     "resend": "再送信"
+  },
+  "subStatus": {
+    "title": "サブスクリプション",
+    "planMonthlySub": "月額サブスクリプション（自動更新）",
+    "planAnnualSub": "年間サブスクリプション（自動更新）",
+    "planMonthlyOnce": "月額パス（1回限り）",
+    "planAnnual": "年間パス（一括払い）",
+    "planVoucher": "バウチャー",
+    "planUnknown": "アクティブプラン",
+    "renewsOn": "{{date}} に更新されます。",
+    "accessUntil": "{{date}}までアクセス可能。",
+    "daysLeft": "{{count}} 日残り。",
+    "manage": "サブスクリプションを管理",
+    "extend": "プランを延長または変更",
+    "noActive": "アクティブなプランがありません。",
+    "viewPlans": "プランを表示",
+    "historyTitle": "履歴",
+    "histMonthlyOnce": "月額パス（1回限り）",
+    "histAnnualOnce": "年間パス（一括払い）",
+    "histMonthlySub": "月額サブスクリプション",
+    "histAnnualSub": "年間サブスクリプション",
+    "histVoucher": "バウチャー"
   }
 }

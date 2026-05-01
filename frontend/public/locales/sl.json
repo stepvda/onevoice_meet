@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Posnetki",
     "subtitle": "Streposne posnetke vaših sestankov. Lokalne datoteke se samodejno izbrišejo po 30 dneh (ali ko objavite na YouTube). Nalaganja sproži le lastnik.",
-    "empty": "Ni še nobenih posnetkov. Začnite sestanek in kliknite <1>Posnemi</1>, da ga ustvarite.",
+    "empty": "Ni še nobenih posnetkov. Začnite sestanek in kliknite <1>Snemaj</1>, da ga ustvarite.",
     "loading": "Nalaganje…",
     "signInFirst": "Najprej se prijavite na one.witysk.org.",
     "signInTitle": "Prijavite se za ogled svojih posnetkov",
@@ -757,5 +757,27 @@
     "sending": "Pošiljanje…",
     "emailSentTo": "Koda poslana na {{to}}. Vnesite jo spodaj, da omogočite e-poštne kode.",
     "resend": "Ponovno pošlji"
+  },
+  "subStatus": {
+    "title": "Naročnina",
+    "planMonthlySub": "Mesečna naročnina (samodejno podaljšanje)",
+    "planAnnualSub": "Letni naročnina (samodejno podaljšanje)",
+    "planMonthlyOnce": "Mesečna prepustnica (enkratna)",
+    "planAnnual": "Letni prehod (enkratni)",
+    "planVoucher": "Voucher",
+    "planUnknown": "Aktiven načrt",
+    "renewsOn": "Podaplja se {{date}}.",
+    "accessUntil": "Dostop do {{date}}.",
+    "daysLeft": "{{count}} dan/dni preostalih.",
+    "manage": "Upravljaj naročnino",
+    "extend": "Podaljšaj ali spremeni načrt",
+    "noActive": "Ni aktivnega načrta.",
+    "viewPlans": "Ogled načrtov",
+    "historyTitle": "Zgodovina",
+    "histMonthlyOnce": "Mesečna vozovnica (enkratna)",
+    "histAnnualOnce": "Letni prehod (enkratni)",
+    "histMonthlySub": "Mesečna naročnina",
+    "histAnnualSub": "Letni naročnina",
+    "histVoucher": "Voucher"
   }
 }

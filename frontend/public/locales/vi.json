@@ -243,7 +243,7 @@
     "uploadTitle": "Tải lên ảnh nền của bạn",
     "uploadAria": "Tải lên ảnh nền",
     "tooLarge": "Ảnh có kích thước {{mb}} MB; tối đa 4 MB.",
-    "notImage": "Không phải ảnh ({{type}})",
+    "notImage": "Không phải hình ảnh ({{type}})",
     "processorFailed": "Thiết bị này không hỗ trợ hiệu ứng nền.",
     "custom": "Tùy chỉnh: {{name}}",
     "customDefault": "Ảnh tùy chỉnh"
@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Bản ghi",
     "subtitle": "Bản ghi phía máy chủ của các cuộc họp của bạn. Tệp cục bộ tự động xóa sau 30 ngày (hoặc khi bạn đăng lên YouTube). Chỉ chủ sở hữu mới có thể tải lên.",
-    "empty": "Chưa có bản ghi nào. Hãy bắt đầu cuộc họp và nhấn <1>Ghi lại</1> để thực hiện.",
+    "empty": "Chưa có bản ghi nào. Hãy bắt đầu cuộc họp và nhấn <1>Ghi âm</1> để ghi lại.",
     "loading": "Đang tải…",
     "signInFirst": "Đăng nhập trên one.witysk.org trước.",
     "signInTitle": "Đăng nhập để xem bản ghi của bạn",
@@ -757,5 +757,27 @@
     "sending": "Đang gửi…",
     "emailSentTo": "Mã đã được gửi đến {{to}}. Nhập mã bên dưới để kích hoạt mã email.",
     "resend": "Gửi lại"
+  },
+  "subStatus": {
+    "title": "Gói đăng ký",
+    "planMonthlySub": "Gói đăng ký hàng tháng (tự động gia hạn)",
+    "planAnnualSub": "Gói thuê bao năm (tự động gia hạn)",
+    "planMonthlyOnce": "Gói tháng (một lần)",
+    "planAnnual": "Gói năm (thanh toán một lần)",
+    "planVoucher": "Phiếu quà tặng",
+    "planUnknown": "Gói đang hoạt động",
+    "renewsOn": "Gia hạn vào {{date}}.",
+    "accessUntil": "Truy cập đến {{date}}.",
+    "daysLeft": "{{count}} ngày còn lại.",
+    "manage": "Quản lý gói đăng ký",
+    "extend": "Gia hạn hoặc thay đổi gói",
+    "noActive": "Không có gói hoạt động.",
+    "viewPlans": "Xem gói",
+    "historyTitle": "Lịch sử",
+    "histMonthlyOnce": "Gói tháng (một lần)",
+    "histAnnualOnce": "Gói năm (thanh toán một lần)",
+    "histMonthlySub": "Gói đăng ký hàng tháng",
+    "histAnnualSub": "Gói đăng ký hàng năm",
+    "histVoucher": "Phiếu quà tặng"
   }
 }

@@ -104,6 +104,21 @@ export interface ChatMessageDTO {
 export const CHAT_REACTIONS = ["😊", "👍", "😂", "😢", "😠", "🤓", "❤️", "👎"] as const;
 export type ChatReactionEmoji = (typeof CHAT_REACTIONS)[number];
 
+export interface BillingHistoryItem {
+  date: string;
+  kind:
+    | "paypal_order_monthly"
+    | "paypal_order_annual"
+    | "paypal_subscription_monthly"
+    | "paypal_subscription_annual"
+    | "voucher";
+  label: string;
+  amount: string | null;
+  currency: string | null;
+  status: string | null;
+  reference: string | null;
+}
+
 export interface VoucherOut {
   id: number;
   code: string;
@@ -436,6 +451,9 @@ export const api = {
 
   cancelPaypalSubscription: () =>
     request<{ ok: boolean }>("/api/v1/billing/subscriptions/cancel", { method: "POST" }),
+
+  myBillingHistory: () =>
+    request<BillingHistoryItem[]>("/api/v1/billing/me/billing-history"),
 
   listChat: (roomName: string) =>
     request<ChatMessageDTO[]>(`/api/v1/rooms/${roomName}/chat`),

@@ -757,5 +757,27 @@
     "sending": "보내는 중…",
     "emailSentTo": "{{to}}로 코드가 전송되었습니다. 이메일 코드를 활성화하려면 아래에 입력하세요.",
     "resend": "재전송"
+  },
+  "subStatus": {
+    "title": "구독",
+    "planMonthlySub": "월간 구독 (자동 갱신)",
+    "planAnnualSub": "연간 구독 (자동 갱신)",
+    "planMonthlyOnce": "월간 이용권 (일회성)",
+    "planAnnual": "연간 이용권 (일회성)",
+    "planVoucher": "바우처",
+    "planUnknown": "활성 요금제",
+    "renewsOn": "{{date}}에 갱신됨",
+    "accessUntil": "{{date}}까지 접근 가능",
+    "daysLeft": "{{count}}일 남음.",
+    "manage": "구독 관리",
+    "extend": "요금제 연장 또는 변경",
+    "noActive": "활성화된 요금제가 없습니다.",
+    "viewPlans": "요금제 보기",
+    "historyTitle": "기록",
+    "histMonthlyOnce": "월간 이용권 (일회성)",
+    "histAnnualOnce": "연간 이용권 (일회성)",
+    "histMonthlySub": "월간 구독",
+    "histAnnualSub": "연간 구독",
+    "histVoucher": "바우처"
   }
 }

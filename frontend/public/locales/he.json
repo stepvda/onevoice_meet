@@ -757,5 +757,27 @@
     "sending": "שולח…",
     "emailSentTo": "קוד נשלח אל {{to}}. הזן אותו למטה כדי להפעיל קודי אימייל.",
     "resend": "שלח שוב"
+  },
+  "subStatus": {
+    "title": "מנוי",
+    "planMonthlySub": "מנוי חודשי (חידוש אוטומטי)",
+    "planAnnualSub": "מנוי שנתי (חידוש אוטומטי)",
+    "planMonthlyOnce": "מנוי חודשי (חד-פעמי)",
+    "planAnnual": "מנוי שנתי (חד-פעמי)",
+    "planVoucher": "שובר",
+    "planUnknown": "תוכנית פעילה",
+    "renewsOn": "מתחדש ב-{{date}}.",
+    "accessUntil": "גישה עד {{date}}.",
+    "daysLeft": "{{count}} יום(ים) נותרו.",
+    "manage": "ניהול מנוי",
+    "extend": "הרחב או שנה תוכנית",
+    "noActive": "אין תוכנית פעילה.",
+    "viewPlans": "צפייה בתוכניות",
+    "historyTitle": "היסטוריה",
+    "histMonthlyOnce": "מנוי חודשי (חד-פעמי)",
+    "histAnnualOnce": "מנוי שנתי (חד-פעמי)",
+    "histMonthlySub": "מנוי חודשי",
+    "histAnnualSub": "מנוי שנתי",
+    "histVoucher": "שובר"
   }
 }

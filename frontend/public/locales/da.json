@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Optagelser",
     "subtitle": "Server-side optagelser af dine møder. Lokale filer slettes automatisk efter 30 dage (eller når du publicerer til YouTube). Uploads initieres kun af ejeren.",
-    "empty": "Ingen optagelser endnu. Start et møde og klik på <1>Optag</1> for at optage ét.",
+    "empty": "Ingen optagelser endnu. Start et møde og klik på <1>Optag</1> for at lave en.",
     "loading": "Indlæser…",
     "signInFirst": "Log ind på one.witysk.org først.",
     "signInTitle": "Log ind for at se dine optagelser",
@@ -757,5 +757,27 @@
     "sending": "Sender...",
     "emailSentTo": "Kode sendt til {{to}}. Indtast den nedenfor for at aktivere e-mailkoder.",
     "resend": "Gensend"
+  },
+  "subStatus": {
+    "title": "Abonnement",
+    "planMonthlySub": "Månedligt abonnement (automatisk fornyelse)",
+    "planAnnualSub": "Årligt abonnement (automatisk fornyelse)",
+    "planMonthlyOnce": "Månedskort (engangsbetaling)",
+    "planAnnual": "Årskort (engangsbetaling)",
+    "planVoucher": "Kupon",
+    "planUnknown": "Aktivt abonnement",
+    "renewsOn": "Fornyes den {{date}}.",
+    "accessUntil": "Adgang indtil {{date}}.",
+    "daysLeft": "{{count}} dag(e) tilbage.",
+    "manage": "Administrer abonnement",
+    "extend": "Forlæng eller skift abonnement",
+    "noActive": "Ingen aktiv plan.",
+    "viewPlans": "Se planer",
+    "historyTitle": "Historik",
+    "histMonthlyOnce": "Månedskort (engangsbetaling)",
+    "histAnnualOnce": "Årskort (engangsbetaling)",
+    "histMonthlySub": "Månedligt abonnement",
+    "histAnnualSub": "Årligt abonnement",
+    "histVoucher": "Kupon"
   }
 }

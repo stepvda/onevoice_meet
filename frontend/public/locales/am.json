@@ -293,7 +293,7 @@
   "recordings": {
     "title": "ቀረጻዎች",
     "subtitle": "የስብሰባዎችዎ በሰርቨር በኩል የሚቀረጹ ቅጂዎች። የአካባቢ ፋይሎች ከ30 ቀናት በኋላ (ወይም ወደ ዩቲዩብ ሲለቀቁ) በራስ-ሰር ይሰረዛሉ። መጫን የሚችሉት ባለቤቱ ብቻ ነው።",
-    "empty": "እስካሁን ምንም ቅጂዎች የሉም። ስብሰባ ይጀምሩ እና አንዱን ለመቅረጽ <1>ቅጂ</1> የሚለውን ይጫኑ።",
+    "empty": "እስካሁን ምንም ቅጂ የለም። ስብሰባ ይጀምሩ እና <1>ቅጂ</1> የሚለውን ጠቅ ያድርጉ።",
     "loading": "በመጫን ላይ…",
     "signInFirst": "በመጀመሪያ በ one.witysk.org ላይ ይግቡ።",
     "signInTitle": "ቀርጾችዎን ለማየት ይግቡ",
@@ -757,5 +757,27 @@
     "sending": "በመላክ ላይ…",
     "emailSentTo": "ኮድ ወደ {{to}} ተልኳል። የኢሜይል ኮዶችን ለማንቃት ከታች ያስገቡት።",
     "resend": "እንደገና ላክ"
+  },
+  "subStatus": {
+    "title": "የደንበኝነት ምዝገባ",
+    "planMonthlySub": "ወርሃዊ ምዝገባ (ራስ-ሰር እድሳት)",
+    "planAnnualSub": "ዓመታዊ ምዝገባ (ራስ-ሰር እድሳት)",
+    "planMonthlyOnce": "ወርሃዊ ማለፊያ (አንድ ጊዜ)",
+    "planAnnual": "ዓመታዊ ማለፊያ (አንድ ጊዜ)",
+    "planVoucher": "ቫውቸር",
+    "planUnknown": "ንቁ እቅድ",
+    "renewsOn": "በ {{date}} ላይ ይታደሳል።",
+    "accessUntil": "እስከ {{date}} ድረስ መድረስ።",
+    "daysLeft": "{{count}} ቀን(ች) ቀርቷል።",
+    "manage": "የደንበኝነት ምዝገባን ያስተዳድሩ",
+    "extend": "የእቅድ ማራዘሚያ ወይም ለውጥ",
+    "noActive": "ምንም ንቁ እቅድ የለም።",
+    "viewPlans": "የእቅዶችን ይመልከቱ",
+    "historyTitle": "ታሪክ",
+    "histMonthlyOnce": "ወርሃዊ ማለፊያ (አንድ ጊዜ)",
+    "histAnnualOnce": "ዓመታዊ ማለፊያ (አንድ ጊዜ)",
+    "histMonthlySub": "ወርሃዊ ምዝገባ",
+    "histAnnualSub": "ዓመታዊ ምዝገባ",
+    "histVoucher": "ቫውቸር"
   }
 }

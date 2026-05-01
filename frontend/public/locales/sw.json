@@ -243,7 +243,7 @@
     "uploadTitle": "Pakia picha yako mwenyewe ya mandharinyuma",
     "uploadAria": "Pakia picha ya mandharinyuma",
     "tooLarge": "Picha ni {{mb}} MB; upeo ni 4 MB.",
-    "notImage": "Si picha ({{type}})",
+    "notImage": "Sio picha ({{type}})",
     "processorFailed": "Madoido ya usuli hayawezi kutumika kwenye kifaa hiki.",
     "custom": "Maalum: {{name}}",
     "customDefault": "Picha maalum"
@@ -757,5 +757,27 @@
     "sending": "Inatuma…",
     "emailSentTo": "Msimbo umetumwa kwa {{to}}. Ingiza hapa chini ili kuwezesha misimbo ya barua pepe.",
     "resend": "Tuma tena"
+  },
+  "subStatus": {
+    "title": "Usajili",
+    "planMonthlySub": "Kujiandikisha kwa mwezi (kufanywa upya kiotomatiki)",
+    "planAnnualSub": "Usajili wa mwaka (ujisasishe kiotomatiki)",
+    "planMonthlyOnce": "Pasi ya mwezi (mara moja)",
+    "planAnnual": "Pasi ya mwaka (mara moja)",
+    "planVoucher": "Vocha",
+    "planUnknown": "Mpango ulioamilishwa",
+    "renewsOn": "Inafanywa upya tarehe {{date}}.",
+    "accessUntil": "Ufikiaji hadi {{date}}.",
+    "daysLeft": "{{count}} siku zimesalia.",
+    "manage": "Simamia usajili",
+    "extend": "Panua au badilisha mpango",
+    "noActive": "Hakuna mpango unaotumika.",
+    "viewPlans": "Tazama mipango",
+    "historyTitle": "Historia",
+    "histMonthlyOnce": "Pasi ya mwezi (mara moja)",
+    "histAnnualOnce": "Pasi ya mwaka (mara moja)",
+    "histMonthlySub": "Usajili wa kila mwezi",
+    "histAnnualSub": "Usajili wa mwaka",
+    "histVoucher": "Vocha"
   }
 }

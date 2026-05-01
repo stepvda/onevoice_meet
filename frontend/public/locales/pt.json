@@ -757,5 +757,27 @@
     "sending": "Enviando…",
     "emailSentTo": "Código enviado para {{to}}. Insira-o abaixo para ativar códigos de e-mail.",
     "resend": "Reenviar"
+  },
+  "subStatus": {
+    "title": "Assinatura",
+    "planMonthlySub": "Assinatura mensal (renovação automática)",
+    "planAnnualSub": "Assinatura anual (renovação automática)",
+    "planMonthlyOnce": "Passe mensal (pagamento único)",
+    "planAnnual": "Passe anual (pagamento único)",
+    "planVoucher": "Voucher",
+    "planUnknown": "Plano ativo",
+    "renewsOn": "Renova em {{date}}.",
+    "accessUntil": "Acesso até {{date}}.",
+    "daysLeft": "{{count}} dia(s) restante(s).",
+    "manage": "Gerenciar assinatura",
+    "extend": "Estender ou alterar plano",
+    "noActive": "Nenhum plano ativo.",
+    "viewPlans": "Ver planos",
+    "historyTitle": "Histórico",
+    "histMonthlyOnce": "Passe mensal (pagamento único)",
+    "histAnnualOnce": "Passe anual (pagamento único)",
+    "histMonthlySub": "Assinatura mensal",
+    "histAnnualSub": "Assinatura anual",
+    "histVoucher": "Voucher"
   }
 }

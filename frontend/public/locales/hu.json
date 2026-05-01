@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Felvételek",
     "subtitle": "Szerveroldali felvételek a megbeszéléseidről. A helyi fájlok 30 nap után automatikusan törlődnek (vagy amikor közzéteszed a YouTube-on). Feltöltést csak a tulajdonos kezdeményezhet.",
-    "empty": "Még nincsenek felvételek. Indítson egy megbeszélést, és kattintson a <1>Rögzítés</1> gombra az első elkészítéséhez.",
+    "empty": "Még nincsenek felvételek. Indítson egy megbeszélést, és kattintson a <1>Rögzítés</1> gombra az elkészítéséhez.",
     "loading": "Betöltés…",
     "signInFirst": "Először jelentkezz be a one.witysk.org oldalon.",
     "signInTitle": "Jelentkezz be a felvételeid megtekintéséhez",
@@ -757,5 +757,27 @@
     "sending": "Küldés…",
     "emailSentTo": "Kód elküldve ide: {{to}}. Add meg lent az e-mail kódok engedélyezéséhez.",
     "resend": "Újraküldés"
+  },
+  "subStatus": {
+    "title": "Előfizetés",
+    "planMonthlySub": "Havi előfizetés (automatikus megújítás)",
+    "planAnnualSub": "Éves előfizetés (automatikus megújítás)",
+    "planMonthlyOnce": "Havi bérlet (egyszeri)",
+    "planAnnual": "Éves bérlet (egyszeri)",
+    "planVoucher": "Kupon",
+    "planUnknown": "Aktív csomag",
+    "renewsOn": "Megújul {{date}}-án/-én.",
+    "accessUntil": "Hozzáférés eddig: {{date}}.",
+    "daysLeft": "{{count}} nap van hátra.",
+    "manage": "Előfizetés kezelése",
+    "extend": "Terv bővítése vagy módosítása",
+    "noActive": "Nincs aktív csomag.",
+    "viewPlans": "Tervek megtekintése",
+    "historyTitle": "Előzmények",
+    "histMonthlyOnce": "Havi bérlet (egyszeri)",
+    "histAnnualOnce": "Éves bérlet (egyszeri)",
+    "histMonthlySub": "Havi előfizetés",
+    "histAnnualSub": "Éves előfizetés",
+    "histVoucher": "Utalvány"
   }
 }

@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Nahrávky",
     "subtitle": "Nahrávky vašich stretnutí na strane servera. Lokálne súbory sa automaticky vymažú po 30 dňoch (alebo po zverejnení na YouTube). Nahrávanie iniciuje iba vlastník.",
-    "empty": "Zatiaľ žiadne nahrávky. Spustite schôdzu a kliknite na <1>Nahrať</1> pre jej zachytenie.",
+    "empty": "Zatiaľ žiadne nahrávky. Spustite schôdzku a kliknite na <1>Nahrať</1> pre jej zachytenie.",
     "loading": "Načítava sa…",
     "signInFirst": "Najprv sa prihláste na one.witysk.org.",
     "signInTitle": "Prihláste sa, aby ste videli svoje nahrávky",
@@ -757,5 +757,27 @@
     "sending": "Odosiela sa…",
     "emailSentTo": "Kód bol odoslaný na adresu {{to}}. Zadajte ho nižšie na aktiváciu e‑mailových kódov.",
     "resend": "Znova odoslať"
+  },
+  "subStatus": {
+    "title": "Predplatné",
+    "planMonthlySub": "Mesačné predplatné (automatické obnovenie)",
+    "planAnnualSub": "Ročné predplatné (automatické obnovenie)",
+    "planMonthlyOnce": "Mesačný preukaz (jednorazový)",
+    "planAnnual": "Ročný preukaz (jednorazový)",
+    "planVoucher": "Poukaz",
+    "planUnknown": "Aktívny plán",
+    "renewsOn": "Obnovuje sa dňa {{date}}.",
+    "accessUntil": "Prístup do {{date}}.",
+    "daysLeft": "{{count}} dní zostáva.",
+    "manage": "Spravovať predplatné",
+    "extend": "Predĺžiť alebo zmeniť plán",
+    "noActive": "Žiadny aktívny plán.",
+    "viewPlans": "Zobraziť plány",
+    "historyTitle": "História",
+    "histMonthlyOnce": "Mesačný preukaz (jednorazový)",
+    "histAnnualOnce": "Ročný preukaz (jednorazový)",
+    "histMonthlySub": "Mesačné predplatné",
+    "histAnnualSub": "Ročné predplatné",
+    "histVoucher": "Poukaz"
   }
 }

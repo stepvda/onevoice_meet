@@ -243,7 +243,7 @@
     "uploadTitle": "Kendi arka plan resmini yükle",
     "uploadAria": "Bir arka plan resmi yükle",
     "tooLarge": "Görsel {{mb}} MB; maksimum 4 MB.",
-    "notImage": "Bir görsel değil ({{type}})",
+    "notImage": "Bir resim değil ({{type}})",
     "processorFailed": "Bu cihazda arka plan efektleri desteklenmiyor.",
     "custom": "Özel: {{name}}",
     "customDefault": "Özel görsel"
@@ -757,5 +757,27 @@
     "sending": "Gönderiliyor…",
     "emailSentTo": "{{to}} adresine kod gönderildi. E-posta kodlarını etkinleştirmek için aşağıya girin.",
     "resend": "Yeniden Gönder"
+  },
+  "subStatus": {
+    "title": "Abonelik",
+    "planMonthlySub": "Aylık abonelik (otomatik yenileme)",
+    "planAnnualSub": "Yıllık abonelik (otomatik yenileme)",
+    "planMonthlyOnce": "Aylık geçiş (tek seferlik)",
+    "planAnnual": "Yıllık geçiş (tek seferlik)",
+    "planVoucher": "Kupon",
+    "planUnknown": "Aktif plan",
+    "renewsOn": "{{date}} tarihinde yenilenir.",
+    "accessUntil": "{{date}} tarihine kadar erişim.",
+    "daysLeft": "{{count}} gün kaldı.",
+    "manage": "Aboneliği yönet",
+    "extend": "Planı genişlet veya değiştir",
+    "noActive": "Aktif plan yok.",
+    "viewPlans": "Planları Görüntüle",
+    "historyTitle": "Geçmiş",
+    "histMonthlyOnce": "Aylık geçiş (tek seferlik)",
+    "histAnnualOnce": "Yıllık geçiş (tek seferlik)",
+    "histMonthlySub": "Aylık abonelik",
+    "histAnnualSub": "Yıllık abonelik",
+    "histVoucher": "Kupon"
   }
 }

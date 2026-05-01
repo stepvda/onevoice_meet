@@ -757,5 +757,27 @@
     "sending": "جارٍ الإرسال…",
     "emailSentTo": "تم إرسال الرمز إلى {{to}}. أدخله أدناه لتفعيل رموز البريد الإلكتروني.",
     "resend": "إعادة إرسال"
+  },
+  "subStatus": {
+    "title": "اشتراك",
+    "planMonthlySub": "اشتراك شهري (تجديد تلقائي)",
+    "planAnnualSub": "اشتراك سنوي (تجديد تلقائي)",
+    "planMonthlyOnce": "اشتراك شهري (مرة واحدة)",
+    "planAnnual": "اشتراك سنوي (مرة واحدة)",
+    "planVoucher": "قسيمة",
+    "planUnknown": "الخطة النشطة",
+    "renewsOn": "سيتم التجديد في {{date}}.",
+    "accessUntil": "الوصول حتى {{date}}.",
+    "daysLeft": "{{count}} يوم/أيام متبقية.",
+    "manage": "إدارة الاشتراك",
+    "extend": "تمديد أو تغيير الخطة",
+    "noActive": "لا توجد خطة نشطة.",
+    "viewPlans": "عرض الخطط",
+    "historyTitle": "السجل",
+    "histMonthlyOnce": "اشتراك شهري (مرة واحدة)",
+    "histAnnualOnce": "اشتراك سنوي (مرة واحدة)",
+    "histMonthlySub": "الاشتراك الشهري",
+    "histAnnualSub": "الاشتراك السنوي",
+    "histVoucher": "قسيمة"
   }
 }

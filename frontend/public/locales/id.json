@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Rekaman",
     "subtitle": "Rekaman rapat dari sisi server. File lokal akan otomatis terhapus setelah 30 hari (atau saat Anda mempublikasikan ke YouTube). Unggahan hanya dapat dimulai oleh pemilik.",
-    "empty": "Belum ada rekaman. Mulai rapat dan klik <1>Rekam</1> untuk menangkapnya.",
+    "empty": "Belum ada rekaman. Mulai rapat dan klik <1>Rekam</1> untuk merekamnya.",
     "loading": "Memuat…",
     "signInFirst": "Masuk dulu di one.witysk.org.",
     "signInTitle": "Masuk untuk melihat rekaman Anda",
@@ -757,5 +757,27 @@
     "sending": "Mengirim…",
     "emailSentTo": "Kode telah dikirim ke {{to}}. Masukkan kode di bawah untuk mengaktifkan kode email.",
     "resend": "Kirim Ulang"
+  },
+  "subStatus": {
+    "title": "Langganan",
+    "planMonthlySub": "Langganan bulanan (perpanjangan otomatis)",
+    "planAnnualSub": "Langganan tahunan (perpanjangan otomatis)",
+    "planMonthlyOnce": "Paket bulanan (satu kali)",
+    "planAnnual": "Pas tahunan (satu kali)",
+    "planVoucher": "Voucher",
+    "planUnknown": "Paket aktif",
+    "renewsOn": "Diperbarui pada {{date}}.",
+    "accessUntil": "Akses hingga {{date}}.",
+    "daysLeft": "{{count}} hari lagi.",
+    "manage": "Kelola langganan",
+    "extend": "Perpanjang atau ubah paket",
+    "noActive": "Tidak ada paket aktif.",
+    "viewPlans": "Lihat paket",
+    "historyTitle": "Riwayat",
+    "histMonthlyOnce": "Paket bulanan (satu kali)",
+    "histAnnualOnce": "Pas tahunan (satu kali)",
+    "histMonthlySub": "Langganan bulanan",
+    "histAnnualSub": "Langganan tahunan",
+    "histVoucher": "Voucher"
   }
 }

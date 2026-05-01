@@ -757,5 +757,27 @@
     "sending": "Sending…",
     "emailSentTo": "Code sent to {{to}}. Enter it below to enable email codes.",
     "resend": "Resend"
+  },
+  "subStatus": {
+    "title": "Subscription",
+    "planMonthlySub": "Monthly subscription (auto-renew)",
+    "planAnnualSub": "Yearly subscription (auto-renew)",
+    "planMonthlyOnce": "Monthly pass (one-time)",
+    "planAnnual": "Yearly pass (one-time)",
+    "planVoucher": "Voucher",
+    "planUnknown": "Active plan",
+    "renewsOn": "Renews on {{date}}.",
+    "accessUntil": "Access until {{date}}.",
+    "daysLeft": "{{count}} day(s) left.",
+    "manage": "Manage subscription",
+    "extend": "Extend or change plan",
+    "noActive": "No active plan.",
+    "viewPlans": "View plans",
+    "historyTitle": "History",
+    "histMonthlyOnce": "Monthly pass (one-time)",
+    "histAnnualOnce": "Yearly pass (one-time)",
+    "histMonthlySub": "Monthly subscription",
+    "histAnnualSub": "Yearly subscription",
+    "histVoucher": "Voucher"
   }
 }

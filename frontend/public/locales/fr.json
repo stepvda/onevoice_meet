@@ -757,5 +757,27 @@
     "sending": "Envoi en cours…",
     "emailSentTo": "Code envoyé à {{to}}. Saisissez-le ci-dessous pour activer les codes email.",
     "resend": "Renvoyer"
+  },
+  "subStatus": {
+    "title": "Abonnement",
+    "planMonthlySub": "Abonnement mensuel (renouvellement automatique)",
+    "planAnnualSub": "Abonnement annuel (renouvellement automatique)",
+    "planMonthlyOnce": "Pass mensuel (unique)",
+    "planAnnual": "Pass annuel (paiement unique)",
+    "planVoucher": "Bon d'achat",
+    "planUnknown": "Plan actif",
+    "renewsOn": "Renouvellement le {{date}}.",
+    "accessUntil": "Accès jusqu'au {{date}}.",
+    "daysLeft": "{{count}} jour(s) restant(s).",
+    "manage": "Gérer l'abonnement",
+    "extend": "Prolonger ou modifier le forfait",
+    "noActive": "Aucun plan actif.",
+    "viewPlans": "Voir les forfaits",
+    "historyTitle": "Historique",
+    "histMonthlyOnce": "Pass mensuel (unique)",
+    "histAnnualOnce": "Abonnement annuel (paiement unique)",
+    "histMonthlySub": "Abonnement mensuel",
+    "histAnnualSub": "Abonnement annuel",
+    "histVoucher": "Bon d'achat"
   }
 }

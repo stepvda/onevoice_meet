@@ -757,5 +757,27 @@
     "sending": "Yuborilmoqda…",
     "emailSentTo": "Kod {{to}} ga yuborildi. Elektron pochta kodlarini yoqish uchun uni quyida kiriting.",
     "resend": "Qayta yuborish"
+  },
+  "subStatus": {
+    "title": "Obuna",
+    "planMonthlySub": "Oylik obuna (avtomatik yangilanadi)",
+    "planAnnualSub": "Yillik obuna (avtomatik yangilanadi)",
+    "planMonthlyOnce": "Oylik obuna (bir martalik)",
+    "planAnnual": "Yillik obuna (bir martalik)",
+    "planVoucher": "Vaucher",
+    "planUnknown": "Faol reja",
+    "renewsOn": "{{date}} da yangilanadi.",
+    "accessUntil": "{{date}} gacha kirish.",
+    "daysLeft": "{{count}} kun qoldi.",
+    "manage": "Obunani boshqarish",
+    "extend": "Rejani uzaytirish yoki o‘zgartirish",
+    "noActive": "Faol reja mavjud emas.",
+    "viewPlans": "Rejalarni ko‘rish",
+    "historyTitle": "Tarix",
+    "histMonthlyOnce": "Oylik obuna (bir martalik)",
+    "histAnnualOnce": "Yillik obuna (bir martalik)",
+    "histMonthlySub": "Oylik obuna",
+    "histAnnualSub": "Yillik obuna",
+    "histVoucher": "Voucher"
   }
 }

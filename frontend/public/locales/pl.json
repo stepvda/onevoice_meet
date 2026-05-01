@@ -757,5 +757,27 @@
     "sending": "Wysyłanie…",
     "emailSentTo": "Kod wysłany na {{to}}. Wpisz go poniżej, aby włączyć kody e-mail.",
     "resend": "Wyślij ponownie"
+  },
+  "subStatus": {
+    "title": "Subskrypcja",
+    "planMonthlySub": "Subskrypcja miesięczna (automatyczne odnawianie)",
+    "planAnnualSub": "Subskrypcja roczna (automatyczne odnawianie)",
+    "planMonthlyOnce": "Miesięczny karnet (jednorazowy)",
+    "planAnnual": "Roczny karnet (jednorazowy)",
+    "planVoucher": "Voucher",
+    "planUnknown": "Aktywny plan",
+    "renewsOn": "Odnawia się {{date}}.",
+    "accessUntil": "Dostęp do {{date}}.",
+    "daysLeft": "{{count}} dzień/dni pozostało.",
+    "manage": "Zarządzaj subskrypcją",
+    "extend": "Rozszerz lub zmień plan",
+    "noActive": "Brak aktywnego planu.",
+    "viewPlans": "Zobacz plany",
+    "historyTitle": "Historia",
+    "histMonthlyOnce": "Miesięczny karnet (jednorazowy)",
+    "histAnnualOnce": "Roczny karnet (jednorazowy)",
+    "histMonthlySub": "Subskrypcja miesięczna",
+    "histAnnualSub": "Subskrypcja roczna",
+    "histVoucher": "Voucher"
   }
 }

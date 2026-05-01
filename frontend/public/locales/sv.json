@@ -757,5 +757,27 @@
     "sending": "Skickar…",
     "emailSentTo": "Kod skickad till {{to}}. Ange den nedan för att aktivera e-postkoder.",
     "resend": "Skicka igen"
+  },
+  "subStatus": {
+    "title": "Prenumeration",
+    "planMonthlySub": "Månadsprenumeration (automatisk förnyelse)",
+    "planAnnualSub": "Årsprenumeration (automatisk förnyelse)",
+    "planMonthlyOnce": "Månadskort (engångsavgift)",
+    "planAnnual": "Årskort (engångsbetalning)",
+    "planVoucher": "Kupong",
+    "planUnknown": "Aktiv plan",
+    "renewsOn": "Förnyas den {{date}}.",
+    "accessUntil": "Tillgång till {{date}}.",
+    "daysLeft": "{{count}} dag(ar) kvar.",
+    "manage": "Hantera prenumeration",
+    "extend": "Förläng eller ändra plan",
+    "noActive": "Ingen aktiv plan.",
+    "viewPlans": "Visa abonnemang",
+    "historyTitle": "Historik",
+    "histMonthlyOnce": "Månadskort (engångsavgift)",
+    "histAnnualOnce": "Årskort (engångsavgift)",
+    "histMonthlySub": "Månadsabonnemang",
+    "histAnnualSub": "Årsprenumeration",
+    "histVoucher": "Kupong"
   }
 }

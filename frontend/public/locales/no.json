@@ -757,5 +757,27 @@
     "sending": "Sender…",
     "emailSentTo": "Kode sendt til {{to}}. Skriv den inn nedenfor for å aktivere e-postkoder.",
     "resend": "Send på nytt"
+  },
+  "subStatus": {
+    "title": "Abonnement",
+    "planMonthlySub": "Månedlig abonnement (fornyes automatisk)",
+    "planAnnualSub": "Årlig abonnement (fornyes automatisk)",
+    "planMonthlyOnce": "Månedskort (engangsbetaling)",
+    "planAnnual": "Årskort (engangsbetaling)",
+    "planVoucher": "Kupong",
+    "planUnknown": "Aktiv plan",
+    "renewsOn": "Fornyes den {{date}}.",
+    "accessUntil": "Tilgang til {{date}}.",
+    "daysLeft": "{{count}} dag(er) igjen.",
+    "manage": "Administrer abonnement",
+    "extend": "Utvid eller endre abonnement",
+    "noActive": "Ingen aktiv plan.",
+    "viewPlans": "Se planer",
+    "historyTitle": "Historikk",
+    "histMonthlyOnce": "Månedskort (engangsbetaling)",
+    "histAnnualOnce": "Årskort (engangsbetaling)",
+    "histMonthlySub": "Månedlig abonnement",
+    "histAnnualSub": "Årlig abonnement",
+    "histVoucher": "Kupong"
   }
 }

@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Rakaman",
     "subtitle": "Rakaman mesyuarat di sisi pelayan. Fail tempatan dipadam automatik selepas 30 hari (atau apabila anda terbitkan ke YouTube). Muat naik hanya dimulakan oleh pemilik.",
-    "empty": "Tiada rakaman lagi. Mulakan mesyuarat dan klik <1>Rakam</1> untuk menangkapnya.",
+    "empty": "Tiada rakaman lagi. Mulakan mesyuarat dan klik <1>Rakam</1> untuk merakamnya.",
     "loading": "Memuatkan…",
     "signInFirst": "Log masuk di one.witysk.org dahulu.",
     "signInTitle": "Log masuk untuk melihat rakaman anda",
@@ -757,5 +757,27 @@
     "sending": "Menghantar…",
     "emailSentTo": "Kod dihantar ke {{to}}. Masukkan kod di bawah untuk mengaktifkan kod e-mel.",
     "resend": "Hantar Semula"
+  },
+  "subStatus": {
+    "title": "Langganan",
+    "planMonthlySub": "Langganan bulanan (auto-perbaharui)",
+    "planAnnualSub": "Langganan tahunan (auto-perbaharui)",
+    "planMonthlyOnce": "Pas bulanan (sekali bayar)",
+    "planAnnual": "Pas tahunan (sekali bayar)",
+    "planVoucher": "Baucar",
+    "planUnknown": "Pelan aktif",
+    "renewsOn": "Pembaharuan pada {{date}}.",
+    "accessUntil": "Akses sehingga {{date}}.",
+    "daysLeft": "{{count}} hari lagi.",
+    "manage": "Urus langganan",
+    "extend": "Lanjutkan atau tukar pelan",
+    "noActive": "Tiada pelan aktif.",
+    "viewPlans": "Lihat pelan",
+    "historyTitle": "Sejarah",
+    "histMonthlyOnce": "Pas bulanan (sekali bayar)",
+    "histAnnualOnce": "Pas tahunan (sekali bayar)",
+    "histMonthlySub": "Langganan bulanan",
+    "histAnnualSub": "Langganan tahunan",
+    "histVoucher": "Baucar"
   }
 }

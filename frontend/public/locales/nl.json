@@ -757,5 +757,27 @@
     "sending": "Verzenden…",
     "emailSentTo": "Code verzonden naar {{to}}. Voer deze hieronder in om e-mailcodes in te schakelen.",
     "resend": "Opnieuw verzenden"
+  },
+  "subStatus": {
+    "title": "Abonnement",
+    "planMonthlySub": "Maandelijks abonnement (automatisch verlengen)",
+    "planAnnualSub": "Jaarlijks abonnement (automatisch verlengen)",
+    "planMonthlyOnce": "Maandpas (eenmalig)",
+    "planAnnual": "Jaarpas (eenmalig)",
+    "planVoucher": "Voucher",
+    "planUnknown": "Actief abonnement",
+    "renewsOn": "Vernieuwt op {{date}}.",
+    "accessUntil": "Toegang tot {{date}}.",
+    "daysLeft": "{{count}} dag(en) over.",
+    "manage": "Abonnement beheren",
+    "extend": "Plan aanpassen of verlengen",
+    "noActive": "Geen actief abonnement.",
+    "viewPlans": "Bekijk abonnementen",
+    "historyTitle": "Geschiedenis",
+    "histMonthlyOnce": "Maandpas (eenmalig)",
+    "histAnnualOnce": "Jaarlijks abonnement (eenmalig)",
+    "histMonthlySub": "Maandelijks abonnement",
+    "histAnnualSub": "Jaarlijks abonnement",
+    "histVoucher": "Waardebon"
   }
 }

@@ -757,5 +757,27 @@
     "sending": "Odesílání…",
     "emailSentTo": "Kód odeslán na {{to}}. Zadejte jej níže pro aktivaci e-mailových kódů.",
     "resend": "Znovu odeslat"
+  },
+  "subStatus": {
+    "title": "Předplatné",
+    "planMonthlySub": "Měsíční předplatné (automatické obnovení)",
+    "planAnnualSub": "Roční předplatné (automatické obnovení)",
+    "planMonthlyOnce": "Měsíční permanentka (jednorázová)",
+    "planAnnual": "Roční permanentka (jednorázová)",
+    "planVoucher": "Poukaz",
+    "planUnknown": "Aktivní plán",
+    "renewsOn": "Obnovuje se {{date}}.",
+    "accessUntil": "Přístup do {{date}}.",
+    "daysLeft": "{{count}} dní zbývá.",
+    "manage": "Spravovat předplatné",
+    "extend": "Prodloužit nebo změnit plán",
+    "noActive": "Žádný aktivní plán.",
+    "viewPlans": "Zobrazit plány",
+    "historyTitle": "Historie",
+    "histMonthlyOnce": "Měsíční permanentka (jednorázová)",
+    "histAnnualOnce": "Roční permanentka (jednorázová)",
+    "histMonthlySub": "Měsíční předplatné",
+    "histAnnualSub": "Roční předplatné",
+    "histVoucher": "Poukaz"
   }
 }

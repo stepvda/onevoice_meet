@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Mga Recording",
     "subtitle": "Ang mga recording ng iyong mga meeting ay nasa server-side. Ang mga lokal na file ay awtomatikong tatanggalin pagkatapos ng 30 araw (o kapag na-publish mo sa YouTube). Ang pag-upload ay tanging ang may-ari lamang ang makakapagsimula.",
-    "empty": "Wala pang recording. Magsimula ng meeting at i-click ang <1>Record</1> para makakuha ng isa.",
+    "empty": "Wala pang recording. Magsimula ng meeting at i-click ang <1>Record</1> para makagawa ng isa.",
     "loading": "Naglo-load…",
     "signInFirst": "Mag-sign in muna sa one.witysk.org.",
     "signInTitle": "Mag-sign in para makita ang iyong mga recording",
@@ -757,5 +757,27 @@
     "sending": "Ipinapadala…",
     "emailSentTo": "Code na ipinadala sa {{to}}. Ilagay ito sa ibaba para paganahin ang mga email code.",
     "resend": "Ipadala muli"
+  },
+  "subStatus": {
+    "title": "Subscription",
+    "planMonthlySub": "Buwanang subscription (auto-renew)",
+    "planAnnualSub": "Taunang subscription (auto-renew)",
+    "planMonthlyOnce": "Monthly pass (one-time)",
+    "planAnnual": "Taunang pass (isang beses lang)",
+    "planVoucher": "Voucher",
+    "planUnknown": "Aktibong plano",
+    "renewsOn": "Mababago sa {{date}}.",
+    "accessUntil": "Access hanggang {{date}}.",
+    "daysLeft": "{{count}} araw na natitira.",
+    "manage": "Pamahalaan ang subscription",
+    "extend": "Palawigin o baguhin ang plano",
+    "noActive": "Walang aktibong plano.",
+    "viewPlans": "Tingnan ang mga plano",
+    "historyTitle": "Kasaysayan",
+    "histMonthlyOnce": "Monthly pass (isang beses lang)",
+    "histAnnualOnce": "Taunang pass (isang beses lang)",
+    "histMonthlySub": "Buwanang subscription",
+    "histAnnualSub": "Taunang subscription",
+    "histVoucher": "Voucher"
   }
 }

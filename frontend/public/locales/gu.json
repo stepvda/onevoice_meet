@@ -757,5 +757,27 @@
     "sending": "મોકલી રહ્યા છીએ…",
     "emailSentTo": "{{to}} પર કોડ મોકલાયો. ઈમેલ કોડ સક્રિય કરવા માટે નીચે તે દાખલ કરો.",
     "resend": "ફરી મોકલો"
+  },
+  "subStatus": {
+    "title": "સબ્સ્ક્રિપ્શન",
+    "planMonthlySub": "માસિક સબ્સ્ક્રિપ્શન (ઓટો-રિન્યુ)",
+    "planAnnualSub": "વાર્ષિક સબ્સ્ક્રિપ્શન (ઓટો-રિન્યુ)",
+    "planMonthlyOnce": "માસિક પાસ (એક વખતનું)",
+    "planAnnual": "વાર્ષિક પાસ (એક વખતનું)",
+    "planVoucher": "વાઉચર",
+    "planUnknown": "સક્રિય યોજના",
+    "renewsOn": "{{date}} પર નવીકરણ થાય છે.",
+    "accessUntil": "{{date}} સુધી એક્સેસ.",
+    "daysLeft": "{{count}} દિવસ(ઓ) બાકી છે.",
+    "manage": "સબ્સ્ક્રિપ્શન મેનેજ કરો",
+    "extend": "પ્લાન વધારો અથવા બદલો",
+    "noActive": "કોઈ સક્રિય યોજના નથી.",
+    "viewPlans": "પ્લાન જુઓ",
+    "historyTitle": "ઇતિહાસ",
+    "histMonthlyOnce": "માસિક પાસ (એક વખતનું)",
+    "histAnnualOnce": "વાર્ષિક પાસ (એક વખતનું)",
+    "histMonthlySub": "માસિક સબ્સ્ક્રિપ્શન",
+    "histAnnualSub": "વાર્ષિક સબ્સ્ક્રિપ્શન",
+    "histVoucher": "વાઉચર"
   }
 }

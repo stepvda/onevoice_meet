@@ -35,7 +35,7 @@ from sqlalchemy.orm import Session
 from app.auth import RequireUser
 from app.config import settings
 from app.db import get_db
-from app.models import PaypalOrder, PaypalSubscription, User
+from app.models import PaypalOrder, PaypalSubscription, User, Voucher
 from app.services.paypal import (
     PaypalApiError,
     PaypalNotConfigured,
@@ -160,13 +160,11 @@ async def capture_billing_order(
         u = db.get(User, user.user_id)
         if u:
             now = datetime.now(timezone.utc)
-            base = (
-                u.entitlement_expires_at
-                if u.entitlement_expires_at and u.entitlement_expires_at > now
-                else now
-            )
-            if base.tzinfo is None:
-                base = base.replace(tzinfo=timezone.utc)
+            # SQLite strips tzinfo on read; normalise before comparing.
+            cur = u.entitlement_expires_at
+            if cur is not None and cur.tzinfo is None:
+                cur = cur.replace(tzinfo=timezone.utc)
+            base = cur if cur and cur > now else now
             if (row.kind or "annual") == "monthly":
                 u.entitlement_kind = "paypal_monthly_once"
                 u.entitlement_expires_at = base + timedelta(days=30)
@@ -325,3 +323,107 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)) -> dic
             db.commit()
 
     return {"ok": True}
+
+
+# ─── Billing history (Account page) ──────────────────────────────────
+
+
+class BillingHistoryItem(BaseModel):
+    """Unified row spanning PayPal orders, subscriptions, and redeemed
+    vouchers. The frontend renders these as a chronological list. `kind`
+    is the discriminator the SPA dispatches on; `label` is the localised
+    plan name we already use in the Subscription card."""
+    date: datetime
+    kind: str  # "paypal_order_monthly" | "paypal_order_annual" |
+               # "paypal_subscription_monthly" | "paypal_subscription_annual" |
+               # "voucher"
+    label: str
+    amount: str | None = None
+    currency: str | None = None
+    status: str | None = None
+    # Voucher code for voucher rows; PayPal id for paid rows. Helpful when
+    # the user wants to cross-check a charge against their PayPal statement.
+    reference: str | None = None
+
+
+@router.get("/me/billing-history")
+def my_billing_history(user: RequireUser, db: Session = Depends(get_db)) -> list[BillingHistoryItem]:
+    """Aggregates everything that has ever granted this user
+    meeting-creation rights: PayPal one-shot orders, PayPal subscriptions,
+    and redeemed vouchers. Sorted newest-first. Returns [] for SSO users
+    (their access comes from one.witysk.org, not from any local record)."""
+    items: list[BillingHistoryItem] = []
+    if user.kind == "sso":
+        return items
+
+    # PayPal one-shot orders
+    orders = (
+        db.query(PaypalOrder)
+        .filter_by(user_id=user.user_id)
+        .order_by(PaypalOrder.created_at.desc())
+        .all()
+    )
+    for o in orders:
+        kind = "paypal_order_monthly" if (o.kind or "annual") == "monthly" else "paypal_order_annual"
+        label = "Monthly pass (one-time)" if kind == "paypal_order_monthly" else "Yearly pass (one-time)"
+        items.append(
+            BillingHistoryItem(
+                date=o.captured_at or o.created_at,
+                kind=kind,
+                label=label,
+                amount=o.amount,
+                currency=o.currency,
+                status=o.status,
+                reference=o.paypal_order_id,
+            )
+        )
+
+    # PayPal subscriptions
+    subs = (
+        db.query(PaypalSubscription)
+        .filter_by(user_id=user.user_id)
+        .order_by(PaypalSubscription.created_at.desc())
+        .all()
+    )
+    for s in subs:
+        plan = (s.plan or "monthly").lower()
+        kind = "paypal_subscription_annual" if plan == "annual" else "paypal_subscription_monthly"
+        label = (
+            "Yearly subscription (auto-renew)"
+            if plan == "annual"
+            else "Monthly subscription (auto-renew)"
+        )
+        items.append(
+            BillingHistoryItem(
+                date=s.created_at,
+                kind=kind,
+                label=label,
+                amount=None,
+                currency="EUR",
+                status=s.status,
+                reference=s.paypal_subscription_id,
+            )
+        )
+
+    # Vouchers — only the ones this user actually redeemed.
+    vouchers = (
+        db.query(Voucher)
+        .filter(Voucher.redeemed_by_user_id == user.user_id)
+        .order_by(Voucher.redeemed_at.desc())
+        .all()
+    )
+    for v in vouchers:
+        items.append(
+            BillingHistoryItem(
+                date=v.redeemed_at or v.created_at,
+                kind="voucher",
+                label=f"Voucher ({v.duration_days} days)",
+                amount=None,
+                currency=None,
+                status="REDEEMED",
+                reference=v.code,
+            )
+        )
+
+    items.sort(key=lambda it: it.date, reverse=True)
+    return items

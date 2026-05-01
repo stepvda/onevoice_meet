@@ -757,5 +757,27 @@
     "sending": "Lähetetään…",
     "emailSentTo": "Koodi lähetetty osoitteeseen {{to}}. Syötä se alle ottaaksesi sähköpostikoodit käyttöön.",
     "resend": "Lähetä uudelleen"
+  },
+  "subStatus": {
+    "title": "Tilaus",
+    "planMonthlySub": "Kuukausitilaus (automaattinen uusinta)",
+    "planAnnualSub": "Vuositilaus (automaattinen uusinta)",
+    "planMonthlyOnce": "Kuukausipassi (kertamaksu)",
+    "planAnnual": "Vuosipassi (kertamaksu)",
+    "planVoucher": "Kuponki",
+    "planUnknown": "Aktiivinen paketti",
+    "renewsOn": "Uusiutuu {{date}}.",
+    "accessUntil": "Pääsy voimassa {{date}} asti.",
+    "daysLeft": "{{count}} päivää jäljellä.",
+    "manage": "Hallitse tilausta",
+    "extend": "Laajenna tai vaihda pakettia",
+    "noActive": "Ei aktiivista suunnitelmaa.",
+    "viewPlans": "Katso suunnitelmat",
+    "historyTitle": "Historia",
+    "histMonthlyOnce": "Kuukausipassi (kertamaksu)",
+    "histAnnualOnce": "Vuosipassi (kertamaksu)",
+    "histMonthlySub": "Kuukausitilaus",
+    "histAnnualSub": "Vuositilaus",
+    "histVoucher": "Kuponki"
   }
 }

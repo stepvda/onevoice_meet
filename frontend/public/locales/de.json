@@ -293,7 +293,7 @@
   "recordings": {
     "title": "Aufnahmen",
     "subtitle": "Serverseitige Aufzeichnungen Ihrer Meetings. Lokale Dateien werden nach 30 Tagen automatisch gelöscht (oder wenn Sie auf YouTube veröffentlichen). Uploads werden nur vom Besitzer initiiert.",
-    "empty": "Noch keine Aufnahmen. Starten Sie eine Besprechung und klicken Sie auf <1>Aufnehmen</1>, um eine zu erstellen.",
+    "empty": "Noch keine Aufnahmen. Starten Sie ein Meeting und klicken Sie auf <1>Aufnehmen</1>, um eine zu erstellen.",
     "loading": "Lädt…",
     "signInFirst": "Melden Sie sich zuerst auf one.witysk.org an.",
     "signInTitle": "Melden Sie sich an, um Ihre Aufnahmen zu sehen",
@@ -757,5 +757,27 @@
     "sending": "Senden…",
     "emailSentTo": "Code an {{to}} gesendet. Gib ihn unten ein, um E-Mail-Codes zu aktivieren.",
     "resend": "Erneut senden"
+  },
+  "subStatus": {
+    "title": "Abonnement",
+    "planMonthlySub": "Monatsabonnement (automatische Verlängerung)",
+    "planAnnualSub": "Jahresabonnement (automatische Verlängerung)",
+    "planMonthlyOnce": "Monatspass (einmalig)",
+    "planAnnual": "Jahrespass (einmalig)",
+    "planVoucher": "Gutschein",
+    "planUnknown": "Aktiver Tarif",
+    "renewsOn": "Verlängert sich am {{date}}.",
+    "accessUntil": "Zugriff bis {{date}}.",
+    "daysLeft": "{{count}} Tag(e) übrig.",
+    "manage": "Abonnement verwalten",
+    "extend": "Plan verlängern oder ändern",
+    "noActive": "Kein aktiver Plan.",
+    "viewPlans": "Pläne anzeigen",
+    "historyTitle": "Verlauf",
+    "histMonthlyOnce": "Monatskarte (einmalig)",
+    "histAnnualOnce": "Jahrespass (einmalig)",
+    "histMonthlySub": "Monatsabonnement",
+    "histAnnualSub": "Jahresabonnement",
+    "histVoucher": "Gutschein"
   }
 }

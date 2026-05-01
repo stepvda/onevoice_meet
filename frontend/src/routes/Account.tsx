@@ -9,6 +9,7 @@ import { Button, Card, Field, Input } from "../components/ui";
 import SignInPrompt from "../components/SignInPrompt";
 import PasswordStrengthIndicator from "../components/PasswordStrengthIndicator";
 import TwoFactorSettings from "../components/TwoFactorSettings";
+import SubscriptionStatus from "../components/SubscriptionStatus";
 
 /**
  * Account / profile editing. Native users can change name/email/username,
@@ -294,6 +295,8 @@ export default function Account() {
               </div>
             )}
           </Card>
+
+          <SubscriptionStatus me={me} />
 
           {/* Profile fields */}
           <Card>

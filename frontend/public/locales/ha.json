@@ -757,5 +757,27 @@
     "sending": "Ana aikawa…",
     "emailSentTo": "An aika lambar zuwa {{to}}. Shigar da ita a ƙasa don kunna lambobin imel.",
     "resend": "Sake aika"
+  },
+  "subStatus": {
+    "title": "Biyan kuɗi",
+    "planMonthlySub": "Biyan kuɗi na wata-wata (sabuntawa ta atomatik)",
+    "planAnnualSub": "Biyan kuɗi na shekara (sabunta kai tsaye)",
+    "planMonthlyOnce": "Wutar wata (sau ɗaya)",
+    "planAnnual": "Takardar shekara (sau ɗaya)",
+    "planVoucher": "Bauchi",
+    "planUnknown": "Tsarin aiki",
+    "renewsOn": "Yana sabuntawa a {{date}}.",
+    "accessUntil": "Samun dama har zuwa {{date}}.",
+    "daysLeft": "{{count}} kwanaki (s) sun rage.",
+    "manage": "Sarrafa biyan kuɗi",
+    "extend": "Tsawaita ko canza tsari",
+    "noActive": "Babu wani shiri mai aiki.",
+    "viewPlans": "Duba tsare-tsare",
+    "historyTitle": "Tarihi",
+    "histMonthlyOnce": "Wutar wata (sau ɗaya kawai)",
+    "histAnnualOnce": "Takardar shekara (sau ɗaya kawai)",
+    "histMonthlySub": "Biyan kuɗi na wata-wata",
+    "histAnnualSub": "Biyan kuɗi na shekara",
+    "histVoucher": "Bauchi"
   }
 }

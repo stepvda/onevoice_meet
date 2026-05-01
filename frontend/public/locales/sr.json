@@ -757,5 +757,27 @@
     "sending": "Slanje…",
     "emailSentTo": "Kôd poslat na {{to}}. Unesite ga ispod da biste omogućili email kodove.",
     "resend": "Ponovo pošalji"
+  },
+  "subStatus": {
+    "title": "Pretplata",
+    "planMonthlySub": "Mesečna pretplata (automatsko obnavljanje)",
+    "planAnnualSub": "Godišnja pretplata (automatsko obnavljanje)",
+    "planMonthlyOnce": "Mesečna propusnica (jednokratno)",
+    "planAnnual": "Godišnja propusnica (jednokratno)",
+    "planVoucher": "Vaučer",
+    "planUnknown": "Aktivan plan",
+    "renewsOn": "Obnavlja se {{date}}.",
+    "accessUntil": "Pristup do {{date}}.",
+    "daysLeft": "{{count}} dan(a) preostalo.",
+    "manage": "Upravljaj pretplatom",
+    "extend": "Produži ili promeni plan",
+    "noActive": "Nema aktivnog plana.",
+    "viewPlans": "Prikaži planove",
+    "historyTitle": "Istorija",
+    "histMonthlyOnce": "Mesečna propusnica (jednokratno)",
+    "histAnnualOnce": "Godišnja propusnica (jednokratna)",
+    "histMonthlySub": "Mesečna pretplata",
+    "histAnnualSub": "Godišnja pretplata",
+    "histVoucher": "Vaučer"
   }
 }
