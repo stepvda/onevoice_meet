@@ -61,7 +61,10 @@ def decode_access_token(token: str) -> dict:
             token,
             settings.jwt_secret_key,
             algorithms=[settings.jwt_algorithm],
-            options={"verify_aud": False},
+            # leeway tolerates small clock drift between meet and one.witysk.org
+            # (both validate the same signed JWT); without it freshly-minted
+            # access tokens can 401 here for ~30s after issuance.
+            options={"verify_aud": False, "leeway": 30},
         )
     except JWTError as exc:
         raise HTTPException(
@@ -153,9 +156,16 @@ def require_user(
 ) -> AuthUser:
     token = _extract_bearer(authorization)
     claims = decode_access_token(token)
-    if claims.get("type") == "refresh":
-        # one.witysk.org distinguishes access vs refresh; refuse refresh.
-        raise HTTPException(status_code=401, detail="refresh token not accepted here")
+    # ENFORCE type=="access" — onevoice signs several JWT types with the same
+    # secret (refresh, email_verification, etc.).  Previously only "refresh"
+    # was blocked; any other type slipped through.  An email-verification
+    # token leaked via mailbox or referer would otherwise authenticate fully.
+    token_type = claims.get("type")
+    if token_type != "access":
+        raise HTTPException(
+            status_code=401,
+            detail=f"only access tokens accepted (got type={token_type!r})",
+        )
     user = _user_from_claims(claims, db)
     now = datetime.now(timezone.utc)
     return AuthUser(
