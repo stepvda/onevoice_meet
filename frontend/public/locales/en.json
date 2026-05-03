@@ -73,7 +73,11 @@
       "firstPage": "First page",
       "prevPage": "Previous page",
       "nextPage": "Next page",
-      "lastPage": "Last page"
+      "lastPage": "Last page",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "ok": "OK",
+      "working": "Working…"
     },
     "ips": {
       "addTitle": "Block an IP, CIDR, or range",
@@ -240,7 +244,13 @@
     "passwordIfRequired": "Password (if required)",
     "join": "Join",
     "joining": "Joining…",
-    "brandingAlt": "Meeting branding image"
+    "brandingAlt": "Meeting branding image",
+    "testMedia": "Test mic & camera",
+    "testingMedia": "Testing…",
+    "testMediaTitle": "Test microphone and camera before joining",
+    "mediaOk": "Mic & camera ready.",
+    "mediaDenied": "Mic or camera blocked. Tap the lock icon in the address bar to allow access, then reload.",
+    "mediaError": "Couldn't access mic/camera — check that no other app is using them."
   },
   "room": {
     "takeStage": "Take stage",

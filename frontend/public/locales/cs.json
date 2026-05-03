@@ -144,7 +144,13 @@
     "passwordIfRequired": "Heslo (je-li vyžadováno)",
     "join": "Připojit se",
     "joining": "Připojování…",
-    "brandingAlt": "Obrázek značky schůzky"
+    "brandingAlt": "Obrázek značky schůzky",
+    "testMedia": "Testovat mikrofon a kameru",
+    "testingMedia": "Testování…",
+    "testMediaTitle": "Otestovat mikrofon a kameru před připojením",
+    "mediaOk": "Mikrofon a kamera připraveny.",
+    "mediaDenied": "Mikrofon nebo kamera blokovány. Klepněte na ikonu zámku v adresním řádku pro povolení přístupu, poté obnovte stránku.",
+    "mediaError": "Nelze získat přístup k mikrofonu/kameře – zkontrolujte, zda je nepoužívá jiná aplikace."
   },
   "room": {
     "takeStage": "Převzít roli",
@@ -294,7 +300,7 @@
   "recordings": {
     "title": "Nahrávky",
     "subtitle": "Nahrávky vašich schůzek na straně serveru. Místní soubory se automaticky mažou po 30 dnech (nebo po zveřejnění na YouTube). Nahrávání je iniciováno pouze vlastníkem.",
-    "empty": "Zatím žádné nahrávky. Zahajte schůzku a kliknutím na <1>Nahrávat</1> ji zachyťte.",
+    "empty": "Zatím žádné nahrávky. Zahajte schůzku a klikněte na <1>Nahrávat</1> pro pořízení jedné.",
     "loading": "Načítání…",
     "signInFirst": "Nejprve se přihlaste na one.witysk.org.",
     "signInTitle": "Přihlaste se pro zobrazení vašich nahrávek",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Správce na one.witysk.org",
       "badgeSuspended": "pozastaveno",
-      "notSortable": "Neřaditelné — hodnota pochází z one.witysk.org pro každý řádek"
+      "notSortable": "Neřaditelné — hodnota pochází z one.witysk.org pro každý řádek",
+      "cancel": "Zrušit",
+      "confirm": "Potvrdit",
+      "ok": "OK",
+      "working": "Pracuje se…"
     },
     "ips": {
       "addTitle": "Blokovat IP, CIDR nebo rozsah",

@@ -144,7 +144,13 @@
     "passwordIfRequired": "Passord (hvis nødvendig)",
     "join": "Bli med",
     "joining": "Bli med…",
-    "brandingAlt": "Møtebranding-bilde"
+    "brandingAlt": "Møtebranding-bilde",
+    "testMedia": "Test mikrofon og kamera",
+    "testingMedia": "Tester…",
+    "testMediaTitle": "Test mikrofon og kamera før du blir med",
+    "mediaOk": "Mikrofon og kamera klart.",
+    "mediaDenied": "Mikrofon eller kamera blokkert. Trykk på hengelåsikonet i adressefeltet for å gi tilgang, og last deretter inn på nytt.",
+    "mediaError": "Kunne ikke få tilgang til mikrofon/kamera – sjekk at ingen andre apper bruker dem."
   },
   "room": {
     "takeStage": "Ta scenen",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Administrator på one.witysk.org",
       "badgeSuspended": "Suspendert",
-      "notSortable": "Ikke sorterbar — verdien kommer fra one.witysk.org per rad"
+      "notSortable": "Ikke sorterbar — verdien kommer fra one.witysk.org per rad",
+      "cancel": "Avbryt",
+      "confirm": "Bekreft",
+      "ok": "OK",
+      "working": "Jobber…"
     },
     "ips": {
       "addTitle": "Blokker en IP, CIDR eller rekkevidde",

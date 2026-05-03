@@ -144,7 +144,13 @@
     "passwordIfRequired": "Senha (se necessário)",
     "join": "Participar",
     "joining": "Entrando…",
-    "brandingAlt": "Imagem de marca da reunião"
+    "brandingAlt": "Imagem de marca da reunião",
+    "testMedia": "Testar microfone e câmera",
+    "testingMedia": "Testando…",
+    "testMediaTitle": "Testar microfone e câmera antes de entrar",
+    "mediaOk": "Microfone e câmera prontos.",
+    "mediaDenied": "Microfone ou câmera bloqueados. Toque no ícone de cadeado na barra de endereços para permitir o acesso e recarregue.",
+    "mediaError": "Não foi possível acessar microfone/câmera — verifique se nenhum outro aplicativo os está usando."
   },
   "room": {
     "takeStage": "Entrar em cena",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "administrador",
       "badgeOneWityskAdminTitle": "Administrador em one.witysk.org",
       "badgeSuspended": "Suspenso",
-      "notSortable": "Não classificável — valor vem de one.witysk.org por linha"
+      "notSortable": "Não classificável — valor vem de one.witysk.org por linha",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "ok": "OK",
+      "working": "Trabalhando…"
     },
     "ips": {
       "addTitle": "Bloquear um IP, CIDR ou intervalo",

@@ -144,7 +144,13 @@
     "passwordIfRequired": "Jelszó (ha szükséges)",
     "join": "Csatlakozás",
     "joining": "Csatlakozás…",
-    "brandingAlt": "Találkozó arculati kép"
+    "brandingAlt": "Találkozó arculati kép",
+    "testMedia": "Mikrofon és kamera tesztelése",
+    "testingMedia": "Tesztelés…",
+    "testMediaTitle": "Teszteld a mikrofont és a kamerát a csatlakozás előtt",
+    "mediaOk": "Mikrofon és kamera készen áll.",
+    "mediaDenied": "Mikrofon vagy kamera blokkolva. Koppints a lakat ikonra a címsorban az engedélyezéshez, majd töltsd újra az oldalt.",
+    "mediaError": "Nem sikerült elérni a mikrofont/kamerát – ellenőrizze, hogy más alkalmazás nem használja-e őket."
   },
   "room": {
     "takeStage": "Színpadra lépés",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin a one.witysk.org oldalon",
       "badgeSuspended": "felfüggesztve",
-      "notSortable": "Nem rendezhető — az érték soronként a one.witysk.org oldalról származik"
+      "notSortable": "Nem rendezhető — az érték soronként a one.witysk.org oldalról származik",
+      "cancel": "Mégse",
+      "confirm": "Megerősítés",
+      "ok": "Rendben",
+      "working": "Működik…"
     },
     "ips": {
       "addTitle": "IP, CIDR vagy tartomány blokkolása",

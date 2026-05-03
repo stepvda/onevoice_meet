@@ -144,7 +144,13 @@
     "passwordIfRequired": "Parol (agar kerak bo‘lsa)",
     "join": "Qo‘shilish",
     "joining": "Qo‘shilmoqda…",
-    "brandingAlt": "Uchrashuv brendi tasviri"
+    "brandingAlt": "Uchrashuv brendi tasviri",
+    "testMedia": "Mikrofon va kamerani sinab ko‘ring",
+    "testingMedia": "Sinov...",
+    "testMediaTitle": "Mikrofon va kamerani qo‘shilishdan oldin sinab ko‘ring",
+    "mediaOk": "Mikrofon va kamera tayyor.",
+    "mediaDenied": "Mikrofon yoki kamera bloklangan. Ruxsat berish uchun manzil satridagi qulf belgisiga bosing, so‘ng qayta yuklang.",
+    "mediaError": "Mikrofon/kameraga ulanish imkoni bo‘lmadi — boshqa ilova ulardan foydalanmayotganini tekshiring."
   },
   "room": {
     "takeStage": "Sahna",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "Admin",
       "badgeOneWityskAdminTitle": "Admin one.witysk.org saytida",
       "badgeSuspended": "to‘xtatilgan",
-      "notSortable": "Saralanmaydi — qiymat har bir qator uchun one.witysk.org dan keladi"
+      "notSortable": "Saralanmaydi — qiymat har bir qator uchun one.witysk.org dan keladi",
+      "cancel": "Bekor qilish",
+      "confirm": "Tasdiqlash",
+      "ok": "OK",
+      "working": "Ishlamoqda…"
     },
     "ips": {
       "addTitle": "IP, CIDR yoki diapazonni bloklash",

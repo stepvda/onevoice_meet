@@ -144,7 +144,13 @@
     "passwordIfRequired": "Lozinka (ako je potrebna)",
     "join": "Pridruži se",
     "joining": "Pridruživanje…",
-    "brandingAlt": "Sastanak slika brendiranja"
+    "brandingAlt": "Sastanak slika brendiranja",
+    "testMedia": "Testiraj mikrofon i kameru",
+    "testingMedia": "Testiranje…",
+    "testMediaTitle": "Testiraj mikrofon i kameru prije pridruživanja",
+    "mediaOk": "Mikrofon i kamera spremni.",
+    "mediaDenied": "Mikrofon ili kamera blokirani. Dodirnite ikonu lokota u adresnoj traci da biste dopustili pristup, zatim ponovno učitajte.",
+    "mediaError": "Ne može se pristupiti mikrofonu/kameri — provjerite da ih ne koristi druga aplikacija."
   },
   "room": {
     "takeStage": "Preuzmi pozornicu",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Administrator na one.witysk.org",
       "badgeSuspended": "obustavljeno",
-      "notSortable": "Nije moguće sortirati — vrijednost dolazi iz one.witysk.org po retku"
+      "notSortable": "Nije moguće sortirati — vrijednost dolazi iz one.witysk.org po retku",
+      "cancel": "Odustani",
+      "confirm": "Potvrdi",
+      "ok": "U redu",
+      "working": "Radim…"
     },
     "ips": {
       "addTitle": "Blokiraj IP, CIDR ili raspon",

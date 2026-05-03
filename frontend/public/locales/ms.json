@@ -144,7 +144,13 @@
     "passwordIfRequired": "Kata laluan (jika diperlukan)",
     "join": "Sertai",
     "joining": "Menyertai…",
-    "brandingAlt": "Imej penjenamaan mesyuarat"
+    "brandingAlt": "Imej penjenamaan mesyuarat",
+    "testMedia": "Uji mikrofon & kamera",
+    "testingMedia": "Menguji…",
+    "testMediaTitle": "Uji mikrofon dan kamera sebelum menyertai",
+    "mediaOk": "Mik & kamera sedia.",
+    "mediaDenied": "Mikrofon atau kamera disekat. Ketik ikon kunci di bar alamat untuk membenarkan akses, kemudian muat semula.",
+    "mediaError": "Tidak dapat mengakses mikrofon/kamera — pastikan tiada aplikasi lain yang menggunakannya."
   },
   "room": {
     "takeStage": "Ambil pentas",
@@ -294,7 +300,7 @@
   "recordings": {
     "title": "Rakaman",
     "subtitle": "Rakaman mesyuarat di sisi pelayan. Fail tempatan dipadam automatik selepas 30 hari (atau apabila anda terbitkan ke YouTube). Muat naik hanya dimulakan oleh pemilik.",
-    "empty": "Tiada rakaman lagi. Mulakan mesyuarat dan klik <1>Rakam</1> untuk menangkapnya.",
+    "empty": "Tiada rakaman lagi. Mulakan mesyuarat dan klik <1>Rakam</1> untuk merakamnya.",
     "loading": "Memuatkan…",
     "signInFirst": "Log masuk di one.witysk.org dahulu.",
     "signInTitle": "Log masuk untuk melihat rakaman anda",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "pentadbir",
       "badgeOneWityskAdminTitle": "Admin pada one.witysk.org",
       "badgeSuspended": "digantung",
-      "notSortable": "Tidak boleh diisih — nilai datang daripada one.witysk.org setiap baris"
+      "notSortable": "Tidak boleh diisih — nilai datang daripada one.witysk.org setiap baris",
+      "cancel": "Batal",
+      "confirm": "Sahkan",
+      "ok": "OK",
+      "working": "Sedang berfungsi…"
     },
     "ips": {
       "addTitle": "Sekat IP, CIDR, atau julat",

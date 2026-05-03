@@ -242,7 +242,12 @@ export default function ChatPanel({ open, onClose }: Props) {
   return (
     <aside
       data-testid="chat-panel"
-      className="h-full w-full sm:w-96 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col"
+      className={[
+        // Overlay on mobile (z-20 above the stage), inline column on sm+.
+        // See ParticipantsPanel for the same pattern.
+        "absolute inset-y-0 right-0 z-20 sm:static sm:z-auto",
+        "h-full w-full sm:w-96 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col",
+      ].join(" ")}
       role="complementary"
       aria-label={t("chatPanel.ariaLabel")}
     >
@@ -391,15 +396,26 @@ export default function ChatPanel({ open, onClose }: Props) {
         </button>
 
         {emojiOpen && (
-          <div className="absolute bottom-14 right-2 z-30 shadow-2xl">
+          <div
+            className={[
+              // On phones, full-screen sheet from the bottom: no chance of the
+              // 320px-wide picker overflowing a 375px screen and hiding the
+              // input behind it. On sm+ stay as the small popup over the form.
+              "fixed inset-x-2 bottom-2 z-50 shadow-2xl flex justify-center",
+              "sm:absolute sm:inset-auto sm:bottom-14 sm:right-2 sm:z-30 sm:block",
+            ].join(" ")}
+          >
             <Suspense fallback={<div className="text-xs text-slate-400 p-2">…</div>}>
               <EmojiPicker
                 onEmojiClick={(e) => {
                   onEmojiPicked(e.emoji);
                   setEmojiOpen(false);
                 }}
-                width={320}
-                height={400}
+                // String width avoids the picker's default 320px overflowing
+                // narrow phone screens. The CSS min() keeps it bounded on
+                // wider screens too.
+                width="min(96vw, 320px)"
+                height={Math.min(window.innerHeight - 120, 400)}
                 emojiStyle={EMOJI_STYLE_NATIVE}
                 theme={"dark" as never}
               />
@@ -501,9 +517,12 @@ function MessageBubble({
           )}
         </div>
 
+        {/* Hover-only on desktop; always-visible on touch (where there is no
+            hover) so users can actually find the reaction/reply controls. */}
         <div
           className={[
-            "absolute -top-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
+            "absolute -top-4 flex items-center gap-1 transition-opacity",
+            "opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
             mine ? "left-2" : "right-2",
           ].join(" ")}
         >
@@ -513,9 +532,9 @@ function MessageBubble({
             data-testid={`chat-react-toggle-${msg.id}`}
             title={t("chatPanel.addReaction", { defaultValue: "Add reaction" })}
             aria-label={t("chatPanel.addReaction", { defaultValue: "Add reaction" })}
-            className="p-1 rounded-full bg-primary-700 hover:bg-primary-600 text-slate-200 border border-primary-600"
+            className="min-w-9 min-h-9 inline-flex items-center justify-center rounded-full bg-primary-700 hover:bg-primary-600 text-slate-200 border border-primary-600"
           >
-            <Smile size={12} />
+            <Smile size={16} />
           </button>
           <button
             type="button"
@@ -523,9 +542,9 @@ function MessageBubble({
             data-testid={`chat-reply-${msg.id}`}
             title={t("chatPanel.reply", { defaultValue: "Reply" })}
             aria-label={t("chatPanel.reply", { defaultValue: "Reply" })}
-            className="p-1 rounded-full bg-primary-700 hover:bg-primary-600 text-slate-200 border border-primary-600"
+            className="min-w-9 min-h-9 inline-flex items-center justify-center rounded-full bg-primary-700 hover:bg-primary-600 text-slate-200 border border-primary-600"
           >
-            <Reply size={12} />
+            <Reply size={16} />
           </button>
         </div>
 
@@ -533,7 +552,7 @@ function MessageBubble({
           <div
             data-testid={`chat-react-picker-${msg.id}`}
             className={[
-              "absolute z-20 -top-10 bg-primary-800 border border-primary-600 rounded-full shadow-xl flex items-center gap-0.5 px-1.5 py-1",
+              "absolute z-20 -top-12 bg-primary-800 border border-primary-600 rounded-full shadow-xl flex items-center gap-0.5 px-1.5 py-1",
               mine ? "left-0" : "right-0",
             ].join(" ")}
             onMouseLeave={onCloseReactionPicker}
@@ -544,7 +563,7 @@ function MessageBubble({
                 type="button"
                 onClick={() => onPickReaction(emoji)}
                 data-testid={`chat-react-${msg.id}-${emoji}`}
-                className="text-base px-1 rounded hover:bg-primary-700"
+                className="min-w-9 min-h-9 inline-flex items-center justify-center text-lg rounded hover:bg-primary-700"
               >
                 {emoji}
               </button>

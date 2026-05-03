@@ -144,7 +144,13 @@
     "passwordIfRequired": "Лозинка (ако је потребна)",
     "join": "Придружите се",
     "joining": "Придружујем се…",
-    "brandingAlt": "Слика брендирања састанка"
+    "brandingAlt": "Слика брендирања састанка",
+    "testMedia": "Testiraj mikrofon i kameru",
+    "testingMedia": "Testiranje…",
+    "testMediaTitle": "Testiraj mikrofon i kameru pre pridruživanja",
+    "mediaOk": "Mikrofon i kamera spremni.",
+    "mediaDenied": "Mikrofon ili kamera blokirani. Dodirnite ikonu lokota u adresnoj traci da biste dozvolili pristup, a zatim ponovo učitajte.",
+    "mediaError": "Ne može da pristupi mikrofonu/kameri — proverite da li ih neka druga aplikacija koristi."
   },
   "room": {
     "takeStage": "Zauzmi scenu",
@@ -294,7 +300,7 @@
   "recordings": {
     "title": "Снимци",
     "subtitle": "Снимање састанака на серверу. Локалне датотеке се аутоматски бришу након 30 дана (или када објавите на YouTube-у). Отпремање покреће само власник.",
-    "empty": "Još nema snimaka. Započnite sastanak i kliknite na <1>Snimi</1> da biste napravili jedan.",
+    "empty": "Još nema snimaka. Započnite sastanak i kliknite na <1>Snimi</1> da biste ga napravili.",
     "loading": "Учитавање…",
     "signInFirst": "Прво се пријавите на one.witysk.org.",
     "signInTitle": "Пријавите се да видите снимке",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin na one.witysk.org",
       "badgeSuspended": "obustavljen",
-      "notSortable": "Nije moguće sortirati — vrednost dolazi sa one.witysk.org po redu"
+      "notSortable": "Nije moguće sortirati — vrednost dolazi sa one.witysk.org po redu",
+      "cancel": "Otkaži",
+      "confirm": "Potvrdi",
+      "ok": "U redu",
+      "working": "Ради…"
     },
     "ips": {
       "addTitle": "Blokiraj IP, CIDR ili opseg",

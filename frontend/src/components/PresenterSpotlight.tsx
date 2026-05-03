@@ -56,13 +56,16 @@ export default function PresenterSpotlight() {
       (t) => !(t.participant.identity === focus.participant.identity && t.source === focus.source)
     );
     return (
-      <div className="flex h-full gap-2 p-2">
-        <div className="flex-[3] min-w-0">
+      // Portrait phones get a stacked layout (presenter on top, others below)
+      // so the presenter tile actually fills the screen width. Landscape /
+      // tablet keeps the side-by-side layout it had before.
+      <div className="flex h-full gap-2 p-2 flex-col landscape:flex-row sm:flex-row">
+        <div className="flex-[3] min-w-0 min-h-0">
           <TrackRefContext.Provider value={focus}>
             <FlippableTile />
           </TrackRefContext.Provider>
         </div>
-        <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="flex-1 min-w-0 min-h-0 overflow-auto">
           <GridLayout tracks={others}>
             <FlippableTile />
           </GridLayout>

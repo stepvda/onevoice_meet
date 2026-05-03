@@ -2,7 +2,8 @@
  * Shared UI primitives — matches one.witysk.org's Button/Card/Input patterns.
  * Tailwind-first; no CSS-in-JS.
  */
-import { ReactNode, forwardRef } from "react";
+import { ReactNode, forwardRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 type Variant = "primary" | "secondary" | "danger" | "outline" | "ghost" | "accent";
 type Size = "sm" | "md" | "lg";
@@ -112,8 +113,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   return (
     <input
       ref={ref}
+      // text-base (16px) on mobile prevents iOS Safari's auto-zoom on focus;
+      // sm:text-sm shrinks to 14px once we're past the small breakpoint where
+      // zoom isn't an issue.
       className={[
-        "w-full px-3 py-2 rounded-lg shadow-sm",
+        "w-full px-3 py-2 rounded-lg shadow-sm text-base sm:text-sm",
         "bg-primary-900/60 text-slate-100 placeholder:text-slate-400",
         "border",
         invalid ? "border-red-500" : "border-primary-700",
@@ -137,7 +141,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
     <select
       ref={ref}
       className={[
-        "w-full px-3 py-2 rounded-lg shadow-sm",
+        "w-full px-3 py-2 rounded-lg shadow-sm text-base sm:text-sm",
         "bg-primary-900/60 text-slate-100",
         "border border-primary-700",
         "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400",
@@ -170,7 +174,7 @@ export function Toggle({
         role="switch"
         id={id}
         data-testid={id}
-        aria-checked={checked}
+        aria-checked={checked ? "true" : "false"}
         onClick={() => onChange(!checked)}
         className={[
           "relative inline-flex h-6 w-11 flex-shrink-0 rounded-full transition-colors",
@@ -213,4 +217,67 @@ export function Field({
       {hint && <p className="text-xs text-slate-400 mt-1">{hint}</p>}
     </div>
   );
+}
+
+
+/**
+ * Modal — replaces native `window.confirm`/`prompt`/`alert` so the admin panel
+ * looks consistent on mobile (the native dialogs are tiny + cover the input
+ * with the iOS keyboard). Keep it deliberately small: a portaled overlay, a
+ * centred card, body scroll-lock while open, and Escape-to-close. Anything
+ * fancier (focus trap, animation) can be added later if needed.
+ */
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  closeOnBackdrop = true,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+  closeOnBackdrop?: boolean;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+  const node = (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={closeOnBackdrop ? onClose : undefined}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className={[
+          "w-full sm:max-w-md bg-primary-800 border border-primary-700 shadow-2xl",
+          "rounded-t-xl sm:rounded-xl",
+          "p-5 pb-[calc(theme(spacing.5)+env(safe-area-inset-bottom))] sm:pb-5",
+          "max-h-[90dvh] overflow-y-auto",
+        ].join(" ")}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold text-slate-50 mb-3">{title}</h3>
+        <div className="text-sm text-slate-200">{children}</div>
+        {footer && <div className="mt-5 flex flex-wrap justify-end gap-2">{footer}</div>}
+      </div>
+    </div>
+  );
+  return createPortal(node, document.body);
 }

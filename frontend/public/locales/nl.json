@@ -144,7 +144,13 @@
     "passwordIfRequired": "Wachtwoord (indien vereist)",
     "join": "Deelnemen",
     "joining": "Verbinden...",
-    "brandingAlt": "Vergaderingsbrandingafbeelding"
+    "brandingAlt": "Vergaderingsbrandingafbeelding",
+    "testMedia": "Microfoon & camera testen",
+    "testingMedia": "Testen…",
+    "testMediaTitle": "Test microfoon en camera voordat u deelneemt",
+    "mediaOk": "Microfoon & camera gereed.",
+    "mediaDenied": "Microfoon of camera geblokkeerd. Tik op het slotpictogram in de adresbalk om toegang toe te staan en laad de pagina opnieuw.",
+    "mediaError": "Geen toegang tot microfoon/camera — controleer of geen andere app ze gebruikt."
   },
   "room": {
     "takeStage": "Neem het podium",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "beheerder",
       "badgeOneWityskAdminTitle": "Beheerder op one.witysk.org",
       "badgeSuspended": "onderbroken",
-      "notSortable": "Niet sorteerbaar — waarde komt per rij van one.witysk.org"
+      "notSortable": "Niet sorteerbaar — waarde komt per rij van one.witysk.org",
+      "cancel": "Annuleren",
+      "confirm": "Bevestigen",
+      "ok": "OK",
+      "working": "Bezig…"
     },
     "ips": {
       "addTitle": "Blokkeer een IP, CIDR of bereik",

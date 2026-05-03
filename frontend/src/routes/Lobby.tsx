@@ -47,6 +47,11 @@ export default function Lobby() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<PublicRoomInfo | null>(null);
+  // Pre-flight mic/camera state — null=untested, "ok"=granted, "denied"=blocked,
+  // "error"=other (no devices, secure-context, etc.). We surface the result
+  // before joining the room so a denied prompt doesn't dump the user mid-call.
+  const [permState, setPermState] = useState<null | "ok" | "denied" | "error">(null);
+  const [permTesting, setPermTesting] = useState(false);
 
   const [ownerMeetingId, setOwnerMeetingId] = useState<string | null>(
     sessionStorage.getItem(`owner:${roomName}`)
@@ -116,6 +121,26 @@ export default function Lobby() {
       cancelled = true;
     };
   }, [ownerMeetingId, roomName]);
+
+  async function checkMediaPermission() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setPermState("error");
+      return;
+    }
+    setPermTesting(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      // Stop tracks immediately — we just wanted the prompt, LiveKit will
+      // re-acquire on join.
+      stream.getTracks().forEach((t) => t.stop());
+      setPermState("ok");
+    } catch (e) {
+      const msg = (e as DOMException)?.name ?? "";
+      setPermState(msg === "NotAllowedError" || msg === "PermissionDeniedError" ? "denied" : "error");
+    } finally {
+      setPermTesting(false);
+    }
+  }
 
   async function join(e: React.FormEvent) {
     e.preventDefault();
@@ -198,11 +223,45 @@ export default function Lobby() {
             </>
           )}
 
-          <div>
-            <Button type="submit" disabled={busy || (!isOwner && !name)} data-testid="lobby-submit">
-              {busy ? t("lobby.joining") : t("lobby.join")}
-            </Button>
-            {err && <div className="text-red-400 text-sm mt-2">{err}</div>}
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="submit" disabled={busy || (!isOwner && !name)} data-testid="lobby-submit">
+                {busy ? t("lobby.joining") : t("lobby.join")}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void checkMediaPermission()}
+                disabled={permTesting}
+                data-testid="lobby-test-media"
+                title={t("lobby.testMediaTitle", { defaultValue: "Test microphone and camera before joining" })}
+              >
+                {permTesting
+                  ? t("lobby.testingMedia", { defaultValue: "Testing…" })
+                  : t("lobby.testMedia", { defaultValue: "Test mic & camera" })}
+              </Button>
+            </div>
+            {permState === "ok" && (
+              <div className="text-xs text-accent-500" data-testid="lobby-perm-ok">
+                {t("lobby.mediaOk", { defaultValue: "Mic & camera ready." })}
+              </div>
+            )}
+            {permState === "denied" && (
+              <div className="text-xs text-red-400" data-testid="lobby-perm-denied">
+                {t("lobby.mediaDenied", {
+                  defaultValue:
+                    "Mic or camera blocked. Tap the lock icon in the address bar to allow access, then reload.",
+                })}
+              </div>
+            )}
+            {permState === "error" && (
+              <div className="text-xs text-amber-400" data-testid="lobby-perm-error">
+                {t("lobby.mediaError", {
+                  defaultValue: "Couldn't access mic/camera — check that no other app is using them.",
+                })}
+              </div>
+            )}
+            {err && <div className="text-red-400 text-sm">{err}</div>}
           </div>
         </form>
       </Card>

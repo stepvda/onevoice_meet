@@ -126,7 +126,7 @@ export default function Sidebar() {
         data-testid="sidebar"
         className={[
           "bg-witysk-sidebar text-white shadow-lg",
-          "flex flex-col w-64 h-screen fixed top-0 left-0 z-40",
+          "flex flex-col w-64 h-dvh fixed top-0 left-0 z-40",
           "transition-transform lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         ].join(" ")}
@@ -168,7 +168,10 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 px-3 py-2 space-y-1 mb-[70px]">
+        {/* mb-[70px] reserves space for the global TICafeBar that overlays the
+            footer; we add safe-area-bottom so the last menu item clears the
+            iPhone home indicator. */}
+        <div className="border-t border-white/10 px-3 py-2 space-y-1 mb-[calc(70px+env(safe-area-inset-bottom))]">
           {secondaryForUser.map(({ to, i18nKey, icon: Icon, end }) => (
             <NavLink
               key={to}
@@ -265,11 +268,13 @@ export function MainArea({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const inMeeting = pathname.startsWith("/r/");
   if (inMeeting) {
-    return <main className="h-screen w-screen">{children}</main>;
+    return <main className="h-dvh w-screen">{children}</main>;
   }
   // flex-col so the footer sticks to the bottom even on short pages.
+  // min-h-dvh tracks the iOS browser-chrome shrink/grow correctly; min-h-screen
+  // (100vh) leaves a gap when the URL bar collapses.
   return (
-    <main className="lg:pl-64 pt-14 lg:pt-0 min-h-screen flex flex-col">
+    <main className="lg:pl-64 pt-14 lg:pt-0 min-h-dvh flex flex-col">
       <div className="flex-1">{children}</div>
       <Footer />
     </main>

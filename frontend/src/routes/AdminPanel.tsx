@@ -22,7 +22,7 @@ import {
   OneWityskUserDetail,
 } from "../lib/auth";
 import { useMe } from "../lib/me";
-import { Button, Card, Field, Input } from "../components/ui";
+import { Button, Card, Field, Input, Modal } from "../components/ui";
 import SignInPrompt from "../components/SignInPrompt";
 
 type Tab = "users" | "ips" | "ids";
@@ -293,29 +293,32 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
     return ssoDetails[u.external_id];
   }
 
-  async function togglePlatformAdmin(u: AdminUserOut) {
-    if (
-      !confirm(
-        u.is_platform_admin
-          ? t("admin.users.confirmDemote", {
-              email: u.email || u.username,
-              defaultValue: "Revoke platform-admin from {{email}}?",
-            })
-          : t("admin.users.confirmPromote", {
-              email: u.email || u.username,
-              defaultValue: "Grant platform-admin to {{email}}?",
-            })
-      )
-    )
-      return;
-    try {
-      const updated = await api.adminUpdateUser(u.id, { is_platform_admin: !u.is_platform_admin });
-      setRows((cur) => cur.map((x) => (x.id === u.id ? updated : x)));
-    } catch (e) {
-      setErr((e as Error).message);
-    }
+  // Modal-based admin actions. Replaces native window.confirm/prompt/alert
+  // which look broken on mobile (tiny text, keyboard covers the input). One
+  // discriminated state describes the open dialog and what action to run on
+  // confirm; renderDialog() below maps it to the right form.
+  type Dialog =
+    | { kind: "togglePlatformAdmin"; user: AdminUserOut }
+    | { kind: "suspend"; user: AdminUserOut; reason: string }
+    | { kind: "setPassword"; user: AdminUserOut; pw: string; valError: string | null }
+    | { kind: "passwordSet"; user: AdminUserOut }
+    | { kind: "delete"; user: AdminUserOut };
+  const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [dialogBusy, setDialogBusy] = useState(false);
+  const [dialogErr, setDialogErr] = useState<string | null>(null);
+
+  function openDialog(d: Dialog) {
+    setDialog(d);
+    setDialogErr(null);
+  }
+  function closeDialog() {
+    if (dialogBusy) return;
+    setDialog(null);
+    setDialogErr(null);
   }
 
+  // Toggle suspend has two paths: unsuspend is direct (no info needed), suspend
+  // opens the reason prompt.
   async function toggleDisabled(u: AdminUserOut) {
     if (u.is_disabled) {
       try {
@@ -326,60 +329,46 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
       }
       return;
     }
-    const reason = window.prompt(
-      t("admin.users.suspendReasonPrompt", {
-        defaultValue: "Reason for suspending this account (optional, shown to admins):",
-      })
-    );
-    // null means cancel; empty string is fine.
-    if (reason === null) return;
-    try {
-      const updated = await api.adminUpdateUser(u.id, {
-        is_disabled: true,
-        disable_reason: reason || null,
-      });
-      setRows((cur) => cur.map((x) => (x.id === u.id ? updated : x)));
-    } catch (e) {
-      setErr((e as Error).message);
-    }
+    openDialog({ kind: "suspend", user: u, reason: "" });
   }
 
-  async function setPassword(u: AdminUserOut) {
-    const pw = window.prompt(
-      t("admin.users.newPasswordPrompt", {
-        email: u.email || u.username,
-        defaultValue: "New password for {{email}} (8+ chars):",
-      })
-    );
-    if (!pw) return;
-    if (pw.length < 8) {
-      alert(t("admin.users.passwordTooShort", { defaultValue: "Password must be at least 8 characters." }));
-      return;
-    }
+  async function runDialog() {
+    if (!dialog) return;
+    setDialogBusy(true);
+    setDialogErr(null);
     try {
-      await api.adminSetPassword(u.id, pw);
-      alert(t("admin.users.passwordSet", { defaultValue: "Password updated." }));
+      if (dialog.kind === "togglePlatformAdmin") {
+        const u = dialog.user;
+        const updated = await api.adminUpdateUser(u.id, { is_platform_admin: !u.is_platform_admin });
+        setRows((cur) => cur.map((x) => (x.id === u.id ? updated : x)));
+        setDialog(null);
+      } else if (dialog.kind === "suspend") {
+        const u = dialog.user;
+        const updated = await api.adminUpdateUser(u.id, {
+          is_disabled: true,
+          disable_reason: dialog.reason.trim() || null,
+        });
+        setRows((cur) => cur.map((x) => (x.id === u.id ? updated : x)));
+        setDialog(null);
+      } else if (dialog.kind === "setPassword") {
+        if (dialog.pw.length < 8) {
+          setDialog({ ...dialog, valError: t("admin.users.passwordTooShort", { defaultValue: "Password must be at least 8 characters." }) });
+          return;
+        }
+        await api.adminSetPassword(dialog.user.id, dialog.pw);
+        setDialog({ kind: "passwordSet", user: dialog.user });
+      } else if (dialog.kind === "delete") {
+        await api.adminDeleteUser(dialog.user.id);
+        setRows((cur) => cur.filter((x) => x.id !== dialog.user.id));
+        setTotal((n) => Math.max(0, n - 1));
+        setDialog(null);
+      } else if (dialog.kind === "passwordSet") {
+        setDialog(null);
+      }
     } catch (e) {
-      setErr((e as Error).message);
-    }
-  }
-
-  async function remove(u: AdminUserOut) {
-    if (
-      !confirm(
-        t("admin.users.confirmDelete", {
-          email: u.email || u.username,
-          defaultValue: "Delete account {{email}}? This cannot be undone.",
-        })
-      )
-    )
-      return;
-    try {
-      await api.adminDeleteUser(u.id);
-      setRows((cur) => cur.filter((x) => x.id !== u.id));
-      setTotal((n) => Math.max(0, n - 1));
-    } catch (e) {
-      setErr((e as Error).message);
+      setDialogErr((e as Error).message);
+    } finally {
+      setDialogBusy(false);
     }
   }
 
@@ -434,7 +423,126 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
       ) : rows.length === 0 ? (
         <p className="text-slate-400 text-sm">{t("admin.users.empty", { defaultValue: "No users matched." })}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        {/* Card layout for narrow screens — the 10-column table is unusable
+            on a phone. Same data, restacked. Hidden on md+. */}
+        <ul className="md:hidden flex flex-col gap-3" data-testid="admin-users-cards">
+          {rows.map((u) => {
+            const sso = ssoFor(u);
+            const ssoLoading = u.kind === "sso" && sso === undefined;
+            const name = u.name ?? sso?.name ?? null;
+            const email = u.email ?? sso?.email ?? null;
+            const username = u.username ?? sso?.username ?? null;
+            const location =
+              sso?.city || sso?.country
+                ? [sso?.city, sso?.country].filter(Boolean).join(", ")
+                : null;
+            const lastLogin = sso?.last_activity ?? null;
+            const oneWityskAdmin = sso?.is_admin ?? false;
+            return (
+              <li
+                key={u.id}
+                data-testid={`admin-user-${u.id}`}
+                className={[
+                  "rounded-lg border border-primary-700 bg-primary-900/40 p-3",
+                  u.is_disabled ? "opacity-60" : "",
+                ].join(" ")}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-slate-100 font-medium truncate">
+                      {name ?? username ?? email ?? `#${u.id}`}
+                    </div>
+                    <div className="text-xs text-slate-400 truncate">
+                      {email ?? username ?? "—"}
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-500 font-mono">#{u.id}</span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-400">
+                  <div><span className="text-slate-500">{t("admin.users.colKind", { defaultValue: "Kind" })}:</span> {u.kind}</div>
+                  <div className="truncate"><span className="text-slate-500">{t("admin.users.colLocation", { defaultValue: "Location" })}:</span> {location ?? (ssoLoading ? "…" : "—")}</div>
+                  <div><span className="text-slate-500">{t("admin.users.colCreated", { defaultValue: "Created" })}:</span> {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</div>
+                  <div><span className="text-slate-500">{t("admin.users.colLastLogin", { defaultValue: "Last login" })}:</span> {lastLogin ? new Date(lastLogin).toLocaleDateString() : ssoLoading ? "…" : "—"}</div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {u.is_platform_admin && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-500/15 text-accent-400 text-xs">
+                      <Shield size={10} />
+                      {t("admin.users.badgePlatformAdmin", { defaultValue: "admin" })}
+                    </span>
+                  )}
+                  {oneWityskAdmin && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary-700 text-slate-200 text-xs">
+                      one.witysk
+                    </span>
+                  )}
+                  {u.is_admin && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary-700 text-slate-200 text-xs">
+                      meet
+                    </span>
+                  )}
+                  {u.is_disabled && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 text-xs">
+                      <Ban size={10} />
+                      {t("admin.users.badgeSuspended", { defaultValue: "suspended" })}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-1 -mb-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openDialog({ kind: "togglePlatformAdmin", user: u })}
+                    disabled={u.id === currentUserId && u.is_platform_admin}
+                    title={u.is_platform_admin
+                      ? t("admin.users.demote", { defaultValue: "Revoke platform-admin" })
+                      : t("admin.users.promote", { defaultValue: "Grant platform-admin" })}
+                  >
+                    {u.is_platform_admin ? <ShieldAlert size={14} /> : <Shield size={14} />}
+                  </Button>
+                  {u.kind === "native" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openDialog({ kind: "setPassword", user: u, pw: "", valError: null })}
+                      title={t("admin.users.setPassword", { defaultValue: "Set new password" })}
+                    >
+                      <KeyRound size={14} />
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void toggleDisabled(u)}
+                    disabled={u.id === currentUserId}
+                    title={u.is_disabled
+                      ? t("admin.users.unsuspend", { defaultValue: "Unsuspend" })
+                      : t("admin.users.suspend", { defaultValue: "Suspend" })}
+                  >
+                    {u.is_disabled ? <Check size={14} /> : <UserX size={14} />}
+                  </Button>
+                  {u.kind === "native" && u.id !== currentUserId && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openDialog({ kind: "delete", user: u })}
+                      title={t("admin.users.delete", { defaultValue: "Delete account" })}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-primary-700">
               <tr>
@@ -534,7 +642,7 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => void togglePlatformAdmin(u)}
+                      onClick={() => openDialog({ kind: "togglePlatformAdmin", user: u })}
                       disabled={u.id === currentUserId && u.is_platform_admin}
                       title={
                         u.is_platform_admin
@@ -549,7 +657,7 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => void setPassword(u)}
+                        onClick={() => openDialog({ kind: "setPassword", user: u, pw: "", valError: null })}
                         title={t("admin.users.setPassword", { defaultValue: "Set new password" })}
                       >
                         <KeyRound size={14} />
@@ -574,7 +682,7 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => void remove(u)}
+                        onClick={() => openDialog({ kind: "delete", user: u })}
                         title={t("admin.users.delete", { defaultValue: "Delete account" })}
                       >
                         <Trash2 size={14} />
@@ -587,6 +695,7 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {total > PAGE_SIZE && (
@@ -642,6 +751,105 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
           </div>
         </div>
       )}
+
+      {/* Admin action dialogs. Replaces native window.prompt/confirm/alert
+          which look broken on phones. The discriminator on `dialog.kind`
+          decides which form to render; runDialog() executes on confirm. */}
+      <Modal
+        open={!!dialog}
+        onClose={closeDialog}
+        title={
+          dialog?.kind === "togglePlatformAdmin"
+            ? dialog.user.is_platform_admin
+              ? t("admin.users.demote", { defaultValue: "Revoke platform-admin" })
+              : t("admin.users.promote", { defaultValue: "Grant platform-admin" })
+            : dialog?.kind === "suspend"
+            ? t("admin.users.suspend", { defaultValue: "Suspend" })
+            : dialog?.kind === "setPassword"
+            ? t("admin.users.setPassword", { defaultValue: "Set new password" })
+            : dialog?.kind === "passwordSet"
+            ? t("admin.users.passwordSet", { defaultValue: "Password updated." })
+            : dialog?.kind === "delete"
+            ? t("admin.users.delete", { defaultValue: "Delete account" })
+            : ""
+        }
+        footer={
+          <>
+            {dialog?.kind !== "passwordSet" && (
+              <Button type="button" variant="secondary" onClick={closeDialog} disabled={dialogBusy}>
+                {t("admin.users.cancel", { defaultValue: "Cancel" })}
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant={dialog?.kind === "delete" ? "danger" : "primary"}
+              onClick={() => void runDialog()}
+              disabled={dialogBusy}
+            >
+              {dialogBusy
+                ? t("admin.users.working", { defaultValue: "Working…" })
+                : dialog?.kind === "passwordSet"
+                ? t("admin.users.ok", { defaultValue: "OK" })
+                : t("admin.users.confirm", { defaultValue: "Confirm" })}
+            </Button>
+          </>
+        }
+      >
+        {dialog?.kind === "togglePlatformAdmin" && (
+          <p>
+            {dialog.user.is_platform_admin
+              ? t("admin.users.confirmDemote", {
+                  email: dialog.user.email || dialog.user.username,
+                  defaultValue: "Revoke platform-admin from {{email}}?",
+                })
+              : t("admin.users.confirmPromote", {
+                  email: dialog.user.email || dialog.user.username,
+                  defaultValue: "Grant platform-admin to {{email}}?",
+                })}
+          </p>
+        )}
+        {dialog?.kind === "suspend" && (
+          <Field id="dlg-suspend-reason" label={t("admin.users.suspendReasonPrompt", {
+            defaultValue: "Reason for suspending this account (optional, shown to admins):",
+          })}>
+            <Input
+              id="dlg-suspend-reason"
+              value={dialog.reason}
+              onChange={(e) => setDialog({ ...dialog, reason: e.target.value })}
+              maxLength={255}
+              autoFocus
+            />
+          </Field>
+        )}
+        {dialog?.kind === "setPassword" && (
+          <Field id="dlg-set-password" label={t("admin.users.newPasswordPrompt", {
+            email: dialog.user.email || dialog.user.username,
+            defaultValue: "New password for {{email}} (8+ chars):",
+          })}>
+            <Input
+              id="dlg-set-password"
+              type="password"
+              value={dialog.pw}
+              onChange={(e) => setDialog({ ...dialog, pw: e.target.value, valError: null })}
+              maxLength={200}
+              autoFocus
+            />
+            {dialog.valError && <div className="text-xs text-red-400 mt-1">{dialog.valError}</div>}
+          </Field>
+        )}
+        {dialog?.kind === "passwordSet" && (
+          <p>{t("admin.users.passwordSet", { defaultValue: "Password updated." })}</p>
+        )}
+        {dialog?.kind === "delete" && (
+          <p>
+            {t("admin.users.confirmDelete", {
+              email: dialog.user.email || dialog.user.username,
+              defaultValue: "Delete account {{email}}? This cannot be undone.",
+            })}
+          </p>
+        )}
+        {dialogErr && <div className="text-sm text-red-400 mt-3">{dialogErr}</div>}
+      </Modal>
     </Card>
   );
 }

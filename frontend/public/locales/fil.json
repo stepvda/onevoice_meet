@@ -144,7 +144,13 @@
     "passwordIfRequired": "Password (kung kinakailangan)",
     "join": "Sumali",
     "joining": "Sumasali…",
-    "brandingAlt": "Larawan ng pagba-brand ng pulong"
+    "brandingAlt": "Larawan ng pagba-brand ng pulong",
+    "testMedia": "Subukan ang mic at camera",
+    "testingMedia": "Sumusubok…",
+    "testMediaTitle": "Subukan ang mikropono at kamera bago sumali",
+    "mediaOk": "Handa na ang mikropono at kamera.",
+    "mediaDenied": "Naka-block ang mikropono o camera. Pindutin ang lock icon sa address bar para payagan ang access, pagkatapos ay i-reload.",
+    "mediaError": "Hindi ma-access ang mic/camera — siguraduhing walang ibang app na gumagamit ng mga ito."
   },
   "room": {
     "takeStage": "Pumunta sa entablado",
@@ -294,7 +300,7 @@
   "recordings": {
     "title": "Mga Recording",
     "subtitle": "Ang mga recording ng iyong mga meeting ay nasa server-side. Ang mga lokal na file ay awtomatikong tatanggalin pagkatapos ng 30 araw (o kapag na-publish mo sa YouTube). Ang pag-upload ay tanging ang may-ari lamang ang makakapagsimula.",
-    "empty": "Wala pang recording. Magsimula ng meeting at i-click ang <1>Record</1> para makagawa ng isa.",
+    "empty": "Wala pang recording. Magsimula ng meeting at i-click ang <1>Record</1> para makakuha ng isa.",
     "loading": "Naglo-load…",
     "signInFirst": "Mag-sign in muna sa one.witysk.org.",
     "signInTitle": "Mag-sign in para makita ang iyong mga recording",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin sa one.witysk.org",
       "badgeSuspended": "nasuspinde",
-      "notSortable": "Hindi ma-sort — ang value ay galing sa one.witysk.org bawat row"
+      "notSortable": "Hindi ma-sort — ang value ay galing sa one.witysk.org bawat row",
+      "cancel": "Kanselahin",
+      "confirm": "Kumpirmahin",
+      "ok": "OK",
+      "working": "Gumagana…"
     },
     "ips": {
       "addTitle": "I-block ang isang IP, CIDR, o range",

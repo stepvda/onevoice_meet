@@ -144,7 +144,13 @@
     "passwordIfRequired": "パスワード（必要な場合）",
     "join": "参加する",
     "joining": "参加中…",
-    "brandingAlt": "会議のブランディング画像"
+    "brandingAlt": "会議のブランディング画像",
+    "testMedia": "マイクとカメラをテスト",
+    "testingMedia": "テスト中…",
+    "testMediaTitle": "参加前にマイクとカメラをテストする",
+    "mediaOk": "マイクとカメラの準備ができました。",
+    "mediaDenied": "マイクまたはカメラがブロックされています。アドレスバーのロックアイコンをタップしてアクセスを許可し、再読み込みしてください。",
+    "mediaError": "マイク/カメラにアクセスできませんでした — 他のアプリが使用していないか確認してください。"
   },
   "room": {
     "takeStage": "ステージに上がる",
@@ -294,7 +300,7 @@
   "recordings": {
     "title": "録画",
     "subtitle": "サーバー側で会議を録画。ローカルファイルは30日後（またはYouTube公開時）に自動削除。アップロードは所有者のみ実行可能。",
-    "empty": "まだ録画はありません。ミーティングを開始し、<1>録画</1>をクリックして録画してください。",
+    "empty": "まだ録画はありません。会議を開始し、<1>録画</1>をクリックして録画してください。",
     "loading": "読み込み中…",
     "signInFirst": "まず one.witysk.org にサインインしてください。",
     "signInTitle": "サインインして録画を確認",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "管理者",
       "badgeOneWityskAdminTitle": "one.witysk.org の管理者",
       "badgeSuspended": "停止中",
-      "notSortable": "並べ替え不可 — 各行の値は one.witysk.org から取得されます"
+      "notSortable": "並べ替え不可 — 各行の値は one.witysk.org から取得されます",
+      "cancel": "キャンセル",
+      "confirm": "確認",
+      "ok": "OK",
+      "working": "作業中…"
     },
     "ips": {
       "addTitle": "IP、CIDR、または範囲をブロック",

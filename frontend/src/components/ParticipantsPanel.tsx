@@ -51,7 +51,13 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
   return (
     <aside
       data-testid="participants-panel"
-      className="h-full w-full sm:w-72 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col"
+      className={[
+        // On mobile: overlay the stage so we don't squeeze it to zero width
+        // (use `absolute` to avoid affecting flex layout). On sm+ go back to
+        // an inline column that pushes the stage left, like before.
+        "absolute inset-y-0 right-0 z-20 sm:static sm:z-auto",
+        "h-full w-full sm:w-72 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col",
+      ].join(" ")}
       role="complementary"
       aria-label={t("participants.title")}
     >
@@ -113,7 +119,8 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
                   )}
                 </div>
               </div>
-              {/* Owner-only per-participant controls (not on self). */}
+              {/* Owner-only per-participant controls (not on self). 44px touch
+                  targets so phone-tapping mute/kick is reliable. */}
               {isOwner && !me && meetingId && (
                 <div className="flex items-center gap-1">
                   <button
@@ -127,9 +134,9 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
                         api.mute(meetingId, { participant_identity: p.identity, mute: true })
                       )
                     }
-                    className="p-1.5 rounded hover:bg-primary-700 text-slate-300 disabled:opacity-50"
+                    className="min-w-11 min-h-11 inline-flex items-center justify-center rounded hover:bg-primary-700 text-slate-300 disabled:opacity-50"
                   >
-                    <MicOff size={14} />
+                    <MicOff size={18} />
                   </button>
                   <button
                     type="button"
@@ -140,9 +147,9 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
                     onClick={() =>
                       withBusy(p.identity, () => api.setPresenter(meetingId, p.identity))
                     }
-                    className="p-1.5 rounded hover:bg-primary-700 text-slate-300 disabled:opacity-50"
+                    className="min-w-11 min-h-11 inline-flex items-center justify-center rounded hover:bg-primary-700 text-slate-300 disabled:opacity-50"
                   >
-                    <Crown size={14} />
+                    <Crown size={18} />
                   </button>
                   <button
                     type="button"
@@ -151,9 +158,9 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
                     data-testid={`participant-kick-${p.identity}`}
                     disabled={busyId !== null}
                     onClick={() => withBusy(p.identity, () => api.kick(meetingId, p.identity))}
-                    className="p-1.5 rounded hover:bg-red-700/40 text-red-300 disabled:opacity-50"
+                    className="min-w-11 min-h-11 inline-flex items-center justify-center rounded hover:bg-red-700/40 text-red-300 disabled:opacity-50"
                   >
-                    <X size={14} />
+                    <X size={18} />
                   </button>
                 </div>
               )}

@@ -144,7 +144,13 @@
     "passwordIfRequired": "Şifre (gerekliyse)",
     "join": "Katıl",
     "joining": "Katılıyor…",
-    "brandingAlt": "Toplantı marka görseli"
+    "brandingAlt": "Toplantı marka görseli",
+    "testMedia": "Mikrofon ve kamerayı test et",
+    "testingMedia": "Test ediliyor…",
+    "testMediaTitle": "Mikrofon ve kamerayı katılmadan önce test edin",
+    "mediaOk": "Mikrofon ve kamera hazır.",
+    "mediaDenied": "Mikrofon veya kamera engellendi. Erişime izin vermek için adres çubuğundaki kilit simgesine dokunun, ardından sayfayı yenileyin.",
+    "mediaError": "Mikrofona/kameraya erişilemedi — başka bir uygulamanın bunları kullanmadığından emin olun."
   },
   "room": {
     "takeStage": "Sahneye çık",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "yönetici",
       "badgeOneWityskAdminTitle": "one.witysk.org üzerinde yönetici",
       "badgeSuspended": "askıya alındı",
-      "notSortable": "Sıralanamaz — değer her satır için one.witysk.org'dan gelir"
+      "notSortable": "Sıralanamaz — değer her satır için one.witysk.org'dan gelir",
+      "cancel": "İptal",
+      "confirm": "Onayla",
+      "ok": "Tamam",
+      "working": "Çalışıyor…"
     },
     "ips": {
       "addTitle": "Bir IP, CIDR veya aralığı engelle",

@@ -144,7 +144,13 @@
     "passwordIfRequired": "Nenosiri (ikihitajika)",
     "join": "Jiunga",
     "joining": "Inaungana…",
-    "brandingAlt": "Picha ya chapa ya mkutano"
+    "brandingAlt": "Picha ya chapa ya mkutano",
+    "testMedia": "Jaribu maikrofoni na kamera",
+    "testingMedia": "Inajaribu…",
+    "testMediaTitle": "Jaribu maikrofoni na kamera kabla ya kujiunga",
+    "mediaOk": "Maikrofoni na kamera tayari.",
+    "mediaDenied": "Maikrofoni au kamera imezuiwa. Gonga aikoni ya kufuli kwenye upau wa anwani ili kuruhusu ufikiaji, kisha upakie upya.",
+    "mediaError": "Haiwezi kufikia maikrofoni/kamera — hakikisha hakuna programu nyingine inayozitumia."
   },
   "room": {
     "takeStage": "Chukua jukwaa",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "Msimamizi",
       "badgeOneWityskAdminTitle": "Msimamizi kwenye one.witysk.org",
       "badgeSuspended": "imesimamishwa",
-      "notSortable": "Haiwezi kupangwa — thamani inatokana na one.witysk.org kwa kila safu"
+      "notSortable": "Haiwezi kupangwa — thamani inatokana na one.witysk.org kwa kila safu",
+      "cancel": "Ghairi",
+      "confirm": "Thibitisha",
+      "ok": "Sawa",
+      "working": "Inafanya kazi…"
     },
     "ips": {
       "addTitle": "Zuia IP, CIDR, au anuwai",

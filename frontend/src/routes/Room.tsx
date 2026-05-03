@@ -137,7 +137,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-witysk-page overflow-hidden">
+    <div className="flex flex-col h-dvh w-screen bg-witysk-page overflow-hidden">
       {/* TOP BAR */}
       <header
         data-testid="room-topbar"
@@ -177,9 +177,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
             data-testid="btn-invite"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600"
             title={t("room.inviteTitle")}
+            aria-label={t("room.invite")}
           >
             <Mail size={16} />
-            {t("room.invite")}
+            <span className="hidden md:inline">{t("room.invite")}</span>
           </button>
         )}
 
@@ -192,9 +193,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
               disabled={busy !== null}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50"
               title={t("room.takeStageTitle")}
+              aria-label={t("room.takeStage")}
             >
               <Crown size={16} />
-              {t("room.takeStage")}
+              <span className="hidden md:inline">{t("room.takeStage")}</span>
             </button>
             <button
               type="button"
@@ -203,9 +205,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
               disabled={busy !== null}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50"
               title={t("room.gridTitle")}
+              aria-label={t("room.grid")}
             >
               <Square size={16} />
-              {t("room.grid")}
+              <span className="hidden md:inline">{t("room.grid")}</span>
             </button>
             <button
               type="button"
@@ -214,15 +217,17 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
               disabled={busy !== null}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50"
               title={t("room.muteAllTitle")}
+              aria-label={t("room.muteAll")}
             >
               <MicOff size={16} />
-              {t("room.muteAll")}
+              <span className="hidden md:inline">{t("room.muteAll")}</span>
             </button>
             <button
               type="button"
               onClick={toggleRecording}
               data-testid="btn-record"
               disabled={busy !== null}
+              aria-label={recordingActive ? t("room.stopRecording") : t("room.record")}
               className={[
                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
                 recordingActive
@@ -232,13 +237,15 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
               ].join(" ")}
             >
               {recordingActive ? <CircleStopIcon size={16} /> : <Radio size={16} />}
-              {busy === "rec-start"
-                ? t("room.starting")
-                : busy === "rec-stop"
-                ? t("room.stopping")
-                : recordingActive
-                ? t("room.stopRecording")
-                : t("room.record")}
+              <span className="hidden md:inline">
+                {busy === "rec-start"
+                  ? t("room.starting")
+                  : busy === "rec-stop"
+                  ? t("room.stopping")
+                  : recordingActive
+                  ? t("room.stopRecording")
+                  : t("room.record")}
+              </span>
             </button>
             <button
               type="button"
@@ -247,8 +254,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
               disabled={busy !== null}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-700 text-white hover:bg-red-800 disabled:opacity-50"
               title={t("room.endMeetingTitle")}
+              aria-label={t("room.endMeeting")}
             >
-              {t("room.endMeeting")}
+              <span className="md:hidden">✕</span>
+              <span className="hidden md:inline">{t("room.endMeeting")}</span>
             </button>
           </>
         )}
@@ -258,6 +267,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
           onClick={copyMeetingLink}
           data-testid="btn-copy-link"
           title={t("room.copyLinkTitle", { defaultValue: "Copy meeting link to clipboard" })}
+          aria-label={t("room.copyLink", { defaultValue: "Link" })}
           className={[
             "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
             copied
@@ -266,9 +276,11 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
           ].join(" ")}
         >
           {copied ? <Check size={16} /> : <Link2 size={16} />}
-          {copied
-            ? t("room.linkCopied", { defaultValue: "Copied!" })
-            : t("room.copyLink", { defaultValue: "Link" })}
+          <span className="hidden md:inline">
+            {copied
+              ? t("room.linkCopied", { defaultValue: "Copied!" })
+              : t("room.copyLink", { defaultValue: "Link" })}
+          </span>
         </button>
 
         <button
@@ -290,9 +302,15 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
 
         <button
           type="button"
-          onClick={() => setParticipantsOpen((v) => !v)}
+          onClick={() => {
+            setParticipantsOpen((v) => !v);
+            // On mobile only one panel can be open at a time, otherwise the
+            // stage gets squeezed to nothing — close chat when opening people.
+            if (!participantsOpen && window.innerWidth < 640) setChatOpen(false);
+          }}
           data-testid="btn-participants"
           aria-pressed={participantsOpen ? "true" : "false"}
+          aria-label={t("room.people")}
           className={[
             "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
             participantsOpen
@@ -301,14 +319,18 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
           ].join(" ")}
         >
           <Users size={16} />
-          {t("room.people")}
+          <span className="hidden md:inline">{t("room.people")}</span>
         </button>
 
         <button
           type="button"
-          onClick={() => setChatOpen((v) => !v)}
+          onClick={() => {
+            setChatOpen((v) => !v);
+            if (!chatOpen && window.innerWidth < 640) setParticipantsOpen(false);
+          }}
           data-testid="btn-chat"
           aria-pressed={chatOpen ? "true" : "false"}
+          aria-label={t("room.chat")}
           className={[
             "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
             chatOpen
@@ -317,7 +339,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
           ].join(" ")}
         >
           <MessageSquare size={16} />
-          {t("room.chat")}
+          <span className="hidden md:inline">{t("room.chat")}</span>
         </button>
       </header>
 
@@ -348,8 +370,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
         <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
       </div>
 
-      {/* BOTTOM CONTROL BAR — always reachable, full width below panels. */}
-      <div className="bg-primary-900/90 border-t border-primary-700 flex-shrink-0">
+      {/* BOTTOM CONTROL BAR — always reachable, full width below panels.
+          Pads the iOS home-indicator safe area so Mute/Leave aren't under the
+          system bar on iPhones with no home button. */}
+      <div className="bg-primary-900/90 border-t border-primary-700 flex-shrink-0 pb-[env(safe-area-inset-bottom)]">
         <ControlBar variation="verbose" controls={{ chat: false, leave: true }} />
       </div>
 

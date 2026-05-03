@@ -1,25 +1,29 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import Sidebar, { MainArea } from "./components/Sidebar";
-import Lobby from "./routes/Lobby";
-import Room from "./routes/Room";
-import CreateMeeting from "./routes/CreateMeeting";
-import Recordings from "./routes/Recordings";
-import Settings from "./routes/Settings";
-import MeetingChat from "./routes/MeetingChat";
-import TICafe from "./routes/TICafe";
-import SsoCallback from "./routes/SsoCallback";
-import SignUp from "./routes/SignUp";
-import Login from "./routes/Login";
-import Account from "./routes/Account";
-import Terms from "./routes/Terms";
-import Privacy from "./routes/Privacy";
-import Legal from "./routes/Legal";
-import Vouchers from "./routes/Vouchers";
-import AdminPanel from "./routes/AdminPanel";
-import Upgrade from "./routes/Upgrade";
-import ForgotPassword from "./routes/ForgotPassword";
-import ResetPassword from "./routes/ResetPassword";
+// Route components are code-split so the initial bundle stays small. Without
+// this, every visitor downloads the PayPal SDK, the LiveKit client, the emoji
+// picker, and 18 routes' worth of JS just to see the home page. With it, only
+// the routes the user actually visits get fetched.
+const Lobby = lazy(() => import("./routes/Lobby"));
+const Room = lazy(() => import("./routes/Room"));
+const CreateMeeting = lazy(() => import("./routes/CreateMeeting"));
+const Recordings = lazy(() => import("./routes/Recordings"));
+const Settings = lazy(() => import("./routes/Settings"));
+const MeetingChat = lazy(() => import("./routes/MeetingChat"));
+const TICafe = lazy(() => import("./routes/TICafe"));
+const SsoCallback = lazy(() => import("./routes/SsoCallback"));
+const SignUp = lazy(() => import("./routes/SignUp"));
+const Login = lazy(() => import("./routes/Login"));
+const Account = lazy(() => import("./routes/Account"));
+const Terms = lazy(() => import("./routes/Terms"));
+const Privacy = lazy(() => import("./routes/Privacy"));
+const Legal = lazy(() => import("./routes/Legal"));
+const Vouchers = lazy(() => import("./routes/Vouchers"));
+const AdminPanel = lazy(() => import("./routes/AdminPanel"));
+const Upgrade = lazy(() => import("./routes/Upgrade"));
+const ForgotPassword = lazy(() => import("./routes/ForgotPassword"));
+const ResetPassword = lazy(() => import("./routes/ResetPassword"));
 import { bootstrapFromOneWitysk } from "./lib/auth";
 import { syncServerLanguage } from "./i18n";
 import { TICafeProvider } from "./lib/tiCafe";
@@ -48,6 +52,10 @@ export default function App() {
     <TICafeProvider>
       <Sidebar />
       <MainArea>
+        {/* Suspense fallback shown while a lazy route's chunk is loading.
+            Kept lightweight — a fancy spinner would defeat the purpose of
+            shipping a small initial bundle. */}
+        <Suspense fallback={<div className="p-6 text-slate-400 text-sm">…</div>}>
         <Routes>
           {/* Static paths first — React Router v6 ranks static above dynamic. */}
           <Route path="/" element={<CreateMeeting />} />
@@ -74,6 +82,7 @@ export default function App() {
           {/* Clean shareable form: meet.witysk.org/<3-word-slug> → lobby. */}
           <Route path="/:roomName" element={<Lobby />} />
         </Routes>
+        </Suspense>
       </MainArea>
     </TICafeProvider>
   );

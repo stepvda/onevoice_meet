@@ -144,7 +144,13 @@
     "passwordIfRequired": "Heslo (ak je potrebné)",
     "join": "Pripojiť sa",
     "joining": "Pripájam sa…",
-    "brandingAlt": "Obrázok brandingu stretnutia"
+    "brandingAlt": "Obrázok brandingu stretnutia",
+    "testMedia": "Testovať mikrofón a kameru",
+    "testingMedia": "Testovanie…",
+    "testMediaTitle": "Otestovať mikrofón a kameru pred pripojením",
+    "mediaOk": "Mikrofón a kamera pripravené.",
+    "mediaDenied": "Mikrofón alebo kamera zablokované. Klepnite na ikonu zámku v paneli adresy a povoľte prístup, potom obnovte stránku.",
+    "mediaError": "Nepodarilo sa získať prístup k mikrofónu/kamere – skontrolujte, či ich nepoužíva iná aplikácia."
   },
   "room": {
     "takeStage": "Prevziať pódium",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin na one.witysk.org",
       "badgeSuspended": "pozastavené",
-      "notSortable": "Nezoriteľné — hodnota pochádza z one.witysk.org pre každý riadok"
+      "notSortable": "Nezoriteľné — hodnota pochádza z one.witysk.org pre každý riadok",
+      "cancel": "Zrušiť",
+      "confirm": "Potvrdiť",
+      "ok": "OK",
+      "working": "Pracuje sa…"
     },
     "ips": {
       "addTitle": "Blokovať IP, CIDR alebo rozsah",

@@ -144,7 +144,13 @@
     "passwordIfRequired": "비밀번호 (필요 시)",
     "join": "참여",
     "joining": "참여 중…",
-    "brandingAlt": "회의 브랜딩 이미지"
+    "brandingAlt": "회의 브랜딩 이미지",
+    "testMedia": "마이크 및 카메라 테스트",
+    "testingMedia": "테스트 중…",
+    "testMediaTitle": "마이크와 카메라를 입장 전에 테스트하세요",
+    "mediaOk": "마이크 & 카메라 준비 완료.",
+    "mediaDenied": "마이크 또는 카메라가 차단되었습니다. 주소 표시줄의 자물쇠 아이콘을 눌러 접근을 허용한 후 새로고침하세요.",
+    "mediaError": "마이크/카메라에 접근할 수 없습니다 — 다른 앱에서 사용 중인지 확인하세요."
   },
   "room": {
     "takeStage": "무대 차지하기",
@@ -294,7 +300,7 @@
   "recordings": {
     "title": "녹화",
     "subtitle": "서버 측 회의 녹화. 로컬 파일은 30일 후 (또는 YouTube에 게시 시) 자동 삭제됩니다. 업로드는 소유자만 시작할 수 있습니다.",
-    "empty": "아직 녹화된 영상이 없습니다. 회의를 시작하고 <1>녹화</1>를 클릭하여 녹화하세요.",
+    "empty": "아직 녹화된 내용이 없습니다. 회의를 시작하고 <1>녹화</1>를 클릭하여 녹화하세요.",
     "loading": "로딩 중…",
     "signInFirst": "먼저 one.witysk.org에서 로그인하세요.",
     "signInTitle": "로그인하여 녹화본을 확인하세요",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "관리자",
       "badgeOneWityskAdminTitle": "one.witysk.org의 관리자",
       "badgeSuspended": "일시 중단됨",
-      "notSortable": "정렬 불가 — 값은 행별로 one.witysk.org에서 가져옴"
+      "notSortable": "정렬 불가 — 값은 행별로 one.witysk.org에서 가져옴",
+      "cancel": "취소",
+      "confirm": "확인",
+      "ok": "확인",
+      "working": "작업 중…"
     },
     "ips": {
       "addTitle": "IP, CIDR 또는 범위 차단",

@@ -144,7 +144,13 @@
     "passwordIfRequired": "Hasło (jeśli wymagane)",
     "join": "Dołącz",
     "joining": "Dołączanie…",
-    "brandingAlt": "Obraz marki spotkania"
+    "brandingAlt": "Obraz marki spotkania",
+    "testMedia": "Przetestuj mikrofon i kamerę",
+    "testingMedia": "Testowanie…",
+    "testMediaTitle": "Przetestuj mikrofon i kamerę przed dołączeniem",
+    "mediaOk": "Mikrofon i kamera gotowe.",
+    "mediaDenied": "Mikrofon lub kamera zablokowane. Kliknij ikonę kłódki na pasku adresu, aby zezwolić na dostęp, a następnie odśwież.",
+    "mediaError": "Nie można uzyskać dostępu do mikrofonu/kamery — sprawdź, czy nie są używane przez inną aplikację."
   },
   "room": {
     "takeStage": "Zajmij scenę",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "administrator",
       "badgeOneWityskAdminTitle": "Administrator na one.witysk.org",
       "badgeSuspended": "zawieszony",
-      "notSortable": "Niesortowalne — wartość pochodzi z one.witysk.org dla każdego wiersza"
+      "notSortable": "Niesortowalne — wartość pochodzi z one.witysk.org dla każdego wiersza",
+      "cancel": "Anuluj",
+      "confirm": "Potwierdź",
+      "ok": "OK",
+      "working": "Pracuję…"
     },
     "ips": {
       "addTitle": "Zablokuj adres IP, CIDR lub zakres",

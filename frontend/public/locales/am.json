@@ -144,7 +144,13 @@
     "passwordIfRequired": "የይለፍ ቃል (አስፈላጊ ከሆነ)",
     "join": "ተቀላቀል",
     "joining": "በመቀላቀል ላይ…",
-    "brandingAlt": "የስብሰባ ብራንዲንግ ምስል"
+    "brandingAlt": "የስብሰባ ብራንዲንግ ምስል",
+    "testMedia": "ማይክሮፎን እና ካሜራ ይሞክሩ",
+    "testingMedia": "በመሞከር ላይ…",
+    "testMediaTitle": "መደወል ከመጀመርዎ በፊት ማይክሮፎን እና ካሜራ ይሞክሩ",
+    "mediaOk": "ማይክሮፎን እና ካሜራ ዝግጁ ናቸው።",
+    "mediaDenied": "ማይክ ወይም ካሜራ ታግዷል። መዳረሻ ለመፍቀድ በአድራሻ አሞሌው ውስጥ ያለውን የመቆለፊያ አዶ ይንኩ፣ ከዚያ እንደገና ይጫኑ።",
+    "mediaError": "ማይክሮፎን/ካሜራ መድረስ አልተቻለም — ሌላ መተግበሪያ እየተጠቀመባቸው አለመሆኑን ያረጋግጡ።"
   },
   "room": {
     "takeStage": "መድረክ ይያዙ",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "አስተዳዳሪ",
       "badgeOneWityskAdminTitle": "አስተዳዳሪ በ one.witysk.org ላይ",
       "badgeSuspended": "ታግዷል",
-      "notSortable": "ለማደራደር የማይቻል — እሴቱ ከ one.witysk.org በእያንዳንዱ ረድፍ ይመጣል"
+      "notSortable": "ለማደራደር የማይቻል — እሴቱ ከ one.witysk.org በእያንዳንዱ ረድፍ ይመጣል",
+      "cancel": "ሰርዝ",
+      "confirm": "አረጋግጥ",
+      "ok": "እሺ",
+      "working": "በመስራት ላይ…"
     },
     "ips": {
       "addTitle": "IP፣ CIDR ወይም ክልል አግድ",

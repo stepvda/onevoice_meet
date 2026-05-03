@@ -144,7 +144,13 @@
     "passwordIfRequired": "Kalmar sirri (idan an buƙata)",
     "join": "Shiga",
     "joining": "Shiga…",
-    "brandingAlt": "Hoton alamar taro"
+    "brandingAlt": "Hoton alamar taro",
+    "testMedia": "Gwada makirufo & kyamara",
+    "testingMedia": "Gwaji…",
+    "testMediaTitle": "Gwada makirufo da kyamara kafin shiga",
+    "mediaOk": "Makirifo & kyamara a shirye suke.",
+    "mediaDenied": "Makirarfo ko kyamara an toshe. Danna gunkin kulle a mashigin adireshi don ba da izini, sannan sake loda.",
+    "mediaError": "Ba a iya shiga makirufo/kyamara — ka tabbata babu wani app dake amfani da su."
   },
   "room": {
     "takeStage": "Dauki mataki",
@@ -294,7 +300,7 @@
   "recordings": {
     "title": "Rikodi",
     "subtitle": "Rikodin taron ku daga gefen uwar garken. Fayilolin gida suna gogewa kai tsaye bayan kwanaki 30 (ko lokacin da kuka buga zuwa YouTube). Ana yin lodawa ne kawai da izinin mai shi.",
-    "empty": "Babu rikodi tukuna. Fara taro kuma danna <1>Rikodi</1> don ɗaukar ɗaya.",
+    "empty": "Babu rikodi tukuna. Fara taro sannan ka danna <1>Rikodi</1> don ɗaukar ɗaya.",
     "loading": "Ana lodi...",
     "signInFirst": "Da farko shiga one.witysk.org.",
     "signInTitle": "Shiga don ganin rikodin ku",
@@ -832,7 +838,11 @@
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin a one.witysk.org",
       "badgeSuspended": "dakatar",
-      "notSortable": "Ba za a iya jera ba — ƙimar ta fito daga one.witysk.org a kowane layi"
+      "notSortable": "Ba za a iya jera ba — ƙimar ta fito daga one.witysk.org a kowane layi",
+      "cancel": "Soke",
+      "confirm": "Tabbatar",
+      "ok": "To",
+      "working": "Yana aiki…"
     },
     "ips": {
       "addTitle": "Toshe IP, CIDR, ko kewayon",
