@@ -81,6 +81,9 @@ def lightweight_migrate() -> None:
                 ("totp_enabled", "ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT 0 NOT NULL"),
                 ("totp_recovery_hashes", "ALTER TABLE users ADD COLUMN totp_recovery_hashes TEXT"),
                 ("email_otp_enabled", "ALTER TABLE users ADD COLUMN email_otp_enabled BOOLEAN DEFAULT 0 NOT NULL"),
+                ("is_platform_admin", "ALTER TABLE users ADD COLUMN is_platform_admin BOOLEAN DEFAULT 0 NOT NULL"),
+                ("is_disabled", "ALTER TABLE users ADD COLUMN is_disabled BOOLEAN DEFAULT 0 NOT NULL"),
+                ("disable_reason", "ALTER TABLE users ADD COLUMN disable_reason TEXT"),
             )),
         ):
             try:

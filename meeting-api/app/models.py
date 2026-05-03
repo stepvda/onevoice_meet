@@ -174,6 +174,16 @@ class User(Base):
     # instead of using an authenticator app. Codes are stored in Redis with
     # a 5-minute TTL; only the on/off flag lives here.
     email_otp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Platform admin — can manage other users, view the IDS panel, and edit
+    # the IP blocklist. Distinct from the dynamic `is_admin_now()` which
+    # gates meeting-creation. Bootstrapped from PLATFORM_ADMIN_EMAILS in
+    # `.env` at app startup; can be toggled from the admin panel after that.
+    is_platform_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Soft-disable: when True, all auth (login, token validation) is rejected
+    # for this user. Used by the admin panel to suspend abusive accounts
+    # without deleting them outright (deletion would lose audit history).
+    is_disabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    disable_reason: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -341,3 +351,41 @@ class ChatReaction(Base):
     __table_args__ = (
         UniqueConstraint("message_id", "reactor_identity", name="uq_chat_reaction_msg_user"),
     )
+
+
+class BlockedIP(Base):
+    """Persistent IP / CIDR / dash-range blocklist managed by platform admins.
+
+    `ip_address` accepts three forms — checked in this order at lookup time:
+      - exact IP: "203.0.113.5"
+      - CIDR: "203.0.113.0/24" or "2001:db8::/32"
+      - dash range (IPv4 last octet): "203.0.113.5-50"
+    """
+    __tablename__ = "blocked_ips"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ip_address: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(255))
+    blocked_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    block_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class SecurityEvent(Base):
+    """IDS event log. Each row is one observed signal (auth failure, rate-limit
+    hit, forbidden access, etc.) — the detector aggregates these in sliding
+    windows in memory and decides when to temp-block. Stored here so the admin
+    panel can show history beyond what's still in the in-memory window."""
+    __tablename__ = "security_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    severity: Mapped[str] = mapped_column(String(16), nullable=False)  # info | warn | block | alert
+    ip_address: Mapped[str | None] = mapped_column(String(64), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    handle: Mapped[str | None] = mapped_column(String(255))
+    path: Mapped[str | None] = mapped_column(String(255))
+    user_agent: Mapped[str | None] = mapped_column(String(255))
+    details: Mapped[str | None] = mapped_column(String(512))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)

@@ -16,6 +16,7 @@ import Terms from "./routes/Terms";
 import Privacy from "./routes/Privacy";
 import Legal from "./routes/Legal";
 import Vouchers from "./routes/Vouchers";
+import AdminPanel from "./routes/AdminPanel";
 import Upgrade from "./routes/Upgrade";
 import ForgotPassword from "./routes/ForgotPassword";
 import ResetPassword from "./routes/ResetPassword";
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/legal" element={<Legal />} />
           <Route path="/vouchers" element={<Vouchers />} />
+          <Route path="/admin" element={<AdminPanel />} />
           <Route path="/upgrade" element={<Upgrade />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />

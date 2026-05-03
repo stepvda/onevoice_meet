@@ -149,6 +149,56 @@ export function logoutFromOneWitysk(): Promise<{ ok: boolean }> {
   });
 }
 
+/** One.witysk.org user shape returned by `/api/admin/users/{user_id}`.
+ * Mirrors the AdminUserDetail Pydantic model on the onevoice backend; only
+ * the fields the meet admin panel actually surfaces are typed here. */
+export interface OneWityskUserDetail {
+  id: number;
+  username: string;
+  email: string;
+  name: string | null;
+  is_admin: boolean;
+  is_disabled: boolean;
+  email_verified: boolean;
+  twofa_enabled: boolean;
+  created_at: string | null;
+  facepic_path: string | null;
+  city: string | null;
+  country: string | null;
+  last_activity: string | null;
+}
+
+/**
+ * Admin lookup of an arbitrary one.witysk.org user by their numeric user_id.
+ *
+ * The meet admin panel uses this to enrich SSO rows in the user list (the
+ * `external_id` we store *is* the one.witysk.org user_id). Auth is the
+ * same bearer token that meet itself uses — bound to the browser's IP, so
+ * this call MUST happen from the browser, not from meet's backend.
+ *
+ * Returns `null` when:
+ *  - no token is available
+ *  - the caller isn't an admin on one.witysk.org (403)
+ *  - the user doesn't exist on one.witysk.org (404)
+ *  - the network/JWT failed for any other reason
+ *
+ * Does NOT throw — callers can safely render a "—" placeholder on null.
+ */
+export async function fetchOneWityskUser(userId: number | string): Promise<OneWityskUserDetail | null> {
+  const tok = getAccessToken();
+  if (!tok) return null;
+  try {
+    const res = await fetch(`${ONE_WITYSK}/api/admin/users/${encodeURIComponent(String(userId))}`, {
+      headers: { Authorization: `Bearer ${tok}` },
+      credentials: "omit",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as OneWityskUserDetail;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Fetch the signed-in user's preferred display name from one.witysk.org's
  * `/api/auth/me`. Returns `name || username || email || null`.

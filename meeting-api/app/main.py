@@ -4,10 +4,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import scheduler
+from app.auth import bootstrap_platform_admins
 from app.config import settings
 from app.db import engine, lightweight_migrate
 from app.models import Base
-from app.routes import auth_native, billing, chat, health, meetings, moderation, recordings, ti_cafe, tokens, totp, users, vouchers
+from app.routes import admin, auth_native, billing, chat, health, meetings, moderation, recordings, ti_cafe, tokens, totp, users, vouchers
+from app.services import ip_block
 from app.webhooks import router as webhook_router
 
 
@@ -15,10 +17,15 @@ from app.webhooks import router as webhook_router
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
     lightweight_migrate()
+    bootstrap_platform_admins()
+    ip_block.reload()
     scheduler.start()
     try:
         yield
     finally:
+        # Persist any hits accumulated since the last admin-panel fetch so
+        # block_count survives restarts.
+        ip_block.flush_hits()
         scheduler.stop()
 
 
@@ -47,6 +54,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+# IP blocking runs OUTERMOST: blocked addresses get a 403 before any
+# request body, auth, or DB call happens. Adding it last makes Starlette
+# wrap it around CORS, so it executes first on incoming requests but
+# CORS preflight responses still get the right headers when allowed.
+app.add_middleware(ip_block.IPBlockMiddleware)
 
 app.include_router(health.router, prefix="/api")
 app.include_router(meetings.router, prefix="/api")
@@ -60,4 +72,5 @@ app.include_router(auth_native.router, prefix="/api")
 app.include_router(totp.router, prefix="/api")
 app.include_router(vouchers.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 app.include_router(webhook_router, prefix="/api")

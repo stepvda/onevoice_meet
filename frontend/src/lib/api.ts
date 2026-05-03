@@ -58,6 +58,7 @@ export interface MeOut {
   facepic_path: string | null;
   is_admin: boolean;
   is_voucher_admin: boolean;
+  is_platform_admin: boolean;
   trial_used: boolean;
   trial_days_remaining: number | null;
   entitlement_kind: string | null;
@@ -65,6 +66,71 @@ export interface MeOut {
   totp_enabled: boolean;
   totp_recovery_remaining: number;
   email_otp_enabled: boolean;
+}
+
+// ─── Admin panel ──────────────────────────────────────────────────────
+
+export interface AdminUserOut {
+  id: number;
+  kind: "sso" | "native";
+  external_id: string | null;
+  email: string | null;
+  username: string | null;
+  name: string | null;
+  is_admin: boolean;
+  is_platform_admin: boolean;
+  is_disabled: boolean;
+  disable_reason: string | null;
+  trial_used: boolean;
+  entitlement_kind: string | null;
+  entitlement_expires_at: string | null;
+  totp_enabled: boolean;
+  email_otp_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminUserList {
+  total: number;
+  users: AdminUserOut[];
+}
+
+export interface BlockedIPOut {
+  id: number;
+  ip_address: string;
+  reason: string | null;
+  blocked_by_user_id: number | null;
+  block_count: number;
+  is_enabled: boolean;
+  created_at: string;
+  live_hits: number;
+}
+
+export interface IdsTempBlock {
+  ip: string;
+  expires_at: string;
+  seconds_remaining: number;
+  hits: number;
+}
+
+export interface IdsStatusOut {
+  enabled: boolean;
+  tracked_ips: number;
+  temp_blocked: number;
+  events_in_memory: number;
+  temp_blocks: IdsTempBlock[];
+}
+
+export interface IdsEvent {
+  ts: string | null;
+  event_type: string;
+  severity: string;
+  ip: string | null;
+  user_id: number | null;
+  handle: string | null;
+  path: string | null;
+  user_agent: string | null;
+  details: string | null;
 }
 
 export type LoginResult =
@@ -626,6 +692,71 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+
+  // ─── Admin panel ─────────────────────────────────────────────────────
+  adminListUsers: (params: { q?: string; kind?: "sso" | "native"; limit?: number; offset?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.q) qs.set("q", params.q);
+    if (params.kind) qs.set("kind", params.kind);
+    if (params.limit != null) qs.set("limit", String(params.limit));
+    if (params.offset != null) qs.set("offset", String(params.offset));
+    const tail = qs.toString();
+    return request<AdminUserList>(`/api/v1/admin/users${tail ? `?${tail}` : ""}`);
+  },
+
+  adminGetUser: (userId: number) =>
+    request<AdminUserOut>(`/api/v1/admin/users/${userId}`),
+
+  adminUpdateUser: (
+    userId: number,
+    body: { is_platform_admin?: boolean; is_disabled?: boolean; disable_reason?: string | null }
+  ) =>
+    request<AdminUserOut>(`/api/v1/admin/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  adminSetPassword: (userId: number, new_password: string) =>
+    request<{ ok: boolean }>(`/api/v1/admin/users/${userId}/set-password`, {
+      method: "POST",
+      body: JSON.stringify({ new_password }),
+    }),
+
+  adminDeleteUser: (userId: number) =>
+    request<{ ok: boolean }>(`/api/v1/admin/users/${userId}`, { method: "DELETE" }),
+
+  adminListBlockedIps: () => request<BlockedIPOut[]>("/api/v1/admin/blocked-ips"),
+
+  adminAddBlockedIp: (body: { ip_address: string; reason?: string | null }) =>
+    request<BlockedIPOut>("/api/v1/admin/blocked-ips", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  adminUpdateBlockedIp: (id: number, body: { is_enabled?: boolean; reason?: string | null }) =>
+    request<BlockedIPOut>(`/api/v1/admin/blocked-ips/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  adminDeleteBlockedIp: (id: number) =>
+    request<{ ok: boolean }>(`/api/v1/admin/blocked-ips/${id}`, { method: "DELETE" }),
+
+  adminIdsStatus: () => request<IdsStatusOut>("/api/v1/admin/ids/status"),
+
+  adminIdsEvents: (params: { limit?: number; persisted?: boolean } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.limit != null) qs.set("limit", String(params.limit));
+    if (params.persisted) qs.set("persisted", "true");
+    const tail = qs.toString();
+    return request<IdsEvent[]>(`/api/v1/admin/ids/events${tail ? `?${tail}` : ""}`);
+  },
+
+  adminIdsUnblock: (ip: string) =>
+    request<{ ok: boolean; was_blocked: boolean }>(
+      `/api/v1/admin/ids/unblock/${encodeURIComponent(ip)}`,
+      { method: "POST" }
+    ),
 
   /** Upload (or replace) a meeting's branding image. */
   async uploadBranding(meetingId: string, file: File): Promise<{ branding_url: string | null }> {

@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   Settings as SettingsIcon,
+  Shield,
   Ticket,
   User as UserIcon,
   UserPlus,
@@ -71,17 +72,21 @@ export default function Sidebar() {
   // users (and signed-out users) get the full secondary list.
   const isSso = me?.kind === "sso";
   const isVoucherAdmin = !!me?.is_voucher_admin;
+  const isPlatformAdmin = !!me?.is_platform_admin;
   const baseSecondary = signedIn ? authedSecondaryItems : anonSecondaryItems;
-  // Inject the /vouchers entry above /settings for the two privileged
-  // one.witysk.org user_ids (Stephane = 1, David = 404).
-  const withVouchers = isVoucherAdmin
-    ? [
-        ...baseSecondary.filter((it) => it.to !== "/settings"),
-        { to: "/vouchers", i18nKey: "nav.vouchers", icon: Ticket } as NavItem,
-        { to: "/settings", i18nKey: "nav.settings", icon: SettingsIcon } as NavItem,
-      ]
-    : baseSecondary;
-  const secondaryForUser = withVouchers.filter(
+  // Inject the /vouchers + /admin entries above /settings for privileged
+  // accounts. Voucher admin gates ticket issuance; platform admin gates the
+  // user-management / IP-block / IDS panel.
+  const withExtras = (() => {
+    if (!isVoucherAdmin && !isPlatformAdmin) return baseSecondary;
+    const head = baseSecondary.filter((it) => it.to !== "/settings");
+    const tail: NavItem[] = [];
+    if (isVoucherAdmin) tail.push({ to: "/vouchers", i18nKey: "nav.vouchers", icon: Ticket });
+    if (isPlatformAdmin) tail.push({ to: "/admin", i18nKey: "nav.admin", icon: Shield });
+    tail.push({ to: "/settings", i18nKey: "nav.settings", icon: SettingsIcon });
+    return [...head, ...tail];
+  })();
+  const secondaryForUser = withExtras.filter(
     (item) => !(isSso && (item.to === "/account" || item.to === "/upgrade"))
   );
 

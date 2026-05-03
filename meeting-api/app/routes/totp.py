@@ -445,6 +445,19 @@ def login_verify(body: LoginVerifyBody, request: Request, db: Session = Depends(
     elif _consume_recovery(u, code):
         ok = True
     if not ok:
+        # Feed the IDS — 2FA failures are tighter than auth failures since
+        # the password was already correct, so a small threshold trips a block.
+        from app.services.intrusion_detector import EventType, SEVERITY_WARN, detector  # noqa: PLC0415
+
+        detector.record(
+            EventType.TWOFA_FAILURE,
+            _client_ip(request),
+            severity=SEVERITY_WARN,
+            user_id=u.id,
+            handle=u.username or u.email,
+            path="/v1/auth/login/2fa",
+            user_agent=request.headers.get("user-agent", ""),
+        )
         raise HTTPException(status_code=401, detail="invalid 2FA code")
     db.commit()
     # Late import to avoid a circular dep with auth_native at module load.

@@ -26,12 +26,13 @@ from passlib.hash import argon2
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
-from app.auth import RequireUser, issue_meet_token
+from app.auth import RequireUser, is_bootstrap_admin_email, issue_meet_token
 from app.config import settings
 from app.db import get_db
 from app.models import PasswordResetToken, User
 from app.services.email import send_email
 from app.services.email_templates import account_welcome, password_reset
+from app.services.intrusion_detector import EventType, SEVERITY_WARN, detector
 from app.services.rate_limit import check as rate_limit_check
 
 
@@ -106,6 +107,7 @@ class MeOut(BaseModel):
     facepic_path: str | None
     is_admin: bool
     is_voucher_admin: bool
+    is_platform_admin: bool
     # Trial bookkeeping for native accounts. `trial_used=False` AND no
     # entitlement means the SPA can offer the "Start trial" button on /upgrade.
     trial_used: bool
@@ -138,6 +140,7 @@ def _to_me(u: User) -> MeOut:
         facepic_path=u.facepic_path,
         is_admin=u.is_admin_now(now),
         is_voucher_admin=(u.kind == "sso" and u.external_id in settings.voucher_admin_user_ids),
+        is_platform_admin=bool(u.is_platform_admin),
         trial_used=bool(u.trial_used),
         trial_days_remaining=_trial_remaining_days(u),
         entitlement_kind=u.entitlement_kind,
@@ -195,6 +198,10 @@ def signup(body: SignupBody, background: BackgroundTasks, request: Request, db: 
         username=uname,
         name=(body.name or "").strip() or None,
         password_hash=argon2.hash(body.password),
+        # Promote on signup if their email matches PLATFORM_ADMIN_EMAILS so a
+        # configured operator who signs up natively (rather than via SSO)
+        # gets the panel without an extra restart.
+        is_platform_admin=is_bootstrap_admin_email(email),
         # Trial is opt-in (per spec: "a free trial that they can sign-up for").
         # Native users start with no entitlement; clicking "Start free trial"
         # on /upgrade is what flips trial_used + trial_started_at and grants
@@ -239,9 +246,21 @@ def login(body: LoginBody, request: Request, background: BackgroundTasks, db: Se
         .first()
     )
     if not u or not u.password_hash or not argon2.verify(body.password, u.password_hash):
+        # Feed the IDS so brute-force attempts trip the temp-block threshold.
+        detector.record(
+            EventType.AUTH_FAILURE,
+            _client_ip(request),
+            severity=SEVERITY_WARN,
+            user_id=u.id if u else None,
+            handle=handle,
+            path="/v1/auth/login",
+            user_agent=request.headers.get("user-agent", ""),
+        )
         # Same generic error for "no such user" and "wrong password" so we
         # don't disclose which accounts exist.
         raise HTTPException(status_code=401, detail="invalid credentials")
+    if u.is_disabled:
+        raise HTTPException(status_code=403, detail="account suspended")
     if u.totp_enabled or u.email_otp_enabled:
         # Defer access-token issue until /auth/login/2fa succeeds.
         # Late import: app.routes.totp imports _to_me from this module.

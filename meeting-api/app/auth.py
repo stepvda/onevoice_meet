@@ -50,6 +50,7 @@ class AuthUser:
     external_id: str | None
     email: str | None
     is_admin: bool
+    is_platform_admin: bool
     # The original JWT `sub` claim — needed by older routes that store
     # owner_user_id as a free-form string keyed off the JWT sub.
     sub: str
@@ -134,20 +135,48 @@ def _user_from_claims(claims: dict, db: Session) -> User:
     # current token (we've seen sub+session+admin only), but we accept it
     # opportunistically.
     user = db.query(User).filter_by(external_id=sub, kind="sso").first()
+    claim_email = claims.get("email")
+    # Voucher admins (one.witysk.org user_ids 1 and 404) are platform admins
+    # by spec. one.witysk.org's JWT doesn't always carry an email claim, so
+    # email-based bootstrap can't catch them — match on external_id too.
+    bootstrap_admin = _is_bootstrap_admin_email(claim_email) or sub in settings.voucher_admin_user_ids
     if user is None:
         user = User(
             kind="sso",
             external_id=sub,
-            email=claims.get("email"),
+            email=claim_email,
+            is_platform_admin=bootstrap_admin,
         )
         db.add(user)
         db.commit()
         db.refresh(user)
-    elif claims.get("email") and user.email != claims["email"]:
-        # Keep email in sync if one.witysk.org starts including it later.
-        user.email = claims["email"]
-        db.commit()
+    else:
+        dirty = False
+        if claim_email and user.email != claim_email:
+            # Keep email in sync if one.witysk.org starts including it later.
+            user.email = claim_email
+            dirty = True
+        # Late-bootstrap: if the bootstrap list was edited after this user was
+        # first auto-provisioned, promote on the next request.
+        if not user.is_platform_admin and bootstrap_admin:
+            user.is_platform_admin = True
+            dirty = True
+        if dirty:
+            db.commit()
     return user
+
+
+def is_bootstrap_admin_email(email: str | None) -> bool:
+    """Public so signup can promote a native user immediately if their email
+    is in the bootstrap list (avoids waiting for the next restart)."""
+    if not email:
+        return False
+    needle = email.strip().lower()
+    return any(needle == e.strip().lower() for e in settings.platform_admin_emails)
+
+
+# Internal alias — kept so existing call sites elsewhere stay short.
+_is_bootstrap_admin_email = is_bootstrap_admin_email
 
 
 def require_user(
@@ -167,6 +196,8 @@ def require_user(
             detail=f"only access tokens accepted (got type={token_type!r})",
         )
     user = _user_from_claims(claims, db)
+    if user.is_disabled:
+        raise HTTPException(status_code=403, detail="account suspended")
     now = datetime.now(timezone.utc)
     return AuthUser(
         user_id=user.id,
@@ -174,6 +205,7 @@ def require_user(
         external_id=user.external_id,
         email=user.email,
         is_admin=user.is_admin_now(now),
+        is_platform_admin=bool(user.is_platform_admin),
         sub=str(claims.get("sub")),
     )
 
@@ -198,6 +230,36 @@ def require_voucher_admin(user: Annotated[AuthUser, Depends(require_user)]) -> A
     return user
 
 
+def require_platform_admin(user: Annotated[AuthUser, Depends(require_user)]) -> AuthUser:
+    """Guard for the admin panel — user management, IDS, IP blocking. Distinct
+    from `require_admin` (which gates meeting creation)."""
+    if not user.is_platform_admin:
+        raise HTTPException(status_code=403, detail="platform admin rights required")
+    return user
+
+
+def bootstrap_platform_admins() -> None:
+    """Idempotent startup hook — promotes any existing user that should be a
+    platform admin. Two paths:
+      1. SSO users whose `external_id` is in voucher_admin_user_ids (1, 404)
+         — these are admin by spec regardless of email presence.
+      2. Any user whose `email` is in PLATFORM_ADMIN_EMAILS.
+    Catches users who signed up before the bootstrap list was configured."""
+    from app.db import SessionLocal  # local import to avoid circular at module load
+    email_needles = [e.strip().lower() for e in settings.platform_admin_emails if e.strip()]
+    voucher_ids = set(settings.voucher_admin_user_ids or [])
+    if not email_needles and not voucher_ids:
+        return
+    with SessionLocal() as db:
+        for u in db.query(User).filter(User.is_platform_admin.is_(False)).all():
+            email_match = bool(u.email and u.email.strip().lower() in email_needles)
+            ext_match = bool(u.kind == "sso" and u.external_id in voucher_ids)
+            if email_match or ext_match:
+                u.is_platform_admin = True
+        db.commit()
+
+
 RequireUser = Annotated[AuthUser, Depends(require_user)]
 RequireAdmin = Annotated[AuthUser, Depends(require_admin)]
 RequireVoucherAdmin = Annotated[AuthUser, Depends(require_voucher_admin)]
+RequirePlatformAdmin = Annotated[AuthUser, Depends(require_platform_admin)]

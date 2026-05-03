@@ -30,6 +30,32 @@ class Settings(BaseSettings):
     # one.witysk.org user_ids that can issue / list vouchers. Hard-coded by spec.
     voucher_admin_user_ids: list[str] = ["1", "404"]
 
+    # Platform admins — emails that get is_platform_admin=True on first sight.
+    # Re-applied on every startup, so adding a new email here promotes any
+    # already-existing user with that email next time the API restarts. Match
+    # is case-insensitive. Set as a comma-separated list in `.env`.
+    platform_admin_emails: list[str] = [
+        "stephane@stepvda.com",
+        "david.iorlano@pm.me",
+    ]
+
+    # ─── IDS / IP blocking ──────────────────────────────────────────────
+    ids_enabled: bool = True
+    # Auth-failure brute force: N failures from the same IP within the window
+    # → temp-block that IP for `ids_temp_block_minutes`.
+    ids_brute_force_threshold: int = 10
+    ids_brute_force_window_seconds: int = 300
+    # 2FA brute force is tighter — successful password but failing 2FA codes.
+    ids_twofa_brute_force_threshold: int = 5
+    ids_twofa_brute_force_window_seconds: int = 300
+    # Path scanning — many 404s in a row (probing for endpoints).
+    ids_path_scan_threshold: int = 30
+    ids_path_scan_window_seconds: int = 60
+    ids_temp_block_minutes: int = 30
+    # Cap the in-memory event ring (per-IP). Older events evicted FIFO. Keeps
+    # memory bounded under flooding without losing the most recent signals.
+    ids_max_events_per_ip: int = 200
+
     # PayPal billing — set these in `.env` from the PayPal Business account's
     # Developer dashboard. Plan and prices are spec'd by the operator:
     #   €2 / month  (recurring subscription) — `paypal_plan_id_monthly`
