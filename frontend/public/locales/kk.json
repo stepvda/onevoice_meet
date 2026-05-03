@@ -831,7 +831,8 @@
       "colLastLogin": "Соңғы кіру",
       "badgePlatformAdmin": "әкімші",
       "badgeOneWityskAdminTitle": "one.witysk.org сайтындағы әкімші",
-      "badgeSuspended": "тоқтатылды"
+      "badgeSuspended": "тоқтатылды",
+      "notSortable": "Сұрыптау мүмкін емес — мән әр жол үшін one.witysk.org сайтынан алынады"
     },
     "ips": {
       "addTitle": "IP, CIDR немесе диапазонды бұғаттау",

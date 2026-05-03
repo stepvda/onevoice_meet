@@ -294,7 +294,7 @@
   "recordings": {
     "title": "Aufnahmen",
     "subtitle": "Serverseitige Aufzeichnungen Ihrer Meetings. Lokale Dateien werden nach 30 Tagen automatisch gelöscht (oder wenn Sie auf YouTube veröffentlichen). Uploads werden nur vom Besitzer initiiert.",
-    "empty": "Noch keine Aufnahmen. Starten Sie eine Besprechung und klicken Sie auf <1>Aufnehmen</1>, um eine zu erstellen.",
+    "empty": "Noch keine Aufnahmen. Starten Sie ein Meeting und klicken Sie auf <1>Aufnehmen</1>, um eine zu erstellen.",
     "loading": "Lädt…",
     "signInFirst": "Melden Sie sich zuerst auf one.witysk.org an.",
     "signInTitle": "Melden Sie sich an, um Ihre Aufnahmen zu sehen",
@@ -831,7 +831,8 @@
       "colLastLogin": "Letzte Anmeldung",
       "badgePlatformAdmin": "Administrator",
       "badgeOneWityskAdminTitle": "Administrator auf one.witysk.org",
-      "badgeSuspended": "ausgesetzt"
+      "badgeSuspended": "ausgesetzt",
+      "notSortable": "Nicht sortierbar — Wert stammt von one.witysk.org pro Zeile"
     },
     "ips": {
       "addTitle": "IP, CIDR oder Bereich blockieren",

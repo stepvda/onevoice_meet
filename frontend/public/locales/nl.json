@@ -831,7 +831,8 @@
       "colLastLogin": "Laatste login",
       "badgePlatformAdmin": "beheerder",
       "badgeOneWityskAdminTitle": "Beheerder op one.witysk.org",
-      "badgeSuspended": "onderbroken"
+      "badgeSuspended": "onderbroken",
+      "notSortable": "Niet sorteerbaar — waarde komt per rij van one.witysk.org"
     },
     "ips": {
       "addTitle": "Blokkeer een IP, CIDR of bereik",

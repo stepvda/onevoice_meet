@@ -294,7 +294,7 @@
   "recordings": {
     "title": "Bản ghi",
     "subtitle": "Bản ghi phía máy chủ của các cuộc họp của bạn. Tệp cục bộ tự động xóa sau 30 ngày (hoặc khi bạn đăng lên YouTube). Chỉ chủ sở hữu mới có thể tải lên.",
-    "empty": "Chưa có bản ghi nào. Hãy bắt đầu cuộc họp và nhấn <1>Ghi âm</1> để ghi lại.",
+    "empty": "Chưa có bản ghi nào. Hãy bắt đầu cuộc họp và nhấp vào <1>Ghi âm</1> để ghi lại.",
     "loading": "Đang tải…",
     "signInFirst": "Đăng nhập trên one.witysk.org trước.",
     "signInTitle": "Đăng nhập để xem bản ghi của bạn",
@@ -831,7 +831,8 @@
       "colLastLogin": "Lần đăng nhập cuối",
       "badgePlatformAdmin": "Quản trị viên",
       "badgeOneWityskAdminTitle": "Quản trị viên trên one.witysk.org",
-      "badgeSuspended": "đã tạm ngưng"
+      "badgeSuspended": "đã tạm ngưng",
+      "notSortable": "Không thể sắp xếp — giá trị lấy từ one.witysk.org theo từng hàng"
     },
     "ips": {
       "addTitle": "Chặn một IP, CIDR hoặc dải IP",

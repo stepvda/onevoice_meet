@@ -831,7 +831,8 @@
       "colLastLogin": "Τελευταία σύνδεση",
       "badgePlatformAdmin": "διαχειριστής",
       "badgeOneWityskAdminTitle": "Διαχειριστής στο one.witysk.org",
-      "badgeSuspended": "αναστολή"
+      "badgeSuspended": "αναστολή",
+      "notSortable": "Μη ταξινομήσιμο — η τιμή προέρχεται από το one.witysk.org ανά γραμμή"
     },
     "ips": {
       "addTitle": "Αποκλεισμός μιας IP, CIDR ή περιοχής",

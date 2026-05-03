@@ -244,7 +244,7 @@
     "uploadTitle": "તમારી પોતાની પૃષ્ઠભૂમિ છબી અપલોડ કરો",
     "uploadAria": "પૃષ્ઠભૂમિ ચિત્ર અપલોડ કરો",
     "tooLarge": "છબી {{mb}} MB છે; મહત્તમ 4 MB છે.",
-    "notImage": "ચિત્ર નથી ({{type}})",
+    "notImage": "છબી નથી ({{type}})",
     "processorFailed": "આ ઉપકરણ પર બેકગ્રાઉન્ડ ઇફેક્ટ્સ સપોર્ટેડ નથી.",
     "custom": "કસ્ટમ: {{name}}",
     "customDefault": "કસ્ટમ ઇમેજ"
@@ -831,7 +831,8 @@
       "colLastLogin": "છેલ્લું લૉગિન",
       "badgePlatformAdmin": "વ્યવસ્થાપક",
       "badgeOneWityskAdminTitle": "one.witysk.org પર એડમિન",
-      "badgeSuspended": "સસ્પેન્ડ કરેલ"
+      "badgeSuspended": "સસ્પેન્ડ કરેલ",
+      "notSortable": "સૉર્ટ કરી શકાતું નથી — મૂલ્ય દરેક પંક્તિ માટે one.witysk.org પરથી આવે છે"
     },
     "ips": {
       "addTitle": "IP, CIDR, અથવા રેન્જ બ્લોક કરો",

@@ -831,7 +831,8 @@
       "colLastLogin": "آخری لاگ ان",
       "badgePlatformAdmin": "منتظم",
       "badgeOneWityskAdminTitle": "one.witysk.org پر ایڈمن",
-      "badgeSuspended": "معطل"
+      "badgeSuspended": "معطل",
+      "notSortable": "ترتیب نہیں دی جا سکتی — قیمت one.witysk.org سے فی قطار آتی ہے"
     },
     "ips": {
       "addTitle": "IP، CIDR، یا رینج بلاک کریں",

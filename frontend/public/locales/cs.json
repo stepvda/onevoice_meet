@@ -294,7 +294,7 @@
   "recordings": {
     "title": "Nahrávky",
     "subtitle": "Nahrávky vašich schůzek na straně serveru. Místní soubory se automaticky mažou po 30 dnech (nebo po zveřejnění na YouTube). Nahrávání je iniciováno pouze vlastníkem.",
-    "empty": "Zatím žádné nahrávky. Zahajte schůzku a klikněte na <1>Nahrát</1> pro pořízení jedné.",
+    "empty": "Zatím žádné nahrávky. Zahajte schůzku a kliknutím na <1>Nahrávat</1> ji zachyťte.",
     "loading": "Načítání…",
     "signInFirst": "Nejprve se přihlaste na one.witysk.org.",
     "signInTitle": "Přihlaste se pro zobrazení vašich nahrávek",
@@ -831,7 +831,8 @@
       "colLastLogin": "Poslední přihlášení",
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Správce na one.witysk.org",
-      "badgeSuspended": "pozastaveno"
+      "badgeSuspended": "pozastaveno",
+      "notSortable": "Neřaditelné — hodnota pochází z one.witysk.org pro každý řádek"
     },
     "ips": {
       "addTitle": "Blokovat IP, CIDR nebo rozsah",

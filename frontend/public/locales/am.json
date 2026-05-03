@@ -294,7 +294,7 @@
   "recordings": {
     "title": "ቀረጻዎች",
     "subtitle": "የስብሰባዎችዎ በሰርቨር በኩል የሚቀረጹ ቅጂዎች። የአካባቢ ፋይሎች ከ30 ቀናት በኋላ (ወይም ወደ ዩቲዩብ ሲለቀቁ) በራስ-ሰር ይሰረዛሉ። መጫን የሚችሉት ባለቤቱ ብቻ ነው።",
-    "empty": "እስካሁን ምንም ቅጂዎች የሉም። ስብሰባ ይጀምሩ እና አንዱን ለመቅዳት <1>ቅጂ</1> የሚለውን ይጫኑ።",
+    "empty": "እስካሁን ምንም ቅጂዎች የሉም። ስብሰባ ይጀምሩ እና አንዱን ለመቅረጽ <1>ቅጂ</1> የሚለውን ይጫኑ።",
     "loading": "በመጫን ላይ…",
     "signInFirst": "በመጀመሪያ በ one.witysk.org ላይ ይግቡ።",
     "signInTitle": "ቀርጾችዎን ለማየት ይግቡ",
@@ -831,7 +831,8 @@
       "colLastLogin": "የመጨረሻ ግባት",
       "badgePlatformAdmin": "አስተዳዳሪ",
       "badgeOneWityskAdminTitle": "አስተዳዳሪ በ one.witysk.org ላይ",
-      "badgeSuspended": "ታግዷል"
+      "badgeSuspended": "ታግዷል",
+      "notSortable": "ለማደራደር የማይቻል — እሴቱ ከ one.witysk.org በእያንዳንዱ ረድፍ ይመጣል"
     },
     "ips": {
       "addTitle": "IP፣ CIDR ወይም ክልል አግድ",

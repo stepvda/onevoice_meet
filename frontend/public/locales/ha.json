@@ -294,7 +294,7 @@
   "recordings": {
     "title": "Rikodi",
     "subtitle": "Rikodin taron ku daga gefen uwar garken. Fayilolin gida suna gogewa kai tsaye bayan kwanaki 30 (ko lokacin da kuka buga zuwa YouTube). Ana yin lodawa ne kawai da izinin mai shi.",
-    "empty": "Babu rikodi tukuna. Fara taro sannan ka danna <1>Rikodi</1> don ɗaukar ɗaya.",
+    "empty": "Babu rikodi tukuna. Fara taro kuma danna <1>Rikodi</1> don ɗaukar ɗaya.",
     "loading": "Ana lodi...",
     "signInFirst": "Da farko shiga one.witysk.org.",
     "signInTitle": "Shiga don ganin rikodin ku",
@@ -831,7 +831,8 @@
       "colLastLogin": "Karshen shiga",
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin a one.witysk.org",
-      "badgeSuspended": "dakatar"
+      "badgeSuspended": "dakatar",
+      "notSortable": "Ba za a iya jera ba — ƙimar ta fito daga one.witysk.org a kowane layi"
     },
     "ips": {
       "addTitle": "Toshe IP, CIDR, ko kewayon",

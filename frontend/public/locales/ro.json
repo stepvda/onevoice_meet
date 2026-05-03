@@ -831,7 +831,8 @@
       "colLastLogin": "Ultima autentificare",
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin pe one.witysk.org",
-      "badgeSuspended": "Suspendat"
+      "badgeSuspended": "Suspendat",
+      "notSortable": "Nu se poate sorta — valoarea provine de la one.witysk.org pe fiecare rând"
     },
     "ips": {
       "addTitle": "Blochează un IP, CIDR sau un interval",

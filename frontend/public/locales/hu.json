@@ -831,7 +831,8 @@
       "colLastLogin": "Utolsó bejelentkezés",
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin a one.witysk.org oldalon",
-      "badgeSuspended": "felfüggesztve"
+      "badgeSuspended": "felfüggesztve",
+      "notSortable": "Nem rendezhető — az érték soronként a one.witysk.org oldalról származik"
     },
     "ips": {
       "addTitle": "IP, CIDR vagy tartomány blokkolása",

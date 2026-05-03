@@ -831,7 +831,8 @@
       "colLastLogin": "Oxirgi kirish",
       "badgePlatformAdmin": "Admin",
       "badgeOneWityskAdminTitle": "Admin one.witysk.org saytida",
-      "badgeSuspended": "to‘xtatilgan"
+      "badgeSuspended": "to‘xtatilgan",
+      "notSortable": "Saralanmaydi — qiymat har bir qator uchun one.witysk.org dan keladi"
     },
     "ips": {
       "addTitle": "IP, CIDR yoki diapazonni bloklash",

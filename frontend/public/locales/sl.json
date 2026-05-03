@@ -294,7 +294,7 @@
   "recordings": {
     "title": "Posnetki",
     "subtitle": "Streposne posnetke vaših sestankov. Lokalne datoteke se samodejno izbrišejo po 30 dneh (ali ko objavite na YouTube). Nalaganja sproži le lastnik.",
-    "empty": "Ni še nobenih posnetkov. Začnite sestanek in kliknite <1>Snemaj</1>, da ga ustvarite.",
+    "empty": "Ni še nobenih posnetkov. Začnite sestanek in kliknite <1>Posnemi</1>, da ga ustvarite.",
     "loading": "Nalaganje…",
     "signInFirst": "Najprej se prijavite na one.witysk.org.",
     "signInTitle": "Prijavite se za ogled svojih posnetkov",
@@ -831,7 +831,8 @@
       "colLastLogin": "Zadnja prijava",
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Skrbnik na one.witysk.org",
-      "badgeSuspended": "prekinjeno"
+      "badgeSuspended": "prekinjeno",
+      "notSortable": "Ni mogoče razvrstiti — vrednost prihaja iz one.witysk.org za vsako vrstico"
     },
     "ips": {
       "addTitle": "Blokiraj IP, CIDR ali obseg",

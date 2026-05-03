@@ -55,6 +55,7 @@
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin on one.witysk.org",
       "badgeSuspended": "suspended",
+      "notSortable": "Not sortable — value comes from one.witysk.org per row",
       "promote": "Grant platform-admin",
       "demote": "Revoke platform-admin",
       "confirmPromote": "Grant platform-admin to {{email}}?",

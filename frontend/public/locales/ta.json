@@ -244,7 +244,7 @@
     "uploadTitle": "உங்கள் சொந்த பின்னணி படத்தை பதிவேற்றவும்",
     "uploadAria": "பின்னணி படத்தைப் பதிவேற்றவும்",
     "tooLarge": "படம் {{mb}} MB; அதிகபட்சம் 4 MB.",
-    "notImage": "படம் அல்ல ({{type}})",
+    "notImage": "படம் இல்லை ({{type}})",
     "processorFailed": "இந்த சாதனத்தில் பின்னணி விளைவுகள் ஆதரிக்கப்படவில்லை.",
     "custom": "தனிப்பயன்: {{name}}",
     "customDefault": "தனிப்பயன் படம்"
@@ -831,7 +831,8 @@
       "colLastLogin": "கடைசி உள்நுழைவு",
       "badgePlatformAdmin": "நிர்வாகி",
       "badgeOneWityskAdminTitle": "நிர்வாகி one.witysk.org இல்",
-      "badgeSuspended": "இடைநிறுத்தப்பட்டது"
+      "badgeSuspended": "இடைநிறுத்தப்பட்டது",
+      "notSortable": "வரிசைப்படுத்த முடியாது — மதிப்பு ஒவ்வொரு வரிசைக்கும் one.witysk.org இலிருந்து வருகிறது"
     },
     "ips": {
       "addTitle": "ஒரு IP, CIDR அல்லது வரம்பைத் தடுக்கவும்",

@@ -831,7 +831,8 @@
       "colLastLogin": "Posledné prihlásenie",
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin na one.witysk.org",
-      "badgeSuspended": "pozastavené"
+      "badgeSuspended": "pozastavené",
+      "notSortable": "Nezoriteľné — hodnota pochádza z one.witysk.org pre každý riadok"
     },
     "ips": {
       "addTitle": "Blokovať IP, CIDR alebo rozsah",

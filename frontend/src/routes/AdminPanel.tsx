@@ -7,7 +7,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Ban, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, KeyRound, Plus, RefreshCw, Search, Shield, ShieldAlert, Trash2, Unlock, UserX } from "lucide-react";
+import { ArrowDown, ArrowUp, Ban, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, KeyRound, Plus, RefreshCw, Search, Shield, ShieldAlert, Trash2, Unlock, UserX } from "lucide-react";
 import {
   AdminUserOut,
   BlockedIPOut,
@@ -148,6 +148,45 @@ function TabButton({
 
 const PAGE_SIZE = 25;
 
+type SortableColumn = "id" | "kind" | "email" | "username" | "name" | "created_at";
+type SortOrder = "asc" | "desc";
+
+function SortableTh({
+  col,
+  label,
+  sortBy,
+  sortOrder,
+  onToggle,
+}: {
+  col: SortableColumn;
+  label: string;
+  sortBy: SortableColumn;
+  sortOrder: SortOrder;
+  onToggle: (c: SortableColumn) => void;
+}) {
+  const active = sortBy === col;
+  return (
+    <th className="py-2 pr-2 select-none">
+      <button
+        type="button"
+        onClick={() => onToggle(col)}
+        className={[
+          "inline-flex items-center gap-1 uppercase tracking-wide",
+          active ? "text-accent-500" : "text-slate-400 hover:text-slate-200",
+        ].join(" ")}
+        aria-label={`Sort by ${label}`}
+      >
+        <span>{label}</span>
+        {active ? (
+          sortOrder === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+        ) : (
+          <ArrowDown size={12} className="opacity-30" />
+        )}
+      </button>
+    </th>
+  );
+}
+
 function UsersTab({ currentUserId }: { currentUserId: number }) {
   const { t } = useTranslation();
   const [rows, setRows] = useState<AdminUserOut[]>([]);
@@ -158,10 +197,14 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
   const [kindFilter, setKindFilter] = useState<"" | "sso" | "native">("");
   // 0-based page index. Search/filter changes reset it to 0 in `runQuery`.
   const [page, setPage] = useState(0);
+  // Sort state. Changing sort always resets to page 0 — paging through a
+  // mid-table after re-ordering would land on bizarre rows.
+  const [sortBy, setSortBy] = useState<SortableColumn>("created_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const lastPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
 
-  async function load(pageToLoad: number) {
+  async function load(pageToLoad: number, sb: SortableColumn, so: SortOrder) {
     setLoading(true);
     setErr(null);
     try {
@@ -170,6 +213,8 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
         kind: kindFilter || undefined,
         limit: PAGE_SIZE,
         offset: pageToLoad * PAGE_SIZE,
+        sort_by: sb,
+        sort_order: so,
       });
       setRows(r.users);
       setTotal(r.total);
@@ -188,11 +233,26 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
   // Search / filter / refresh always reset to page 0.
   function runQuery() {
     setPage(0);
-    void load(0);
+    void load(0, sortBy, sortOrder);
+  }
+
+  // Column-header click: same column flips order, different column starts asc.
+  function toggleSort(col: SortableColumn) {
+    let nextOrder: SortOrder;
+    if (col === sortBy) {
+      nextOrder = sortOrder === "asc" ? "desc" : "asc";
+      setSortOrder(nextOrder);
+    } else {
+      nextOrder = "asc";
+      setSortBy(col);
+      setSortOrder(nextOrder);
+    }
+    setPage(0);
+    void load(0, col, nextOrder);
   }
 
   useEffect(() => {
-    void load(page);
+    void load(page, sortBy, sortOrder);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
@@ -378,14 +438,24 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
           <table className="w-full text-sm">
             <thead className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-primary-700">
               <tr>
-                <th className="py-2 pr-2">{t("admin.users.colId", { defaultValue: "ID" })}</th>
-                <th className="py-2 pr-2">{t("admin.users.colKind", { defaultValue: "Kind" })}</th>
-                <th className="py-2 pr-2">{t("admin.users.colName", { defaultValue: "Name" })}</th>
-                <th className="py-2 pr-2">{t("admin.users.colEmail", { defaultValue: "Email" })}</th>
-                <th className="py-2 pr-2">{t("admin.users.colUsername", { defaultValue: "Username" })}</th>
-                <th className="py-2 pr-2">{t("admin.users.colLocation", { defaultValue: "Location" })}</th>
-                <th className="py-2 pr-2">{t("admin.users.colCreated", { defaultValue: "Created" })}</th>
-                <th className="py-2 pr-2">{t("admin.users.colLastLogin", { defaultValue: "Last login" })}</th>
+                <SortableTh col="id" label={t("admin.users.colId", { defaultValue: "ID" })} sortBy={sortBy} sortOrder={sortOrder} onToggle={toggleSort} />
+                <SortableTh col="kind" label={t("admin.users.colKind", { defaultValue: "Kind" })} sortBy={sortBy} sortOrder={sortOrder} onToggle={toggleSort} />
+                <SortableTh col="name" label={t("admin.users.colName", { defaultValue: "Name" })} sortBy={sortBy} sortOrder={sortOrder} onToggle={toggleSort} />
+                <SortableTh col="email" label={t("admin.users.colEmail", { defaultValue: "Email" })} sortBy={sortBy} sortOrder={sortOrder} onToggle={toggleSort} />
+                <SortableTh col="username" label={t("admin.users.colUsername", { defaultValue: "Username" })} sortBy={sortBy} sortOrder={sortOrder} onToggle={toggleSort} />
+                <th
+                  className="py-2 pr-2"
+                  title={t("admin.users.notSortable", { defaultValue: "Not sortable — value comes from one.witysk.org per row" })}
+                >
+                  {t("admin.users.colLocation", { defaultValue: "Location" })}
+                </th>
+                <SortableTh col="created_at" label={t("admin.users.colCreated", { defaultValue: "Created" })} sortBy={sortBy} sortOrder={sortOrder} onToggle={toggleSort} />
+                <th
+                  className="py-2 pr-2"
+                  title={t("admin.users.notSortable", { defaultValue: "Not sortable — value comes from one.witysk.org per row" })}
+                >
+                  {t("admin.users.colLastLogin", { defaultValue: "Last login" })}
+                </th>
                 <th className="py-2 pr-2">{t("admin.users.colStatus", { defaultValue: "Status" })}</th>
                 <th className="py-2 pr-2 text-right">{t("admin.users.colActions", { defaultValue: "Actions" })}</th>
               </tr>

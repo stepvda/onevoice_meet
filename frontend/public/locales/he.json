@@ -294,7 +294,7 @@
   "recordings": {
     "title": "הקלטות",
     "subtitle": "הקלטות מצד השרת של הפגישות שלך. קבצים מקומיים נמחקים אוטומטית לאחר 30 יום (או כשאתה מפרסם ליוטיוב). העלאות מבוצעות ביוזמת הבעלים בלבד.",
-    "empty": "עדיין אין הקלטות. התחל פגישה ולחץ על <1>הקלט</1> כדי ללכוד אחת.",
+    "empty": "עדיין אין הקלטות. התחל פגישה ולחץ על <1>הקלט</1> כדי לצלם אחת.",
     "loading": "טוען…",
     "signInFirst": "תחילה התחבר/י ב-one.witysk.org.",
     "signInTitle": "היכנס כדי לראות את ההקלטות שלך",
@@ -831,7 +831,8 @@
       "colLastLogin": "כניסה אחרונה",
       "badgePlatformAdmin": "מנהל",
       "badgeOneWityskAdminTitle": "מנהל ב-one.witysk.org",
-      "badgeSuspended": "הושהה"
+      "badgeSuspended": "הושהה",
+      "notSortable": "לא ניתן למיון — הערך מגיע מ-one.witysk.org לכל שורה"
     },
     "ips": {
       "addTitle": "חסום IP, CIDR, או טווח",

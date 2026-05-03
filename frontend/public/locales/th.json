@@ -831,7 +831,8 @@
       "colLastLogin": "เข้าสู่ระบบล่าสุด",
       "badgePlatformAdmin": "ผู้ดูแลระบบ",
       "badgeOneWityskAdminTitle": "ผู้ดูแลระบบบน one.witysk.org",
-      "badgeSuspended": "ถูกระงับ"
+      "badgeSuspended": "ถูกระงับ",
+      "notSortable": "ไม่สามารถจัดเรียงได้ — ค่ามาจาก one.witysk.org ต่อแถว"
     },
     "ips": {
       "addTitle": "บล็อก IP, CIDR หรือช่วง",

@@ -294,7 +294,7 @@
   "recordings": {
     "title": "Snimke",
     "subtitle": "Snimanje sastanaka na poslužitelju. Lokalne datoteke automatski se brišu nakon 30 dana (ili kada objavite na YouTubeu). Prijenose pokreće isključivo vlasnik.",
-    "empty": "Još nema snimki. Započnite sastanak i kliknite <1>Snimi</1> kako biste ga zabilježili.",
+    "empty": "Još nema snimaka. Započnite sastanak i kliknite <1>Snimi</1> kako biste ga zabilježili.",
     "loading": "Učitavanje…",
     "signInFirst": "Prvo se prijavite na one.witysk.org.",
     "signInTitle": "Prijavite se kako biste vidjeli svoje snimke",
@@ -831,7 +831,8 @@
       "colLastLogin": "Zadnja prijava",
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Administrator na one.witysk.org",
-      "badgeSuspended": "obustavljeno"
+      "badgeSuspended": "obustavljeno",
+      "notSortable": "Nije moguće sortirati — vrijednost dolazi iz one.witysk.org po retku"
     },
     "ips": {
       "addTitle": "Blokiraj IP, CIDR ili raspon",

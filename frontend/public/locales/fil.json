@@ -294,7 +294,7 @@
   "recordings": {
     "title": "Mga Recording",
     "subtitle": "Ang mga recording ng iyong mga meeting ay nasa server-side. Ang mga lokal na file ay awtomatikong tatanggalin pagkatapos ng 30 araw (o kapag na-publish mo sa YouTube). Ang pag-upload ay tanging ang may-ari lamang ang makakapagsimula.",
-    "empty": "Wala pang recording. Magsimula ng meeting at i-click ang <1>Record</1> para makakuha ng isa.",
+    "empty": "Wala pang recording. Magsimula ng meeting at i-click ang <1>Record</1> para makagawa ng isa.",
     "loading": "Naglo-load…",
     "signInFirst": "Mag-sign in muna sa one.witysk.org.",
     "signInTitle": "Mag-sign in para makita ang iyong mga recording",
@@ -831,7 +831,8 @@
       "colLastLogin": "Huling login",
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Admin sa one.witysk.org",
-      "badgeSuspended": "nasuspinde"
+      "badgeSuspended": "nasuspinde",
+      "notSortable": "Hindi ma-sort — ang value ay galing sa one.witysk.org bawat row"
     },
     "ips": {
       "addTitle": "I-block ang isang IP, CIDR, o range",

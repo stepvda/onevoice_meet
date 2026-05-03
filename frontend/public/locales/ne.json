@@ -831,7 +831,8 @@
       "colLastLogin": "पछिल्लो लगइन",
       "badgePlatformAdmin": "प्रशासक",
       "badgeOneWityskAdminTitle": "one.witysk.org मा प्रशासक",
-      "badgeSuspended": "निलम्बित"
+      "badgeSuspended": "निलम्बित",
+      "notSortable": "क्रमबद्ध गर्न मिल्दैन — मान प्रति पङ्क्ति one.witysk.org बाट आउँछ"
     },
     "ips": {
       "addTitle": "IP, CIDR, वा दायरा ब्लक गर्नुहोस्",

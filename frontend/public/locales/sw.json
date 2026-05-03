@@ -831,7 +831,8 @@
       "colLastLogin": "Mara ya mwisho kuingia",
       "badgePlatformAdmin": "Msimamizi",
       "badgeOneWityskAdminTitle": "Msimamizi kwenye one.witysk.org",
-      "badgeSuspended": "imesimamishwa"
+      "badgeSuspended": "imesimamishwa",
+      "notSortable": "Haiwezi kupangwa — thamani inatokana na one.witysk.org kwa kila safu"
     },
     "ips": {
       "addTitle": "Zuia IP, CIDR, au anuwai",

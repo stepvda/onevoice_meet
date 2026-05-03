@@ -831,7 +831,8 @@
       "colLastLogin": "Viimeisin kirjautuminen",
       "badgePlatformAdmin": "ylläpitäjä",
       "badgeOneWityskAdminTitle": "Ylläpitäjä osoitteessa one.witysk.org",
-      "badgeSuspended": "keskeytetty"
+      "badgeSuspended": "keskeytetty",
+      "notSortable": "Ei lajiteltavissa — arvo tulee one.witysk.org:sta riviä kohden"
     },
     "ips": {
       "addTitle": "Estä IP-osoite, CIDR tai alue",

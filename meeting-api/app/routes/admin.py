@@ -96,6 +96,21 @@ def _to_admin_user(u: User) -> AdminUserOut:
     )
 
 
+# Whitelist of sortable columns. Keeping it explicit (rather than reflecting
+# the model) is what stops a caller from sorting on `password_hash`.
+# Columns derived from one.witysk.org (location, last_login) aren't in this
+# table — those rows get their values via per-row browser-side fetches, so
+# a server-side sort can't see them; the SPA marks them as non-sortable.
+_SORTABLE_USER_COLUMNS = {
+    "id": User.id,
+    "kind": User.kind,
+    "email": User.email,
+    "username": User.username,
+    "name": User.name,
+    "created_at": User.created_at,
+}
+
+
 @router.get("/users")
 def list_users(
     _admin: RequirePlatformAdmin,
@@ -103,6 +118,8 @@ def list_users(
     kind: str | None = Query(default=None, pattern="^(sso|native)$"),
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    sort_by: str = Query(default="created_at", description="One of: id, kind, email, username, name, created_at"),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     db: Session = Depends(get_db),
 ) -> dict:
     query = db.query(User)
@@ -118,7 +135,13 @@ def list_users(
             )
         )
     total = query.count()
-    rows = query.order_by(User.created_at.desc()).offset(offset).limit(limit).all()
+    column = _SORTABLE_USER_COLUMNS.get(sort_by, User.created_at)
+    primary = column.asc() if sort_order == "asc" else column.desc()
+    # Always tiebreak on id so the order is stable across pages — without
+    # this, two rows with the same created_at could swap between page loads
+    # and the user would see duplicate or missing rows when paging.
+    tiebreaker = User.id.asc() if sort_order == "asc" else User.id.desc()
+    rows = query.order_by(primary, tiebreaker).offset(offset).limit(limit).all()
     return {"total": total, "users": [_to_admin_user(u) for u in rows]}
 
 

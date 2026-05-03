@@ -694,12 +694,23 @@ export const api = {
     }),
 
   // ─── Admin panel ─────────────────────────────────────────────────────
-  adminListUsers: (params: { q?: string; kind?: "sso" | "native"; limit?: number; offset?: number } = {}) => {
+  adminListUsers: (
+    params: {
+      q?: string;
+      kind?: "sso" | "native";
+      limit?: number;
+      offset?: number;
+      sort_by?: "id" | "kind" | "email" | "username" | "name" | "created_at";
+      sort_order?: "asc" | "desc";
+    } = {}
+  ) => {
     const qs = new URLSearchParams();
     if (params.q) qs.set("q", params.q);
     if (params.kind) qs.set("kind", params.kind);
     if (params.limit != null) qs.set("limit", String(params.limit));
     if (params.offset != null) qs.set("offset", String(params.offset));
+    if (params.sort_by) qs.set("sort_by", params.sort_by);
+    if (params.sort_order) qs.set("sort_order", params.sort_order);
     const tail = qs.toString();
     return request<AdminUserList>(`/api/v1/admin/users${tail ? `?${tail}` : ""}`);
   },

@@ -831,7 +831,8 @@
       "colLastLogin": "آخر تسجيل دخول",
       "badgePlatformAdmin": "مسؤول",
       "badgeOneWityskAdminTitle": "مسؤول على one.witysk.org",
-      "badgeSuspended": "معلق"
+      "badgeSuspended": "معلق",
+      "notSortable": "غير قابل للترتيب — القيمة تأتي من one.witysk.org لكل صف"
     },
     "ips": {
       "addTitle": "احظر عنوان IP، CIDR، أو نطاق",

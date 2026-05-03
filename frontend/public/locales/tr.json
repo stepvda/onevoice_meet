@@ -831,7 +831,8 @@
       "colLastLogin": "Son giriş",
       "badgePlatformAdmin": "yönetici",
       "badgeOneWityskAdminTitle": "one.witysk.org üzerinde yönetici",
-      "badgeSuspended": "askıya alındı"
+      "badgeSuspended": "askıya alındı",
+      "notSortable": "Sıralanamaz — değer her satır için one.witysk.org'dan gelir"
     },
     "ips": {
       "addTitle": "Bir IP, CIDR veya aralığı engelle",

@@ -831,7 +831,8 @@
       "colLastLogin": "Ultimo accesso",
       "badgePlatformAdmin": "amministratore",
       "badgeOneWityskAdminTitle": "Amministratore su one.witysk.org",
-      "badgeSuspended": "Sospeso"
+      "badgeSuspended": "Sospeso",
+      "notSortable": "Non ordinabile — il valore proviene da one.witysk.org per riga"
     },
     "ips": {
       "addTitle": "Blocca un IP, CIDR o intervallo",

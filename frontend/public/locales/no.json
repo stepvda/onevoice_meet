@@ -831,7 +831,8 @@
       "colLastLogin": "Siste pålogging",
       "badgePlatformAdmin": "admin",
       "badgeOneWityskAdminTitle": "Administrator på one.witysk.org",
-      "badgeSuspended": "Suspendert"
+      "badgeSuspended": "Suspendert",
+      "notSortable": "Ikke sorterbar — verdien kommer fra one.witysk.org per rad"
     },
     "ips": {
       "addTitle": "Blokker en IP, CIDR eller rekkevidde",

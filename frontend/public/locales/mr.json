@@ -831,7 +831,8 @@
       "colLastLogin": "शेवटचे लॉगिन",
       "badgePlatformAdmin": "प्रशासक",
       "badgeOneWityskAdminTitle": "प्रशासक one.witysk.org वर",
-      "badgeSuspended": "निलंबित"
+      "badgeSuspended": "निलंबित",
+      "notSortable": "क्रमवारी लावता येत नाही — मूल्य प्रत्येक रांगेसाठी one.witysk.org कडून येते"
     },
     "ips": {
       "addTitle": "IP, CIDR किंवा श्रेणी ब्लॉक करा",

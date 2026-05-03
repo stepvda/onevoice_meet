@@ -294,7 +294,7 @@
   "recordings": {
     "title": "录制",
     "subtitle": "会议服务端录制。本地文件30天后自动删除（或发布至YouTube后删除）。仅限会议所有者发起上传。",
-    "empty": "暂无录制内容。开始会议后点击<1>录制</1>即可捕获。",
+    "empty": "暂无录制内容。开始会议并点击<1>录制</1>以进行录制。",
     "loading": "加载中…",
     "signInFirst": "请先在 one.witysk.org 上登录。",
     "signInTitle": "登录以查看您的录制内容",
@@ -831,7 +831,8 @@
       "colLastLogin": "上次登录",
       "badgePlatformAdmin": "管理员",
       "badgeOneWityskAdminTitle": "管理员在 one.witysk.org",
-      "badgeSuspended": "已暂停"
+      "badgeSuspended": "已暂停",
+      "notSortable": "不可排序 — 每行数值来自 one.witysk.org"
     },
     "ips": {
       "addTitle": "屏蔽IP、CIDR或范围",

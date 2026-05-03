@@ -831,7 +831,8 @@
       "colLastLogin": "Последно влизане",
       "badgePlatformAdmin": "администратор",
       "badgeOneWityskAdminTitle": "Администратор в one.witysk.org",
-      "badgeSuspended": "спряно"
+      "badgeSuspended": "спряно",
+      "notSortable": "Не може да се сортира — стойността идва от one.witysk.org за всеки ред"
     },
     "ips": {
       "addTitle": "Блокиране на IP, CIDR или диапазон",

@@ -831,7 +831,8 @@
       "colLastLogin": "Ostatnie logowanie",
       "badgePlatformAdmin": "administrator",
       "badgeOneWityskAdminTitle": "Administrator na one.witysk.org",
-      "badgeSuspended": "zawieszony"
+      "badgeSuspended": "zawieszony",
+      "notSortable": "Niesortowalne — wartość pochodzi z one.witysk.org dla każdego wiersza"
     },
     "ips": {
       "addTitle": "Zablokuj adres IP, CIDR lub zakres",

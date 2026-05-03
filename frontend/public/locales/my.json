@@ -831,7 +831,8 @@
       "colLastLogin": "နောက်ဆုံးဝင်ရောက်ခဲ့သည့်အချိန်",
       "badgePlatformAdmin": "အက်ဒမင်",
       "badgeOneWityskAdminTitle": "one.witysk.org ပေါ်ရှိ အက်ဒမင်",
-      "badgeSuspended": "ဆိုင်းငံ့ထားသည်"
+      "badgeSuspended": "ဆိုင်းငံ့ထားသည်",
+      "notSortable": "စီရန် မရနိုင်ပါ — တန်ဖိုးသည် တစ်တန်းလျှင် one.witysk.org မှ လာသည်"
     },
     "ips": {
       "addTitle": "IP၊ CIDR သို့မဟုတ် အကွာအဝေးတစ်ခုကို ပိတ်ဆို့ပါ",

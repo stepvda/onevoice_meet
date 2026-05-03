@@ -831,7 +831,8 @@
       "colLastLogin": "Log masuk terakhir",
       "badgePlatformAdmin": "pentadbir",
       "badgeOneWityskAdminTitle": "Admin pada one.witysk.org",
-      "badgeSuspended": "digantung"
+      "badgeSuspended": "digantung",
+      "notSortable": "Tidak boleh diisih — nilai datang daripada one.witysk.org setiap baris"
     },
     "ips": {
       "addTitle": "Sekat IP, CIDR, atau julat",
