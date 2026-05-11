@@ -46,6 +46,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
   const navigate = useNavigate();
   const room = useRoomContext();
   const [recordingActive, setRecordingActive] = useState(false);
+  const [recordingLayout, setRecordingLayout] = useState<"speaker" | "grid" | "single-speaker">("speaker");
   const [chatOpen, setChatOpen] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -108,7 +109,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
     if (recordingActive) {
       await withBusy("rec-stop", () => api.stopRecording(meetingId));
     } else {
-      await withBusy("rec-start", () => api.startRecording(meetingId));
+      await withBusy("rec-start", () => api.startRecording(meetingId, { layout: recordingLayout }));
     }
   }
 
@@ -222,6 +223,23 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
               <MicOff size={16} />
               <span className="hidden md:inline">{t("room.muteAll")}</span>
             </button>
+            {!recordingActive && (
+              <select
+                value={recordingLayout}
+                onChange={(e) =>
+                  setRecordingLayout(e.target.value as "speaker" | "grid" | "single-speaker")
+                }
+                disabled={busy !== null}
+                data-testid="select-rec-layout"
+                title={t("room.recordLayoutTitle")}
+                aria-label={t("room.recordLayout")}
+                className="px-2 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50 border-none"
+              >
+                <option value="speaker">{t("room.recordLayoutSpeaker")}</option>
+                <option value="grid">{t("room.recordLayoutGrid")}</option>
+                <option value="single-speaker">{t("room.recordLayoutSingle")}</option>
+              </select>
+            )}
             <button
               type="button"
               onClick={toggleRecording}
