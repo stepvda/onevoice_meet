@@ -87,15 +87,26 @@ export default function Lobby() {
     };
   }, [roomName]);
 
-  // Pre-fill the display-name input from one.witysk.org when the visitor is
-  // signed in but isn't the meeting owner (owners skip the form entirely).
-  // Bootstrap SSO if no token is cached yet, then read /api/auth/me. We only
-  // overwrite an empty `name` so we never clobber what the user typed.
+  // Pre-fill name + email from the signed-in user's profile so a logged-in
+  // joiner doesn't have to retype them. Primary source is meet's own /me
+  // endpoint (covers both native and SSO meet accounts); falls back to
+  // one.witysk.org's /api/auth/me if we only have an SSO token. Only fills
+  // empty fields so we never clobber what the user typed.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const tok = getAccessToken() ?? (await bootstrapFromOneWitysk());
       if (!tok || cancelled) return;
+      try {
+        const me = await api.me();
+        if (cancelled) return;
+        const fetchedName = me.name || me.username || null;
+        if (fetchedName) setName((cur) => (cur === "" ? fetchedName : cur));
+        if (me.email) setEmail((cur) => (cur === "" ? me.email! : cur));
+        return;
+      } catch {
+        /* fall through to one.witysk.org name fetch */
+      }
       const fetched = await fetchOneWityskName();
       if (cancelled || !fetched) return;
       setName((cur) => (cur === "" ? fetched : cur));
