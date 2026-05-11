@@ -50,6 +50,10 @@ def lightweight_migrate() -> None:
                 ("youtube_video_id", "ALTER TABLE recordings ADD COLUMN youtube_video_id TEXT"),
                 ("youtube_status", "ALTER TABLE recordings ADD COLUMN youtube_status TEXT"),
                 ("youtube_error", "ALTER TABLE recordings ADD COLUMN youtube_error TEXT"),
+                ("transcript_path", "ALTER TABLE recordings ADD COLUMN transcript_path TEXT"),
+                ("transcript_status", "ALTER TABLE recordings ADD COLUMN transcript_status TEXT"),
+                ("transcript_error", "ALTER TABLE recordings ADD COLUMN transcript_error TEXT"),
+                ("transcript_summary", "ALTER TABLE recordings ADD COLUMN transcript_summary TEXT"),
             )),
             ("meetings", (
                 ("hidden", "ALTER TABLE meetings ADD COLUMN hidden BOOLEAN DEFAULT 0 NOT NULL"),
@@ -65,6 +69,11 @@ def lightweight_migrate() -> None:
                 ("lock_room_after_start", "ALTER TABLE meetings ADD COLUMN lock_room_after_start BOOLEAN DEFAULT 0 NOT NULL"),
                 ("allow_participant_screenshare", "ALTER TABLE meetings ADD COLUMN allow_participant_screenshare BOOLEAN DEFAULT 1 NOT NULL"),
                 ("allow_participant_chat", "ALTER TABLE meetings ADD COLUMN allow_participant_chat BOOLEAN DEFAULT 1 NOT NULL"),
+                ("lobby_greeting", "ALTER TABLE meetings ADD COLUMN lobby_greeting TEXT"),
+                ("cohost_user_ids", "ALTER TABLE meetings ADD COLUMN cohost_user_ids TEXT DEFAULT '[]' NOT NULL"),
+                ("recurrence_rule", "ALTER TABLE meetings ADD COLUMN recurrence_rule TEXT"),
+                ("duration_minutes", "ALTER TABLE meetings ADD COLUMN duration_minutes INTEGER"),
+                ("notes", "ALTER TABLE meetings ADD COLUMN notes TEXT DEFAULT '' NOT NULL"),
             )),
             ("chat_messages", (
                 ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),
@@ -72,6 +81,8 @@ def lightweight_migrate() -> None:
                 ("attachment_type", "ALTER TABLE chat_messages ADD COLUMN attachment_type TEXT"),
                 ("attachment_name", "ALTER TABLE chat_messages ADD COLUMN attachment_name TEXT"),
                 ("attachment_size", "ALTER TABLE chat_messages ADD COLUMN attachment_size INTEGER"),
+                ("pinned_at", "ALTER TABLE chat_messages ADD COLUMN pinned_at TIMESTAMP"),
+                ("pinned_by", "ALTER TABLE chat_messages ADD COLUMN pinned_by TEXT"),
             )),
             ("vouchers", (
                 # Backfill with a far-future date so any vouchers already

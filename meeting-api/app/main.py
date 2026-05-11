@@ -8,7 +8,7 @@ from app.auth import bootstrap_platform_admins
 from app.config import settings
 from app.db import engine, lightweight_migrate
 from app.models import Base
-from app.routes import admin, auth_native, billing, chat, health, meetings, moderation, recordings, ti_cafe, tokens, totp, users, vouchers, waiting_room
+from app.routes import admin, auth_native, billing, chat, health, meetings, moderation, polls, recordings, ti_cafe, tokens, totp, users, vouchers, waiting_room
 from app.services import ip_block
 from app.webhooks import router as webhook_router
 
@@ -74,4 +74,5 @@ app.include_router(vouchers.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(waiting_room.router, prefix="/api")
+app.include_router(polls.router, prefix="/api")
 app.include_router(webhook_router, prefix="/api")

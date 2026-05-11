@@ -2,12 +2,12 @@ import {
   useLocalParticipant,
   useRemoteParticipants,
 } from "@livekit/components-react";
-import { Crown, Hand, Mic, MicOff, Users, Video, VideoOff, X } from "lucide-react";
+import { Crown, Hand, Mic, MicOff, ShieldCheck, ShieldOff, Users, Video, VideoOff, X } from "lucide-react";
 import { Track } from "livekit-client";
 import type { Participant } from "livekit-client";
 import { useTranslation } from "react-i18next";
 import { api } from "../lib/api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useHandRaiseState } from "../lib/handRaise";
 
 interface Props {
@@ -23,6 +23,24 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
   const remotes = useRemoteParticipants();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [cohosts, setCohosts] = useState<Set<string>>(new Set());
+
+  // Refresh the cohost list whenever the panel is opened by the owner.
+  useEffect(() => {
+    if (!open || !isOwner || !meetingId) return;
+    let cancelled = false;
+    api
+      .listCohosts(meetingId)
+      .then((r) => {
+        if (!cancelled) setCohosts(new Set(r));
+      })
+      .catch(() => {
+        /* non-fatal; the badge just won't render */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isOwner, meetingId]);
 
   if (!open) return null;
 
@@ -81,19 +99,39 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
         className="flex-1 overflow-y-auto py-1"
         data-testid="participants-list"
       >
-        {all.map((p) => (
-          <ParticipantRow
-            key={p.identity}
-            p={p}
-            isMe={p.identity === localParticipant?.identity}
-            isOwner={isOwner}
-            meetingId={meetingId}
-            busyId={busyId}
-            audioOn={audioOn(p)}
-            videoOn={videoOn(p)}
-            withBusy={withBusy}
-          />
-        ))}
+        {all.map((p) => {
+          const userSub = p.identity?.startsWith("user-") ? p.identity.slice(5) : null;
+          const isCohost = !!userSub && cohosts.has(userSub);
+          return (
+            <ParticipantRow
+              key={p.identity}
+              p={p}
+              isMe={p.identity === localParticipant?.identity}
+              isOwner={isOwner}
+              meetingId={meetingId}
+              busyId={busyId}
+              audioOn={audioOn(p)}
+              videoOn={videoOn(p)}
+              withBusy={withBusy}
+              isCohost={isCohost}
+              userSub={userSub}
+              onToggleCohost={
+                isOwner && userSub && meetingId
+                  ? async () => {
+                      try {
+                        const r = isCohost
+                          ? await api.removeCohost(meetingId, userSub)
+                          : await api.addCohost(meetingId, userSub);
+                        setCohosts(new Set(r.cohosts));
+                      } catch (e) {
+                        setErr((e as Error).message);
+                      }
+                    }
+                  : undefined
+              }
+            />
+          );
+        })}
       </ul>
 
       {err && (
@@ -114,6 +152,9 @@ function ParticipantRow({
   audioOn,
   videoOn,
   withBusy,
+  isCohost,
+  userSub,
+  onToggleCohost,
 }: {
   p: Participant;
   isMe: boolean;
@@ -123,6 +164,9 @@ function ParticipantRow({
   audioOn: boolean;
   videoOn: boolean;
   withBusy: (label: string, fn: () => Promise<unknown>) => Promise<void>;
+  isCohost: boolean;
+  userSub: string | null;
+  onToggleCohost?: () => Promise<void>;
 }) {
   const { t } = useTranslation();
   const hand = useHandRaiseState(p);
@@ -146,6 +190,14 @@ function ParticipantRow({
           {p.identity?.startsWith("user-") && (
             <span title={t("participants.authenticatedOwner")} className="text-amber-400">
               <Crown size={12} />
+            </span>
+          )}
+          {isCohost && (
+            <span
+              title={t("participants.cohost", { defaultValue: "Co-host" })}
+              className="text-accent-400"
+            >
+              <ShieldCheck size={12} />
             </span>
           )}
           {hand.raised && (
@@ -175,6 +227,26 @@ function ParticipantRow({
           targets so phone-tapping mute/kick is reliable. */}
       {isOwner && !isMe && meetingId && (
         <div className="flex items-center gap-1">
+          {userSub && onToggleCohost && (
+            <button
+              type="button"
+              title={isCohost
+                ? t("participants.demoteCohost", { defaultValue: "Remove co-host" })
+                : t("participants.promoteCohost", { defaultValue: "Promote to co-host" })}
+              aria-label={isCohost
+                ? t("participants.demoteCohost", { defaultValue: "Remove co-host" })
+                : t("participants.promoteCohost", { defaultValue: "Promote to co-host" })}
+              data-testid={`participant-cohost-${p.identity}`}
+              disabled={busyId !== null}
+              onClick={() => withBusy(p.identity, onToggleCohost)}
+              className={[
+                "min-w-11 min-h-11 inline-flex items-center justify-center rounded hover:bg-primary-700 disabled:opacity-50",
+                isCohost ? "text-accent-400" : "text-slate-300",
+              ].join(" ")}
+            >
+              {isCohost ? <ShieldOff size={18} /> : <ShieldCheck size={18} />}
+            </button>
+          )}
           {hand.raised && (
             <button
               type="button"

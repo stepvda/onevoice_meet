@@ -17,6 +17,7 @@ from app.auth import RequireUser
 from app.db import get_db
 from app.livekit_client import livekit_api
 from app.models import Meeting, ModerationAudit
+from app.routes.meetings import is_moderator
 
 router = APIRouter(prefix="/v1")
 
@@ -36,8 +37,11 @@ class PresenterBody(BaseModel):
 
 
 def _require_owner(meeting_id: str, user_id: str, db: Session) -> Meeting:
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user_id).first()
-    if not m:
+    """Now accepts owners AND co-hosts. Name kept for backward compatibility
+    with existing callers; semantics widened from `owner only` to
+    `moderator (owner or co-host)`."""
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
+    if not m or not is_moderator(m, user_id):
         raise HTTPException(status_code=404, detail="meeting not found")
     if not m.is_active:
         raise HTTPException(status_code=403, detail="meeting closed")

@@ -219,6 +219,28 @@ def list_all_my_recordings(user: RequireUser, db: Session = Depends(get_db)) -> 
     return [_recording_out(r) for r in rows]
 
 
+@router.get("/recordings/{rec_id}/transcript")
+def download_transcript(rec_id: str, user: RequireUser, db: Session = Depends(get_db)) -> FileResponse:
+    r = (
+        db.query(Recording)
+        .join(Meeting, Meeting.id == Recording.meeting_id)
+        .filter(Recording.id == rec_id, Meeting.owner_user_id == user.sub)
+        .first()
+    )
+    if not r:
+        raise HTTPException(status_code=404, detail="recording not found")
+    if not r.transcript_path:
+        raise HTTPException(status_code=404, detail="transcript not available")
+    path = Path(r.transcript_path)
+    if not path.exists():
+        raise HTTPException(status_code=410, detail="transcript file missing")
+    return FileResponse(
+        path=str(path),
+        media_type="text/plain; charset=utf-8",
+        filename=path.name,
+    )
+
+
 @router.get("/recordings/{rec_id}/download")
 def download_recording(rec_id: str, user: RequireUser, db: Session = Depends(get_db)) -> FileResponse:
     r = (
@@ -381,6 +403,8 @@ def _recording_out(r: Recording) -> dict:
         "youtube_url": r.youtube_url,
         "youtube_status": r.youtube_status,
         "youtube_error": r.youtube_error,
+        "transcript_status": r.transcript_status,
+        "has_transcript": bool(r.transcript_path),
     }
 
 

@@ -16,6 +16,38 @@ from app.models import Meeting, MeetingParticipant, UserPreferences
 from app.services.slug_words import generate_unique_slug
 
 
+def _cohost_set(m: Meeting) -> set[str]:
+    """Parse the Meeting.cohost_user_ids JSON list into a set of strings.
+    Defensive: returns an empty set on any parse error so a corrupt row
+    never blocks moderation."""
+    try:
+        import json
+        v = json.loads(m.cohost_user_ids or "[]")
+        if isinstance(v, list):
+            return {str(x) for x in v if isinstance(x, (str, int))}
+    except ValueError:
+        pass
+    return set()
+
+
+def is_moderator(m: Meeting, user_sub: str | None) -> bool:
+    if not user_sub:
+        return False
+    if m.owner_user_id == user_sub:
+        return True
+    return user_sub in _cohost_set(m)
+
+
+def _validated_rrule(value: str | None) -> str | None:
+    """Accept only the recurrence presets the form offers. Anything else
+    becomes None — we don't trust arbitrary RRULE strings into the .ics."""
+    from app.services.ics import ALLOWED_RRULES
+    if not value:
+        return None
+    v = value.strip()
+    return v if v in ALLOWED_RRULES else None
+
+
 def _anonymise_email(email: str | None) -> str | None:
     """Replace the local part of an email with the first letter + asterisks.
     `alice@example.com` → `a***@example.com`. Falls back to a single `***@…`
@@ -54,6 +86,11 @@ class CreateMeetingBody(BaseModel):
     lock_room_after_start: bool = False
     allow_participant_screenshare: bool = True
     allow_participant_chat: bool = True
+    lobby_greeting: str | None = Field(default=None, max_length=2000)
+    # RFC 5545 RRULE string (no leading "RRULE:"). Restricted to the
+    # presets the form offers so we don't have to safely parse free input.
+    recurrence_rule: str | None = Field(default=None, max_length=200)
+    duration_minutes: int | None = Field(default=None, ge=5, le=8 * 60)
 
 
 class UpdateMeetingBody(BaseModel):
@@ -88,6 +125,9 @@ class MeetingOut(BaseModel):
     lock_room_after_start: bool = False
     allow_participant_screenshare: bool = True
     allow_participant_chat: bool = True
+    lobby_greeting: str | None = None
+    recurrence_rule: str | None = None
+    duration_minutes: int | None = None
 
 
 def _branding_url(m: Meeting) -> str | None:
@@ -122,6 +162,9 @@ def _to_out(m: Meeting) -> MeetingOut:
         lock_room_after_start=bool(m.lock_room_after_start),
         allow_participant_screenshare=bool(m.allow_participant_screenshare),
         allow_participant_chat=bool(m.allow_participant_chat),
+        lobby_greeting=m.lobby_greeting,
+        recurrence_rule=m.recurrence_rule,
+        duration_minutes=m.duration_minutes,
     )
 
 
@@ -187,6 +230,9 @@ def create_meeting(body: CreateMeetingBody, user: RequireAdmin, db: Session = De
         lock_room_after_start=body.lock_room_after_start,
         allow_participant_screenshare=body.allow_participant_screenshare,
         allow_participant_chat=body.allow_participant_chat,
+        lobby_greeting=(body.lobby_greeting or "").strip() or None,
+        recurrence_rule=_validated_rrule(body.recurrence_rule),
+        duration_minutes=body.duration_minutes,
     )
     db.add(meeting)
     db.commit()
@@ -312,6 +358,18 @@ async def invite_by_email(
         branding_url=_branding_url(m),
     )
 
+    # Generate the .ics once and attach it to every invite so calendars
+    # (Google, Outlook, Apple) recognise the meeting and let recipients add
+    # it with one click.
+    import base64 as _b64
+    from app.services.ics import ics_for_meeting
+    ics_text = ics_for_meeting(m)
+    ics_attachment = {
+        "filename": f"{m.room_name}.ics",
+        "content": _b64.b64encode(ics_text.encode("utf-8")).decode("ascii"),
+        "content_type": "text/calendar",
+    }
+
     sent = 0
     failed: list[str] = []
     for addr in body.emails:
@@ -321,6 +379,7 @@ async def invite_by_email(
             html=html,
             text=text,
             reply_to=settings.invite_reply_to or user.email or None,
+            attachments=[ics_attachment],
         )
         if ok:
             sent += 1
@@ -488,7 +547,29 @@ def public_room_info(room_name: str, db: Session = Depends(get_db)) -> dict:
         "require_password": bool(m.require_password),
         "branding_url": _branding_url(m),
         "owner_name": m.owner_name,
+        "lobby_greeting": m.lobby_greeting,
     }
+
+
+@router.get("/rooms/{room_name}/ics")
+def public_room_ics(room_name: str, db: Session = Depends(get_db)):
+    """Public .ics download for a room. Used by the lobby + Recordings page
+    so participants can save the meeting to their calendar without an
+    invite email."""
+    from fastapi.responses import Response
+    from app.services.ics import ics_for_meeting
+    m = db.query(Meeting).filter_by(room_name=room_name).first()
+    if not m or not m.is_active:
+        raise HTTPException(status_code=404, detail="room not found")
+    body = ics_for_meeting(m)
+    return Response(
+        content=body,
+        media_type="text/calendar",
+        headers={
+            "Content-Disposition": f'attachment; filename="{m.room_name}.ics"',
+            "Cache-Control": "no-cache",
+        },
+    )
 
 
 @router.get("/rooms/{room_name}/branding")
@@ -530,16 +611,25 @@ def mint_owner_token(
     body: OwnerTokenBody | None = None,
     db: Session = Depends(get_db),
 ) -> dict:
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
+    # Accept the owner OR any user listed as a co-host. Both get a
+    # `room_admin` LiveKit token so they can perform moderator actions.
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
     if not m:
+        raise HTTPException(status_code=404, detail="meeting not found")
+    if not is_moderator(m, user.sub):
         raise HTTPException(status_code=404, detail="meeting not found")
     if not m.is_active:
         raise HTTPException(status_code=403, detail="meeting closed")
-    if body and body.display_name:
+    is_real_owner = m.owner_user_id == user.sub
+    if body and body.display_name and is_real_owner:
         m.owner_name = body.display_name
         db.commit()
     identity = f"user-{user.sub}"
-    display_name = m.owner_name or user.email or f"Owner {user.sub}"
+    display_name = (
+        (m.owner_name if is_real_owner else None)
+        or user.email
+        or f"User {user.sub}"
+    )
     token = mint_participant_token(
         room_name=m.room_name,
         identity=identity,
@@ -561,7 +651,7 @@ def mint_owner_token(
             display_name=display_name,
             email=stored_email,
             is_authenticated=True,
-            is_owner=True,
+            is_owner=is_real_owner,
         )
     )
     db.commit()
@@ -570,4 +660,73 @@ def mint_owner_token(
         "token": token,
         "room_name": m.room_name,
         "ice_servers": short_lived_turn_credentials(identity),
+        "role": "owner" if is_real_owner else "cohost",
     }
+
+
+@router.get("/rooms/{room_name}/me-role")
+def my_role(room_name: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
+    """Tell an authenticated user what role they hold in this room. Used by
+    the Lobby to decide whether to mint a moderator token or fall through
+    to the anon-token path."""
+    m = db.query(Meeting).filter_by(room_name=room_name).first()
+    if not m or not m.is_active:
+        raise HTTPException(status_code=404, detail="room not found")
+    if m.owner_user_id == user.sub:
+        return {"role": "owner", "meeting_id": m.id}
+    if user.sub in _cohost_set(m):
+        return {"role": "cohost", "meeting_id": m.id}
+    return {"role": "guest", "meeting_id": m.id}
+
+
+class CohostBody(BaseModel):
+    user_sub: str = Field(min_length=1, max_length=200)
+
+
+def _save_cohosts(m: Meeting, cohosts: set[str]) -> None:
+    import json
+    m.cohost_user_ids = json.dumps(sorted(cohosts))
+
+
+@router.get("/meetings/{meeting_id}/cohosts")
+def list_cohosts(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> list[str]:
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="meeting not found")
+    return sorted(_cohost_set(m))
+
+
+@router.post("/meetings/{meeting_id}/cohosts")
+def add_cohost(
+    meeting_id: str,
+    body: CohostBody,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="meeting not found")
+    if body.user_sub == m.owner_user_id:
+        return {"ok": True, "cohosts": sorted(_cohost_set(m))}
+    cur = _cohost_set(m)
+    cur.add(body.user_sub)
+    _save_cohosts(m, cur)
+    db.commit()
+    return {"ok": True, "cohosts": sorted(cur)}
+
+
+@router.delete("/meetings/{meeting_id}/cohosts/{user_sub}")
+def remove_cohost(
+    meeting_id: str,
+    user_sub: str,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="meeting not found")
+    cur = _cohost_set(m)
+    cur.discard(user_sub)
+    _save_cohosts(m, cur)
+    db.commit()
+    return {"ok": True, "cohosts": sorted(cur)}

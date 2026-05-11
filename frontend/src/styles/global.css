@@ -93,3 +93,54 @@ html[data-blur-emails="true"] .privacy-blur-email:hover,
 html[data-blur-emails="true"] .privacy-blur-email:focus-within {
   filter: blur(0);
 }
+
+/* Floating reaction animation. Each emoji rises, sways, and fades out over
+ * ~4s. Lanes are spaced horizontally so a salvo of reactions doesn't stack
+ * on top of itself.
+ */
+@keyframes reaction-float {
+  0%   { transform: translateY(0)     scale(0.6); opacity: 0; }
+  10%  { transform: translateY(-10px) scale(1.05); opacity: 1; }
+  70%  { transform: translateY(-160px) translateX(8px); opacity: 1; }
+  100% { transform: translateY(-220px) translateX(-8px); opacity: 0; }
+}
+.reaction-float {
+  animation: reaction-float 4000ms ease-out forwards;
+  will-change: transform, opacity;
+}
+.meet-stage.reduced-motion .reaction-float {
+  animation: none;
+  opacity: 0;
+}
+
+/* ── UI preference toggles (mapped from prefs via useUiPrefs) ───────── */
+
+/* High contrast: stronger text, thicker borders. */
+html[data-high-contrast="true"] {
+  --tw-prose-body: #ffffff;
+}
+html[data-high-contrast="true"] body { color: #ffffff; }
+html[data-high-contrast="true"] .border-primary-700 { border-color: #ffffff !important; }
+html[data-high-contrast="true"] .text-slate-400,
+html[data-high-contrast="true"] .text-slate-500 { color: #e2e8f0 !important; }
+
+/* Visible keyboard focus outlines */
+html[data-focus-outlines="off"] *:focus { outline: none !important; }
+html[data-focus-outlines="on"] *:focus-visible {
+  outline: 2px solid var(--accent-color, #2563eb) !important;
+  outline-offset: 2px !important;
+}
+
+/* Square vs rounded avatars */
+html[data-rounded-avatars="false"] img.rounded-full,
+html[data-rounded-avatars="false"] .rounded-full { border-radius: 4px !important; }
+
+/* App-wide font size scale */
+html[data-font-size="small"]  { font-size: 14px; }
+html[data-font-size="medium"] { font-size: 16px; }
+html[data-font-size="large"]  { font-size: 18px; }
+html[data-font-size="xl"]     { font-size: 20px; }
+
+/* Background opacity for the gradient page background. */
+html { --bg-opacity: 1; }
+.bg-witysk-page { opacity: var(--bg-opacity); }

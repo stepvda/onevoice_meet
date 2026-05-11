@@ -30,6 +30,7 @@ from app.auth import RequireUser
 from app.config import settings
 from app.db import get_db
 from app.models import ChatMessage, ChatReaction, Meeting
+from app.routes.meetings import is_moderator
 
 router = APIRouter(prefix="/v1")
 
@@ -76,6 +77,8 @@ def _serialize(
         "message": msg.message,
         "reply_to_id": msg.reply_to_id,
         "sent_at": msg.sent_at.isoformat() if msg.sent_at else None,
+        "pinned_at": msg.pinned_at.isoformat() if msg.pinned_at else None,
+        "pinned_by": msg.pinned_by,
         "attachment": (
             {
                 # Scoped by room_name so integer message_ids aren't blindly
@@ -335,3 +338,57 @@ def delete_reaction(
     ).delete()
     db.commit()
     return {"ok": True}
+
+
+# ─── Shared notes (room-scoped, anyone in the room can read/write) ────
+
+
+@router.get("/rooms/{room_name}/notes")
+def get_notes(room_name: str, db: Session = Depends(get_db)) -> dict:
+    m = _meeting_for_room(room_name, db, must_be_active=False)
+    return {"notes": m.notes or "", "meeting_id": m.id}
+
+
+class NotesBody(BaseModel):
+    notes: str = Field(default="", max_length=100_000)
+
+
+@router.put("/rooms/{room_name}/notes")
+def put_notes(room_name: str, body: NotesBody, db: Session = Depends(get_db)) -> dict:
+    m = _meeting_for_room(room_name, db, must_be_active=True)
+    m.notes = body.notes
+    db.commit()
+    return {"ok": True, "length": len(m.notes)}
+
+
+# ─── Pinned messages (owner-only) ──────────────────────────────────────
+
+class PinBody(BaseModel):
+    message_id: int
+    pinned: bool
+
+
+@router.post("/meetings/{meeting_id}/chat/pin")
+def set_pin(
+    meeting_id: str,
+    body: PinBody,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Owner-only pin/unpin. The SPA polls / refetches chat history after the
+    write, so no separate data-channel hint is required — the existing
+    refetch signal that fires on every post is enough."""
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
+    if not m or not is_moderator(m, user.sub):
+        raise HTTPException(status_code=404, detail="meeting not found")
+    msg = db.query(ChatMessage).filter_by(id=body.message_id, meeting_id=m.id).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="message not found")
+    if body.pinned:
+        msg.pinned_at = datetime.now(timezone.utc)
+        msg.pinned_by = user.sub
+    else:
+        msg.pinned_at = None
+        msg.pinned_by = None
+    db.commit()
+    return {"ok": True, "pinned_at": msg.pinned_at.isoformat() if msg.pinned_at else None}

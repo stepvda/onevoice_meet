@@ -57,6 +57,9 @@ export default function CreateMeeting() {
   const [lockRoomAfterStart, setLockRoomAfterStart] = useState(modPrefs.lockRoomAfterStart);
   const [allowParticipantScreenshare, setAllowParticipantScreenshare] = useState(modPrefs.allowParticipantScreenshare);
   const [allowParticipantChat, setAllowParticipantChat] = useState(modPrefs.allowParticipantChat);
+  const [lobbyGreeting, setLobbyGreeting] = useState(prefs.greeting || "");
+  const [recurrenceRule, setRecurrenceRule] = useState<string>("");
+  const [durationMinutes, setDurationMinutes] = useState<number>(60);
   const [branding, setBranding] = useState<File | null>(null);
   const [brandingPreview, setBrandingPreview] = useState<string | null>(null);
   const brandingInputRef = useRef<HTMLInputElement | null>(null);
@@ -152,6 +155,9 @@ export default function CreateMeeting() {
         lock_room_after_start: lockRoomAfterStart,
         allow_participant_screenshare: allowParticipantScreenshare,
         allow_participant_chat: allowParticipantChat,
+        lobby_greeting: lobbyGreeting.trim() || null,
+        recurrence_rule: recurrenceRule || null,
+        duration_minutes: durationMinutes,
       });
       // Upload branding (if chosen) before navigation. Non-fatal if it fails.
       if (branding) {
@@ -293,6 +299,50 @@ export default function CreateMeeting() {
 
           <details className="group border-t border-primary-700 pt-3">
             <summary
+              data-testid="schedule-summary"
+              className="flex items-center justify-between cursor-pointer list-none select-none"
+            >
+              <span className="text-sm text-slate-300 font-medium">{t("createMeeting.schedule", { defaultValue: "Schedule" })}</span>
+              <span className="text-xs text-slate-500 group-open:rotate-180 transition-transform">▾</span>
+            </summary>
+            <div className="space-y-2 mt-2">
+              <p className="text-xs text-slate-400">
+                {t("createMeeting.scheduleHint", { defaultValue: "Set a duration and (optionally) a recurrence so calendar invites repeat automatically." })}
+              </p>
+              <div>
+                <Label htmlFor="meeting-duration">{t("createMeeting.duration", { defaultValue: "Duration (minutes)" })}</Label>
+                <input
+                  id="meeting-duration"
+                  data-testid="meeting-duration"
+                  type="number"
+                  min={5}
+                  max={480}
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(Math.max(5, Math.min(480, parseInt(e.target.value || "60", 10))))}
+                  className="w-full px-3 py-2 rounded-lg bg-primary-800 text-slate-100 border border-primary-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <Label htmlFor="meeting-recurrence">{t("createMeeting.recurrence", { defaultValue: "Recurrence" })}</Label>
+                <select
+                  id="meeting-recurrence"
+                  data-testid="meeting-recurrence"
+                  value={recurrenceRule}
+                  onChange={(e) => setRecurrenceRule(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-primary-800 text-slate-100 border border-primary-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">{t("createMeeting.recurrenceNone", { defaultValue: "One-off (no recurrence)" })}</option>
+                  <option value="FREQ=DAILY">{t("createMeeting.recurrenceDaily", { defaultValue: "Daily" })}</option>
+                  <option value="FREQ=WEEKLY">{t("createMeeting.recurrenceWeekly", { defaultValue: "Weekly" })}</option>
+                  <option value="FREQ=WEEKLY;INTERVAL=2">{t("createMeeting.recurrenceBiweekly", { defaultValue: "Every 2 weeks" })}</option>
+                  <option value="FREQ=MONTHLY">{t("createMeeting.recurrenceMonthly", { defaultValue: "Monthly" })}</option>
+                </select>
+              </div>
+            </div>
+          </details>
+
+          <details className="group border-t border-primary-700 pt-3">
+            <summary
               data-testid="moderation-summary"
               className="flex items-center justify-between cursor-pointer list-none select-none"
             >
@@ -352,6 +402,20 @@ export default function CreateMeeting() {
                 checked={autoAdmitAuthenticated}
                 onChange={setAutoAdmitAuthenticated}
               />
+              <div className="pt-2">
+                <Label htmlFor="meeting-lobby-greeting">{t("createMeeting.lobbyGreeting")}</Label>
+                <p className="text-xs text-slate-400 mb-1">{t("createMeeting.lobbyGreetingHint")}</p>
+                <textarea
+                  id="meeting-lobby-greeting"
+                  data-testid="meeting-lobby-greeting"
+                  value={lobbyGreeting}
+                  onChange={(e) => setLobbyGreeting(e.target.value)}
+                  maxLength={2000}
+                  rows={3}
+                  placeholder={t("createMeeting.lobbyGreetingPlaceholder")}
+                  className="w-full px-3 py-2 rounded-lg bg-primary-800 text-slate-100 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm resize-y"
+                />
+              </div>
             </div>
           </details>
 

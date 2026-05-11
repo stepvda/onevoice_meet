@@ -61,6 +61,25 @@ class Meeting(Base):
     lock_room_after_start: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     allow_participant_screenshare: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     allow_participant_chat: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Optional greeting/welcome message shown to participants in the lobby
+    # before they join. Limited to a short paragraph; no markdown rendering.
+    lobby_greeting: Mapped[str | None] = mapped_column(String(2000))
+    # JSON-encoded list of authenticated user_ids (`user.sub`) the owner has
+    # promoted to co-host. Co-hosts get moderator powers (mute / kick /
+    # presenter / waiting-room admit / chat pin / lower-hand). They need to
+    # rejoin the meeting after promotion to receive a fresh moderator token.
+    cohost_user_ids: Mapped[str] = mapped_column(String, default="[]", nullable=False)
+    # Optional iCalendar RRULE string (e.g. `FREQ=WEEKLY` or
+    # `FREQ=DAILY;COUNT=10`). When set, the meeting's .ics export contains
+    # a recurring VEVENT. Stored verbatim; we don't expand occurrences.
+    recurrence_rule: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # Meeting duration in minutes — used by the .ics generator. Defaults to
+    # 60 min when omitted. Independent of `ends_at`, which is an
+    # absolute-time cutoff.
+    duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Free-form collaborative notes (plain text). Last writer wins; the
+    # client debounces writes and refreshes on a data-channel hint.
+    notes: Mapped[str] = mapped_column(String, default="", nullable=False)
 
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")
@@ -115,6 +134,14 @@ class Recording(Base):
     youtube_video_id: Mapped[str | None] = mapped_column(String)
     youtube_status: Mapped[str | None] = mapped_column(String)
     youtube_error: Mapped[str | None] = mapped_column(String)
+    # Whisper transcript — generated automatically after egress finishes.
+    # `transcript_status` flows: null → pending → processing → completed |
+    # failed. The plain-text transcript is stored next to the .mp4 with a
+    # `.txt` extension.
+    transcript_path: Mapped[str | None] = mapped_column(String)
+    transcript_status: Mapped[str | None] = mapped_column(String)
+    transcript_error: Mapped[str | None] = mapped_column(String)
+    transcript_summary: Mapped[str | None] = mapped_column(String)
 
     meeting: Mapped[Meeting] = relationship(back_populates="recordings")
 
@@ -312,6 +339,79 @@ def _aware(dt: datetime) -> datetime:
     return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
+class Poll(Base):
+    """Live poll inside a meeting. Created by a host/co-host with 2-6 fixed
+    options; participants vote once per poll. Results are visible to everyone
+    while the poll is open."""
+    __tablename__ = "polls"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), nullable=False, index=True)
+    question: Mapped[str] = mapped_column(String, nullable=False)
+    # JSON-encoded list of option strings.
+    options_json: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="open")  # open | closed
+    created_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class PollVote(Base):
+    __tablename__ = "poll_votes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    poll_id: Mapped[str] = mapped_column(ForeignKey("polls.id", ondelete="CASCADE"), nullable=False, index=True)
+    voter_identity: Mapped[str] = mapped_column(String, nullable=False)
+    option_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("poll_id", "voter_identity", name="uq_poll_voter"),
+    )
+
+
+class Question(Base):
+    """Q&A queue — anyone asks; participants upvote; host marks answered."""
+    __tablename__ = "qa_questions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), nullable=False, index=True)
+    asker_identity: Mapped[str] = mapped_column(String, nullable=False)
+    asker_name: Mapped[str] = mapped_column(String, nullable=False)
+    question: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="open")  # open | answered | dismissed
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class QuestionUpvote(Base):
+    __tablename__ = "qa_upvotes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    question_id: Mapped[int] = mapped_column(ForeignKey("qa_questions.id", ondelete="CASCADE"), nullable=False, index=True)
+    voter_identity: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("question_id", "voter_identity", name="uq_question_voter"),
+    )
+
+
+class MeetingFeedback(Base):
+    """Post-meeting NPS / satisfaction rating. One row per submission;
+    a single participant can submit at most once but we don't enforce that
+    server-side — the client suppresses the modal after the first submit."""
+    __tablename__ = "meeting_feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), nullable=False, index=True)
+    participant_identity: Mapped[str | None] = mapped_column(String, nullable=True)
+    participant_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 0..10
+    comment: Mapped[str | None] = mapped_column(String, nullable=True)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
 class ModerationAudit(Base):
     __tablename__ = "moderation_audit"
 
@@ -340,6 +440,11 @@ class ChatMessage(Base):
     sender_name: Mapped[str] = mapped_column(String, nullable=False)
     message: Mapped[str] = mapped_column(String, nullable=False, default="")
     reply_to_id: Mapped[int | None] = mapped_column(ForeignKey("chat_messages.id"), nullable=True, index=True)
+    # Owner-only pinning. When `pinned_at` is set, the message is rendered
+    # at the top of the chat panel for everyone in the meeting. Multiple
+    # messages may be pinned; they appear in descending pin order.
+    pinned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    pinned_by: Mapped[str | None] = mapped_column(String, nullable=True)
     attachment_path: Mapped[str | None] = mapped_column(String)
     attachment_type: Mapped[str | None] = mapped_column(String)
     attachment_name: Mapped[str | None] = mapped_column(String)

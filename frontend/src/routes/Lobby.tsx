@@ -153,8 +153,30 @@ export default function Lobby() {
       if (isOwner) {
         const resp = await api.ownerToken(ownerMeetingId!, { display_name: await fetchOneWityskName() });
         sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp));
+        // Mark this session as moderator so Room.tsx exposes host controls.
+        sessionStorage.setItem(`role:${roomName}`, resp.role ?? "owner");
         navigate(`/r/${roomName}`);
         return;
+      }
+      // If we're signed in, ask the API whether this room treats us as a
+      // co-host. If so, mint a moderator token (room_admin grant) instead
+      // of an anonymous one.
+      if (getAccessToken()) {
+        try {
+          const role = await api.myRoleInRoom(roomName);
+          if (role.role === "cohost" || role.role === "owner") {
+            const resp = await api.ownerToken(role.meeting_id, {
+              display_name: await fetchOneWityskName(),
+            });
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp));
+            sessionStorage.setItem(`role:${roomName}`, resp.role ?? role.role);
+            sessionStorage.setItem(`owner:${roomName}`, role.meeting_id);
+            navigate(`/r/${roomName}`);
+            return;
+          }
+        } catch {
+          /* fall through to anon-token join */
+        }
       }
       const resp = await api.anonToken(roomName, {
         display_name: name,
@@ -240,6 +262,26 @@ export default function Lobby() {
               </p>
             )}
           </div>
+        </div>
+
+        {info?.lobby_greeting && (
+          <div
+            data-testid="lobby-greeting"
+            className="rounded-lg border border-primary-700 bg-primary-800/50 text-slate-200 px-4 py-3 mb-4 whitespace-pre-wrap text-sm"
+          >
+            {info.lobby_greeting}
+          </div>
+        )}
+
+        <div className="mb-3">
+          <a
+            href={`/api/v1/rooms/${roomName}/ics`}
+            download={`${roomName}.ics`}
+            data-testid="lobby-ics-download"
+            className="inline-flex items-center gap-1.5 text-xs text-accent-500 hover:underline"
+          >
+            {t("lobby.addToCalendar", { defaultValue: "Add to calendar (.ics)" })}
+          </a>
         </div>
 
         {waitToken && (

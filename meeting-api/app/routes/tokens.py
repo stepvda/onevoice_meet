@@ -10,7 +10,7 @@ from ulid import ULID
 from app.config import settings
 from app.db import get_db
 from app.livekit_client import mint_participant_token, short_lived_turn_credentials
-from app.models import Meeting, MeetingParticipant
+from app.models import Meeting, MeetingFeedback, MeetingParticipant
 from app.routes.waiting_room import enqueue_pending
 
 router = APIRouter(prefix="/v1")
@@ -134,3 +134,34 @@ def anon_token(
             "allow_chat": bool(m.allow_participant_chat),
         },
     }
+
+
+class FeedbackBody(BaseModel):
+    rating: int = Field(ge=0, le=10)
+    comment: str | None = Field(default=None, max_length=2000)
+    participant_identity: str | None = Field(default=None, max_length=200)
+    participant_name: str | None = Field(default=None, max_length=200)
+
+
+@router.post("/rooms/{room_name}/feedback", status_code=201)
+def post_feedback(
+    room_name: str,
+    body: FeedbackBody,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Anonymous post-meeting feedback. Accepts ratings even after a meeting
+    is closed so late-arriving submissions aren't dropped."""
+    m = db.query(Meeting).filter_by(room_name=room_name).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="room not found")
+    db.add(
+        MeetingFeedback(
+            meeting_id=m.id,
+            participant_identity=body.participant_identity,
+            participant_name=body.participant_name,
+            rating=body.rating,
+            comment=(body.comment or "").strip() or None,
+        )
+    )
+    db.commit()
+    return {"ok": True}

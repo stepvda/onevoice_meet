@@ -66,10 +66,19 @@ export default function PresenterSpotlight() {
   );
 
   const tracks: TrackReferenceOrPlaceholder[] = useMemo(() => {
-    if (!display.hideSelfView) return rawTracks;
     const me = room.localParticipant.identity;
-    return rawTracks.filter((t) => t.participant.identity !== me);
-  }, [rawTracks, display.hideSelfView, room.localParticipant.identity]);
+    return rawTracks.filter((t) => {
+      if (display.hideSelfView && t.participant.identity === me) return false;
+      // `hideEmptyTiles`: skip placeholder tiles (no published track).
+      if (
+        display.hideEmptyTiles &&
+        !(t as { publication?: unknown }).publication
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [rawTracks, display.hideSelfView, display.hideEmptyTiles, room.localParticipant.identity]);
 
   const focus = useMemo(() => {
     // 1. Pref "grid" always wins.
@@ -84,11 +93,17 @@ export default function PresenterSpotlight() {
       );
     };
     if (presenterId) return pickFor(presenterId);
-    // 3. Pref "speaker" → spotlight active speaker (if any).
+    // 3. `pinFirstScreenshare`: any active screen-share gets the spotlight
+    //    even when no presenter has been explicitly chosen.
+    if (display.pinFirstScreenshare) {
+      const screen = tracks.find((t) => t.source === Track.Source.ScreenShare);
+      if (screen) return screen;
+    }
+    // 4. Pref "speaker" → spotlight active speaker (if any).
     if (display.layout === "speaker") return pickFor(activeSpeakerId);
-    // 4. Default ("auto" / "spotlight"): grid until someone takes the stage.
+    // 5. Default ("auto" / "spotlight"): grid until someone takes the stage.
     return null;
-  }, [presenterId, tracks, display.layout, activeSpeakerId]);
+  }, [presenterId, tracks, display.layout, display.pinFirstScreenshare, activeSpeakerId]);
 
   if (focus) {
     const others = tracks.filter(

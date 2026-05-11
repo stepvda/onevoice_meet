@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Image as ImageIcon, Reply, Send, Smile, X } from "lucide-react";
+import { Image as ImageIcon, Pin, PinOff, Reply, Send, Smile, X } from "lucide-react";
+import { usePreferences } from "../lib/preferences";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 import ReactMarkdown from "react-markdown";
@@ -21,6 +22,8 @@ const TEXT_ENCODER = new TextEncoder();
 interface Props {
   open: boolean;
   onClose: () => void;
+  isOwner?: boolean;
+  meetingId?: string | null;
 }
 
 interface ChatRefetchSignal {
@@ -28,11 +31,13 @@ interface ChatRefetchSignal {
   type: "chat-refetch";
 }
 
-export default function ChatPanel({ open, onClose }: Props) {
+export default function ChatPanel({ open, onClose, isOwner = false, meetingId = null }: Props) {
   const { t } = useTranslation();
   const { roomName = "" } = useParams();
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
+  const emojiPickerEnabled = usePreferences((s) => s.chat.emojiPickerEnabled);
+  const sendOnEnter = usePreferences((s) => s.chat.sendOnEnter);
 
   const [messages, setMessages] = useState<ChatMessageDTO[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -221,6 +226,22 @@ export default function ChatPanel({ open, onClose }: Props) {
     }
   }
 
+  async function togglePin(m: ChatMessageDTO) {
+    if (!isOwner || !meetingId) return;
+    const wasPinned = !!m.pinned_at;
+    // Optimistic update so the bubble flips instantly. Refetch reconciles.
+    setMessages((cur) =>
+      cur.map((x) => (x.id === m.id ? { ...x, pinned_at: wasPinned ? null : new Date().toISOString() } : x))
+    );
+    try {
+      await api.pinChatMessage(meetingId, m.id, !wasPinned);
+      await broadcastRefetch();
+    } catch (e) {
+      setErr((e as Error).message);
+      await refetch();
+    }
+  }
+
   function onEmojiPicked(emoji: string) {
     const el = textInputRef.current;
     if (!el) {
@@ -264,6 +285,35 @@ export default function ChatPanel({ open, onClose }: Props) {
         </button>
       </header>
 
+      {messages.some((m) => m.pinned_at) && (
+        <div
+          data-testid="chat-pinned-bar"
+          className="border-b border-primary-700 bg-amber-500/5 px-3 py-2 flex flex-col gap-1 text-xs"
+        >
+          {messages
+            .filter((m) => m.pinned_at)
+            .sort((a, b) => (b.pinned_at! < a.pinned_at! ? -1 : 1))
+            .slice(0, 3)
+            .map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => {
+                  const el = document.querySelector(`[data-testid="chat-msg-${m.id}"]`);
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+                className="text-left flex items-start gap-1.5 text-slate-300 hover:text-slate-50"
+              >
+                <Pin size={12} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                <span className="truncate">
+                  <span className="text-amber-300 font-medium">{m.sender_name}:</span>{" "}
+                  {m.message || (m.attachment ? "🖼️" : "")}
+                </span>
+              </button>
+            ))}
+        </div>
+      )}
+
       <div
         ref={scrollerRef}
         className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2"
@@ -289,6 +339,8 @@ export default function ChatPanel({ open, onClose }: Props) {
               onCloseReactionPicker={() => setReactionTargetId(null)}
               onPickReaction={(e) => toggleReaction(m.id, e)}
               onReply={() => setReplyTo(m)}
+              isOwner={isOwner}
+              onTogglePin={() => togglePin(m)}
             />
           );
         })}
@@ -355,27 +407,34 @@ export default function ChatPanel({ open, onClose }: Props) {
         >
           <ImageIcon size={18} />
         </button>
-        <button
-          type="button"
-          onClick={() => setEmojiOpen((v) => !v)}
-          disabled={busy}
-          title={t("chatPanel.emojiTitle", { defaultValue: "Insert emoji" })}
-          aria-label={t("chatPanel.emojiTitle", { defaultValue: "Insert emoji" })}
-          data-testid="chat-emoji-toggle"
-          className={[
-            "p-2 rounded-lg text-slate-300 hover:bg-primary-700 disabled:opacity-50",
-            emojiOpen ? "bg-primary-700" : "",
-          ].join(" ")}
-        >
-          <Smile size={18} />
-        </button>
+        {emojiPickerEnabled && (
+          <button
+            type="button"
+            onClick={() => setEmojiOpen((v) => !v)}
+            disabled={busy}
+            title={t("chatPanel.emojiTitle", { defaultValue: "Insert emoji" })}
+            aria-label={t("chatPanel.emojiTitle", { defaultValue: "Insert emoji" })}
+            data-testid="chat-emoji-toggle"
+            className={[
+              "p-2 rounded-lg text-slate-300 hover:bg-primary-700 disabled:opacity-50",
+              emojiOpen ? "bg-primary-700" : "",
+            ].join(" ")}
+          >
+            <Smile size={18} />
+          </button>
+        )}
         <textarea
           ref={textInputRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={1}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            // `chat.sendOnEnter`: when true (default), bare Enter sends and
+            // Shift+Enter inserts a newline. When false, the user must use
+            // Ctrl/Cmd+Enter to send — bare Enter inserts a newline.
+            const cmdEnter = e.key === "Enter" && (e.ctrlKey || e.metaKey);
+            const plainEnter = e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey;
+            if (sendOnEnter ? plainEnter : cmdEnter) {
               e.preventDefault();
               sendText();
             }
@@ -439,6 +498,8 @@ interface BubbleProps {
   onCloseReactionPicker: () => void;
   onPickReaction: (emoji: string) => void;
   onReply: () => void;
+  isOwner?: boolean;
+  onTogglePin?: () => void;
 }
 
 function MessageBubble({
@@ -451,6 +512,8 @@ function MessageBubble({
   onCloseReactionPicker,
   onPickReaction,
   onReply,
+  isOwner = false,
+  onTogglePin,
 }: BubbleProps) {
   const { t } = useTranslation();
   const grouped = useMemo(() => {
@@ -473,9 +536,15 @@ function MessageBubble({
       {!mine && <div className="text-xs text-slate-400 mb-0.5 px-1">{msg.sender_name}</div>}
 
       <div className="group relative">
+        {msg.pinned_at && (
+          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-amber-400 mb-0.5 px-1">
+            <Pin size={10} /> {t("chatPanel.pinned", { defaultValue: "Pinned" })}
+          </div>
+        )}
         <div
           className={[
             "rounded-lg px-3 py-2 text-sm break-words",
+            msg.pinned_at ? "ring-1 ring-amber-500/50 " : "",
             mine
               ? "bg-accent-500/30 text-slate-50 border border-accent-500/40"
               : "bg-primary-800 text-slate-100 border border-primary-700",
@@ -546,6 +615,23 @@ function MessageBubble({
           >
             <Reply size={16} />
           </button>
+          {isOwner && onTogglePin && (
+            <button
+              type="button"
+              onClick={onTogglePin}
+              data-testid={`chat-pin-${msg.id}`}
+              title={msg.pinned_at ? t("chatPanel.unpin", { defaultValue: "Unpin" }) : t("chatPanel.pin", { defaultValue: "Pin" })}
+              aria-label={msg.pinned_at ? t("chatPanel.unpin", { defaultValue: "Unpin" }) : t("chatPanel.pin", { defaultValue: "Pin" })}
+              className={[
+                "min-w-9 min-h-9 inline-flex items-center justify-center rounded-full text-slate-200 border",
+                msg.pinned_at
+                  ? "bg-amber-500/40 hover:bg-amber-500/60 border-amber-500/60"
+                  : "bg-primary-700 hover:bg-primary-600 border-primary-600",
+              ].join(" ")}
+            >
+              {msg.pinned_at ? <PinOff size={16} /> : <Pin size={16} />}
+            </button>
+          )}
         </div>
 
         {reactionPickerOpen && (

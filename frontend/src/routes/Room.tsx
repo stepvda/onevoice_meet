@@ -17,10 +17,12 @@ import {
   MessageSquare,
   MicOff,
   Radio,
+  FileText,
   Settings as SettingsIcon,
   Square,
   UserPlus,
   Users,
+  Vote,
 } from "lucide-react";
 import { clearPendingToken, clearRoomMeta, loadPendingToken, loadRoomMeta } from "./Lobby";
 import { roomOptions } from "../lib/livekit";
@@ -36,6 +38,15 @@ import InviteModal from "../components/InviteModal";
 import AudioWaveform from "../components/AudioWaveform";
 import PendingJoinersPanel from "../components/PendingJoinersPanel";
 import HandRaiseButton from "../components/HandRaiseButton";
+import PostMeetingFeedback from "../components/PostMeetingFeedback";
+import ShortcutOverlay from "../components/ShortcutOverlay";
+import { useMeetingShortcuts } from "../lib/shortcuts";
+import ReactionsButton from "../components/ReactionsButton";
+import FloatingReactions from "../components/FloatingReactions";
+import PipButton from "../components/PipButton";
+import DeviceSwitcher from "../components/DeviceSwitcher";
+import PollsQnaPanel from "../components/PollsQnaPanel";
+import NotesWhiteboardPanel from "../components/NotesWhiteboardPanel";
 import MeetingClock from "../components/MeetingClock";
 import CaptionsOverlay from "../components/CaptionsOverlay";
 import PushToTalkIndicator from "../components/PushToTalkIndicator";
@@ -52,9 +63,10 @@ interface InnerProps {
   meetingTitle: string | null;
   brandingUrl: string | null;
   roomName: string;
+  onCaptureFeedbackInfo?: (info: { identity: string | null; name: string | null }) => void;
 }
 
-function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: InnerProps) {
+function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, onCaptureFeedbackInfo }: InnerProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const room = useRoomContext();
@@ -69,10 +81,35 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
   usePushToTalk(room);
   useBrowserNotifications(room);
   useJoinPolicy(room);
+
+  // Capture identity/name into the parent once connected so the post-meeting
+  // feedback modal can attach them after LiveKit unmounts on disconnect.
+  useEffect(() => {
+    if (!onCaptureFeedbackInfo) return;
+    onCaptureFeedbackInfo({
+      identity: room.localParticipant.identity ?? null,
+      name: room.localParticipant.name ?? null,
+    });
+  }, [room, onCaptureFeedbackInfo]);
+
+  useMeetingShortcuts({
+    room,
+    onToggleScreenShare: () => {
+      const lp = room.localParticipant;
+      void lp.setScreenShareEnabled(!lp.isScreenShareEnabled);
+    },
+    onLeave: () => {
+      void room.disconnect();
+    },
+    onOpenHelp: () => setShortcutsOpen(true),
+  });
   const [recordingActive, setRecordingActive] = useState(false);
   const [recordingLayout, setRecordingLayout] = useState<"speaker" | "grid" | "single-speaker">("speaker");
   const [pendingOpen, setPendingOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [pollsOpen, setPollsOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -336,6 +373,43 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
         )}
 
         <HandRaiseButton />
+        <ReactionsButton />
+        {meetingId && (
+          <button
+            type="button"
+            onClick={() => setPollsOpen((v) => !v)}
+            data-testid="btn-polls"
+            aria-pressed={pollsOpen ? "true" : "false"}
+            aria-label={t("polls.toolbar", { defaultValue: "Polls & Q&A" })}
+            title={t("polls.toolbarTitle", { defaultValue: "Open polls and Q&A" })}
+            className={[
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
+              pollsOpen
+                ? "bg-primary-500 text-white"
+                : "bg-primary-700 text-slate-100 hover:bg-primary-600",
+            ].join(" ")}
+          >
+            <Vote size={16} />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setNotesOpen((v) => !v)}
+          data-testid="btn-notes"
+          aria-pressed={notesOpen ? "true" : "false"}
+          aria-label={t("notes.toolbar", { defaultValue: "Notes & whiteboard" })}
+          title={t("notes.toolbarTitle", { defaultValue: "Open shared notes and whiteboard" })}
+          className={[
+            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
+            notesOpen
+              ? "bg-primary-500 text-white"
+              : "bg-primary-700 text-slate-100 hover:bg-primary-600",
+          ].join(" ")}
+        >
+          <FileText size={16} />
+        </button>
+        <PipButton />
+        <DeviceSwitcher />
 
         <button
           type="button"
@@ -450,6 +524,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
             <CaptionsOverlay fontSize={accessibility.captionsFontSize} />
           )}
           <PushToTalkIndicator />
+          <FloatingReactions room={room} />
         </div>
         <InMeetingSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         <ParticipantsPanel
@@ -466,7 +541,19 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
             onCountChange={setPendingCount}
           />
         )}
-        <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
+        <PollsQnaPanel
+          open={pollsOpen}
+          onClose={() => setPollsOpen(false)}
+          meetingId={meetingId}
+          isModerator={isOwner}
+        />
+        <NotesWhiteboardPanel open={notesOpen} onClose={() => setNotesOpen(false)} />
+        <ChatPanel
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          isOwner={isOwner}
+          meetingId={meetingId}
+        />
       </div>
 
       {/* BOTTOM CONTROL BAR — always reachable, full width below panels.
@@ -475,6 +562,8 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
       <div className="bg-primary-900/90 border-t border-primary-700 flex-shrink-0 pb-[env(safe-area-inset-bottom)]">
         <ControlBar variation="verbose" controls={{ chat: false, leave: true }} />
       </div>
+
+      <ShortcutOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {/* INVITE */}
       {isOwner && meetingId && (
@@ -494,6 +583,8 @@ export default function Room() {
   const navigate = useNavigate();
   const pending = loadPendingToken();
   const meta = loadRoomMeta();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackInfo, setFeedbackInfo] = useState<{ identity: string | null; name: string | null } | null>(null);
 
   // No token in sessionStorage → user reached /r/ directly. Bounce them back
   // to the lobby. Calling `navigate()` during render is a React anti-pattern
@@ -507,29 +598,53 @@ export default function Room() {
   const cfg = roomOptions(pending);
   const ownerMeetingId = sessionStorage.getItem(`owner:${roomName}`);
   const isOwner = !!ownerMeetingId;
+  const feedbackFlagKey = `feedback-shown:${roomName}`;
 
   return (
-    <LiveKitRoom
-      serverUrl={cfg.serverUrl}
-      token={cfg.token}
-      connect
-      audio
-      video
-      options={cfg.roomOptions}
-      connectOptions={cfg.connectOptions}
-      onDisconnected={() => {
-        clearPendingToken();
-        clearRoomMeta();
-        navigate("/");
-      }}
-    >
-      <InnerRoom
-        meetingId={ownerMeetingId}
-        isOwner={isOwner}
-        meetingTitle={meta.display_title ?? null}
-        brandingUrl={meta.branding_url ?? null}
-        roomName={roomName}
-      />
-    </LiveKitRoom>
+    <>
+      <LiveKitRoom
+        serverUrl={cfg.serverUrl}
+        token={cfg.token}
+        connect
+        audio
+        video
+        options={cfg.roomOptions}
+        connectOptions={cfg.connectOptions}
+        onDisconnected={() => {
+          clearPendingToken();
+          clearRoomMeta();
+          // Capture identity/name BEFORE LiveKit unmounts the room context.
+          // Owners aren't asked for feedback (they ran the meeting). Anyone
+          // who's already submitted in this session is also skipped.
+          const alreadyShown = sessionStorage.getItem(feedbackFlagKey) === "1";
+          if (!isOwner && !alreadyShown) {
+            sessionStorage.setItem(feedbackFlagKey, "1");
+            setFeedbackOpen(true);
+            return;
+          }
+          navigate("/");
+        }}
+      >
+        <InnerRoom
+          meetingId={ownerMeetingId}
+          isOwner={isOwner}
+          meetingTitle={meta.display_title ?? null}
+          brandingUrl={meta.branding_url ?? null}
+          roomName={roomName}
+          onCaptureFeedbackInfo={setFeedbackInfo}
+        />
+      </LiveKitRoom>
+      {feedbackOpen && (
+        <PostMeetingFeedback
+          roomName={roomName}
+          participantIdentity={feedbackInfo?.identity ?? null}
+          participantName={feedbackInfo?.name ?? null}
+          onClose={() => {
+            setFeedbackOpen(false);
+            navigate("/");
+          }}
+        />
+      )}
+    </>
   );
 }

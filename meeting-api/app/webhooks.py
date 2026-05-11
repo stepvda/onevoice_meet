@@ -6,7 +6,7 @@ verify the signature using the LiveKit WebhookReceiver, then update our DB.
 """
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from livekit import api
 from sqlalchemy.orm import Session
 
@@ -32,7 +32,11 @@ def _now() -> datetime:
 
 
 @router.post("/webhooks/livekit")
-async def livekit_webhook(request: Request, db: Session = Depends(get_db)) -> dict:
+async def livekit_webhook(
+    request: Request,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> dict:
     body = (await request.body()).decode("utf-8")
     auth_header = request.headers.get("Authorization", "")
     try:
@@ -129,6 +133,13 @@ async def livekit_webhook(request: Request, db: Session = Depends(get_db)) -> di
                     err = getattr(info, "error", "")
                     if err:
                         rec.youtube_error = (rec.youtube_error or "") + f"egress: {err[:300]}"
+                # Kick off the Whisper transcript in the background once the
+                # MP4 has finalised on disk. Marked `pending` so the UI can
+                # show "transcribing…" while the job runs.
+                if rec.status == "completed" and settings.openai_api_key:
+                    rec.transcript_status = "pending"
+                    from app.services.transcription import transcribe_recording
+                    background.add_task(transcribe_recording, rec.id)
             db.commit()
 
     return {"ok": True, "event": etype}

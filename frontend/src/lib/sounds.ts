@@ -42,10 +42,26 @@ function playTone(freq: number, durationMs: number, gain: number) {
   }
 }
 
+function playJoinTone(kind: "none" | "chime" | "ping" | "doorbell", gain: number) {
+  if (kind === "none") return;
+  if (kind === "ping") {
+    playTone(1320, 90, gain);
+    return;
+  }
+  if (kind === "doorbell") {
+    playTone(880, 220, gain);
+    setTimeout(() => playTone(660, 260, gain), 200);
+    return;
+  }
+  // chime (default)
+  playTone(880, 180, gain);
+}
+
 export function useJoinSound(room: Room) {
   const enabled = usePreferences((s) => s.notifications.soundOnJoin);
   const ignoreOwn = usePreferences((s) => s.notifications.ignoreOwnJoins);
   const volume = usePreferences((s) => s.notifications.notificationVolume);
+  const joinSound = usePreferences((s) => s.notifications.joinSound);
   const dndStart = usePreferences((s) => s.notifications.doNotDisturbStart);
   const dndEnd = usePreferences((s) => s.notifications.doNotDisturbEnd);
   // Suppress the initial flood that fires when we connect — LiveKit synthesises
@@ -66,13 +82,13 @@ export function useJoinSound(room: Room) {
       if (!ready.current) return;
       if (ignoreOwn && p.isLocal) return;
       if (inDnd(dndStart, dndEnd)) return;
-      playTone(880, 180, (volume / 100) * 0.12);
+      playJoinTone(joinSound, (volume / 100) * 0.12);
     };
     room.on(RoomEvent.ParticipantConnected, onJoin);
     return () => {
       room.off(RoomEvent.ParticipantConnected, onJoin);
     };
-  }, [room, enabled, ignoreOwn, volume, dndStart, dndEnd]);
+  }, [room, enabled, ignoreOwn, volume, joinSound, dndStart, dndEnd]);
 }
 
 export function useChatSound(room: Room) {

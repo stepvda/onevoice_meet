@@ -117,5 +117,11 @@ class Settings(BaseSettings):
     youtube_refresh_token: str = ""
     youtube_default_privacy: str = "unlisted"  # public | unlisted | private
 
+    # OpenAI — used for Whisper transcripts of completed recordings and for
+    # the post-meeting summary email. Leave empty to disable both features.
+    openai_api_key: str = ""
+    openai_whisper_model: str = "whisper-1"
+    openai_summary_model: str = "gpt-4o-mini"
+
 
 settings = Settings()

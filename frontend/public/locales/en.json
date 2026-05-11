@@ -214,7 +214,19 @@
     "waitingRoomEnabled": "Waiting room",
     "waitingRoomDesc": "New joiners wait until you admit them from the meeting toolbar.",
     "autoAdmitAuthenticated": "Auto-admit signed-in users (coming soon)",
-    "autoAdmitAuthenticatedDesc": "Bypass the waiting room for signed-in one.witysk.org users. Not yet enforced — anonymous joiners always queue."
+    "autoAdmitAuthenticatedDesc": "Bypass the waiting room for signed-in one.witysk.org users. Not yet enforced — anonymous joiners always queue.",
+    "lobbyGreeting": "Lobby greeting",
+    "lobbyGreetingHint": "Shown to everyone in the lobby before they join.",
+    "lobbyGreetingPlaceholder": "Welcome! Please mute your mic when not speaking.",
+    "schedule": "Schedule",
+    "scheduleHint": "Set a duration and (optionally) a recurrence so calendar invites repeat automatically.",
+    "duration": "Duration (minutes)",
+    "recurrence": "Recurrence",
+    "recurrenceNone": "One-off (no recurrence)",
+    "recurrenceDaily": "Daily",
+    "recurrenceWeekly": "Weekly",
+    "recurrenceBiweekly": "Every 2 weeks",
+    "recurrenceMonthly": "Monthly"
   },
   "discover": {
     "title": "Discover",
@@ -363,6 +375,82 @@
     "admit": "Admit",
     "deny": "Deny"
   },
+  "devices": {
+    "toolbar": "Audio & video devices",
+    "toolbarTitle": "Choose microphone, camera and speaker",
+    "mic": "Microphone",
+    "camera": "Camera",
+    "speaker": "Speaker",
+    "none": "No devices found",
+    "speakerUnsupported": "Output device selection isn't supported in this browser."
+  },
+  "notes": {
+    "title": "Notes & whiteboard",
+    "toolbar": "Notes & whiteboard",
+    "toolbarTitle": "Open shared notes and whiteboard",
+    "close": "Close notes",
+    "tabNotes": "Notes",
+    "tabBoard": "Whiteboard",
+    "hint": "Everyone in the room can edit. Saved automatically.",
+    "placeholder": "Type shared notes here…",
+    "color": "Color",
+    "thickness": "Stroke thickness",
+    "clear": "Clear board"
+  },
+  "polls": {
+    "title": "Polls & Q&A",
+    "toolbar": "Polls & Q&A",
+    "toolbarTitle": "Open polls and Q&A",
+    "close": "Close polls",
+    "tabPolls": "Polls",
+    "tabQna": "Q&A",
+    "empty": "No polls yet.",
+    "createTitle": "Create a poll",
+    "createButton": "Create",
+    "questionPlaceholder": "Your question",
+    "optionPlaceholder": "Option {{n}}",
+    "addOption": "+ Add option",
+    "open": "open",
+    "closed": "closed",
+    "closePoll": "Close poll",
+    "qnaEmpty": "No questions yet.",
+    "qnaPlaceholder": "Ask a question…",
+    "qnaAsk": "Ask",
+    "qnaUpvote": "Upvote",
+    "qnaMarkAnswered": "Answered"
+  },
+  "pip": {
+    "enter": "Picture-in-picture",
+    "exit": "Exit picture-in-picture",
+    "enterTitle": "Pop the active speaker out into a floating tile",
+    "exitTitle": "Close the floating tile"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "close": "Close",
+    "disabled": "Shortcuts are currently disabled in Settings → Keyboard.",
+    "editHint": "Change shortcuts on the Settings page (Keyboard section).",
+    "mute": "Toggle microphone",
+    "camera": "Toggle camera",
+    "hand": "Raise / lower hand",
+    "screenshare": "Toggle screenshare",
+    "leave": "Leave the meeting",
+    "help": "Show this overlay"
+  },
+  "feedback": {
+    "title": "How was the meeting?",
+    "body": "On a scale of 0 (worst) to 10 (best), how would you rate this meeting?",
+    "commentLabel": "Anything else? (optional)",
+    "submit": "Submit",
+    "sending": "Sending…",
+    "skip": "Skip",
+    "thanks": "Thanks for your feedback!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Send a floating emoji reaction",
+    "send": "Send {{emoji}}"
+  },
   "hand": {
     "raise": "Raise hand",
     "raised": "Hand raised",
@@ -411,7 +499,10 @@
     "makeNamePresenter": "Make {{name}} presenter",
     "removeFromMeeting": "Remove from meeting",
     "removeName": "Remove {{name}}",
-    "authenticatedOwner": "Authenticated owner"
+    "authenticatedOwner": "Authenticated owner",
+    "cohost": "Co-host",
+    "promoteCohost": "Promote to co-host",
+    "demoteCohost": "Remove co-host"
   },
   "chatPanel": {
     "title": "Chat",
@@ -420,7 +511,10 @@
     "send": "Send",
     "close": "Close chat",
     "ariaLabel": "Meeting chat",
-    "messageAria": "Chat message"
+    "messageAria": "Chat message",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "pinned": "Pinned"
   },
   "invite": {
     "title": "Invite by email",

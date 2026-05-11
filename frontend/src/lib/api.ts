@@ -35,6 +35,30 @@ export interface WaitPollOut {
   room_name?: string | null;
 }
 
+export interface PollDTO {
+  id: string;
+  meeting_id: string;
+  question: string;
+  options: string[];
+  counts: number[];
+  total_votes: number;
+  status: "open" | "closed";
+  created_at: string | null;
+  closed_at: string | null;
+}
+
+export interface QuestionDTO {
+  id: number;
+  meeting_id: string;
+  asker_identity: string;
+  asker_name: string;
+  question: string;
+  status: "open" | "answered" | "dismissed";
+  upvotes: number;
+  created_at: string | null;
+  answered_at: string | null;
+}
+
 export interface MeetingOut {
   id: string;
   room_name: string;
@@ -64,6 +88,7 @@ export interface PublicRoomInfo {
   require_password: boolean;
   branding_url: string | null;
   owner_name: string | null;
+  lobby_greeting?: string | null;
 }
 
 export interface UserPreferencesOut {
@@ -183,6 +208,8 @@ export interface ChatMessageDTO {
   message: string;
   reply_to_id: number | null;
   sent_at: string;
+  pinned_at?: string | null;
+  pinned_by?: string | null;
   attachment: {
     url: string;
     type: string | null;
@@ -280,6 +307,9 @@ export const api = {
     lock_room_after_start?: boolean;
     allow_participant_screenshare?: boolean;
     allow_participant_chat?: boolean;
+    lobby_greeting?: string | null;
+    recurrence_rule?: string | null;
+    duration_minutes?: number | null;
   }) =>
     request<{ meeting: MeetingOut; join_url: string }>("/api/v1/meetings", {
       method: "POST",
@@ -307,10 +337,30 @@ export const api = {
   listPublicMeetings: () => request<PublicMeeting[]>("/api/v1/public-meetings"),
 
   ownerToken: (meetingId: string, body: { display_name?: string | null } = {}) =>
-    request<AnonTokenResponse>(`/api/v1/meetings/${meetingId}/token`, {
+    request<AnonTokenResponse & { role?: "owner" | "cohost" }>(
+      `/api/v1/meetings/${meetingId}/token`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+
+  myRoleInRoom: (roomName: string) =>
+    request<{ role: "owner" | "cohost" | "guest"; meeting_id: string }>(
+      `/api/v1/rooms/${roomName}/me-role`,
+    ),
+
+  listCohosts: (meetingId: string) =>
+    request<string[]>(`/api/v1/meetings/${meetingId}/cohosts`),
+
+  addCohost: (meetingId: string, userSub: string) =>
+    request<{ ok: boolean; cohosts: string[] }>(`/api/v1/meetings/${meetingId}/cohosts`, {
       method: "POST",
-      body: JSON.stringify(body),
+      body: JSON.stringify({ user_sub: userSub }),
     }),
+
+  removeCohost: (meetingId: string, userSub: string) =>
+    request<{ ok: boolean; cohosts: string[] }>(
+      `/api/v1/meetings/${meetingId}/cohosts/${encodeURIComponent(userSub)}`,
+      { method: "DELETE" },
+    ),
 
   anonToken: (roomName: string, body: { display_name: string; email?: string; password?: string }) =>
     request<AnonTokenOrWait>(`/api/v1/rooms/${roomName}/anon-token`, {
@@ -320,6 +370,64 @@ export const api = {
 
   pollWait: (roomName: string, waitToken: string) =>
     request<WaitPollOut>(`/api/v1/rooms/${roomName}/wait/${waitToken}`),
+
+  // ─── Shared notes ──────────────────────────────────────────────
+  getNotes: (roomName: string) =>
+    request<{ notes: string; meeting_id: string }>(`/api/v1/rooms/${roomName}/notes`),
+  putNotes: (roomName: string, notes: string) =>
+    request<{ ok: boolean; length: number }>(`/api/v1/rooms/${roomName}/notes`, {
+      method: "PUT",
+      body: JSON.stringify({ notes }),
+    }),
+
+  // ─── Polls + Q&A ───────────────────────────────────────────────
+  listPolls: (meetingId: string) =>
+    request<PollDTO[]>(`/api/v1/meetings/${meetingId}/polls`),
+  createPoll: (meetingId: string, body: { question: string; options: string[] }) =>
+    request<PollDTO>(`/api/v1/meetings/${meetingId}/polls`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  votePoll: (pollId: string, voterIdentity: string, optionIndex: number) =>
+    request<PollDTO>(`/api/v1/polls/${pollId}/vote`, {
+      method: "POST",
+      body: JSON.stringify({ voter_identity: voterIdentity, option_index: optionIndex }),
+    }),
+  closePoll: (pollId: string) =>
+    request<PollDTO>(`/api/v1/polls/${pollId}/close`, { method: "POST" }),
+  listQuestions: (meetingId: string) =>
+    request<QuestionDTO[]>(`/api/v1/meetings/${meetingId}/questions`),
+  askQuestion: (
+    meetingId: string,
+    body: { asker_identity: string; asker_name: string; question: string },
+  ) =>
+    request<QuestionDTO>(`/api/v1/meetings/${meetingId}/questions`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  upvoteQuestion: (questionId: number, voterIdentity: string) =>
+    request<QuestionDTO>(`/api/v1/questions/${questionId}/upvote`, {
+      method: "POST",
+      body: JSON.stringify({ voter_identity: voterIdentity }),
+    }),
+  answerQuestion: (questionId: number) =>
+    request<QuestionDTO>(`/api/v1/questions/${questionId}/answer`, { method: "POST" }),
+  dismissQuestion: (questionId: number) =>
+    request<QuestionDTO>(`/api/v1/questions/${questionId}`, { method: "DELETE" }),
+
+  postFeedback: (
+    roomName: string,
+    body: {
+      rating: number;
+      comment?: string;
+      participant_identity?: string | null;
+      participant_name?: string | null;
+    },
+  ) =>
+    request<{ ok: boolean }>(`/api/v1/rooms/${roomName}/feedback`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   listPendingJoiners: (meetingId: string) =>
     request<PendingJoiner[]>(`/api/v1/meetings/${meetingId}/pending`),
@@ -652,6 +760,12 @@ export const api = {
       { method: "DELETE" }
     ),
 
+  pinChatMessage: (meetingId: string, messageId: number, pinned: boolean) =>
+    request<{ ok: boolean; pinned_at: string | null }>(
+      `/api/v1/meetings/${meetingId}/chat/pin`,
+      { method: "POST", body: JSON.stringify({ message_id: messageId, pinned }) },
+    ),
+
   startRecording: (
     meetingId: string,
     body: { layout?: "speaker" | "grid" | "single-speaker" } = {}
@@ -665,6 +779,24 @@ export const api = {
     request(`/api/v1/meetings/${meetingId}/recordings:stop`, { method: "POST" }),
 
   listRecordings: () => request<unknown[]>("/api/v1/recordings"),
+
+  downloadTranscript: async (recordingId: string, filename: string) => {
+    const tok = getAccessToken() ?? (await bootstrapFromOneWitysk());
+    const headers: HeadersInit = tok ? { Authorization: `Bearer ${tok}` } : {};
+    const r = await fetch(`/api/v1/recordings/${recordingId}/transcript`, { headers });
+    if (!r.ok) {
+      throw new Error(`Transcript download failed: ${r.status}`);
+    }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  },
 
   publishYoutube: (
     recordingId: string,

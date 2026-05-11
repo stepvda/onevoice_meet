@@ -28,6 +28,7 @@ async def send_email(
     cc: Optional[str | List[str]] = None,
     bcc: Optional[str | List[str]] = None,
     reply_to: Optional[str] = None,
+    attachments: Optional[list[dict]] = None,
 ) -> bool:
     """Send an email via Resend. Returns True on success.
 
@@ -54,6 +55,9 @@ async def send_email(
         payload["bcc"] = [bcc] if isinstance(bcc, str) else bcc
     if reply_to:
         payload["reply_to"] = reply_to
+    if attachments:
+        # Resend's attachments schema: [{filename, content (base64), content_type?}]
+        payload["attachments"] = attachments
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:

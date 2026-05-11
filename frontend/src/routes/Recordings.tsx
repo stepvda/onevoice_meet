@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { Download, ExternalLink, Trash2, Video } from "lucide-react";
+import { Download, ExternalLink, FileText, Trash2, Video } from "lucide-react";
 import { api } from "../lib/api";
 import { bootstrapFromOneWitysk, clearAccessToken, isAuthenticated } from "../lib/auth";
 import { Button, Card } from "../components/ui";
@@ -23,6 +23,8 @@ interface Recording {
   youtube_url: string | null;
   youtube_status: string | null;
   youtube_error: string | null;
+  transcript_status?: string | null;
+  has_transcript?: boolean;
 }
 
 export default function Recordings() {
@@ -203,6 +205,43 @@ export default function Recordings() {
                       {busyId === `dl-${r.id}` ? t("recordings.downloading") : t("recordings.download")}
                     </Button>
                   )}
+                  {r.has_transcript && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={busyId === `tr-${r.id}`}
+                      onClick={async () => {
+                        setBusyId(`tr-${r.id}`);
+                        try {
+                          await api.downloadTranscript(
+                            r.id,
+                            (r.filename ?? `meet-${r.id}`).replace(/\.mp4$/, "") + ".txt",
+                          );
+                        } catch (e) {
+                          setErr((e as Error).message);
+                        } finally {
+                          setBusyId(null);
+                        }
+                      }}
+                      data-testid={`rec-transcript-${r.id}`}
+                      title={t("recordings.transcriptTitle", { defaultValue: "Download Whisper transcript" })}
+                    >
+                      <FileText size={16} />
+                      {t("recordings.transcript", { defaultValue: "Transcript" })}
+                    </Button>
+                  )}
+                  {!r.has_transcript &&
+                    r.transcript_status &&
+                    ["pending", "processing"].includes(r.transcript_status) && (
+                      <span
+                        data-testid={`rec-transcript-pending-${r.id}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-400"
+                      >
+                        <FileText size={14} />
+                        {t("recordings.transcribing", { defaultValue: "Transcribing…" })}
+                      </span>
+                    )}
                   <Button
                     type="button"
                     variant="ghost"

@@ -28,6 +28,7 @@ from app.config import settings
 from app.db import get_db
 from app.livekit_client import mint_participant_token, short_lived_turn_credentials
 from app.models import Meeting, MeetingParticipant
+from app.routes.meetings import is_moderator
 
 router = APIRouter(prefix="/v1")
 
@@ -115,8 +116,9 @@ class PendingJoinerOut(BaseModel):
 
 
 def _require_owner(meeting_id: str, user_sub: str, db: Session) -> Meeting:
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user_sub).first()
-    if not m:
+    """Owner or co-host."""
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
+    if not m or not is_moderator(m, user_sub):
         raise HTTPException(status_code=404, detail="meeting not found")
     return m
 
