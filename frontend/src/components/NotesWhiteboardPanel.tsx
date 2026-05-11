@@ -9,6 +9,13 @@ import { api } from "../lib/api";
 interface Props {
   open: boolean;
   onClose: () => void;
+  /** When non-null, the panel switches to this tab the next time it opens.
+   *  Used by Room.tsx to route auto-opens to the right tab based on which
+   *  data-channel topic triggered them. */
+  initialTab?: Tab | null;
+  /** Cleared by the parent after the requested tab is applied so the same
+   *  signal doesn't keep re-applying on later renders. */
+  onConsumeInitialTab?: () => void;
 }
 
 type Tab = "notes" | "board";
@@ -38,11 +45,20 @@ interface BoardPacket {
  *   normalised to [0, 1] so participants on different canvas sizes see the
  *   same drawing.
  */
-export default function NotesWhiteboardPanel({ open, onClose }: Props) {
+export default function NotesWhiteboardPanel({ open, onClose, initialTab, onConsumeInitialTab }: Props) {
   const { t } = useTranslation();
   const { roomName = "" } = useParams();
   const room = useRoomContext();
   const [tab, setTab] = useState<Tab>("notes");
+
+  // Apply a requested tab when the panel is open. Cleared by the parent
+  // via `onConsumeInitialTab` so the same request doesn't re-fire later.
+  useEffect(() => {
+    if (open && initialTab) {
+      setTab(initialTab);
+      onConsumeInitialTab?.();
+    }
+  }, [open, initialTab, onConsumeInitialTab]);
 
   if (!open) return null;
   return (
@@ -90,7 +106,7 @@ export default function NotesWhiteboardPanel({ open, onClose }: Props) {
         </button>
       </div>
       <div className="flex-1 min-h-0 overflow-hidden">
-        {tab === "notes" ? <NotesTab room={room} roomName={roomName} /> : <Whiteboard room={room} />}
+        {tab === "notes" ? <NotesTab room={room} roomName={roomName} /> : <Whiteboard room={room} roomName={roomName} />}
       </div>
     </aside>
   );
@@ -179,7 +195,7 @@ function NotesTab({ room, roomName }: { room: ReturnType<typeof useRoomContext>;
   );
 }
 
-function Whiteboard({ room }: { room: ReturnType<typeof useRoomContext> }) {
+function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext>; roomName: string }) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef<{ active: boolean; points: Array<{ x: number; y: number }> }>({
@@ -187,6 +203,10 @@ function Whiteboard({ room }: { room: ReturnType<typeof useRoomContext> }) {
     points: [],
   });
   const sizeRef = useRef<{ w: number; h: number }>({ w: 1, h: 1 });
+  // Every committed stroke (in order). Kept in memory so we can redraw the
+  // entire board on canvas resize and so late-tab-openers see the full
+  // history. Initialised from the server when the component mounts.
+  const strokesRef = useRef<Array<{ points: Array<{ x: number; y: number }>; color: string; width: number }>>([]);
   const [color, setColor] = useState("#fbbf24");
   const [stroke, setStroke] = useState(3);
 
@@ -219,7 +239,49 @@ function Whiteboard({ room }: { room: ReturnType<typeof useRoomContext> }) {
     ctx.clearRect(0, 0, w, h);
   }
 
-  // Subscribe to remote strokes.
+  /** Re-render the entire stroke history. Cheap unless the board is huge. */
+  function redrawAll() {
+    clearBoard();
+    for (const s of strokesRef.current) {
+      drawStroke(s.points, s.color, s.width);
+    }
+  }
+
+  // On mount: fetch any strokes already drawn on this board by other
+  // participants (or earlier in this session) and replay them.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getWhiteboardStrokes(roomName)
+      .then((packets) => {
+        if (cancelled) return;
+        const strokes: typeof strokesRef.current = [];
+        for (const p of packets) {
+          const o = p as unknown as BoardPacket;
+          if (o?.v !== 1) continue;
+          if (o.type === "clear") {
+            strokes.length = 0;
+          } else if (o.type === "stroke" && o.points) {
+            strokes.push({
+              points: o.points,
+              color: o.color || "#fff",
+              width: o.width || 3,
+            });
+          }
+        }
+        strokesRef.current = strokes;
+        redrawAll();
+      })
+      .catch(() => {
+        /* no history yet — fresh board */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [roomName]);
+
+  // Subscribe to remote strokes. Append to the in-memory history AND draw
+  // the new stroke incrementally, so a redraw-on-resize keeps it.
   useEffect(() => {
     const onData = (
       payload: Uint8Array,
@@ -232,8 +294,15 @@ function Whiteboard({ room }: { room: ReturnType<typeof useRoomContext> }) {
         const obj = JSON.parse(TEXT_DEC.decode(payload)) as BoardPacket;
         if (obj?.v !== 1) return;
         if (obj.type === "stroke" && obj.points) {
-          drawStroke(obj.points, obj.color || "#fff", obj.width || 3);
+          const s = {
+            points: obj.points,
+            color: obj.color || "#fff",
+            width: obj.width || 3,
+          };
+          strokesRef.current.push(s);
+          drawStroke(s.points, s.color, s.width);
         } else if (obj.type === "clear") {
+          strokesRef.current = [];
           clearBoard();
         }
       } catch {
@@ -247,7 +316,8 @@ function Whiteboard({ room }: { room: ReturnType<typeof useRoomContext> }) {
   }, [room]);
 
   // Resize handling — keep the canvas at its CSS size in actual pixels so
-  // the drawing isn't blurry on HiDPI.
+  // the drawing isn't blurry on HiDPI. Replay all strokes after resize so
+  // the board doesn't visually wipe on a panel/window size change.
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
@@ -259,12 +329,25 @@ function Whiteboard({ room }: { room: ReturnType<typeof useRoomContext> }) {
       sizeRef.current = { w: c.width, h: c.height };
       const ctx = c.getContext("2d");
       ctx?.setTransform(1, 0, 0, 1, 0, 0);
+      redrawAll();
     });
     ro.observe(c);
     return () => ro.disconnect();
   }, []);
 
   async function broadcast(packet: BoardPacket) {
+    // Persist to the server first so late joiners can replay it; the data
+    // channel is best-effort for live peers.
+    try {
+      if (packet.type === "clear") {
+        await api.clearWhiteboardStrokes(roomName);
+      } else {
+        await api.postWhiteboardStroke(roomName, packet as unknown as Record<string, unknown>);
+      }
+    } catch {
+      /* persistence failed — peer broadcast will still happen so live users
+         see it, but late joiners won't get this stroke. */
+    }
     try {
       await room.localParticipant.publishData(TEXT_ENC.encode(JSON.stringify(packet)), {
         reliable: true,
@@ -299,10 +382,15 @@ function Whiteboard({ room }: { room: ReturnType<typeof useRoomContext> }) {
     if (!drawingRef.current.active) return;
     drawingRef.current.active = false;
     if (drawingRef.current.points.length > 1) {
+      const pts = drawingRef.current.points;
+      // LiveKit doesn't echo a participant's own `publishData` back to
+      // them, so we append to the local history ourselves — otherwise the
+      // stroke would vanish on the next canvas resize / redraw.
+      strokesRef.current.push({ points: pts, color, width: stroke });
       await broadcast({
         v: 1,
         type: "stroke",
-        points: drawingRef.current.points,
+        points: pts,
         color,
         width: stroke,
       });
@@ -311,6 +399,7 @@ function Whiteboard({ room }: { room: ReturnType<typeof useRoomContext> }) {
   }
 
   async function clear() {
+    strokesRef.current = [];
     clearBoard();
     await broadcast({ v: 1, type: "clear" });
   }

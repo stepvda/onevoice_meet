@@ -16,6 +16,7 @@ Auth model:
 """
 from __future__ import annotations
 
+import json
 import re
 import uuid
 from datetime import datetime, timezone
@@ -29,7 +30,7 @@ from sqlalchemy.orm import Session
 from app.auth import RequireUser
 from app.config import settings
 from app.db import get_db
-from app.models import ChatMessage, ChatReaction, Meeting
+from app.models import ChatMessage, ChatReaction, Meeting, WhiteboardStroke
 from app.routes.meetings import is_moderator
 
 router = APIRouter(prefix="/v1")
@@ -336,6 +337,67 @@ def delete_reaction(
     db.query(ChatReaction).filter_by(
         message_id=msg.id, reactor_identity=reactor_identity
     ).delete()
+    db.commit()
+    return {"ok": True}
+
+
+# ─── Shared whiteboard (room-scoped) ──────────────────────────────────
+
+_WHITEBOARD_MAX_STROKES = 5000  # safety cap per meeting
+
+
+@router.get("/rooms/{room_name}/whiteboard/strokes")
+def get_whiteboard_strokes(room_name: str, db: Session = Depends(get_db)) -> list[dict]:
+    """Return every stroke / clear packet for this room in insert order.
+    Used by clients opening the whiteboard tab to replay state from scratch."""
+    m = _meeting_for_room(room_name, db, must_be_active=False)
+    rows = (
+        db.query(WhiteboardStroke)
+        .filter(WhiteboardStroke.meeting_id == m.id)
+        .order_by(WhiteboardStroke.id.asc())
+        .all()
+    )
+    out: list[dict] = []
+    for r in rows:
+        try:
+            out.append(json.loads(r.payload_json))
+        except ValueError:
+            continue
+    return out
+
+
+class StrokeBody(BaseModel):
+    packet: dict
+
+
+@router.post("/rooms/{room_name}/whiteboard/strokes", status_code=201)
+def post_whiteboard_stroke(
+    room_name: str,
+    body: StrokeBody,
+    db: Session = Depends(get_db),
+) -> dict:
+    m = _meeting_for_room(room_name, db, must_be_active=True)
+    # Soft cap so a runaway script can't fill the table for one room.
+    n = db.query(WhiteboardStroke).filter_by(meeting_id=m.id).count()
+    if n >= _WHITEBOARD_MAX_STROKES:
+        raise HTTPException(status_code=413, detail="whiteboard at capacity")
+    db.add(
+        WhiteboardStroke(
+            meeting_id=m.id,
+            payload_json=json.dumps(body.packet, separators=(",", ":")),
+        )
+    )
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/rooms/{room_name}/whiteboard/strokes")
+def clear_whiteboard_strokes(room_name: str, db: Session = Depends(get_db)) -> dict:
+    """Drop every stroke for this room. Called when any participant hits the
+    Clear board button — the client also broadcasts a clear packet so live
+    peers wipe their canvases instantly."""
+    m = _meeting_for_room(room_name, db, must_be_active=True)
+    db.query(WhiteboardStroke).filter_by(meeting_id=m.id).delete()
     db.commit()
     return {"ok": True}
 

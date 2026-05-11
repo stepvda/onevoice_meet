@@ -381,6 +381,21 @@ export const api = {
       body: JSON.stringify({ notes }),
     }),
 
+  // ─── Shared whiteboard ─────────────────────────────────────────
+  getWhiteboardStrokes: (roomName: string) =>
+    request<Array<Record<string, unknown>>>(
+      `/api/v1/rooms/${roomName}/whiteboard/strokes`,
+    ),
+  postWhiteboardStroke: (roomName: string, packet: Record<string, unknown>) =>
+    request<{ ok: boolean }>(`/api/v1/rooms/${roomName}/whiteboard/strokes`, {
+      method: "POST",
+      body: JSON.stringify({ packet }),
+    }),
+  clearWhiteboardStrokes: (roomName: string) =>
+    request<{ ok: boolean }>(`/api/v1/rooms/${roomName}/whiteboard/strokes`, {
+      method: "DELETE",
+    }),
+
   // ─── Polls + Q&A ───────────────────────────────────────────────
   listPolls: (meetingId: string) =>
     request<PollDTO[]>(`/api/v1/meetings/${meetingId}/polls`),

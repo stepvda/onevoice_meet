@@ -28,6 +28,13 @@ interface Props {
   onClose: () => void;
   meetingId: string | null;
   isModerator: boolean;
+  /** When non-null, the panel switches to this tab the next time it opens.
+   *  Set by Room.tsx to route auto-opens to the tab matching the activity
+   *  kind (poll → polls, question → qna). */
+  initialTab?: Tab | null;
+  /** Cleared by the parent after the requested tab is applied so the same
+   *  signal doesn't keep re-applying on later renders. */
+  onConsumeInitialTab?: () => void;
 }
 
 type Tab = "polls" | "qna";
@@ -39,11 +46,27 @@ const POLL_REFRESH_MS = 4000;
  * seconds while the panel is open — good enough resolution for human
  * voting; cheaper than wiring a third data-channel topic.
  */
-export default function PollsQnaPanel({ open, onClose, meetingId, isModerator }: Props) {
+export default function PollsQnaPanel({
+  open,
+  onClose,
+  meetingId,
+  isModerator,
+  initialTab,
+  onConsumeInitialTab,
+}: Props) {
   const { t } = useTranslation();
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
   const [tab, setTab] = useState<Tab>("polls");
+
+  // Apply a requested tab when the panel is open. Cleared by the parent
+  // via `onConsumeInitialTab` so the same request doesn't re-fire later.
+  useEffect(() => {
+    if (open && initialTab) {
+      setTab(initialTab);
+      onConsumeInitialTab?.();
+    }
+  }, [open, initialTab, onConsumeInitialTab]);
   const [polls, setPolls] = useState<PollDTO[]>([]);
   const [questions, setQuestions] = useState<QuestionDTO[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -189,6 +212,7 @@ function PollsTab({
     try {
       const updated = await api.votePoll(poll.id, me, idx);
       refresh(polls.map((p) => (p.id === poll.id ? updated : p)));
+      void broadcastPollsActivity(room, "poll");
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -198,6 +222,7 @@ function PollsTab({
     try {
       const updated = await api.closePoll(poll.id);
       refresh(polls.map((p) => (p.id === poll.id ? updated : p)));
+      void broadcastPollsActivity(room, "poll");
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -352,6 +377,7 @@ function QnaTab({
     try {
       const updated = await api.upvoteQuestion(q.id, me);
       refresh(questions.map((x) => (x.id === q.id ? updated : x)));
+      void broadcastPollsActivity(room, "question");
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -361,6 +387,7 @@ function QnaTab({
     try {
       const updated = await api.answerQuestion(q.id);
       refresh(questions.map((x) => (x.id === q.id ? updated : x)));
+      void broadcastPollsActivity(room, "question");
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -370,6 +397,7 @@ function QnaTab({
     try {
       const updated = await api.dismissQuestion(q.id);
       refresh(questions.map((x) => (x.id === q.id ? updated : x)));
+      void broadcastPollsActivity(room, "question");
     } catch (e) {
       setErr((e as Error).message);
     }

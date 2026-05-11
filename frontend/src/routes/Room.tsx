@@ -93,29 +93,40 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
   }, [room, onCaptureFeedbackInfo]);
 
   // Auto-open the Notes/Whiteboard and Polls/Q&A panels for everyone when
-  // any remote participant starts using them. Each panel auto-opens at most
-  // once per session — once you close it, it stays closed unless you open
-  // it again manually. LiveKit doesn't echo local data, so these only fire
-  // for genuinely remote activity.
-  const notesAutoOpenedRef = useRef(false);
-  const pollsAutoOpenedRef = useRef(false);
+  // any remote participant creates OR updates anything. Routes to the
+  // correct tab based on which topic/kind triggered the open:
+  //   meet-notes  → notes panel, "notes" tab
+  //   meet-board  → notes panel, "board" tab
+  //   meet-polls  → polls panel, "polls" or "qna" tab (from payload.kind)
+  // LiveKit doesn't echo local data, so this only fires from remote peers.
+  const [notesInitialTab, setNotesInitialTab] = useState<"notes" | "board" | null>(null);
+  const [pollsInitialTab, setPollsInitialTab] = useState<"polls" | "qna" | null>(null);
   useEffect(() => {
+    const decoder = new TextDecoder();
     const onData = (
-      _payload: Uint8Array,
+      payload: Uint8Array,
       _participant: unknown,
       _kind: unknown,
       topic?: string,
     ) => {
-      if (topic === NOTES_TOPIC || topic === BOARD_TOPIC) {
-        if (!notesAutoOpenedRef.current) {
-          notesAutoOpenedRef.current = true;
-          setNotesOpen(true);
-        }
+      if (topic === NOTES_TOPIC) {
+        setNotesInitialTab("notes");
+        setNotesOpen(true);
+      } else if (topic === BOARD_TOPIC) {
+        setNotesInitialTab("board");
+        setNotesOpen(true);
       } else if (topic === POLLS_TOPIC) {
-        if (!pollsAutoOpenedRef.current) {
-          pollsAutoOpenedRef.current = true;
-          setPollsOpen(true);
+        // Default to the polls tab; if the payload says "question", show
+        // the Q&A tab instead.
+        let tab: "polls" | "qna" = "polls";
+        try {
+          const obj = JSON.parse(decoder.decode(payload)) as { kind?: string };
+          if (obj?.kind === "question") tab = "qna";
+        } catch {
+          /* malformed payload — fall back to the polls tab */
         }
+        setPollsInitialTab(tab);
+        setPollsOpen(true);
       }
     };
     room.on(RoomEvent.DataReceived, onData);
@@ -578,8 +589,15 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           onClose={() => setPollsOpen(false)}
           meetingId={meetingId}
           isModerator={isOwner}
+          initialTab={pollsInitialTab}
+          onConsumeInitialTab={() => setPollsInitialTab(null)}
         />
-        <NotesWhiteboardPanel open={notesOpen} onClose={() => setNotesOpen(false)} />
+        <NotesWhiteboardPanel
+          open={notesOpen}
+          onClose={() => setNotesOpen(false)}
+          initialTab={notesInitialTab}
+          onConsumeInitialTab={() => setNotesInitialTab(null)}
+        />
         <ChatPanel
           open={chatOpen}
           onClose={() => setChatOpen(false)}

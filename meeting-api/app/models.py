@@ -397,6 +397,21 @@ class QuestionUpvote(Base):
     )
 
 
+class WhiteboardStroke(Base):
+    """One stroke (or `clear` marker) on the shared whiteboard. Persisted
+    so late joiners can replay the board exactly as it stands.
+
+    Stored as a JSON blob matching the data-channel packet format the
+    whiteboard already uses, so the same shape feeds both the broadcast
+    path and the replay path."""
+    __tablename__ = "whiteboard_strokes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), nullable=False, index=True)
+    payload_json: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
 class MeetingFeedback(Base):
     """Post-meeting NPS / satisfaction rating. One row per submission;
     a single participant can submit at most once but we don't enforce that
