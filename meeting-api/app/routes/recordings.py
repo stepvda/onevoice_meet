@@ -9,6 +9,7 @@ when the `egress_ended` event arrives.
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -83,11 +84,28 @@ def _encoding_options() -> "api.EncodingOptions":
     )
 
 
+# LiveKit's built-in room-composite templates. "speaker" is the historical
+# default; "grid" mirrors the live grid view; "single-speaker" shows only the
+# active speaker with no thumbnails.
+RecordingLayout = Literal["speaker", "grid", "single-speaker"]
+
+
+class StartRecordingBody(BaseModel):
+    layout: RecordingLayout = "speaker"
+
+
 @router.post("/meetings/{meeting_id}/recordings:start")
-async def start_recording(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
+async def start_recording(
+    meeting_id: str,
+    user: RequireUser,
+    body: StartRecordingBody | None = None,
+    db: Session = Depends(get_db),
+) -> dict:
     m = _require_owner(meeting_id, user.sub, db)
     if not m.is_active:
         raise HTTPException(status_code=403, detail="meeting closed")
+
+    layout: RecordingLayout = body.layout if body else "speaker"
 
     # One active recording per meeting at a time.
     existing = db.query(Recording).filter_by(meeting_id=m.id, status="running").first()
@@ -111,7 +129,7 @@ async def start_recording(meeting_id: str, user: RequireUser, db: Session = Depe
         egress_info = await lk.egress.start_room_composite_egress(
             api.RoomCompositeEgressRequest(
                 room_name=m.room_name,
-                layout="speaker",
+                layout=layout,
                 file_outputs=[
                     api.EncodedFileOutput(
                         file_type=api.EncodedFileType.MP4,

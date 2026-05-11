@@ -595,8 +595,14 @@ export const api = {
       { method: "DELETE" }
     ),
 
-  startRecording: (meetingId: string) =>
-    request(`/api/v1/meetings/${meetingId}/recordings:start`, { method: "POST" }),
+  startRecording: (
+    meetingId: string,
+    body: { layout?: "speaker" | "grid" | "single-speaker" } = {}
+  ) =>
+    request(`/api/v1/meetings/${meetingId}/recordings:start`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   stopRecording: (meetingId: string) =>
     request(`/api/v1/meetings/${meetingId}/recordings:stop`, { method: "POST" }),
