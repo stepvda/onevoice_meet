@@ -89,6 +89,7 @@ export interface PublicRoomInfo {
   branding_url: string | null;
   owner_name: string | null;
   lobby_greeting?: string | null;
+  meeting_id?: string;
 }
 
 export interface UserPreferencesOut {

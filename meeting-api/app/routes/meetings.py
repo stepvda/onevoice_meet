@@ -548,6 +548,10 @@ def public_room_info(room_name: str, db: Session = Depends(get_db)) -> dict:
         "branding_url": _branding_url(m),
         "owner_name": m.owner_name,
         "lobby_greeting": m.lobby_greeting,
+        # Exposed so non-owner participants can address meeting-scoped
+        # endpoints (polls, Q&A, shared notes). No sensitive data — the
+        # meeting_id alone gives no extra access without a moderator JWT.
+        "meeting_id": m.id,
     }
 
 

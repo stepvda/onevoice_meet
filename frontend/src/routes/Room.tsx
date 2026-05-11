@@ -406,24 +406,24 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
 
         <HandRaiseButton />
         <ReactionsButton />
-        {meetingId && (
-          <button
-            type="button"
-            onClick={() => setPollsOpen((v) => !v)}
-            data-testid="btn-polls"
-            aria-pressed={pollsOpen ? "true" : "false"}
-            aria-label={t("polls.toolbar", { defaultValue: "Polls & Q&A" })}
-            title={t("polls.toolbarTitle", { defaultValue: "Open polls and Q&A" })}
-            className={[
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
-              pollsOpen
-                ? "bg-primary-500 text-white"
-                : "bg-primary-700 text-slate-100 hover:bg-primary-600",
-            ].join(" ")}
-          >
-            <Vote size={16} />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setPollsOpen((v) => !v)}
+          disabled={!meetingId}
+          data-testid="btn-polls"
+          aria-pressed={pollsOpen ? "true" : "false"}
+          aria-label={t("polls.toolbar", { defaultValue: "Polls & Q&A" })}
+          title={t("polls.toolbarTitle", { defaultValue: "Open polls and Q&A" })}
+          className={[
+            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
+            pollsOpen
+              ? "bg-primary-500 text-white"
+              : "bg-primary-700 text-slate-100 hover:bg-primary-600",
+            "disabled:opacity-50",
+          ].join(" ")}
+        >
+          <Vote size={16} />
+        </button>
         <button
           type="button"
           onClick={() => setNotesOpen((v) => !v)}
@@ -630,6 +630,11 @@ export default function Room() {
   const cfg = roomOptions(pending);
   const ownerMeetingId = sessionStorage.getItem(`owner:${roomName}`);
   const isOwner = !!ownerMeetingId;
+  // Every participant (owner, co-host or anon) needs the meeting_id to read
+  // and write polls / Q&A / shared notes. Owners and co-hosts already have
+  // it from sessionStorage; anon joiners pick it up from the Lobby's
+  // publicRoomInfo cache.
+  const meetingId = ownerMeetingId ?? meta.meeting_id ?? null;
   const feedbackFlagKey = `feedback-shown:${roomName}`;
 
   return (
@@ -658,7 +663,7 @@ export default function Room() {
         }}
       >
         <InnerRoom
-          meetingId={ownerMeetingId}
+          meetingId={meetingId}
           isOwner={isOwner}
           meetingTitle={meta.display_title ?? null}
           brandingUrl={meta.branding_url ?? null}

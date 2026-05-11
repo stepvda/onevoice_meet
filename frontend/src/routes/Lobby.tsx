@@ -23,7 +23,7 @@ export function clearPendingToken(): void {
 
 const META_KEY = "meet:room-meta";
 
-export function loadRoomMeta(): { display_title?: string; branding_url?: string | null } {
+export function loadRoomMeta(): { display_title?: string; branding_url?: string | null; meeting_id?: string } {
   const raw = sessionStorage.getItem(META_KEY);
   if (!raw) return {};
   try {
@@ -72,7 +72,11 @@ export default function Lobby() {
         setInfo(i);
         sessionStorage.setItem(
           META_KEY,
-          JSON.stringify({ display_title: i.display_title, branding_url: i.branding_url })
+          JSON.stringify({
+            display_title: i.display_title,
+            branding_url: i.branding_url,
+            meeting_id: i.meeting_id,
+          }),
         );
       })
       .catch(() => {
