@@ -5,6 +5,12 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# `ffmpeg` is used by app.services.transcription to decode the recorded MP4
+# into a 16 kHz mono WAV before POSTing it to the local whisper.cpp server.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY pyproject.toml requirements.txt ./

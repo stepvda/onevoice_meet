@@ -118,6 +118,20 @@ services:
     depends_on:
       - redis
 
+  # whisper.cpp running locally so completed recordings get transcribed
+  # without an external API. Started lazily — meeting-api will keep
+  # retrying if this container is still booting when a recording ends.
+  whisper:
+    build: ./whisper
+    restart: unless-stopped
+    # Default thread count tuned for the 2-vCPU Hetzner box. Bump on a
+    # bigger host by adding `WHISPER_THREADS=N` to .env.
+    environment:
+      THREADS: "${WHISPER_THREADS:-2}"
+    # Internal-only — meeting-api reaches it via Docker DNS as "whisper:8080".
+    expose:
+      - "8080"
+
 volumes:
   caddy_data:
   caddy_config:

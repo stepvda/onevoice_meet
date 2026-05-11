@@ -133,10 +133,10 @@ async def livekit_webhook(
                     err = getattr(info, "error", "")
                     if err:
                         rec.youtube_error = (rec.youtube_error or "") + f"egress: {err[:300]}"
-                # Kick off the Whisper transcript in the background once the
-                # MP4 has finalised on disk. Marked `pending` so the UI can
-                # show "transcribing…" while the job runs.
-                if rec.status == "completed" and settings.openai_api_key:
+                # Kick off the whisper.cpp transcript in the background once
+                # the MP4 has finalised on disk. Marked `pending` so the UI
+                # can show "transcribing…" while the job runs.
+                if rec.status == "completed" and settings.whisper_url:
                     rec.transcript_status = "pending"
                     from app.services.transcription import transcribe_recording
                     background.add_task(transcribe_recording, rec.id)
