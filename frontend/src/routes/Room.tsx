@@ -42,6 +42,7 @@ import { useThemePref } from "../lib/themePref";
 import { useVideoQualityPref } from "../lib/videoQualityPref";
 import { usePushToTalk } from "../lib/pushToTalk";
 import { useBrowserNotifications } from "../lib/browserNotifications";
+import { useJoinPolicy } from "../lib/joinPolicy";
 
 interface InnerProps {
   meetingId: string | null;
@@ -66,6 +67,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
   useVideoQualityPref(room);
   usePushToTalk(room);
   useBrowserNotifications(room);
+  useJoinPolicy(room);
   const [recordingActive, setRecordingActive] = useState(false);
   const [recordingLayout, setRecordingLayout] = useState<"speaker" | "grid" | "single-speaker">("speaker");
   const [chatOpen, setChatOpen] = useState(false);
@@ -326,7 +328,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
           type="button"
           onClick={() => setSettingsOpen((v) => !v)}
           data-testid="btn-settings"
-          aria-pressed={settingsOpen}
+          aria-pressed={settingsOpen ? "true" : "false"}
           aria-label={t("room.settingsLabel")}
           title={t("room.settings")}
           className={[
@@ -348,7 +350,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
             if (!participantsOpen && window.innerWidth < 640) setChatOpen(false);
           }}
           data-testid="btn-participants"
-          aria-pressed={participantsOpen}
+          aria-pressed={participantsOpen ? "true" : "false"}
           aria-label={t("room.people")}
           className={[
             "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
@@ -368,7 +370,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
             if (!chatOpen && window.innerWidth < 640) setParticipantsOpen(false);
           }}
           data-testid="btn-chat"
-          aria-pressed={chatOpen}
+          aria-pressed={chatOpen ? "true" : "false"}
           aria-label={t("room.chat")}
           className={[
             "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",

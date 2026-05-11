@@ -247,6 +247,14 @@ export const api = {
     list_for_authenticated?: boolean;
     list_for_anonymous?: boolean;
     display_name?: string | null;
+    auto_admit_authenticated?: boolean;
+    require_name_on_join?: boolean;
+    auto_mute_new_joiners?: boolean;
+    auto_disable_camera_for_new?: boolean;
+    waiting_room_enabled?: boolean;
+    lock_room_after_start?: boolean;
+    allow_participant_screenshare?: boolean;
+    allow_participant_chat?: boolean;
   }) =>
     request<{ meeting: MeetingOut; join_url: string }>("/api/v1/meetings", {
       method: "POST",

@@ -158,6 +158,11 @@ def post_chat(
 ) -> dict:
     m = _meeting_for_room(room_name, db, must_be_active=True)
     _validate_identity(body.sender_identity)
+    # Moderation: when participant chat is disabled, only the owner (identity
+    # prefix `user-`) may post. Anonymous joiners (identity prefix `anon-`)
+    # are rejected at the API layer.
+    if not bool(m.allow_participant_chat) and body.sender_identity.startswith("anon-"):
+        raise HTTPException(status_code=403, detail="participant chat is disabled for this meeting")
     if body.reply_to_id is not None:
         parent = db.query(ChatMessage).filter_by(id=body.reply_to_id, meeting_id=m.id).first()
         if not parent:
@@ -192,6 +197,8 @@ async def post_chat_attachment(
     """Attach an image (only) to a chat message. Caption text is optional."""
     m = _meeting_for_room(room_name, db, must_be_active=True)
     _validate_identity(sender_identity)
+    if not bool(m.allow_participant_chat) and sender_identity.startswith("anon-"):
+        raise HTTPException(status_code=403, detail="participant chat is disabled for this meeting")
     if not sender_name or not sender_name.strip():
         raise HTTPException(status_code=400, detail="sender_name required")
     if reply_to_id is not None:

@@ -201,7 +201,20 @@
     "brandingFieldAlt": "Branding image",
     "unsupportedImageType": "Unsupported image type {{type}}; use JPEG, PNG, WebP, or GIF.",
     "imageTooLarge": "Image is {{mb}} MB; max is 2 MB.",
-    "uploadFailed": "Meeting created but branding upload failed: {{message}}"
+    "uploadFailed": "Meeting created but branding upload failed: {{message}}",
+    "moderation": "Moderation",
+    "moderationHint": "Defaults come from your Settings. You can override them per meeting.",
+    "requireNameOnJoin": "Require participants to enter a name",
+    "autoMuteNewJoiners": "Auto-mute new joiners",
+    "autoDisableCameraForNew": "Disable camera for new joiners",
+    "lockRoomAfterStart": "Lock the room once you've joined",
+    "lockRoomAfterStartDesc": "After you join, no new participants can enter.",
+    "allowParticipantScreenshare": "Allow participants to share their screen",
+    "allowParticipantChat": "Allow participants to post in chat",
+    "waitingRoomEnabled": "Waiting room (coming soon)",
+    "waitingRoomDesc": "Stored on the meeting but not yet enforced — the approval flow is still being built.",
+    "autoAdmitAuthenticated": "Auto-admit signed-in users (coming soon)",
+    "autoAdmitAuthenticatedDesc": "Bypass the waiting room for signed-in one.witysk.org users."
   },
   "discover": {
     "title": "Discover",

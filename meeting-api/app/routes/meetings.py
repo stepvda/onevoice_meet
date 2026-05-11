@@ -32,6 +32,15 @@ class CreateMeetingBody(BaseModel):
     # validates correctly) and passes it here. Stored on the meeting so
     # other viewers (Discover, lobby) see who's hosting.
     display_name: str | None = Field(default=None, max_length=120)
+    # ── Moderation policy (defaults match Meeting model defaults) ─────
+    auto_admit_authenticated: bool = True
+    require_name_on_join: bool = True
+    auto_mute_new_joiners: bool = False
+    auto_disable_camera_for_new: bool = False
+    waiting_room_enabled: bool = False
+    lock_room_after_start: bool = False
+    allow_participant_screenshare: bool = True
+    allow_participant_chat: bool = True
 
 
 class UpdateMeetingBody(BaseModel):
@@ -58,6 +67,14 @@ class MeetingOut(BaseModel):
     branding_url: str | None = None
     list_for_authenticated: bool = False
     list_for_anonymous: bool = False
+    auto_admit_authenticated: bool = True
+    require_name_on_join: bool = True
+    auto_mute_new_joiners: bool = False
+    auto_disable_camera_for_new: bool = False
+    waiting_room_enabled: bool = False
+    lock_room_after_start: bool = False
+    allow_participant_screenshare: bool = True
+    allow_participant_chat: bool = True
 
 
 def _branding_url(m: Meeting) -> str | None:
@@ -84,6 +101,14 @@ def _to_out(m: Meeting) -> MeetingOut:
         branding_url=_branding_url(m),
         list_for_authenticated=bool(m.list_for_authenticated),
         list_for_anonymous=bool(m.list_for_anonymous),
+        auto_admit_authenticated=bool(m.auto_admit_authenticated),
+        require_name_on_join=bool(m.require_name_on_join),
+        auto_mute_new_joiners=bool(m.auto_mute_new_joiners),
+        auto_disable_camera_for_new=bool(m.auto_disable_camera_for_new),
+        waiting_room_enabled=bool(m.waiting_room_enabled),
+        lock_room_after_start=bool(m.lock_room_after_start),
+        allow_participant_screenshare=bool(m.allow_participant_screenshare),
+        allow_participant_chat=bool(m.allow_participant_chat),
     )
 
 
@@ -141,6 +166,14 @@ def create_meeting(body: CreateMeetingBody, user: RequireAdmin, db: Session = De
         recording_mode=body.recording_mode,
         list_for_authenticated=body.list_for_authenticated or body.list_for_anonymous,
         list_for_anonymous=body.list_for_anonymous,
+        auto_admit_authenticated=body.auto_admit_authenticated,
+        require_name_on_join=body.require_name_on_join,
+        auto_mute_new_joiners=body.auto_mute_new_joiners,
+        auto_disable_camera_for_new=body.auto_disable_camera_for_new,
+        waiting_room_enabled=body.waiting_room_enabled,
+        lock_room_after_start=body.lock_room_after_start,
+        allow_participant_screenshare=body.allow_participant_screenshare,
+        allow_participant_chat=body.allow_participant_chat,
     )
     db.add(meeting)
     db.commit()

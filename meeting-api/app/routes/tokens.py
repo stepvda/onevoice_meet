@@ -18,7 +18,7 @@ _redis = redis.Redis.from_url(settings.redis_url, decode_responses=True)
 
 
 class AnonTokenBody(BaseModel):
-    display_name: str = Field(min_length=1, max_length=80)
+    display_name: str = Field(default="", max_length=80)
     email: EmailStr | None = None
     password: str | None = None
 
@@ -62,12 +62,38 @@ def anon_token(
         if not body.password or not m.password_hash or not argon2.verify(body.password, m.password_hash):
             raise HTTPException(status_code=401, detail="incorrect password")
 
+    # Moderation: name required when policy is set.
+    if m.require_name_on_join and not body.display_name.strip():
+        raise HTTPException(status_code=400, detail="display name is required for this meeting")
+
+    # Moderation: lock room once the owner has joined for the first time.
+    # `MeetingParticipant.is_owner=True` is written when the owner mints
+    # their token; presence of any such row means the meeting has started.
+    if m.lock_room_after_start:
+        owner_joined = (
+            db.query(MeetingParticipant)
+            .filter_by(meeting_id=m.id, is_owner=True)
+            .first()
+            is not None
+        )
+        if owner_joined:
+            raise HTTPException(status_code=403, detail="meeting is locked")
+
     identity = f"anon-{ULID()}"
+    # Auto-mute / auto-disable-camera: stamp the participant's join metadata
+    # so the SPA reads it on connect and starts with mic/camera off.
+    join_meta: dict = {}
+    if m.auto_mute_new_joiners:
+        join_meta["auto_mute"] = True
+    if m.auto_disable_camera_for_new:
+        join_meta["auto_disable_camera"] = True
     token = mint_participant_token(
         room_name=m.room_name,
         identity=identity,
         display_name=body.display_name,
         is_owner=False,
+        metadata=join_meta or None,
+        allow_screenshare=m.allow_participant_screenshare,
     )
     db.add(
         MeetingParticipant(
@@ -85,4 +111,10 @@ def anon_token(
         "token": token,
         "room_name": m.room_name,
         "ice_servers": short_lived_turn_credentials(identity),
+        "policy": {
+            "auto_mute": bool(m.auto_mute_new_joiners),
+            "auto_disable_camera": bool(m.auto_disable_camera_for_new),
+            "allow_screenshare": bool(m.allow_participant_screenshare),
+            "allow_chat": bool(m.allow_participant_chat),
+        },
     }

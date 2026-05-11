@@ -26,6 +26,7 @@ def mint_participant_token(
     is_owner: bool,
     metadata: dict | None = None,
     ttl_hours: int = 6,
+    allow_screenshare: bool = True,
 ) -> str:
     grants = api.VideoGrants(
         room_join=True,
@@ -36,6 +37,12 @@ def mint_participant_token(
         can_update_own_metadata=True,
         room_admin=is_owner,
     )
+    # Owners always keep full publish rights. For everyone else, when the
+    # meeting forbids participant screenshare, restrict publishable sources
+    # to camera + microphone so the LiveKit server refuses any screenshare
+    # publish attempt at the SFU layer (not just a hidden UI button).
+    if not is_owner and not allow_screenshare:
+        grants.can_publish_sources = ["camera", "microphone"]
     tok = (
         _token()
         .with_identity(identity)

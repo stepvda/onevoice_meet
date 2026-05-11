@@ -42,12 +42,21 @@ export default function CreateMeeting() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const prefs = usePreferences((s) => s.meetingDefaults);
+  const modPrefs = usePreferences((s) => s.moderation);
   const { me } = useMe();
   const [title, setTitle] = useState("");
   const [password, setPassword] = useState("");
   const [usePassword, setUsePassword] = useState(prefs.requirePassword);
   const [listForAuth, setListForAuth] = useState(false);
   const [listForAnon, setListForAnon] = useState(false);
+  const [autoAdmitAuthenticated, setAutoAdmitAuthenticated] = useState(modPrefs.autoAdmitAuthenticated);
+  const [requireNameOnJoin, setRequireNameOnJoin] = useState(modPrefs.requireNameOnJoin);
+  const [autoMuteNewJoiners, setAutoMuteNewJoiners] = useState(modPrefs.autoMuteNewJoiners);
+  const [autoDisableCameraForNew, setAutoDisableCameraForNew] = useState(modPrefs.autoDisableCameraForNew);
+  const [waitingRoomEnabled, setWaitingRoomEnabled] = useState(modPrefs.waitingRoomEnabled);
+  const [lockRoomAfterStart, setLockRoomAfterStart] = useState(modPrefs.lockRoomAfterStart);
+  const [allowParticipantScreenshare, setAllowParticipantScreenshare] = useState(modPrefs.allowParticipantScreenshare);
+  const [allowParticipantChat, setAllowParticipantChat] = useState(modPrefs.allowParticipantChat);
   const [branding, setBranding] = useState<File | null>(null);
   const [brandingPreview, setBrandingPreview] = useState<string | null>(null);
   const brandingInputRef = useRef<HTMLInputElement | null>(null);
@@ -135,6 +144,14 @@ export default function CreateMeeting() {
         list_for_authenticated: listForAuth || listForAnon,
         list_for_anonymous: listForAnon,
         display_name,
+        auto_admit_authenticated: autoAdmitAuthenticated,
+        require_name_on_join: requireNameOnJoin,
+        auto_mute_new_joiners: autoMuteNewJoiners,
+        auto_disable_camera_for_new: autoDisableCameraForNew,
+        waiting_room_enabled: waitingRoomEnabled,
+        lock_room_after_start: lockRoomAfterStart,
+        allow_participant_screenshare: allowParticipantScreenshare,
+        allow_participant_chat: allowParticipantChat,
       });
       // Upload branding (if chosen) before navigation. Non-fatal if it fails.
       if (branding) {
@@ -263,6 +280,62 @@ export default function CreateMeeting() {
                 setListForAnon(v);
                 if (v) setListForAuth(true);
               }}
+            />
+          </div>
+
+          <div className="space-y-2 border-t border-primary-700 pt-3">
+            <p className="text-sm text-slate-300 font-medium">{t("createMeeting.moderation")}</p>
+            <p className="text-xs text-slate-400">{t("createMeeting.moderationHint")}</p>
+            <Toggle
+              id="mod-require-name"
+              label={t("createMeeting.requireNameOnJoin")}
+              checked={requireNameOnJoin}
+              onChange={setRequireNameOnJoin}
+            />
+            <Toggle
+              id="mod-auto-mute"
+              label={t("createMeeting.autoMuteNewJoiners")}
+              checked={autoMuteNewJoiners}
+              onChange={setAutoMuteNewJoiners}
+            />
+            <Toggle
+              id="mod-auto-cam-off"
+              label={t("createMeeting.autoDisableCameraForNew")}
+              checked={autoDisableCameraForNew}
+              onChange={setAutoDisableCameraForNew}
+            />
+            <Toggle
+              id="mod-lock"
+              label={t("createMeeting.lockRoomAfterStart")}
+              description={t("createMeeting.lockRoomAfterStartDesc")}
+              checked={lockRoomAfterStart}
+              onChange={setLockRoomAfterStart}
+            />
+            <Toggle
+              id="mod-allow-screenshare"
+              label={t("createMeeting.allowParticipantScreenshare")}
+              checked={allowParticipantScreenshare}
+              onChange={setAllowParticipantScreenshare}
+            />
+            <Toggle
+              id="mod-allow-chat"
+              label={t("createMeeting.allowParticipantChat")}
+              checked={allowParticipantChat}
+              onChange={setAllowParticipantChat}
+            />
+            <Toggle
+              id="mod-waiting-room"
+              label={t("createMeeting.waitingRoomEnabled")}
+              description={t("createMeeting.waitingRoomDesc")}
+              checked={waitingRoomEnabled}
+              onChange={setWaitingRoomEnabled}
+            />
+            <Toggle
+              id="mod-auto-admit-auth"
+              label={t("createMeeting.autoAdmitAuthenticated")}
+              description={t("createMeeting.autoAdmitAuthenticatedDesc")}
+              checked={autoAdmitAuthenticated}
+              onChange={setAutoAdmitAuthenticated}
             />
           </div>
 

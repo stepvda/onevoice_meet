@@ -48,6 +48,19 @@ class Meeting(Base):
     # public landing page (implies authenticated visibility too).
     list_for_authenticated: Mapped[bool] = mapped_column(Boolean, default=False)
     list_for_anonymous: Mapped[bool] = mapped_column(Boolean, default=False)
+    # ── Moderation policy (set at meeting creation from owner's prefs) ───
+    # `waiting_room_enabled` and `auto_admit_authenticated` are stored but
+    # not yet enforced server-side — the waiting-room workflow is a separate
+    # feature. The remaining six policies are enforced at token-issuance
+    # time and on every chat write.
+    auto_admit_authenticated: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    require_name_on_join: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    auto_mute_new_joiners: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    auto_disable_camera_for_new: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    waiting_room_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    lock_room_after_start: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    allow_participant_screenshare: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    allow_participant_chat: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")
