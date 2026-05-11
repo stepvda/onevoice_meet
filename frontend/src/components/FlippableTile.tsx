@@ -5,8 +5,9 @@ import {
   TrackRefContext,
   useEnsureTrackRef,
 } from "@livekit/components-react";
-import { FlipHorizontal2 } from "lucide-react";
+import { FlipHorizontal2, Hand } from "lucide-react";
 import { usePreferences } from "../lib/preferences";
+import { useHandRaiseState } from "../lib/handRaise";
 
 /**
  * A drop-in replacement for `<ParticipantTile />` that overlays a small
@@ -22,6 +23,7 @@ export default function FlippableTile() {
   const ref = useEnsureTrackRef();
   const isLocal = ref?.participant?.isLocal ?? false;
   const mirrorOwnPref = usePreferences((s) => s.display.mirrorOwnVideo);
+  const hand = useHandRaiseState(ref?.participant);
   // Local tile defaults to mirrored when the preference is on; the button
   // below can still override it for this session, and the preference re-syncs
   // whenever it changes.
@@ -61,6 +63,16 @@ export default function FlippableTile() {
         data-testid={`tile-${identity}`}
       >
         <ParticipantTile />
+        {hand.raised && (
+          <div
+            data-testid={`tile-hand-${identity}`}
+            className="absolute top-2 left-2 z-10 inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white shadow-md ring-2 ring-amber-300/50"
+            title={t("hand.tileBadge")}
+            aria-label={t("hand.tileBadge")}
+          >
+            <Hand size={14} />
+          </div>
+        )}
         <button
           type="button"
           onClick={(e) => {

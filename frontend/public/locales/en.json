@@ -363,6 +363,16 @@
     "admit": "Admit",
     "deny": "Deny"
   },
+  "hand": {
+    "raise": "Raise hand",
+    "raised": "Hand raised",
+    "lower": "Lower hand",
+    "raiseTitle": "Raise your hand to get attention",
+    "lowerTitle": "Lower your hand",
+    "tileBadge": "Hand raised",
+    "lowerOther": "Lower this participant's hand",
+    "lowerName": "Lower {{name}}'s hand"
+  },
   "tile": {
     "flip": "Flip horizontally",
     "stopFlip": "Stop flipping video horizontally",

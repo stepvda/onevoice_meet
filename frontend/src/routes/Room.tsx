@@ -35,6 +35,7 @@ import InMeetingSettings from "../components/InMeetingSettings";
 import InviteModal from "../components/InviteModal";
 import AudioWaveform from "../components/AudioWaveform";
 import PendingJoinersPanel from "../components/PendingJoinersPanel";
+import HandRaiseButton from "../components/HandRaiseButton";
 import MeetingClock from "../components/MeetingClock";
 import CaptionsOverlay from "../components/CaptionsOverlay";
 import PushToTalkIndicator from "../components/PushToTalkIndicator";
@@ -333,6 +334,8 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
             </button>
           </>
         )}
+
+        <HandRaiseButton />
 
         <button
           type="button"

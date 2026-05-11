@@ -339,6 +339,12 @@ export const api = {
   mute: (meetingId: string, body: { participant_identity: string; mute: boolean }) =>
     request(`/api/v1/meetings/${meetingId}/mute`, { method: "POST", body: JSON.stringify(body) }),
 
+  lowerHand: (meetingId: string, participantIdentity: string) =>
+    request<{ ok: boolean }>(`/api/v1/meetings/${meetingId}/lower-hand`, {
+      method: "POST",
+      body: JSON.stringify({ participant_identity: participantIdentity }),
+    }),
+
   muteAll: (meetingId: string) =>
     request(`/api/v1/meetings/${meetingId}/mute-all`, { method: "POST" }),
 

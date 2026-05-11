@@ -88,6 +88,52 @@ async def mute(meeting_id: str, body: MuteBody, user: RequireUser, db: Session =
     return {"ok": True, "tracks_affected": count}
 
 
+class LowerHandBody(BaseModel):
+    participant_identity: str
+
+
+@router.post("/meetings/{meeting_id}/lower-hand")
+async def lower_hand(
+    meeting_id: str,
+    body: LowerHandBody,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Owner-only: clear `handRaised` from another participant's metadata via
+    the LiveKit admin API. The participant client sees a
+    ParticipantMetadataChanged event and the UI updates without needing a
+    cooperative response from the target."""
+    m = _require_owner(meeting_id, user.sub, db)
+    lk = livekit_api()
+    try:
+        pr = await lk.room.list_participants(api.ListParticipantsRequest(room=m.room_name))
+        target = next(
+            (p for p in pr.participants if p.identity == body.participant_identity),
+            None,
+        )
+        if target is None:
+            raise HTTPException(status_code=404, detail="participant not in room")
+        try:
+            current = json.loads(target.metadata) if target.metadata else {}
+            if not isinstance(current, dict):
+                current = {}
+        except ValueError:
+            current = {}
+        current.pop("handRaised", None)
+        current.pop("handRaisedAt", None)
+        await lk.room.update_participant(
+            api.UpdateParticipantRequest(
+                room=m.room_name,
+                identity=body.participant_identity,
+                metadata=json.dumps(current),
+            )
+        )
+    finally:
+        await lk.aclose()
+    _audit(db, m.id, user.sub, "lower_hand", target=body.participant_identity)
+    return {"ok": True}
+
+
 @router.post("/meetings/{meeting_id}/kick")
 async def kick(meeting_id: str, body: KickBody, user: RequireUser, db: Session = Depends(get_db)) -> dict:
     m = _require_owner(meeting_id, user.sub, db)
