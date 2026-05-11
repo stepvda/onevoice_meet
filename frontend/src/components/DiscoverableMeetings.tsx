@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Compass, Globe, LogIn, Lock } from "lucide-react";
 import { api, PublicMeeting } from "../lib/api";
 import { isAuthenticated } from "../lib/auth";
 import { Button, Card } from "./ui";
+
+const POLL_INTERVAL_MS = 10_000;
 
 /**
  * Lists meetings owned by OTHER users that have opted into discoverability.
@@ -23,14 +25,35 @@ export default function DiscoverableMeetings() {
   const [rows, setRows] = useState<PublicMeeting[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  // Track whether we've ever had a successful fetch. After the first
+  // success, transient poll failures stay silent — the user keeps seeing
+  // the most recent list rather than the section vanishing.
+  const loadedOnceRef = useRef(false);
+
   useEffect(() => {
     let cancelled = false;
-    const auth = isAuthenticated();
-    (auth ? api.listDiscoverable() : api.listPublicMeetings())
-      .then((r) => !cancelled && setRows(r))
-      .catch((e) => !cancelled && setErr((e as Error).message));
+    const load = () => {
+      // Re-check auth on every poll so signing in mid-session promotes the
+      // user to the authenticated endpoint without a page refresh.
+      const auth = isAuthenticated();
+      (auth ? api.listDiscoverable() : api.listPublicMeetings())
+        .then((r) => {
+          if (cancelled) return;
+          loadedOnceRef.current = true;
+          setErr(null);
+          setRows(r);
+        })
+        .catch((e) => {
+          if (cancelled || loadedOnceRef.current) return;
+          setErr((e as Error).message);
+        });
+    };
+    load();
+    // Poll every 10s so newly-published meetings show up without a refresh.
+    const id = window.setInterval(load, POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
+      window.clearInterval(id);
     };
   }, []);
 
