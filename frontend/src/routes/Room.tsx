@@ -92,6 +92,34 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
     });
   }, [room, onCaptureFeedbackInfo]);
 
+  // Warm up the reliable data channel right after connect. LiveKit's SCTP
+  // channel is negotiated lazily on the first `publishData` call, which
+  // means the very first packet can be silently dropped before the
+  // negotiation completes (the second works because the channel is open
+  // by then). The whiteboard exposed this because its first stroke fires
+  // immediately on pointer-up — there's no leading send to absorb the
+  // negotiation cost. A zero-byte packet on a throwaway topic forces the
+  // negotiation to happen ahead of any real send.
+  useEffect(() => {
+    const warmup = () => {
+      void room.localParticipant
+        .publishData(new Uint8Array(0), { reliable: true, topic: "meet-warmup" })
+        .catch(() => undefined);
+    };
+    if (room.state === "connected") {
+      warmup();
+    } else {
+      const onConnected = () => {
+        warmup();
+        room.off(RoomEvent.Connected, onConnected);
+      };
+      room.on(RoomEvent.Connected, onConnected);
+      return () => {
+        room.off(RoomEvent.Connected, onConnected);
+      };
+    }
+  }, [room]);
+
   // Auto-open the Notes/Whiteboard and Polls/Q&A panels for everyone when
   // any remote participant creates OR updates anything. Routes to the
   // correct tab based on which topic/kind triggered the open:

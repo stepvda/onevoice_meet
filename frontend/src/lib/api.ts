@@ -47,6 +47,19 @@ export interface PollDTO {
   closed_at: string | null;
 }
 
+export interface WhiteboardShapeDTO {
+  id: string;
+  kind: "rect" | "ellipse" | "text";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: string;
+  stroke_width: number;
+  text: string | null;
+  font_size: number | null;
+}
+
 export interface QuestionDTO {
   id: number;
   meeting_id: string;
@@ -395,6 +408,20 @@ export const api = {
     request<{ ok: boolean }>(`/api/v1/rooms/${roomName}/whiteboard/strokes`, {
       method: "DELETE",
     }),
+  listWhiteboardShapes: (roomName: string) =>
+    request<WhiteboardShapeDTO[]>(`/api/v1/rooms/${roomName}/whiteboard/shapes`),
+  upsertWhiteboardShape: (roomName: string, shape: WhiteboardShapeDTO) => {
+    const { id, ...body } = shape;
+    return request<{ ok: boolean }>(
+      `/api/v1/rooms/${roomName}/whiteboard/shapes/${id}`,
+      { method: "PUT", body: JSON.stringify(body) },
+    );
+  },
+  deleteWhiteboardShape: (roomName: string, shapeId: string) =>
+    request<{ ok: boolean }>(
+      `/api/v1/rooms/${roomName}/whiteboard/shapes/${shapeId}`,
+      { method: "DELETE" },
+    ),
 
   // ─── Polls + Q&A ───────────────────────────────────────────────
   listPolls: (meetingId: string) =>

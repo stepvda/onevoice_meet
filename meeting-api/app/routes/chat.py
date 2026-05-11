@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 from app.auth import RequireUser
 from app.config import settings
 from app.db import get_db
-from app.models import ChatMessage, ChatReaction, Meeting, WhiteboardStroke
+from app.models import ChatMessage, ChatReaction, Meeting, WhiteboardShape, WhiteboardStroke
 from app.routes.meetings import is_moderator
 
 router = APIRouter(prefix="/v1")
@@ -393,11 +393,92 @@ def post_whiteboard_stroke(
 
 @router.delete("/rooms/{room_name}/whiteboard/strokes")
 def clear_whiteboard_strokes(room_name: str, db: Session = Depends(get_db)) -> dict:
-    """Drop every stroke for this room. Called when any participant hits the
-    Clear board button — the client also broadcasts a clear packet so live
-    peers wipe their canvases instantly."""
+    """Drop every stroke AND shape for this room. Called when any
+    participant hits the Clear board button — the client also broadcasts
+    a clear packet so live peers wipe their canvases instantly."""
     m = _meeting_for_room(room_name, db, must_be_active=True)
     db.query(WhiteboardStroke).filter_by(meeting_id=m.id).delete()
+    db.query(WhiteboardShape).filter_by(meeting_id=m.id).delete()
+    db.commit()
+    return {"ok": True}
+
+
+# ─── Shapes (rect / ellipse / text) — addressable by id so they can be
+#     moved, resized and edited after creation. ────────────────────────
+
+
+class ShapeIn(BaseModel):
+    kind: str = Field(pattern="^(rect|ellipse|text)$")
+    x: float
+    y: float
+    w: float
+    h: float
+    color: str = Field(default="#fbbf24", max_length=32)
+    stroke_width: int = Field(default=3, ge=1, le=20)
+    text: str | None = Field(default=None, max_length=2000)
+    font_size: int | None = Field(default=None, ge=8, le=200)
+
+
+@router.get("/rooms/{room_name}/whiteboard/shapes")
+def list_whiteboard_shapes(room_name: str, db: Session = Depends(get_db)) -> list[dict]:
+    m = _meeting_for_room(room_name, db, must_be_active=False)
+    rows = (
+        db.query(WhiteboardShape)
+        .filter(WhiteboardShape.meeting_id == m.id)
+        .order_by(WhiteboardShape.updated_at.asc())
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "kind": r.kind,
+            "x": r.x, "y": r.y, "w": r.w, "h": r.h,
+            "color": r.color,
+            "stroke_width": r.stroke_width,
+            "text": r.text,
+            "font_size": r.font_size,
+        }
+        for r in rows
+    ]
+
+
+@router.put("/rooms/{room_name}/whiteboard/shapes/{shape_id}")
+def upsert_whiteboard_shape(
+    room_name: str,
+    shape_id: str,
+    body: ShapeIn,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Idempotent create-or-update by id. The client owns the id (ULID)."""
+    m = _meeting_for_room(room_name, db, must_be_active=True)
+    if not _IDENTITY_RE.match(shape_id):
+        raise HTTPException(status_code=400, detail="invalid shape id")
+    row = db.query(WhiteboardShape).filter_by(id=shape_id, meeting_id=m.id).first()
+    if row is None:
+        row = WhiteboardShape(id=shape_id, meeting_id=m.id, kind=body.kind,
+                              x=body.x, y=body.y, w=body.w, h=body.h,
+                              color=body.color, stroke_width=body.stroke_width,
+                              text=body.text, font_size=body.font_size)
+        db.add(row)
+    else:
+        row.kind = body.kind
+        row.x = body.x; row.y = body.y; row.w = body.w; row.h = body.h
+        row.color = body.color
+        row.stroke_width = body.stroke_width
+        row.text = body.text
+        row.font_size = body.font_size
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/rooms/{room_name}/whiteboard/shapes/{shape_id}")
+def delete_whiteboard_shape(
+    room_name: str,
+    shape_id: str,
+    db: Session = Depends(get_db),
+) -> dict:
+    m = _meeting_for_room(room_name, db, must_be_active=True)
+    db.query(WhiteboardShape).filter_by(id=shape_id, meeting_id=m.id).delete()
     db.commit()
     return {"ok": True}
 

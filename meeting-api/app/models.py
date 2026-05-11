@@ -397,6 +397,30 @@ class QuestionUpvote(Base):
     )
 
 
+class WhiteboardShape(Base):
+    """Rectangle / ellipse / text box on the shared whiteboard. Unlike the
+    stroke history (append-only), shapes are addressable by `id` so they
+    can be moved, resized and edited. The full set per meeting is fetched
+    on tab open; live updates fan out via the data channel."""
+    __tablename__ = "whiteboard_shapes"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), nullable=False, index=True)
+    # "rect" | "ellipse" | "text"
+    kind: Mapped[str] = mapped_column(String, nullable=False)
+    # All coordinates normalised to [0,1] of the canvas, like strokes.
+    x: Mapped[float] = mapped_column(nullable=False)
+    y: Mapped[float] = mapped_column(nullable=False)
+    w: Mapped[float] = mapped_column(nullable=False)
+    h: Mapped[float] = mapped_column(nullable=False)
+    color: Mapped[str] = mapped_column(String, nullable=False, default="#fbbf24")
+    stroke_width: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    text: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Font size in CSS pixels at 720p canvas height (scales with canvas).
+    font_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
 class WhiteboardStroke(Base):
     """One stroke (or `clear` marker) on the shared whiteboard. Persisted
     so late joiners can replay the board exactly as it stands.
