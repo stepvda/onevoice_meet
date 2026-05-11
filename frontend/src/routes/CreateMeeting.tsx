@@ -258,86 +258,102 @@ export default function CreateMeeting() {
             </Field>
           )}
 
-          <div className="space-y-2 border-t border-primary-700 pt-3">
-            <p className="text-sm text-slate-300 font-medium">{t("createMeeting.visibility")}</p>
-            <p className="text-xs text-slate-400">{t("createMeeting.visibilityHint")}</p>
-            <Toggle
-              id="meeting-list-auth"
-              label={t("createMeeting.listForAuth")}
-              description={t("createMeeting.listForAuthDesc")}
-              checked={listForAuth || listForAnon}
-              onChange={(v) => {
-                setListForAuth(v);
-                if (!v) setListForAnon(false);
-              }}
-            />
-            <Toggle
-              id="meeting-list-anon"
-              label={t("createMeeting.listForAnon")}
-              description={t("createMeeting.listForAnonDesc")}
-              checked={listForAnon}
-              onChange={(v) => {
-                setListForAnon(v);
-                if (v) setListForAuth(true);
-              }}
-            />
-          </div>
+          <details className="group border-t border-primary-700 pt-3">
+            <summary
+              data-testid="visibility-summary"
+              className="flex items-center justify-between cursor-pointer list-none select-none"
+            >
+              <span className="text-sm text-slate-300 font-medium">{t("createMeeting.visibility")}</span>
+              <span className="text-xs text-slate-500 group-open:rotate-180 transition-transform">▾</span>
+            </summary>
+            <div className="space-y-2 mt-2">
+              <p className="text-xs text-slate-400">{t("createMeeting.visibilityHint")}</p>
+              <Toggle
+                id="meeting-list-auth"
+                label={t("createMeeting.listForAuth")}
+                description={t("createMeeting.listForAuthDesc")}
+                checked={listForAuth || listForAnon}
+                onChange={(v) => {
+                  setListForAuth(v);
+                  if (!v) setListForAnon(false);
+                }}
+              />
+              <Toggle
+                id="meeting-list-anon"
+                label={t("createMeeting.listForAnon")}
+                description={t("createMeeting.listForAnonDesc")}
+                checked={listForAnon}
+                onChange={(v) => {
+                  setListForAnon(v);
+                  if (v) setListForAuth(true);
+                }}
+              />
+            </div>
+          </details>
 
-          <div className="space-y-2 border-t border-primary-700 pt-3">
-            <p className="text-sm text-slate-300 font-medium">{t("createMeeting.moderation")}</p>
-            <p className="text-xs text-slate-400">{t("createMeeting.moderationHint")}</p>
-            <Toggle
-              id="mod-require-name"
-              label={t("createMeeting.requireNameOnJoin")}
-              checked={requireNameOnJoin}
-              onChange={setRequireNameOnJoin}
-            />
-            <Toggle
-              id="mod-auto-mute"
-              label={t("createMeeting.autoMuteNewJoiners")}
-              checked={autoMuteNewJoiners}
-              onChange={setAutoMuteNewJoiners}
-            />
-            <Toggle
-              id="mod-auto-cam-off"
-              label={t("createMeeting.autoDisableCameraForNew")}
-              checked={autoDisableCameraForNew}
-              onChange={setAutoDisableCameraForNew}
-            />
-            <Toggle
-              id="mod-lock"
-              label={t("createMeeting.lockRoomAfterStart")}
-              description={t("createMeeting.lockRoomAfterStartDesc")}
-              checked={lockRoomAfterStart}
-              onChange={setLockRoomAfterStart}
-            />
-            <Toggle
-              id="mod-allow-screenshare"
-              label={t("createMeeting.allowParticipantScreenshare")}
-              checked={allowParticipantScreenshare}
-              onChange={setAllowParticipantScreenshare}
-            />
-            <Toggle
-              id="mod-allow-chat"
-              label={t("createMeeting.allowParticipantChat")}
-              checked={allowParticipantChat}
-              onChange={setAllowParticipantChat}
-            />
-            <Toggle
-              id="mod-waiting-room"
-              label={t("createMeeting.waitingRoomEnabled")}
-              description={t("createMeeting.waitingRoomDesc")}
-              checked={waitingRoomEnabled}
-              onChange={setWaitingRoomEnabled}
-            />
-            <Toggle
-              id="mod-auto-admit-auth"
-              label={t("createMeeting.autoAdmitAuthenticated")}
-              description={t("createMeeting.autoAdmitAuthenticatedDesc")}
-              checked={autoAdmitAuthenticated}
-              onChange={setAutoAdmitAuthenticated}
-            />
-          </div>
+          <details className="group border-t border-primary-700 pt-3">
+            <summary
+              data-testid="moderation-summary"
+              className="flex items-center justify-between cursor-pointer list-none select-none"
+            >
+              <span className="text-sm text-slate-300 font-medium">{t("createMeeting.moderation")}</span>
+              <span className="text-xs text-slate-500 group-open:rotate-180 transition-transform">▾</span>
+            </summary>
+            <div className="space-y-2 mt-2">
+              <p className="text-xs text-slate-400">{t("createMeeting.moderationHint")}</p>
+              <Toggle
+                id="mod-require-name"
+                label={t("createMeeting.requireNameOnJoin")}
+                checked={requireNameOnJoin}
+                onChange={setRequireNameOnJoin}
+              />
+              <Toggle
+                id="mod-auto-mute"
+                label={t("createMeeting.autoMuteNewJoiners")}
+                checked={autoMuteNewJoiners}
+                onChange={setAutoMuteNewJoiners}
+              />
+              <Toggle
+                id="mod-auto-cam-off"
+                label={t("createMeeting.autoDisableCameraForNew")}
+                checked={autoDisableCameraForNew}
+                onChange={setAutoDisableCameraForNew}
+              />
+              <Toggle
+                id="mod-lock"
+                label={t("createMeeting.lockRoomAfterStart")}
+                description={t("createMeeting.lockRoomAfterStartDesc")}
+                checked={lockRoomAfterStart}
+                onChange={setLockRoomAfterStart}
+              />
+              <Toggle
+                id="mod-allow-screenshare"
+                label={t("createMeeting.allowParticipantScreenshare")}
+                checked={allowParticipantScreenshare}
+                onChange={setAllowParticipantScreenshare}
+              />
+              <Toggle
+                id="mod-allow-chat"
+                label={t("createMeeting.allowParticipantChat")}
+                checked={allowParticipantChat}
+                onChange={setAllowParticipantChat}
+              />
+              <Toggle
+                id="mod-waiting-room"
+                label={t("createMeeting.waitingRoomEnabled")}
+                description={t("createMeeting.waitingRoomDesc")}
+                checked={waitingRoomEnabled}
+                onChange={setWaitingRoomEnabled}
+              />
+              <Toggle
+                id="mod-auto-admit-auth"
+                label={t("createMeeting.autoAdmitAuthenticated")}
+                description={t("createMeeting.autoAdmitAuthenticatedDesc")}
+                checked={autoAdmitAuthenticated}
+                onChange={setAutoAdmitAuthenticated}
+              />
+            </div>
+          </details>
 
           <div>
             <Label htmlFor="meeting-branding">{t("createMeeting.fieldBranding")}</Label>
