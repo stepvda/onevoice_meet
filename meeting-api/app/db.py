@@ -84,6 +84,10 @@ def lightweight_migrate() -> None:
                 # the right duration on legacy rows.
                 ("kind", "ALTER TABLE paypal_orders ADD COLUMN kind TEXT DEFAULT 'annual' NOT NULL"),
             )),
+            ("user_preferences", (
+                ("anonymise_email_in_join_log", "ALTER TABLE user_preferences ADD COLUMN anonymise_email_in_join_log BOOLEAN DEFAULT 0 NOT NULL"),
+                ("dont_log_my_ip", "ALTER TABLE user_preferences ADD COLUMN dont_log_my_ip BOOLEAN DEFAULT 0 NOT NULL"),
+            )),
             ("users", (
                 ("totp_secret", "ALTER TABLE users ADD COLUMN totp_secret TEXT"),
                 ("totp_enabled", "ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT 0 NOT NULL"),

@@ -38,7 +38,6 @@ import CaptionsOverlay from "../components/CaptionsOverlay";
 import PushToTalkIndicator from "../components/PushToTalkIndicator";
 import { useJoinSound, useChatSound } from "../lib/sounds";
 import { useMonoAudio } from "../lib/monoAudio";
-import { useThemePref } from "../lib/themePref";
 import { useVideoQualityPref } from "../lib/videoQualityPref";
 import { usePushToTalk } from "../lib/pushToTalk";
 import { useBrowserNotifications } from "../lib/browserNotifications";
@@ -63,7 +62,6 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
   useJoinSound(room);
   useChatSound(room);
   useMonoAudio();
-  useThemePref();
   useVideoQualityPref(room);
   usePushToTalk(room);
   useBrowserNotifications(room);

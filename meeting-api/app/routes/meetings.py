@@ -12,8 +12,21 @@ from app.auth import AuthUser, RequireAdmin, RequireUser
 from app.config import settings
 from app.db import get_db
 from app.livekit_client import livekit_api, mint_participant_token, short_lived_turn_credentials
-from app.models import Meeting, MeetingParticipant
+from app.models import Meeting, MeetingParticipant, UserPreferences
 from app.services.slug_words import generate_unique_slug
+
+
+def _anonymise_email(email: str | None) -> str | None:
+    """Replace the local part of an email with the first letter + asterisks.
+    `alice@example.com` → `a***@example.com`. Falls back to a single `***@…`
+    when the local part is one character so we don't accidentally reveal it.
+    """
+    if not email or "@" not in email:
+        return email
+    local, _, domain = email.partition("@")
+    if len(local) <= 1:
+        return f"***@{domain}"
+    return f"{local[0]}***@{domain}"
 
 router = APIRouter(prefix="/v1")
 
@@ -533,12 +546,20 @@ def mint_owner_token(
         display_name=display_name,
         is_owner=True,
     )
+    # Privacy: when this user has `anonymise_email_in_join_log` on, store a
+    # masked copy of their email on the participant row rather than the raw
+    # address. Owner sees the meeting normally; the join log carries the
+    # anonymised form.
+    prefs_row = db.get(UserPreferences, user.sub)
+    stored_email = user.email
+    if prefs_row and prefs_row.anonymise_email_in_join_log:
+        stored_email = _anonymise_email(stored_email)
     db.add(
         MeetingParticipant(
             meeting_id=m.id,
             livekit_identity=identity,
             display_name=display_name,
-            email=user.email,
+            email=stored_email,
             is_authenticated=True,
             is_owner=True,
         )

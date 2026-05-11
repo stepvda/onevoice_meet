@@ -80,3 +80,16 @@ body {
 .captions-overlay.medium { font-size: 1rem; }
 .captions-overlay.large  { font-size: 1.25rem; }
 .captions-overlay.xl     { font-size: 1.5rem; }
+
+/* Privacy: blur email-ish text so screenshots don't leak the address. The
+ * data attribute is set by `usePrivacyClassNames()` from the user's
+ * `privacy.blurEmailInScreenshots` preference.
+ */
+html[data-blur-emails="true"] .privacy-blur-email {
+  filter: blur(5px);
+  transition: filter 120ms ease;
+}
+html[data-blur-emails="true"] .privacy-blur-email:hover,
+html[data-blur-emails="true"] .privacy-blur-email:focus-within {
+  filter: blur(0);
+}

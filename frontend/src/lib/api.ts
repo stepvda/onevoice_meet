@@ -46,6 +46,8 @@ export interface PublicRoomInfo {
 export interface UserPreferencesOut {
   language: string | null;
   language_set_manually: boolean;
+  anonymise_email_in_join_log?: boolean;
+  dont_log_my_ip?: boolean;
 }
 
 export interface MeOut {
@@ -701,7 +703,11 @@ export const api = {
   getMyPreferences: () =>
     request<UserPreferencesOut>("/api/v1/me/preferences"),
 
-  updateMyPreferences: (body: { language?: string }) =>
+  updateMyPreferences: (body: {
+    language?: string;
+    anonymise_email_in_join_log?: boolean;
+    dont_log_my_ip?: boolean;
+  }) =>
     request<UserPreferencesOut>("/api/v1/me/preferences", {
       method: "PUT",
       body: JSON.stringify(body),

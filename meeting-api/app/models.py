@@ -127,6 +127,12 @@ class UserPreferences(Base):
     # True once the user picks a language in Settings. While False, the client
     # is free to follow the browser's preferred language on each load.
     language_set_manually: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Privacy preferences (mirror of `privacy.*` in the client store). Stored
+    # here so server-side enforcement (anonymising stored emails, future
+    # IP suppression in logs, etc.) can read them at request time without the
+    # client having to resend them on every call.
+    anonymise_email_in_join_log: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    dont_log_my_ip: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 

@@ -27,8 +27,15 @@ const ResetPassword = lazy(() => import("./routes/ResetPassword"));
 import { bootstrapFromOneWitysk } from "./lib/auth";
 import { syncServerLanguage } from "./i18n";
 import { TICafeProvider } from "./lib/tiCafe";
+import { usePrivacyServerSync, usePrivacyClassNames } from "./lib/privacy";
+import { useThemePref } from "./lib/themePref";
 
 export default function App() {
+  // Side-effect hooks driven by user preferences. They live here so they're
+  // active on every route (including pre-meeting pages), not just inside Room.
+  useThemePref();
+  usePrivacyServerSync();
+  usePrivacyClassNames();
   // Once at app start: try to bootstrap an SSO token, then ask the API for the
   // user's saved language. If the user has explicitly chosen one in Settings
   // (`language_set_manually=true`), it overrides whatever the browser detected.
