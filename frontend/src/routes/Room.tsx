@@ -35,10 +35,13 @@ import InviteModal from "../components/InviteModal";
 import AudioWaveform from "../components/AudioWaveform";
 import MeetingClock from "../components/MeetingClock";
 import CaptionsOverlay from "../components/CaptionsOverlay";
+import PushToTalkIndicator from "../components/PushToTalkIndicator";
 import { useJoinSound, useChatSound } from "../lib/sounds";
 import { useMonoAudio } from "../lib/monoAudio";
 import { useThemePref } from "../lib/themePref";
 import { useVideoQualityPref } from "../lib/videoQualityPref";
+import { usePushToTalk } from "../lib/pushToTalk";
+import { useBrowserNotifications } from "../lib/browserNotifications";
 
 interface InnerProps {
   meetingId: string | null;
@@ -61,6 +64,8 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
   useMonoAudio();
   useThemePref();
   useVideoQualityPref(room);
+  usePushToTalk(room);
+  useBrowserNotifications(room);
   const [recordingActive, setRecordingActive] = useState(false);
   const [recordingLayout, setRecordingLayout] = useState<"speaker" | "grid" | "single-speaker">("speaker");
   const [chatOpen, setChatOpen] = useState(false);
@@ -321,7 +326,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
           type="button"
           onClick={() => setSettingsOpen((v) => !v)}
           data-testid="btn-settings"
-          aria-pressed={settingsOpen ? "true" : "false"}
+          aria-pressed={settingsOpen}
           aria-label={t("room.settingsLabel")}
           title={t("room.settings")}
           className={[
@@ -343,7 +348,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
             if (!participantsOpen && window.innerWidth < 640) setChatOpen(false);
           }}
           data-testid="btn-participants"
-          aria-pressed={participantsOpen ? "true" : "false"}
+          aria-pressed={participantsOpen}
           aria-label={t("room.people")}
           className={[
             "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
@@ -363,7 +368,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
             if (!chatOpen && window.innerWidth < 640) setParticipantsOpen(false);
           }}
           data-testid="btn-chat"
-          aria-pressed={chatOpen ? "true" : "false"}
+          aria-pressed={chatOpen}
           aria-label={t("room.chat")}
           className={[
             "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
@@ -408,6 +413,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
           {accessibility.liveCaptions && (
             <CaptionsOverlay fontSize={accessibility.captionsFontSize} />
           )}
+          <PushToTalkIndicator />
         </div>
         <InMeetingSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         <ParticipantsPanel

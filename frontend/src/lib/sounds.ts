@@ -5,6 +5,19 @@ import { usePreferences } from "./preferences";
 
 const CHAT_DATA_TOPIC = "meet-chat";
 
+function inDnd(start: string | null, end: string | null): boolean {
+  if (!start || !end) return false;
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  if (Number.isNaN(sh) || Number.isNaN(sm) || Number.isNaN(eh) || Number.isNaN(em)) return false;
+  const now = new Date();
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const a = sh * 60 + sm;
+  const b = eh * 60 + em;
+  if (a === b) return false;
+  return a < b ? cur >= a && cur < b : cur >= a || cur < b;
+}
+
 function playTone(freq: number, durationMs: number, gain: number) {
   try {
     const w = window as unknown as {
@@ -33,6 +46,8 @@ export function useJoinSound(room: Room) {
   const enabled = usePreferences((s) => s.notifications.soundOnJoin);
   const ignoreOwn = usePreferences((s) => s.notifications.ignoreOwnJoins);
   const volume = usePreferences((s) => s.notifications.notificationVolume);
+  const dndStart = usePreferences((s) => s.notifications.doNotDisturbStart);
+  const dndEnd = usePreferences((s) => s.notifications.doNotDisturbEnd);
   // Suppress the initial flood that fires when we connect — LiveKit synthesises
   // ParticipantConnected for every participant already in the room.
   const ready = useRef(false);
@@ -50,18 +65,21 @@ export function useJoinSound(room: Room) {
     const onJoin = (p: RemoteParticipant) => {
       if (!ready.current) return;
       if (ignoreOwn && p.isLocal) return;
+      if (inDnd(dndStart, dndEnd)) return;
       playTone(880, 180, (volume / 100) * 0.12);
     };
     room.on(RoomEvent.ParticipantConnected, onJoin);
     return () => {
       room.off(RoomEvent.ParticipantConnected, onJoin);
     };
-  }, [room, enabled, ignoreOwn, volume]);
+  }, [room, enabled, ignoreOwn, volume, dndStart, dndEnd]);
 }
 
 export function useChatSound(room: Room) {
   const enabled = usePreferences((s) => s.notifications.chatMessageSound);
   const volume = usePreferences((s) => s.notifications.notificationVolume);
+  const dndStart = usePreferences((s) => s.notifications.doNotDisturbStart);
+  const dndEnd = usePreferences((s) => s.notifications.doNotDisturbEnd);
   useEffect(() => {
     if (!enabled) return;
     const onData = (
@@ -70,15 +88,13 @@ export function useChatSound(room: Room) {
       _kind: unknown,
       topic?: string,
     ) => {
-      // Chat fires a "chat-refetch" hint on this topic whenever a remote
-      // participant posts. We don't decode the payload — the topic is enough.
-      if (topic === CHAT_DATA_TOPIC) {
-        playTone(660, 120, (volume / 100) * 0.1);
-      }
+      if (topic !== CHAT_DATA_TOPIC) return;
+      if (inDnd(dndStart, dndEnd)) return;
+      playTone(660, 120, (volume / 100) * 0.1);
     };
     room.on(RoomEvent.DataReceived, onData);
     return () => {
       room.off(RoomEvent.DataReceived, onData);
     };
-  }, [room, enabled, volume]);
+  }, [room, enabled, volume, dndStart, dndEnd]);
 }

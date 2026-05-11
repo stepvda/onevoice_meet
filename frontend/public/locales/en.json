@@ -337,6 +337,10 @@
   "captions": {
     "unavailable": "Live captions are not yet available on this meeting."
   },
+  "ptt": {
+    "holdToTalk": "Hold {{key}} to talk",
+    "live": "Live — release to mute"
+  },
   "tile": {
     "flip": "Flip horizontally",
     "stopFlip": "Stop flipping video horizontally",
