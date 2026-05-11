@@ -1,20 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { useRoomContext } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
-import { Brush, Eraser, FileText, X } from "lucide-react";
-import { api } from "../lib/api";
+import {
+  Brush,
+  Circle as CircleIcon,
+  Download,
+  Eraser,
+  FileText,
+  MousePointer2,
+  PenTool,
+  Square as SquareIcon,
+  Type,
+  X,
+} from "lucide-react";
+import jsPDF from "jspdf";
+import { api, type WhiteboardShapeDTO } from "../lib/api";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  /** When non-null, the panel switches to this tab the next time it opens.
-   *  Used by Room.tsx to route auto-opens to the right tab based on which
-   *  data-channel topic triggered them. */
+  /** Tab to switch to next time the panel opens. */
   initialTab?: Tab | null;
-  /** Cleared by the parent after the requested tab is applied so the same
-   *  signal doesn't keep re-applying on later renders. */
   onConsumeInitialTab?: () => void;
 }
 
@@ -22,37 +30,60 @@ type Tab = "notes" | "board";
 
 export const NOTES_TOPIC = "meet-notes";
 export const BOARD_TOPIC = "meet-board";
+
 const TEXT_ENC = new TextEncoder();
 const TEXT_DEC = new TextDecoder();
 
-interface BoardPacket {
+// Persisted panel width. Stored separately for notes/board because the
+// whiteboard usually wants more room than the notes textarea.
+const WIDTH_STORAGE_KEY = "meet-notes-panel-width";
+const DEFAULT_WIDTH = 384;
+const MIN_WIDTH = 280;
+const MAX_WIDTH = 1100;
+
+// Stroke and shape packet shapes used over the LiveKit data channel.
+interface StrokePacket {
   v: 1;
-  type: "stroke" | "clear";
-  // stroke fields
-  points?: Array<{ x: number; y: number }>;
-  color?: string;
-  width?: number;
+  type: "stroke";
+  points: Array<{ x: number; y: number }>;
+  color: string;
+  width: number;
 }
+interface ClearPacket {
+  v: 1;
+  type: "clear";
+}
+interface ShapePacket {
+  v: 1;
+  type: "shape";
+  shape: WhiteboardShapeDTO;
+}
+interface ShapeDeletePacket {
+  v: 1;
+  type: "shape-delete";
+  id: string;
+}
+type BoardPacket = StrokePacket | ClearPacket | ShapePacket | ShapeDeletePacket;
+
 
 /**
  * Combined collaborative notes + whiteboard side panel.
  *
- * - **Notes:** plain-text textarea persisted to `Meeting.notes` server-side
- *   with debounced writes (last-writer-wins). Refresh is pushed via a
- *   "notes-refetch" data-channel signal.
- * - **Whiteboard:** ephemeral; stroke points and clear events are sent over
- *   the data channel and replayed on the receiver's canvas. Coordinates are
- *   normalised to [0, 1] so participants on different canvas sizes see the
- *   same drawing.
+ * The panel has a draggable splitter on its left edge so the host can grow
+ * the whiteboard to the size they want — the underlying canvas resizes
+ * (the drawings don't scale).
  */
 export default function NotesWhiteboardPanel({ open, onClose, initialTab, onConsumeInitialTab }: Props) {
   const { t } = useTranslation();
   const { roomName = "" } = useParams();
   const room = useRoomContext();
   const [tab, setTab] = useState<Tab>("notes");
+  const [widthPx, setWidthPx] = useState<number>(() => {
+    if (typeof window === "undefined") return DEFAULT_WIDTH;
+    const v = parseInt(window.localStorage.getItem(WIDTH_STORAGE_KEY) ?? "", 10);
+    return Number.isFinite(v) && v >= MIN_WIDTH && v <= MAX_WIDTH ? v : DEFAULT_WIDTH;
+  });
 
-  // Apply a requested tab when the panel is open. Cleared by the parent
-  // via `onConsumeInitialTab` so the same request doesn't re-fire later.
   useEffect(() => {
     if (open && initialTab) {
       setTab(initialTab);
@@ -60,14 +91,25 @@ export default function NotesWhiteboardPanel({ open, onClose, initialTab, onCons
     }
   }, [open, initialTab, onConsumeInitialTab]);
 
+  // Persist width across reloads.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(WIDTH_STORAGE_KEY, String(widthPx));
+  }, [widthPx]);
+
   if (!open) return null;
   return (
     <aside
       data-testid="notes-board-panel"
       role="complementary"
       aria-label={t("notes.title", { defaultValue: "Notes & whiteboard" })}
-      className="h-full w-full sm:w-96 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col"
+      className="h-full flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col relative"
+      style={{ width: `${widthPx}px` }}
     >
+      <PanelResizer
+        widthPx={widthPx}
+        onChange={(w) => setWidthPx(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, w)))}
+      />
       <header className="flex items-center justify-between px-4 py-3 border-b border-primary-700">
         <h2 className="text-sm font-semibold text-slate-100">
           {t("notes.title", { defaultValue: "Notes & whiteboard" })}
@@ -112,6 +154,44 @@ export default function NotesWhiteboardPanel({ open, onClose, initialTab, onCons
   );
 }
 
+
+/** Thin invisible drag handle on the panel's left edge. */
+function PanelResizer({ widthPx, onChange }: { widthPx: number; onChange: (w: number) => void }) {
+  const startRef = useRef<{ clientX: number; startWidth: number } | null>(null);
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    startRef.current = { clientX: e.clientX, startWidth: widthPx };
+  }
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!startRef.current) return;
+    // Dragging LEFT grows the panel (we're on the left edge); RIGHT shrinks.
+    const dx = startRef.current.clientX - e.clientX;
+    onChange(startRef.current.startWidth + dx);
+  }
+  function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (!startRef.current) return;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    startRef.current = null;
+  }
+
+  return (
+    <div
+      data-testid="notes-panel-resizer"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize panel"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      className="absolute top-0 left-0 h-full w-2 -ml-1 z-20 cursor-col-resize hover:bg-accent-500/30"
+    />
+  );
+}
+
+
 function NotesTab({ room, roomName }: { room: ReturnType<typeof useRoomContext>; roomName: string }) {
   const { t } = useTranslation();
   const [text, setText] = useState("");
@@ -134,7 +214,6 @@ function NotesTab({ room, roomName }: { room: ReturnType<typeof useRoomContext>;
     };
   }, [roomName]);
 
-  // Listen for refetch hints from peers.
   useEffect(() => {
     const onData = (
       _payload: Uint8Array,
@@ -157,7 +236,6 @@ function NotesTab({ room, roomName }: { room: ReturnType<typeof useRoomContext>;
     };
   }, [room, roomName]);
 
-  // Debounced save on local edits.
   useEffect(() => {
     if (!loaded) return;
     if (skipNextLocalSave.current) {
@@ -167,7 +245,6 @@ function NotesTab({ room, roomName }: { room: ReturnType<typeof useRoomContext>;
     const id = window.setTimeout(async () => {
       try {
         await api.putNotes(roomName, text);
-        // Signal peers to refetch.
         await room.localParticipant.publishData(TEXT_ENC.encode("ping"), {
           reliable: true,
           topic: NOTES_TOPIC,
@@ -179,11 +256,47 @@ function NotesTab({ room, roomName }: { room: ReturnType<typeof useRoomContext>;
     return () => window.clearTimeout(id);
   }, [text, loaded, roomName, room]);
 
+  function exportPdf() {
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    const margin = 48;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const lines = doc.splitTextToSize(text || t("notes.placeholder", { defaultValue: "(empty)" }), pageWidth - 2 * margin);
+    let y = margin;
+    doc.setFontSize(14);
+    doc.text(t("notes.tabNotes", { defaultValue: "Notes" }), margin, y);
+    y += 24;
+    doc.setFontSize(11);
+    for (const line of lines as string[]) {
+      if (y > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.text(line, margin, y);
+      y += 14;
+    }
+    doc.save(`notes-${roomName}.pdf`);
+  }
+
   return (
     <div className="h-full p-3 flex flex-col gap-2">
-      <p className="text-xs text-slate-400">
-        {t("notes.hint", { defaultValue: "Everyone in the room can edit. Saved automatically." })}
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-slate-400">
+          {t("notes.hint", { defaultValue: "Everyone in the room can edit. Saved automatically." })}
+        </p>
+        <button
+          type="button"
+          onClick={exportPdf}
+          data-testid="notes-export-pdf"
+          title={t("notes.exportPdf", { defaultValue: "Export notes as PDF" })}
+          aria-label={t("notes.exportPdf", { defaultValue: "Export notes as PDF" })}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-primary-800 hover:bg-primary-700 text-xs text-slate-200"
+        >
+          <Download size={12} /> PDF
+        </button>
+      </div>
       <textarea
         data-testid="notes-textarea"
         value={text}
@@ -195,93 +308,218 @@ function NotesTab({ room, roomName }: { room: ReturnType<typeof useRoomContext>;
   );
 }
 
+
+// ─── Whiteboard ───────────────────────────────────────────────────────
+
+
+type Tool = "pen" | "rect" | "ellipse" | "text" | "select";
+
+interface Stroke {
+  points: Array<{ x: number; y: number }>;
+  color: string;
+  width: number;
+}
+
+interface Preview {
+  kind: "rect" | "ellipse";
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+}
+
+/** Resize handle size in CSS pixels. */
+const HANDLE_PX = 12;
+
+function newId(): string {
+  // Good-enough ULID-ish id. The backend regex accepts letters / digits /
+  // hyphens / dots / colons; UUID v4 fits comfortably.
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `s-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+}
+
+
 function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext>; roomName: string }) {
   const { t } = useTranslation();
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const drawingRef = useRef<{ active: boolean; points: Array<{ x: number; y: number }> }>({
-    active: false,
-    points: [],
-  });
-  const sizeRef = useRef<{ w: number; h: number }>({ w: 1, h: 1 });
-  // Every committed stroke (in order). Kept in memory so we can redraw the
-  // entire board on canvas resize and so late-tab-openers see the full
-  // history. Initialised from the server when the component mounts.
-  const strokesRef = useRef<Array<{ points: Array<{ x: number; y: number }>; color: string; width: number }>>([]);
+
+  const [tool, setTool] = useState<Tool>("pen");
   const [color, setColor] = useState("#fbbf24");
-  const [stroke, setStroke] = useState(3);
+  const [strokeWidth, setStrokeWidth] = useState(3);
+
+  // Authoritative in-memory state. Refs so the pointer handlers (defined
+  // once per render) can read latest values without going through React.
+  const strokesRef = useRef<Stroke[]>([]);
+  const shapesRef = useRef<Map<string, WhiteboardShapeDTO>>(new Map());
+  // Insertion order for z-ordering; Maps preserve insertion order natively.
+  const sizeRef = useRef<{ wPx: number; hPx: number; cssW: number; cssH: number }>({ wPx: 1, hPx: 1, cssW: 1, cssH: 1 });
+
+  // Transient state for in-progress operations.
+  const drawingRef = useRef<{ active: boolean; points: Array<{ x: number; y: number }> }>({ active: false, points: [] });
+  const previewRef = useRef<Preview | null>(null);
+  const dragRef = useRef<
+    | null
+    | {
+        mode: "move" | "resize";
+        shapeId: string;
+        startPtr: { x: number; y: number };
+        original: WhiteboardShapeDTO;
+      }
+  >(null);
+
+  const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+  // editing → which text shape currently has focus in the overlay textarea.
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  // Trigger UI redraws for selection state changes.
+  const [, setTick] = useState(0);
+  const forceRedraw = useCallback(() => setTick((n) => (n + 1) | 0), []);
+
+  // ────── Drawing ────────────────────────────────────────────────────
 
   function getCtx(): CanvasRenderingContext2D | null {
-    const c = canvasRef.current;
-    if (!c) return null;
-    return c.getContext("2d");
+    return canvasRef.current?.getContext("2d") ?? null;
   }
 
-  function drawStroke(points: Array<{ x: number; y: number }>, color: string, w: number) {
-    const ctx = getCtx();
-    if (!ctx || points.length === 0) return;
-    const { w: cw, h: ch } = sizeRef.current;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = w;
+  function drawStroke(ctx: CanvasRenderingContext2D, s: Stroke) {
+    if (s.points.length === 0) return;
+    const { wPx, hPx } = sizeRef.current;
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = s.width;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
-    ctx.moveTo(points[0].x * cw, points[0].y * ch);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x * cw, points[i].y * ch);
+    ctx.moveTo(s.points[0].x * wPx, s.points[0].y * hPx);
+    for (let i = 1; i < s.points.length; i++) {
+      ctx.lineTo(s.points[i].x * wPx, s.points[i].y * hPx);
     }
     ctx.stroke();
   }
 
-  function clearBoard() {
-    const ctx = getCtx();
-    if (!ctx) return;
-    const { w, h } = sizeRef.current;
-    ctx.clearRect(0, 0, w, h);
-  }
-
-  /** Re-render the entire stroke history. Cheap unless the board is huge. */
-  function redrawAll() {
-    clearBoard();
-    for (const s of strokesRef.current) {
-      drawStroke(s.points, s.color, s.width);
+  function drawShape(ctx: CanvasRenderingContext2D, sh: WhiteboardShapeDTO) {
+    const { wPx, hPx } = sizeRef.current;
+    const px = sh.x * wPx;
+    const py = sh.y * hPx;
+    const pw = sh.w * wPx;
+    const ph = sh.h * hPx;
+    ctx.strokeStyle = sh.color;
+    ctx.lineWidth = sh.stroke_width;
+    if (sh.kind === "rect") {
+      ctx.strokeRect(px, py, pw, ph);
+    } else if (sh.kind === "ellipse") {
+      ctx.beginPath();
+      ctx.ellipse(px + pw / 2, py + ph / 2, Math.abs(pw / 2), Math.abs(ph / 2), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (sh.kind === "text") {
+      const fs = (sh.font_size ?? 20) * (hPx / 720);
+      ctx.fillStyle = sh.color;
+      ctx.font = `${Math.max(8, fs)}px system-ui, sans-serif`;
+      ctx.textBaseline = "top";
+      const lines = (sh.text ?? "").split("\n");
+      let y = py;
+      for (const line of lines) {
+        ctx.fillText(line, px, y);
+        y += fs * 1.2;
+      }
     }
   }
 
-  // On mount: fetch any strokes already drawn on this board by other
-  // participants (or earlier in this session) and replay them.
+  function drawSelection(ctx: CanvasRenderingContext2D) {
+    if (!selectedShapeId) return;
+    const sh = shapesRef.current.get(selectedShapeId);
+    if (!sh) return;
+    const { wPx, hPx } = sizeRef.current;
+    const px = sh.x * wPx;
+    const py = sh.y * hPx;
+    const pw = sh.w * wPx;
+    const ph = sh.h * hPx;
+    ctx.strokeStyle = "#60a5fa";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(px - 2, py - 2, pw + 4, ph + 4);
+    ctx.setLineDash([]);
+    // Bottom-right resize handle.
+    const handleSize = HANDLE_PX * (hPx / sizeRef.current.cssH);
+    ctx.fillStyle = "#60a5fa";
+    ctx.fillRect(px + pw - handleSize / 2, py + ph - handleSize / 2, handleSize, handleSize);
+  }
+
+  function drawPreview(ctx: CanvasRenderingContext2D) {
+    const p = previewRef.current;
+    if (!p) return;
+    const { wPx, hPx } = sizeRef.current;
+    const x = Math.min(p.start.x, p.end.x) * wPx;
+    const y = Math.min(p.start.y, p.end.y) * hPx;
+    const w = Math.abs(p.end.x - p.start.x) * wPx;
+    const h = Math.abs(p.end.y - p.start.y) * hPx;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+    ctx.setLineDash([4, 3]);
+    if (p.kind === "rect") {
+      ctx.strokeRect(x, y, w, h);
+    } else {
+      ctx.beginPath();
+      ctx.ellipse(x + w / 2, y + h / 2, Math.abs(w / 2), Math.abs(h / 2), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  function redrawAll() {
+    const ctx = getCtx();
+    if (!ctx) return;
+    const { wPx, hPx } = sizeRef.current;
+    ctx.clearRect(0, 0, wPx, hPx);
+    for (const s of strokesRef.current) drawStroke(ctx, s);
+    for (const sh of shapesRef.current.values()) {
+      // The text shape being edited is rendered as a positioned <textarea>
+      // overlay, so skip it on the canvas to avoid double-render.
+      if (editingTextId && sh.id === editingTextId) continue;
+      drawShape(ctx, sh);
+    }
+    drawPreview(ctx);
+    drawSelection(ctx);
+  }
+
+  // Re-render the canvas whenever the selection / edit state changes,
+  // because both `drawSelection` and the skip-while-editing check above
+  // read those values via closure and otherwise wouldn't refresh.
+  useEffect(() => {
+    redrawAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedShapeId, editingTextId]);
+
+  // ────── Mount: fetch persisted strokes + shapes ────────────────────
+
   useEffect(() => {
     let cancelled = false;
-    api
-      .getWhiteboardStrokes(roomName)
-      .then((packets) => {
+    Promise.all([api.getWhiteboardStrokes(roomName), api.listWhiteboardShapes(roomName)])
+      .then(([packets, shapes]) => {
         if (cancelled) return;
-        const strokes: typeof strokesRef.current = [];
+        const sts: Stroke[] = [];
         for (const p of packets) {
           const o = p as unknown as BoardPacket;
           if (o?.v !== 1) continue;
           if (o.type === "clear") {
-            strokes.length = 0;
+            sts.length = 0;
           } else if (o.type === "stroke" && o.points) {
-            strokes.push({
-              points: o.points,
-              color: o.color || "#fff",
-              width: o.width || 3,
-            });
+            sts.push({ points: o.points, color: o.color || "#fff", width: o.width || 3 });
           }
         }
-        strokesRef.current = strokes;
+        strokesRef.current = sts;
+        const m = new Map<string, WhiteboardShapeDTO>();
+        for (const sh of shapes) m.set(sh.id, sh);
+        shapesRef.current = m;
         redrawAll();
       })
-      .catch(() => {
-        /* no history yet — fresh board */
-      });
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
   }, [roomName]);
 
-  // Subscribe to remote strokes. Append to the in-memory history AND draw
-  // the new stroke incrementally, so a redraw-on-resize keeps it.
+  // ────── Remote updates over the data channel ───────────────────────
+
   useEffect(() => {
     const onData = (
       payload: Uint8Array,
@@ -294,16 +532,22 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
         const obj = JSON.parse(TEXT_DEC.decode(payload)) as BoardPacket;
         if (obj?.v !== 1) return;
         if (obj.type === "stroke" && obj.points) {
-          const s = {
-            points: obj.points,
-            color: obj.color || "#fff",
-            width: obj.width || 3,
-          };
-          strokesRef.current.push(s);
-          drawStroke(s.points, s.color, s.width);
+          strokesRef.current.push({ points: obj.points, color: obj.color || "#fff", width: obj.width || 3 });
+          redrawAll();
         } else if (obj.type === "clear") {
           strokesRef.current = [];
-          clearBoard();
+          shapesRef.current.clear();
+          setSelectedShapeId(null);
+          setEditingTextId(null);
+          redrawAll();
+        } else if (obj.type === "shape") {
+          shapesRef.current.set(obj.shape.id, obj.shape);
+          redrawAll();
+        } else if (obj.type === "shape-delete") {
+          shapesRef.current.delete(obj.id);
+          if (selectedShapeId === obj.id) setSelectedShapeId(null);
+          if (editingTextId === obj.id) setEditingTextId(null);
+          redrawAll();
         }
       } catch {
         /* ignore malformed */
@@ -313,11 +557,10 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
     return () => {
       room.off(RoomEvent.DataReceived, onData);
     };
-  }, [room]);
+  }, [room, selectedShapeId, editingTextId]);
 
-  // Resize handling — keep the canvas at its CSS size in actual pixels so
-  // the drawing isn't blurry on HiDPI. Replay all strokes after resize so
-  // the board doesn't visually wipe on a panel/window size change.
+  // ────── Resize the canvas to fit its CSS box at HiDPI ──────────────
+
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
@@ -326,7 +569,7 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
       const dpr = window.devicePixelRatio || 1;
       c.width = Math.max(1, Math.floor(rect.width * dpr));
       c.height = Math.max(1, Math.floor(rect.height * dpr));
-      sizeRef.current = { w: c.width, h: c.height };
+      sizeRef.current = { wPx: c.width, hPx: c.height, cssW: rect.width, cssH: rect.height };
       const ctx = c.getContext("2d");
       ctx?.setTransform(1, 0, 0, 1, 0, 0);
       redrawAll();
@@ -335,80 +578,315 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
     return () => ro.disconnect();
   }, []);
 
-  async function broadcast(packet: BoardPacket) {
-    // Persist to the server first so late joiners can replay it; the data
-    // channel is best-effort for live peers.
+  // ────── Broadcast helper ───────────────────────────────────────────
+
+  async function broadcastPacket(packet: BoardPacket) {
+    // Persist first so late joiners replay; data channel is best-effort.
     try {
-      if (packet.type === "clear") {
-        await api.clearWhiteboardStrokes(roomName);
-      } else {
+      if (packet.type === "stroke") {
         await api.postWhiteboardStroke(roomName, packet as unknown as Record<string, unknown>);
+      } else if (packet.type === "clear") {
+        await api.clearWhiteboardStrokes(roomName);
+      } else if (packet.type === "shape") {
+        await api.upsertWhiteboardShape(roomName, packet.shape);
+      } else if (packet.type === "shape-delete") {
+        await api.deleteWhiteboardShape(roomName, packet.id);
       }
     } catch {
-      /* persistence failed — peer broadcast will still happen so live users
-         see it, but late joiners won't get this stroke. */
+      /* persistence failure leaves the live broadcast intact */
     }
     try {
-      await room.localParticipant.publishData(TEXT_ENC.encode(JSON.stringify(packet)), {
-        reliable: true,
-        topic: BOARD_TOPIC,
-      });
+      await room.localParticipant.publishData(
+        TEXT_ENC.encode(JSON.stringify(packet)),
+        { reliable: true, topic: BOARD_TOPIC },
+      );
     } catch {
       /* ignore */
     }
   }
 
-  function toNormalised(e: React.PointerEvent<HTMLCanvasElement>) {
-    const c = canvasRef.current!;
-    const rect = c.getBoundingClientRect();
+  // ────── Hit testing ────────────────────────────────────────────────
+
+  function pointToNormalised(e: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } {
+    const rect = canvasRef.current!.getBoundingClientRect();
     return {
       x: (e.clientX - rect.left) / rect.width,
       y: (e.clientY - rect.top) / rect.height,
     };
   }
 
-  function onDown(e: React.PointerEvent<HTMLCanvasElement>) {
-    drawingRef.current = { active: true, points: [toNormalised(e)] };
-    (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
-  }
-  function onMove(e: React.PointerEvent<HTMLCanvasElement>) {
-    if (!drawingRef.current.active) return;
-    const p = toNormalised(e);
-    const pts = drawingRef.current.points;
-    pts.push(p);
-    drawStroke(pts.slice(-2), color, stroke);
-  }
-  async function onUp(_e: React.PointerEvent<HTMLCanvasElement>) {
-    if (!drawingRef.current.active) return;
-    drawingRef.current.active = false;
-    if (drawingRef.current.points.length > 1) {
-      const pts = drawingRef.current.points;
-      // LiveKit doesn't echo a participant's own `publishData` back to
-      // them, so we append to the local history ourselves — otherwise the
-      // stroke would vanish on the next canvas resize / redraw.
-      strokesRef.current.push({ points: pts, color, width: stroke });
-      await broadcast({
-        v: 1,
-        type: "stroke",
-        points: pts,
-        color,
-        width: stroke,
-      });
+  function hitTestShape(nx: number, ny: number): WhiteboardShapeDTO | null {
+    // Iterate in reverse insertion order so the topmost shape wins.
+    const arr = [...shapesRef.current.values()];
+    for (let i = arr.length - 1; i >= 0; i--) {
+      const sh = arr[i];
+      if (nx >= sh.x && nx <= sh.x + sh.w && ny >= sh.y && ny <= sh.y + sh.h) {
+        return sh;
+      }
     }
-    drawingRef.current.points = [];
+    return null;
+  }
+
+  function hitTestHandle(sh: WhiteboardShapeDTO, nx: number, ny: number): boolean {
+    const { cssW, cssH } = sizeRef.current;
+    const handleX = sh.x + sh.w;
+    const handleY = sh.y + sh.h;
+    const halfNX = HANDLE_PX / cssW;
+    const halfNY = HANDLE_PX / cssH;
+    return nx >= handleX - halfNX && nx <= handleX + halfNX && ny >= handleY - halfNY && ny <= handleY + halfNY;
+  }
+
+  // ────── Pointer dispatch ───────────────────────────────────────────
+
+  async function onDown(e: React.PointerEvent<HTMLCanvasElement>) {
+    const target = e.target as HTMLCanvasElement;
+    target.setPointerCapture(e.pointerId);
+    const p = pointToNormalised(e);
+
+    if (tool === "pen") {
+      drawingRef.current = { active: true, points: [p] };
+      return;
+    }
+
+    if (tool === "rect" || tool === "ellipse") {
+      previewRef.current = { kind: tool, start: p, end: p };
+      redrawAll();
+      return;
+    }
+
+    if (tool === "text") {
+      // Default text-box size: 200×60 CSS px → normalise.
+      const { cssW, cssH } = sizeRef.current;
+      const w = Math.min(0.6, 200 / cssW);
+      const h = Math.min(0.4, 60 / cssH);
+      const shape: WhiteboardShapeDTO = {
+        id: newId(),
+        kind: "text",
+        x: Math.max(0, Math.min(1 - w, p.x)),
+        y: Math.max(0, Math.min(1 - h, p.y)),
+        w,
+        h,
+        color,
+        stroke_width: strokeWidth,
+        text: "",
+        font_size: 22,
+      };
+      shapesRef.current.set(shape.id, shape);
+      setSelectedShapeId(shape.id);
+      setEditingTextId(shape.id);
+      await broadcastPacket({ v: 1, type: "shape", shape });
+      redrawAll();
+      return;
+    }
+
+    if (tool === "select") {
+      // Resize handle on the currently-selected shape takes priority.
+      if (selectedShapeId) {
+        const sel = shapesRef.current.get(selectedShapeId);
+        if (sel && hitTestHandle(sel, p.x, p.y)) {
+          dragRef.current = {
+            mode: "resize",
+            shapeId: sel.id,
+            startPtr: p,
+            original: { ...sel },
+          };
+          return;
+        }
+      }
+      const hit = hitTestShape(p.x, p.y);
+      if (hit) {
+        setSelectedShapeId(hit.id);
+        dragRef.current = {
+          mode: "move",
+          shapeId: hit.id,
+          startPtr: p,
+          original: { ...hit },
+        };
+        redrawAll();
+      } else {
+        setSelectedShapeId(null);
+        setEditingTextId(null);
+        redrawAll();
+      }
+      return;
+    }
+  }
+
+  function onMove(e: React.PointerEvent<HTMLCanvasElement>) {
+    const p = pointToNormalised(e);
+
+    if (tool === "pen") {
+      if (!drawingRef.current.active) return;
+      const ctx = getCtx();
+      if (!ctx) return;
+      const pts = drawingRef.current.points;
+      pts.push(p);
+      // Incremental draw of just the new segment.
+      drawStroke(ctx, { points: pts.slice(-2), color, width: strokeWidth });
+      return;
+    }
+
+    if (tool === "rect" || tool === "ellipse") {
+      if (!previewRef.current) return;
+      previewRef.current = { ...previewRef.current, end: p };
+      redrawAll();
+      return;
+    }
+
+    if (tool === "select" && dragRef.current) {
+      const drag = dragRef.current;
+      const sh = shapesRef.current.get(drag.shapeId);
+      if (!sh) return;
+      if (drag.mode === "move") {
+        const dx = p.x - drag.startPtr.x;
+        const dy = p.y - drag.startPtr.y;
+        sh.x = Math.max(0, Math.min(1 - sh.w, drag.original.x + dx));
+        sh.y = Math.max(0, Math.min(1 - sh.h, drag.original.y + dy));
+      } else {
+        const nw = Math.max(0.02, p.x - drag.original.x);
+        const nh = Math.max(0.02, p.y - drag.original.y);
+        sh.w = Math.min(1 - drag.original.x, nw);
+        sh.h = Math.min(1 - drag.original.y, nh);
+      }
+      shapesRef.current.set(sh.id, sh);
+      redrawAll();
+      return;
+    }
+  }
+
+  async function onUp(e: React.PointerEvent<HTMLCanvasElement>) {
+    (e.target as HTMLCanvasElement).releasePointerCapture?.(e.pointerId);
+
+    if (tool === "pen") {
+      if (!drawingRef.current.active) return;
+      drawingRef.current.active = false;
+      const pts = drawingRef.current.points;
+      if (pts.length > 1) {
+        strokesRef.current.push({ points: pts, color, width: strokeWidth });
+        await broadcastPacket({ v: 1, type: "stroke", points: pts, color, width: strokeWidth });
+      }
+      drawingRef.current.points = [];
+      return;
+    }
+
+    if (tool === "rect" || tool === "ellipse") {
+      const p = previewRef.current;
+      previewRef.current = null;
+      if (!p) return;
+      const x = Math.min(p.start.x, p.end.x);
+      const y = Math.min(p.start.y, p.end.y);
+      const w = Math.abs(p.end.x - p.start.x);
+      const h = Math.abs(p.end.y - p.start.y);
+      // Ignore tiny accidental drags (< ~2 % of canvas).
+      if (w < 0.02 || h < 0.02) {
+        redrawAll();
+        return;
+      }
+      const shape: WhiteboardShapeDTO = {
+        id: newId(),
+        kind: tool,
+        x, y, w, h,
+        color,
+        stroke_width: strokeWidth,
+        text: null,
+        font_size: null,
+      };
+      shapesRef.current.set(shape.id, shape);
+      setSelectedShapeId(shape.id);
+      await broadcastPacket({ v: 1, type: "shape", shape });
+      redrawAll();
+      return;
+    }
+
+    if (tool === "select" && dragRef.current) {
+      const drag = dragRef.current;
+      dragRef.current = null;
+      const sh = shapesRef.current.get(drag.shapeId);
+      if (sh) {
+        await broadcastPacket({ v: 1, type: "shape", shape: { ...sh } });
+      }
+      return;
+    }
+  }
+
+  function onDoubleClick(e: React.MouseEvent<HTMLCanvasElement>) {
+    if (tool !== "select") return;
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width;
+    const ny = (e.clientY - rect.top) / rect.height;
+    const hit = hitTestShape(nx, ny);
+    if (hit && hit.kind === "text") {
+      setSelectedShapeId(hit.id);
+      setEditingTextId(hit.id);
+    }
   }
 
   async function clear() {
     strokesRef.current = [];
-    clearBoard();
-    await broadcast({ v: 1, type: "clear" });
+    shapesRef.current.clear();
+    setSelectedShapeId(null);
+    setEditingTextId(null);
+    redrawAll();
+    await broadcastPacket({ v: 1, type: "clear" });
+  }
+
+  async function deleteSelected() {
+    if (!selectedShapeId) return;
+    const id = selectedShapeId;
+    shapesRef.current.delete(id);
+    setSelectedShapeId(null);
+    if (editingTextId === id) setEditingTextId(null);
+    redrawAll();
+    await broadcastPacket({ v: 1, type: "shape-delete", id });
+  }
+
+  function exportPdf() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    // Fit-image-to-page preserving aspect ratio.
+    const imgAspect = canvas.width / canvas.height;
+    let renderW = pageW - 32;
+    let renderH = renderW / imgAspect;
+    if (renderH > pageH - 32) {
+      renderH = pageH - 32;
+      renderW = renderH * imgAspect;
+    }
+    const x = (pageW - renderW) / 2;
+    const y = (pageH - renderH) / 2;
+    doc.addImage(dataUrl, "PNG", x, y, renderW, renderH);
+    doc.save(`whiteboard-${roomName}.pdf`);
+  }
+
+  // Commit a text shape's text content from the overlay textarea.
+  async function commitTextEdit(id: string, value: string) {
+    const sh = shapesRef.current.get(id);
+    if (!sh) return;
+    sh.text = value;
+    shapesRef.current.set(id, sh);
+    redrawAll();
+    await broadcastPacket({ v: 1, type: "shape", shape: { ...sh } });
   }
 
   const palette = ["#fbbf24", "#ef4444", "#22c55e", "#38bdf8", "#a855f7", "#ffffff"];
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-primary-700">
+      <div className="flex items-center gap-1.5 px-2 py-2 border-b border-primary-700 flex-wrap">
+        <ToolBtn icon={<PenTool size={14} />} label={t("notes.toolPen", { defaultValue: "Pen" })}
+          active={tool === "pen"} onClick={() => setTool("pen")} />
+        <ToolBtn icon={<SquareIcon size={14} />} label={t("notes.toolRect", { defaultValue: "Rectangle" })}
+          active={tool === "rect"} onClick={() => setTool("rect")} />
+        <ToolBtn icon={<CircleIcon size={14} />} label={t("notes.toolEllipse", { defaultValue: "Ellipse" })}
+          active={tool === "ellipse"} onClick={() => setTool("ellipse")} />
+        <ToolBtn icon={<Type size={14} />} label={t("notes.toolText", { defaultValue: "Text" })}
+          active={tool === "text"} onClick={() => setTool("text")} />
+        <ToolBtn icon={<MousePointer2 size={14} />} label={t("notes.toolSelect", { defaultValue: "Select" })}
+          active={tool === "select"} onClick={() => setTool("select")} />
+        <span className="w-px h-5 bg-primary-700 mx-1" aria-hidden />
         {palette.map((c) => (
           <button
             key={c}
@@ -417,7 +895,7 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
             aria-label={t("notes.color", { defaultValue: "Color" })}
             aria-pressed={color === c ? "true" : "false"}
             className={[
-              "w-6 h-6 rounded-full border-2",
+              "w-6 h-6 rounded-full border-2 flex-shrink-0",
               color === c ? "border-slate-100 scale-110" : "border-transparent",
             ].join(" ")}
             style={{ backgroundColor: c }}
@@ -427,11 +905,31 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
           type="range"
           min={1}
           max={10}
-          value={stroke}
-          onChange={(e) => setStroke(parseInt(e.target.value, 10))}
-          className="ml-2 flex-1"
+          value={strokeWidth}
+          onChange={(e) => setStrokeWidth(parseInt(e.target.value, 10))}
+          className="ml-1 flex-1 min-w-[60px]"
           aria-label={t("notes.thickness", { defaultValue: "Stroke thickness" })}
         />
+        {selectedShapeId && (
+          <button
+            type="button"
+            onClick={() => void deleteSelected()}
+            title={t("notes.deleteShape", { defaultValue: "Delete selected" })}
+            aria-label={t("notes.deleteShape", { defaultValue: "Delete selected" })}
+            className="p-1.5 rounded hover:bg-red-700/30 text-red-300"
+          >
+            <X size={14} />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={exportPdf}
+          title={t("notes.exportPdf", { defaultValue: "Export as PDF" })}
+          aria-label={t("notes.exportPdf", { defaultValue: "Export as PDF" })}
+          className="p-1.5 rounded hover:bg-primary-800 text-slate-300"
+        >
+          <Download size={14} />
+        </button>
         <button
           type="button"
           onClick={() => void clear()}
@@ -439,18 +937,111 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
           aria-label={t("notes.clear", { defaultValue: "Clear board" })}
           className="p-1.5 rounded hover:bg-primary-800 text-slate-300"
         >
-          <Eraser size={16} />
+          <Eraser size={14} />
         </button>
       </div>
-      <canvas
-        ref={canvasRef}
-        data-testid="whiteboard-canvas"
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={onUp}
-        onPointerCancel={onUp}
-        className="flex-1 w-full touch-none bg-primary-950 cursor-crosshair"
-      />
+      <div ref={stageRef} className="flex-1 relative">
+        <canvas
+          ref={canvasRef}
+          data-testid="whiteboard-canvas"
+          onPointerDown={(e) => void onDown(e)}
+          onPointerMove={onMove}
+          onPointerUp={(e) => void onUp(e)}
+          onPointerCancel={(e) => void onUp(e)}
+          onDoubleClick={onDoubleClick}
+          className={[
+            "absolute inset-0 w-full h-full touch-none bg-primary-950",
+            tool === "select" ? "cursor-default" : "cursor-crosshair",
+          ].join(" ")}
+        />
+        {editingTextId && (
+          <TextOverlay
+            shape={shapesRef.current.get(editingTextId)!}
+            cssSize={sizeRef.current}
+            onCommit={(v) => {
+              void commitTextEdit(editingTextId, v);
+              setEditingTextId(null);
+              forceRedraw();
+            }}
+            onCancel={() => setEditingTextId(null)}
+          />
+        )}
+      </div>
     </div>
+  );
+}
+
+
+function ToolBtn({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active ? "true" : "false"}
+      title={label}
+      aria-label={label}
+      className={[
+        "p-1.5 rounded text-slate-300 inline-flex items-center justify-center",
+        active ? "bg-accent-500 text-white" : "hover:bg-primary-800",
+      ].join(" ")}
+    >
+      {icon}
+    </button>
+  );
+}
+
+
+function TextOverlay({
+  shape,
+  cssSize,
+  onCommit,
+  onCancel,
+}: {
+  shape: WhiteboardShapeDTO;
+  cssSize: { cssW: number; cssH: number };
+  onCommit: (v: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(shape.text ?? "");
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+  const left = shape.x * cssSize.cssW;
+  const top = shape.y * cssSize.cssH;
+  const width = shape.w * cssSize.cssW;
+  const height = shape.h * cssSize.cssH;
+  return (
+    <textarea
+      ref={inputRef}
+      data-testid="whiteboard-text-overlay"
+      aria-label="Whiteboard text"
+      placeholder="Type text…"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => onCommit(value)}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onCancel();
+        } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          onCommit(value);
+        }
+      }}
+      style={{
+        position: "absolute",
+        left,
+        top,
+        width,
+        height,
+        color: shape.color,
+        fontSize: (shape.font_size ?? 20) * (cssSize.cssH / 720),
+        lineHeight: 1.2,
+        fontFamily: "system-ui, sans-serif",
+      }}
+      className="bg-transparent border border-accent-500 outline-none resize-none p-0 m-0"
+    />
   );
 }
