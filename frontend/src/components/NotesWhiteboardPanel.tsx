@@ -379,15 +379,6 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   // editing → which text shape currently has focus in the overlay textarea.
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
-  // Mirrored as a ref so synchronous redraws inside event handlers see the
-  // latest value before React processes the state update. Otherwise the
-  // canvas redraw inside `commitTextEdit` would still skip the text shape
-  // even though we just committed its text — leaving the text invisible
-  // until the next state-change effect runs.
-  const editingTextIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    editingTextIdRef.current = editingTextId;
-  }, [editingTextId]);
   // Trigger UI redraws for selection state changes.
   const [, setTick] = useState(0);
   const forceRedraw = useCallback(() => setTick((n) => (n + 1) | 0), []);
@@ -488,13 +479,12 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
     const { wPx, hPx } = sizeRef.current;
     ctx.clearRect(0, 0, wPx, hPx);
     for (const s of strokesRef.current) drawStroke(ctx, s);
-    const skipId = editingTextIdRef.current;
+    // ALWAYS draw every shape on the canvas, including the one currently
+    // being edited. The text overlay textarea (TextOverlay) has an opaque
+    // background so it cleanly covers the canvas text underneath while
+    // editing; when the textarea unmounts on blur, the canvas already has
+    // the latest committed text drawn — no race to handle.
     for (const sh of shapesRef.current.values()) {
-      // The text shape being edited is rendered as a positioned <textarea>
-      // overlay, so skip it on the canvas to avoid double-render. Read
-      // from the ref so commitTextEdit can clear it synchronously and
-      // have the very next redraw include the committed text.
-      if (skipId && sh.id === skipId) continue;
       drawShape(ctx, sh);
     }
     drawPreview(ctx);
@@ -915,11 +905,8 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
     if (!sh) return;
     sh.text = value;
     shapesRef.current.set(id, sh);
-    // Clear the "skip on canvas while editing" gate synchronously, BEFORE
-    // we redraw — otherwise the redraw still skips this shape and the
-    // freshly-typed text doesn't appear until the next render cycle (and
-    // sometimes not at all, depending on which effect fires first).
-    editingTextIdRef.current = null;
+    // Paint the text onto the canvas immediately. The textarea will
+    // unmount on blur and the user sees the canvas copy without any gap.
     redrawAll();
     await broadcastPacket({ v: 1, type: "shape", shape: { ...sh } });
   }
@@ -1123,7 +1110,12 @@ function TextOverlay({
         lineHeight: 1.2,
         fontFamily: "system-ui, sans-serif",
       }}
-      className="bg-transparent border border-accent-500 outline-none resize-none p-0 m-0"
+      // Opaque background so the textarea fully covers any canvas content
+      // underneath while editing. When the user blurs the textarea, it
+      // unmounts and the canvas already has the latest text drawn, so the
+      // transition is seamless and there's no race where the text could be
+      // briefly invisible.
+      className="bg-primary-950 border border-accent-500 outline-none resize-none p-0 m-0"
     />
   );
 }
