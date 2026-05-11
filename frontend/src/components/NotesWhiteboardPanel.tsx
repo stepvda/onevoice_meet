@@ -329,6 +329,13 @@ interface Preview {
 /** Resize handle size in CSS pixels. */
 const HANDLE_PX = 12;
 
+// The whiteboard has a FIXED CSS size so resizing the panel doesn't stretch
+// the drawings. When the panel is narrower than the canvas, the surrounding
+// container scrolls; wider, the canvas just shows with empty space to the
+// right / below.
+const BOARD_CSS_W = 1280;
+const BOARD_CSS_H = 720;
+
 function newId(): string {
   // Good-enough ULID-ish id. The backend regex accepts letters / digits /
   // hyphens / dots / colons; UUID v4 fits comfortably.
@@ -347,6 +354,7 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
   const [tool, setTool] = useState<Tool>("pen");
   const [color, setColor] = useState("#fbbf24");
   const [strokeWidth, setStrokeWidth] = useState(3);
+  const [fontSize, setFontSize] = useState(22);
 
   // Authoritative in-memory state. Refs so the pointer handlers (defined
   // once per render) can read latest values without going through React.
@@ -371,6 +379,15 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   // editing → which text shape currently has focus in the overlay textarea.
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  // Mirrored as a ref so synchronous redraws inside event handlers see the
+  // latest value before React processes the state update. Otherwise the
+  // canvas redraw inside `commitTextEdit` would still skip the text shape
+  // even though we just committed its text — leaving the text invisible
+  // until the next state-change effect runs.
+  const editingTextIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    editingTextIdRef.current = editingTextId;
+  }, [editingTextId]);
   // Trigger UI redraws for selection state changes.
   const [, setTick] = useState(0);
   const forceRedraw = useCallback(() => setTick((n) => (n + 1) | 0), []);
@@ -471,10 +488,13 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
     const { wPx, hPx } = sizeRef.current;
     ctx.clearRect(0, 0, wPx, hPx);
     for (const s of strokesRef.current) drawStroke(ctx, s);
+    const skipId = editingTextIdRef.current;
     for (const sh of shapesRef.current.values()) {
       // The text shape being edited is rendered as a positioned <textarea>
-      // overlay, so skip it on the canvas to avoid double-render.
-      if (editingTextId && sh.id === editingTextId) continue;
+      // overlay, so skip it on the canvas to avoid double-render. Read
+      // from the ref so commitTextEdit can clear it synchronously and
+      // have the very next redraw include the committed text.
+      if (skipId && sh.id === skipId) continue;
       drawShape(ctx, sh);
     }
     drawPreview(ctx);
@@ -488,6 +508,34 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
     redrawAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedShapeId, editingTextId]);
+
+  // When the user picks a text shape (via select tool or by creating one),
+  // sync the font-size input in the toolbar to that shape so they can see
+  // and tweak it without surprises.
+  useEffect(() => {
+    const id = editingTextId ?? selectedShapeId;
+    if (!id) return;
+    const sh = shapesRef.current.get(id);
+    if (sh && sh.kind === "text" && sh.font_size != null) {
+      setFontSize(sh.font_size);
+    }
+  }, [selectedShapeId, editingTextId]);
+
+  /** Update the font-size input. If a text shape is currently selected or
+   *  being edited, push the new size into that shape too. */
+  function changeFontSize(raw: number) {
+    const clamped = Math.max(10, Math.min(96, Number.isFinite(raw) ? raw : 22));
+    setFontSize(clamped);
+    const id = editingTextId ?? selectedShapeId;
+    if (!id) return;
+    const sh = shapesRef.current.get(id);
+    if (!sh || sh.kind !== "text") return;
+    sh.font_size = clamped;
+    shapesRef.current.set(id, sh);
+    redrawAll();
+    forceRedraw();
+    void broadcastPacket({ v: 1, type: "shape", shape: { ...sh } });
+  }
 
   // ────── Mount: fetch persisted strokes + shapes ────────────────────
 
@@ -669,7 +717,7 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
         color,
         stroke_width: strokeWidth,
         text: "",
-        font_size: 22,
+        font_size: fontSize,
       };
       shapesRef.current.set(shape.id, shape);
       setSelectedShapeId(shape.id);
@@ -867,6 +915,11 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
     if (!sh) return;
     sh.text = value;
     shapesRef.current.set(id, sh);
+    // Clear the "skip on canvas while editing" gate synchronously, BEFORE
+    // we redraw — otherwise the redraw still skips this shape and the
+    // freshly-typed text doesn't appear until the next render cycle (and
+    // sometimes not at all, depending on which effect fires first).
+    editingTextIdRef.current = null;
     redrawAll();
     await broadcastPacket({ v: 1, type: "shape", shape: { ...sh } });
   }
@@ -910,6 +963,24 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
           className="ml-1 flex-1 min-w-[60px]"
           aria-label={t("notes.thickness", { defaultValue: "Stroke thickness" })}
         />
+        {/* Font size for the text tool. When a text shape is selected it
+            also live-updates that shape's font size. */}
+        <label
+          className="inline-flex items-center gap-1 text-[10px] text-slate-400"
+          title={t("notes.fontSize", { defaultValue: "Text size" })}
+        >
+          <Type size={11} />
+          <input
+            type="number"
+            min={10}
+            max={96}
+            value={fontSize}
+            onChange={(e) => changeFontSize(parseInt(e.target.value || "22", 10))}
+            data-testid="whiteboard-font-size"
+            aria-label={t("notes.fontSize", { defaultValue: "Text size" })}
+            className="w-12 px-1 py-0.5 rounded bg-primary-800 text-slate-100 border border-primary-700 text-xs"
+          />
+        </label>
         {selectedShapeId && (
           <button
             type="button"
@@ -940,32 +1011,43 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
           <Eraser size={14} />
         </button>
       </div>
-      <div ref={stageRef} className="flex-1 relative">
-        <canvas
-          ref={canvasRef}
-          data-testid="whiteboard-canvas"
-          onPointerDown={(e) => void onDown(e)}
-          onPointerMove={onMove}
-          onPointerUp={(e) => void onUp(e)}
-          onPointerCancel={(e) => void onUp(e)}
-          onDoubleClick={onDoubleClick}
-          className={[
-            "absolute inset-0 w-full h-full touch-none bg-primary-950",
-            tool === "select" ? "cursor-default" : "cursor-crosshair",
-          ].join(" ")}
-        />
-        {editingTextId && (
-          <TextOverlay
-            shape={shapesRef.current.get(editingTextId)!}
-            cssSize={sizeRef.current}
-            onCommit={(v) => {
-              void commitTextEdit(editingTextId, v);
-              setEditingTextId(null);
-              forceRedraw();
-            }}
-            onCancel={() => setEditingTextId(null)}
+      {/* Scrollable viewport. The canvas inside has a FIXED CSS size so a
+          wider/narrower panel doesn't stretch the drawings; the viewport
+          scrolls when the panel is narrower than the board, and shows
+          empty space to the right when it's wider. */}
+      <div className="flex-1 overflow-auto bg-primary-900">
+        <div
+          ref={stageRef}
+          className="relative"
+          style={{ width: BOARD_CSS_W, height: BOARD_CSS_H }}
+        >
+          <canvas
+            ref={canvasRef}
+            data-testid="whiteboard-canvas"
+            onPointerDown={(e) => void onDown(e)}
+            onPointerMove={onMove}
+            onPointerUp={(e) => void onUp(e)}
+            onPointerCancel={(e) => void onUp(e)}
+            onDoubleClick={onDoubleClick}
+            className={[
+              "block touch-none bg-primary-950",
+              tool === "select" ? "cursor-default" : "cursor-crosshair",
+            ].join(" ")}
+            style={{ width: BOARD_CSS_W, height: BOARD_CSS_H }}
           />
-        )}
+          {editingTextId && (
+            <TextOverlay
+              shape={shapesRef.current.get(editingTextId)!}
+              cssSize={sizeRef.current}
+              onCommit={(v) => {
+                void commitTextEdit(editingTextId, v);
+                setEditingTextId(null);
+                forceRedraw();
+              }}
+              onCancel={() => setEditingTextId(null)}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
