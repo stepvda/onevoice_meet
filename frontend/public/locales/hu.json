@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Márkaimázs",
     "unsupportedImageType": "Nem támogatott képtípus: {{type}}; használj JPEG, PNG, WebP vagy GIF formátumot.",
     "imageTooLarge": "A kép mérete {{mb}} MB; a maximum 2 MB.",
-    "uploadFailed": "Találkozó létrehozva, de a márka feltöltése sikertelen: {{message}}"
+    "uploadFailed": "Találkozó létrehozva, de a márka feltöltése sikertelen: {{message}}",
+    "moderation": "Moderáció",
+    "moderationHint": "Az alapértékek a beállításaidból származnak. Értekezletenként felülírhatod őket.",
+    "requireNameOnJoin": "Kérje meg a résztvevőket, hogy adjanak meg egy nevet",
+    "autoMuteNewJoiners": "Új csatlakozók automatikus némítása",
+    "autoDisableCameraForNew": "Kamera letiltása az új csatlakozók számára",
+    "lockRoomAfterStart": "Zárd be a szobát, miután csatlakoztál",
+    "lockRoomAfterStartDesc": "Csatlakozás után új résztvevők nem léphetnek be.",
+    "allowParticipantScreenshare": "Engedélyezze a résztvevőknek a képernyőmegosztást",
+    "allowParticipantChat": "Engedélyezze a résztvevőknek, hogy írhassanak a chatbe",
+    "waitingRoomEnabled": "Váróterem",
+    "waitingRoomDesc": "Az új résztvevők addig várnak, amíg beengedi őket az értekezlet eszköztárából.",
+    "autoAdmitAuthenticated": "Bejelentkezett felhasználók automatikus beengedése (hamarosan)",
+    "autoAdmitAuthenticatedDesc": "A bejelentkezett one.witysk.org felhasználók számára a váróterem kihagyása. Még nincs érvényben — a névtelen csatlakozók mindig sorba állnak."
   },
   "discover": {
     "title": "Fedezze fel",
@@ -173,7 +186,12 @@
     "settings": "Beállítások",
     "settingsLabel": "Értekezlet beállításai",
     "topbarBrandingAlt": "Találkozó arculati kép",
-    "requestFailed": "A kérés sikertelen"
+    "requestFailed": "A kérés sikertelen",
+    "recordLayout": "Felvétel elrendezése",
+    "recordLayoutTitle": "Hogyan jelennek meg a résztvevők a felvételen",
+    "recordLayoutSpeaker": "Hangszóró",
+    "recordLayoutGrid": "Rács",
+    "recordLayoutSingle": "Egyetlen előadó"
   },
   "inMeetingSettings": {
     "title": "Beállítások",
@@ -223,7 +241,8 @@
     "themeDark": "Sötét",
     "themeLight": "Világos",
     "compact": "Kompakt UI",
-    "moreSettings": "További beállítások a teljes <1>Beállítások</1> oldalon találhatók."
+    "moreSettings": "További beállítások a teljes <1>Beállítások</1> oldalon találhatók.",
+    "rejoinNote": "A változtatások a következő csatlakozáskor lépnek érvénybe."
   },
   "recordingIndicator": {
     "label": "FELVÉTEL"
@@ -328,7 +347,8 @@
       "running": "fut",
       "failed": "Sikertelen",
       "deleted": "törölve"
-    }
+    },
+    "untitledMeeting": "Névtelen értekezlet"
   },
   "settings": {
     "title": "Beállítások",
@@ -886,5 +906,31 @@
       "colPath": "Elérési út",
       "colDetails": "Részletek"
     }
+  },
+  "captions": {
+    "unavailable": "Ezen a megbeszélésen az élő feliratok még nem érhetők el."
+  },
+  "ptt": {
+    "holdToTalk": "Tartsd lenyomva a {{key}} gombot a beszédhez",
+    "live": "Élő — felengedés némításhoz"
+  },
+  "pending": {
+    "title": "Váróterem",
+    "toolbarLabel": "Várakozás",
+    "toolbarTitle": "Emberek várnak a csatlakozásra",
+    "close": "Váróterem bezárása",
+    "empty": "Jelenleg senki sem várakozik.",
+    "admit": "Been",
+    "deny": "Elutasítás"
+  },
+  "hand": {
+    "raise": "Kéz felemelése",
+    "raised": "Kézfeltartás",
+    "lower": "Kéz leengedése",
+    "raiseTitle": "Emelje fel a kezét, hogy felhívja magára a figyelmet",
+    "lowerTitle": "Engedd le a kezed",
+    "tileBadge": "Kézfeltartás",
+    "lowerOther": "Emelje le ezt a résztvevő kezét",
+    "lowerName": "{{name}} kezének leengedése"
   }
 }

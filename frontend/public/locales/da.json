@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Branding-billede",
     "unsupportedImageType": "Billedtypen {{type}} understøttes ikke; brug JPEG, PNG, WebP eller GIF.",
     "imageTooLarge": "Billedet er {{mb}} MB; maks. er 2 MB.",
-    "uploadFailed": "Møde oprettet, men branding-upload mislykkedes: {{message}}"
+    "uploadFailed": "Møde oprettet, men branding-upload mislykkedes: {{message}}",
+    "moderation": "Moderation",
+    "moderationHint": "Standardindstillinger kommer fra dine Indstillinger. Du kan tilsidesætte dem pr. møde.",
+    "requireNameOnJoin": "Kræv, at deltagere indtaster et navn",
+    "autoMuteNewJoiners": "Slå lyden fra for nye deltagere automatisk",
+    "autoDisableCameraForNew": "Deaktiver kamera for nye deltagere",
+    "lockRoomAfterStart": "Lås rummet, når du er trådt ind",
+    "lockRoomAfterStartDesc": "Når du deltager, kan ingen nye deltagere komme ind.",
+    "allowParticipantScreenshare": "Tillad deltagere at dele deres skærm",
+    "allowParticipantChat": "Tillad deltagere at skrive i chatten",
+    "waitingRoomEnabled": "Venteværelse",
+    "waitingRoomDesc": "Nye deltagere venter, indtil du lukker dem ind fra mødeværktøjslinjen.",
+    "autoAdmitAuthenticated": "Auto-godkend brugere, der er logget ind (kommer snart)",
+    "autoAdmitAuthenticatedDesc": "Omgå venteværelset for loggede one.witysk.org-brugere. Endnu ikke håndhævet — anonyme deltagere stiller altid i kø."
   },
   "discover": {
     "title": "Opdag",
@@ -173,7 +186,12 @@
     "settings": "Indstillinger",
     "settingsLabel": "Mødeindstillinger",
     "topbarBrandingAlt": "Mødebrandingbillede",
-    "requestFailed": "Anmodningen mislykkedes"
+    "requestFailed": "Anmodningen mislykkedes",
+    "recordLayout": "Optagelseslayout",
+    "recordLayoutTitle": "Hvordan deltagere indrammes i optagelsen",
+    "recordLayoutSpeaker": "Højttaler",
+    "recordLayoutGrid": "Gitter",
+    "recordLayoutSingle": "Enkelt taler"
   },
   "inMeetingSettings": {
     "title": "Indstillinger",
@@ -223,7 +241,8 @@
     "themeDark": "Mørk",
     "themeLight": "Lys",
     "compact": "Kompakt brugergrænseflade",
-    "moreSettings": "Flere indstillinger findes på den fulde side <1>Indstillinger</1>."
+    "moreSettings": "Flere indstillinger findes på den fulde side <1>Indstillinger</1>.",
+    "rejoinNote": "Ændringerne træder i kraft næste gang du deltager i mødet."
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "Kører",
       "failed": "mislykkedes",
       "deleted": "slettet"
-    }
+    },
+    "untitledMeeting": "Unavngivet møde"
   },
   "settings": {
     "title": "Indstillinger",
@@ -886,5 +906,31 @@
       "colPath": "Sti",
       "colDetails": "Detaljer"
     }
+  },
+  "captions": {
+    "unavailable": "Undertekster er endnu ikke tilgængelige i dette møde."
+  },
+  "ptt": {
+    "holdToTalk": "Hold {{key}} for at tale",
+    "live": "Live — slip for at slå lyden fra"
+  },
+  "pending": {
+    "title": "Venteværelse",
+    "toolbarLabel": "Venter",
+    "toolbarTitle": "Personer, der venter på at deltage",
+    "close": "Luk venteværelset",
+    "empty": "Der er ingen, der venter lige nu.",
+    "admit": "Admitér",
+    "deny": "Afvis"
+  },
+  "hand": {
+    "raise": "Ræk hånden op",
+    "raised": "Hånden op",
+    "lower": "Sænk hånden",
+    "raiseTitle": "Ræk hånden op for at få opmærksomhed",
+    "lowerTitle": "Sænk hånden",
+    "tileBadge": "Hånden hævet",
+    "lowerOther": "Sænk denne deltagers hånd",
+    "lowerName": "Sænk {{name}}'s hånd"
   }
 }

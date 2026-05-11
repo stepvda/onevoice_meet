@@ -101,7 +101,20 @@
     "brandingFieldAlt": "תמונת מיתוג",
     "unsupportedImageType": "סוג תמונה לא נתמך {{type}}; השתמש ב-JPEG, PNG, WebP או GIF.",
     "imageTooLarge": "התמונה היא {{mb}} מגה-בייט; המקסימום הוא 2 מגה-בייט.",
-    "uploadFailed": "הפגישה נוצרה אך העלאת המיתוג נכשלה: {{message}}"
+    "uploadFailed": "הפגישה נוצרה אך העלאת המיתוג נכשלה: {{message}}",
+    "moderation": "ניהול תוכן",
+    "moderationHint": "ברירות המחדל מגיעות מההגדרות שלך. תוכל לשנות אותן לכל פגישה בנפרד.",
+    "requireNameOnJoin": "חייב את המשתתפים להזין שם",
+    "autoMuteNewJoiners": "השתקת משתתפים חדשים אוטומטית",
+    "autoDisableCameraForNew": "השבת מצלמה למצטרפים חדשים",
+    "lockRoomAfterStart": "נעל את החדר לאחר שהצטרפת",
+    "lockRoomAfterStartDesc": "לאחר שתצטרף, לא יוכלו משתתפים חדשים להיכנס.",
+    "allowParticipantScreenshare": "אפשר למשתתפים לשתף את המסך שלהם",
+    "allowParticipantChat": "אפשר למשתתפים לכתוב בצ'אט",
+    "waitingRoomEnabled": "חדר המתנה",
+    "waitingRoomDesc": "מצטרפים חדשים ממתינים עד שתאשרו אותם מסרגל הכלים של הפגישה.",
+    "autoAdmitAuthenticated": "אישור אוטומטי למשתמשים מחוברים (בקרוב)",
+    "autoAdmitAuthenticatedDesc": "דלג על חדר ההמתנה למשתמשים מחוברים של one.witysk.org. עדיין לא נאכף — מצטרפים אנונימיים תמיד ממתינים בתור."
   },
   "discover": {
     "title": "גלה",
@@ -173,7 +186,12 @@
     "settings": "הגדרות",
     "settingsLabel": "הגדרות בפגישה",
     "topbarBrandingAlt": "תמונת מיתוג לפגישה",
-    "requestFailed": "הבקשה נכשלה"
+    "requestFailed": "הבקשה נכשלה",
+    "recordLayout": "פריסת הקלטה",
+    "recordLayoutTitle": "כיצד המשתתפים ממוסגרים בהקלטה",
+    "recordLayoutSpeaker": "דובר",
+    "recordLayoutGrid": "רשת",
+    "recordLayoutSingle": "דובר יחיד"
   },
   "inMeetingSettings": {
     "title": "הגדרות",
@@ -223,7 +241,8 @@
     "themeDark": "כהה",
     "themeLight": "אור",
     "compact": "ממשק משתמש קומפקטי",
-    "moreSettings": "הגדרות נוספות זמינות בדף <1>ההגדרות</1> המלא."
+    "moreSettings": "הגדרות נוספות זמינות בדף <1>ההגדרות</1> המלא.",
+    "rejoinNote": "השינויים ייכנסו לתוקף בפעם הבאה שתצטרף לפגישה."
   },
   "recordingIndicator": {
     "label": "הקלט"
@@ -328,7 +347,8 @@
       "running": "פועל",
       "failed": "נכשל",
       "deleted": "נמחק"
-    }
+    },
+    "untitledMeeting": "פגישה ללא כותרת"
   },
   "settings": {
     "title": "הגדרות",
@@ -886,5 +906,31 @@
       "colPath": "נתיב",
       "colDetails": "פרטים"
     }
+  },
+  "captions": {
+    "unavailable": "כתוביות חיות עדיין לא זמינות בפגישה זו."
+  },
+  "ptt": {
+    "holdToTalk": "החזק {{key}} כדי לדבר",
+    "live": "שידור חי — שחרר כדי להשתיק"
+  },
+  "pending": {
+    "title": "חדר המתנה",
+    "toolbarLabel": "ממתין",
+    "toolbarTitle": "אנשים שממתינים להצטרף",
+    "close": "סגור חדר המתנה",
+    "empty": "אף אחד לא ממתין כרגע.",
+    "admit": "אשר",
+    "deny": "דחה"
+  },
+  "hand": {
+    "raise": "הרמת יד",
+    "raised": "יד הורמה",
+    "lower": "הורד יד",
+    "raiseTitle": "הרם יד כדי למשוך תשומת לב",
+    "lowerTitle": "הורד את היד",
+    "tileBadge": "יד הורמה",
+    "lowerOther": "הורד את היד של משתתף זה",
+    "lowerName": "הורד את היד של {{name}}"
   }
 }

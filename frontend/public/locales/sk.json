@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Obrázok značky",
     "unsupportedImageType": "Nepodporovaný typ obrázka {{type}}; použite JPEG, PNG, WebP alebo GIF.",
     "imageTooLarge": "Obrázok má {{mb}} MB; maximum je 2 MB.",
-    "uploadFailed": "Stretnutie vytvorené, ale nahranie brandingu zlyhalo: {{message}}"
+    "uploadFailed": "Stretnutie vytvorené, ale nahranie brandingu zlyhalo: {{message}}",
+    "moderation": "Moderácia",
+    "moderationHint": "Predvolené hodnoty pochádzajú z vašich nastavení. Môžete ich prepísať pre jednotlivé stretnutia.",
+    "requireNameOnJoin": "Vyžadovať od účastníkov zadanie mena",
+    "autoMuteNewJoiners": "Automaticky stlmiť nových účastníkov",
+    "autoDisableCameraForNew": "Zakázať kameru pre nových účastníkov",
+    "lockRoomAfterStart": "Zamknúť miestnosť po pripojení",
+    "lockRoomAfterStartDesc": "Po pripojení sa už noví účastníci nebudú môcť pripojiť.",
+    "allowParticipantScreenshare": "Povoliť účastníkom zdieľať svoju obrazovku",
+    "allowParticipantChat": "Povoliť účastníkom písať do chatu",
+    "waitingRoomEnabled": "Čakáreň",
+    "waitingRoomDesc": "Noví účastníci čakajú, kým ich pustíte z panela nástrojov stretnutia.",
+    "autoAdmitAuthenticated": "Automaticky pripúšťať prihlásených používateľov (čoskoro)",
+    "autoAdmitAuthenticatedDesc": "Obísť čakáreň pre prihlásených používateľov one.witysk.org. Zatiaľ nevynútené — anonymní účastníci vždy čakajú v rade."
   },
   "discover": {
     "title": "Objaviť",
@@ -173,7 +186,12 @@
     "settings": "Nastavenia",
     "settingsLabel": "Nastavenia počas stretnutia",
     "topbarBrandingAlt": "Obrázok brandingu stretnutia",
-    "requestFailed": "Požiadavka zlyhala"
+    "requestFailed": "Požiadavka zlyhala",
+    "recordLayout": "Rozloženie nahrávania",
+    "recordLayoutTitle": "Ako sú účastníci zarámovaní v nahrávke",
+    "recordLayoutSpeaker": "Rečník",
+    "recordLayoutGrid": "Mriežka",
+    "recordLayoutSingle": "Jeden rečník"
   },
   "inMeetingSettings": {
     "title": "Nastavenia",
@@ -223,7 +241,8 @@
     "themeDark": "Tmavý",
     "themeLight": "Svetlo",
     "compact": "Kompaktné rozhranie",
-    "moreSettings": "Ďalšie nastavenia nájdete na celej stránke <1>Nastavenia</1>."
+    "moreSettings": "Ďalšie nastavenia nájdete na celej stránke <1>Nastavenia</1>.",
+    "rejoinNote": "Zmeny sa prejavia pri najbližšom pripojení k stretnutiu."
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "Spustené",
       "failed": "zlyhalo",
       "deleted": "odstránené"
-    }
+    },
+    "untitledMeeting": "Nepomenované stretnutie"
   },
   "settings": {
     "title": "Nastavenia",
@@ -886,5 +906,31 @@
       "colPath": "Cesta",
       "colDetails": "Podrobnosti"
     }
+  },
+  "captions": {
+    "unavailable": "Titulky naživo nie sú na tomto stretnutí zatiaľ k dispozícii."
+  },
+  "ptt": {
+    "holdToTalk": "Podržte {{key}} pre hovorenie",
+    "live": "Naživo — uvoľnením stíšiť"
+  },
+  "pending": {
+    "title": "Čakáreň",
+    "toolbarLabel": "Čaká sa",
+    "toolbarTitle": "Ľudia čakajúci na pripojenie",
+    "close": "Zavrieť čakáreň",
+    "empty": "Nikto teraz nečaká.",
+    "admit": "Pripustiť",
+    "deny": "Odmietnuť"
+  },
+  "hand": {
+    "raise": "Zdvihnúť ruku",
+    "raised": "Zdvihnutá ruka",
+    "lower": "Zdvihnúť ruku",
+    "raiseTitle": "Zdvihnite ruku, aby ste upútali pozornosť",
+    "lowerTitle": "Spustite ruku",
+    "tileBadge": "Zdvihnutá ruka",
+    "lowerOther": "Zdvihnúť ruku tohto účastníka",
+    "lowerName": "Zdvihnúť ruku používateľa {{name}}"
   }
 }

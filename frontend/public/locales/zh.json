@@ -101,7 +101,20 @@
     "brandingFieldAlt": "品牌形象",
     "unsupportedImageType": "不支持的图片类型 {{type}}，请使用 JPEG、PNG、WebP 或 GIF 格式。",
     "imageTooLarge": "图片大小为 {{mb}} MB，最大为 2 MB。",
-    "uploadFailed": "会议已创建，但品牌上传失败：{{message}}"
+    "uploadFailed": "会议已创建，但品牌上传失败：{{message}}",
+    "moderation": "内容审核",
+    "moderationHint": "默认值来自您的设置。您可以为每个会议单独覆盖。",
+    "requireNameOnJoin": "要求参与者输入姓名",
+    "autoMuteNewJoiners": "自动静音新加入者",
+    "autoDisableCameraForNew": "新加入者禁用摄像头",
+    "lockRoomAfterStart": "加入房间后锁定房间",
+    "lockRoomAfterStartDesc": "你加入后，其他参与者将无法进入。",
+    "allowParticipantScreenshare": "允许参与者共享屏幕",
+    "allowParticipantChat": "允许参与者在聊天中发言",
+    "waitingRoomEnabled": "等候室",
+    "waitingRoomDesc": "新成员需等待您通过会议工具栏批准加入。",
+    "autoAdmitAuthenticated": "自动准入已登录用户（即将推出）",
+    "autoAdmitAuthenticatedDesc": "已登录 one.witysk.org 用户可跳过等候室。尚未强制执行——匿名加入者始终需排队。"
   },
   "discover": {
     "title": "发现",
@@ -173,7 +186,12 @@
     "settings": "设置",
     "settingsLabel": "会议中设置",
     "topbarBrandingAlt": "会议品牌形象",
-    "requestFailed": "请求失败"
+    "requestFailed": "请求失败",
+    "recordLayout": "录制布局",
+    "recordLayoutTitle": "录制中参与者的画面呈现方式",
+    "recordLayoutSpeaker": "发言者",
+    "recordLayoutGrid": "网格",
+    "recordLayoutSingle": "单一发言者"
   },
   "inMeetingSettings": {
     "title": "设置",
@@ -223,7 +241,8 @@
     "themeDark": "深色",
     "themeLight": "灯光",
     "compact": "紧凑界面",
-    "moreSettings": "更多设置位于完整的<1>设置</1>页面。"
+    "moreSettings": "更多设置位于完整的<1>设置</1>页面。",
+    "rejoinNote": "更改将在您下次加入会议时生效。"
   },
   "recordingIndicator": {
     "label": "录制"
@@ -328,7 +347,8 @@
       "running": "运行中",
       "failed": "失败",
       "deleted": "已删除"
-    }
+    },
+    "untitledMeeting": "未命名会议"
   },
   "settings": {
     "title": "设置",
@@ -886,5 +906,31 @@
       "colPath": "路径",
       "colDetails": "详细信息"
     }
+  },
+  "captions": {
+    "unavailable": "此会议暂不支持实时字幕。"
+  },
+  "ptt": {
+    "holdToTalk": "按住 {{key}} 说话",
+    "live": "直播 — 松开发声（按住静音）"
+  },
+  "pending": {
+    "title": "等候室",
+    "toolbarLabel": "等待中",
+    "toolbarTitle": "等待加入的人",
+    "close": "关闭等候室",
+    "empty": "当前无人等待。",
+    "admit": "允许",
+    "deny": "拒绝"
+  },
+  "hand": {
+    "raise": "举手",
+    "raised": "举手",
+    "lower": "放下手",
+    "raiseTitle": "举手引起注意",
+    "lowerTitle": "放下手",
+    "tileBadge": "举手",
+    "lowerOther": "降低该参与者的举手",
+    "lowerName": "放下 {{name}} 的手"
   }
 }

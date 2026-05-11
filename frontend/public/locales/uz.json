@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Brendlash rasmi",
     "unsupportedImageType": "Qo‘llab-quvvatlanmaydigan rasm turi {{type}}; JPEG, PNG, WebP yoki GIF dan foydalaning.",
     "imageTooLarge": "Rasm hajmi {{mb}} MB; maksimal 2 MB.",
-    "uploadFailed": "Uchrashuv yaratildi, ammo brend yuklash muvaffaqiyatsiz tugadi: {{message}}"
+    "uploadFailed": "Uchrashuv yaratildi, ammo brend yuklash muvaffaqiyatsiz tugadi: {{message}}",
+    "moderation": "Moderatsiya",
+    "moderationHint": "Standart sozlamalar Sozlamalar bo‘limingizdan olinadi. Ularni har bir uchrashuv uchun o‘zgartirishingiz mumkin.",
+    "requireNameOnJoin": "Ishtirokchilardan ism kiritishni talab qilish",
+    "autoMuteNewJoiners": "Yangi qo‘shilganlarni avtomatik ovozsiz qilish",
+    "autoDisableCameraForNew": "Yangi qo‘shiluvchilar uchun kamerani o‘chirish",
+    "lockRoomAfterStart": "Xonaga qo‘shilganingizdan so‘ng uni qulflang",
+    "lockRoomAfterStartDesc": "Siz qo‘shilganingizdan so‘ng, yangi ishtirokchilar kira olmaydi.",
+    "allowParticipantScreenshare": "Ishtirokchilarga ekranlarini ulashishga ruxsat berish",
+    "allowParticipantChat": "Chatda ishtirokchilarga xabar yozishga ruxsat berish",
+    "waitingRoomEnabled": "Kutish xonasi",
+    "waitingRoomDesc": "Yangi qatnashchilar siz ularni uchrashuv panelidan qabul qilguningizcha kutadi.",
+    "autoAdmitAuthenticated": "Tizimga kirgan foydalanuvchilarni avtomatik qabul qilish (tez orada)",
+    "autoAdmitAuthenticatedDesc": "Tizimga kirgan one.witysk.org foydalanuvchilari uchun kutish xonasini chetlab o‘tish. Hozircha qo‘llanilmayapti — anonim qo‘shiluvchilar har doim navbatda turadi."
   },
   "discover": {
     "title": "Kashf et",
@@ -173,7 +186,12 @@
     "settings": "Sozlamalar",
     "settingsLabel": "Sozlamalar (yig‘ilish vaqtida)",
     "topbarBrandingAlt": "Uchrashuv brendi tasviri",
-    "requestFailed": "So‘rov muvaffaqiyatsiz tugadi"
+    "requestFailed": "So‘rov muvaffaqiyatsiz tugadi",
+    "recordLayout": "Yozib olish tartibi",
+    "recordLayoutTitle": "Ishtirokchilar yozuvda qanday kadrlanadi",
+    "recordLayoutSpeaker": "Ma'ruzachi",
+    "recordLayoutGrid": "Katak",
+    "recordLayoutSingle": "Yagona so‘zlovchi"
   },
   "inMeetingSettings": {
     "title": "Sozlamalar",
@@ -223,7 +241,8 @@
     "themeDark": "Qorong‘i",
     "themeLight": "Yorug‘",
     "compact": "Yig‘ma interfeys",
-    "moreSettings": "Barcha sozlamalar to‘liq <1>Sozlamalar</1> sahifasida joylashgan."
+    "moreSettings": "Barcha sozlamalar to‘liq <1>Sozlamalar</1> sahifasida joylashgan.",
+    "rejoinNote": "O‘zgarishlar keyingi uchrashuvga qo‘shilganingizda kuchga kiradi."
   },
   "recordingIndicator": {
     "label": "Yozib olish"
@@ -328,7 +347,8 @@
       "running": "Ishlamoqda",
       "failed": "Muvaffaqiyatsiz",
       "deleted": "o‘chirildi"
-    }
+    },
+    "untitledMeeting": "Nomsiz uchrashuv"
   },
   "settings": {
     "title": "Sozlamalar",
@@ -886,5 +906,31 @@
       "colPath": "Yo‘l",
       "colDetails": "Tafsilotlar"
     }
+  },
+  "captions": {
+    "unavailable": "Bu uchrashuvda jonli taglavhalar hali mavjud emas."
+  },
+  "ptt": {
+    "holdToTalk": "Gapirish uchun {{key}} ni ushlab turing",
+    "live": "Jonli efir — ovozni oʻchirish uchun qoʻyib yuboring"
+  },
+  "pending": {
+    "title": "Kutish xonasi",
+    "toolbarLabel": "Kuting",
+    "toolbarTitle": "Qo‘shilishni kutayotganlar",
+    "close": "Kutish xonasini yopish",
+    "empty": "Hozircha hech kim kutmayapti.",
+    "admit": "Qabul qilish",
+    "deny": "Rad etish"
+  },
+  "hand": {
+    "raise": "Qo‘l ko‘tarish",
+    "raised": "Qo‘l ko‘tarildi",
+    "lower": "Qo‘lni tushirish",
+    "raiseTitle": "Qo'lingizni ko'taring, e'tibor qozonish uchun",
+    "lowerTitle": "Qo‘lingizni tushiring",
+    "tileBadge": "Qo‘l ko‘tarildi",
+    "lowerOther": "Bu ishtirokchining qo‘lini tushiring",
+    "lowerName": "{{name}}ning qo‘lini tushirish"
   }
 }

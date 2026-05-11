@@ -101,7 +101,20 @@
     "brandingFieldAlt": "የምርት ስም ምስል",
     "unsupportedImageType": "ያልተደገፈ የምስል አይነት {{type}}; JPEG፣ PNG፣ WebP ወይም GIF ተጠቀም።",
     "imageTooLarge": "ምስሉ {{mb}} ሜባ ነው፤ ከፍተኛው ደግሞ 2 ሜባ ነው።",
-    "uploadFailed": "ስብሰባ ተፈጥሯል ነገር ግን የምርት ስም መጫን አልተሳካም፦ {{message}}"
+    "uploadFailed": "ስብሰባ ተፈጥሯል ነገር ግን የምርት ስም መጫን አልተሳካም፦ {{message}}",
+    "moderation": "ማስተካከያ",
+    "moderationHint": "ቅጥያዎች ከእርስዎ ቅንብሮች ይመጣሉ። በእያንዳንዱ ስብሰባ ላይ እነሱን መቀየር ይችላሉ።",
+    "requireNameOnJoin": "ተሳታፊዎች ስም እንዲያስገቡ ያስፈልጋል",
+    "autoMuteNewJoiners": "አዲስ ተቀላቃዮችን በራስ-ሰር ድምጽ አጥፋ",
+    "autoDisableCameraForNew": "አዲስ ተቀላቃዮች ካሜራ እንዳይከፍቱ አጥፋ",
+    "lockRoomAfterStart": "ክፍሉን ከተቀላቀሉ በኋላ ይቆልፉት",
+    "lockRoomAfterStartDesc": "ከተቀላቀሉ በኋላ ሌላ ተሳታፊ መግባት አይችልም።",
+    "allowParticipantScreenshare": "ተሳታፊዎች ስክሪናቸውን እንዲያጋሩ ፍቀድ",
+    "allowParticipantChat": "ተሳታፊዎች በውይይት መልእክት እንዲልኩ ፍቀድ",
+    "waitingRoomEnabled": "የመጠበቂያ ክፍል",
+    "waitingRoomDesc": "አዲስ ተሳታፊዎች ከስብሰባ መሳሪያ አሞሌ እስክታስገቡዋቸው ድረስ ይጠብቃሉ።",
+    "autoAdmitAuthenticated": "በመለያ የገቡ ተጠቃሚዎችን በራስ-ሰር ማስገባት (በቅርቡ)",
+    "autoAdmitAuthenticatedDesc": "በመለያ የገቡ one.witysk.org ተጠቃሚዎች የጥበቃ ክፍሉን እንዲያልፉ ያድርጉ። ገና አልተተገበረም — ማንነታቸው ያልታወቁ ተሳታፊዎች ሁልጊዜ ወረፋ ይጠብቃሉ።"
   },
   "discover": {
     "title": "ያግኙ",
@@ -173,7 +186,12 @@
     "settings": "ቅንብሮች",
     "settingsLabel": "የስብሰባ ውስጥ ቅንብሮች",
     "topbarBrandingAlt": "የስብሰባ ምስል ብራንዲንግ",
-    "requestFailed": "ጥያቄው አልተሳካም"
+    "requestFailed": "ጥያቄው አልተሳካም",
+    "recordLayout": "የቀረጻ አቀማመጥ",
+    "recordLayoutTitle": "በቀረጻው ውስጥ ተሳታፊዎች እንዴት እንደሚቀረጹ",
+    "recordLayoutSpeaker": "ተናጋሪ",
+    "recordLayoutGrid": "ግሪድ",
+    "recordLayoutSingle": "ነጠላ ተናጋሪ"
   },
   "inMeetingSettings": {
     "title": "ቅንብሮች",
@@ -223,7 +241,8 @@
     "themeDark": "ጨለማ",
     "themeLight": "ብርሃን",
     "compact": "ተጣጣሚ ዩአይ",
-    "moreSettings": "ተጨማሪ ቅንብሮች በሙሉ <1>ቅንብሮች</1> ገፅ ላይ ይገኛሉ።"
+    "moreSettings": "ተጨማሪ ቅንብሮች በሙሉ <1>ቅንብሮች</1> ገፅ ላይ ይገኛሉ።",
+    "rejoinNote": "ለውጦቹ በሚቀጥለው ጊዜ ስብሰባውን ሲቀላቀሉ ተግባራዊ ይሆናሉ።"
   },
   "recordingIndicator": {
     "label": "ሪከርድ"
@@ -328,7 +347,8 @@
       "running": "በመስራት ላይ",
       "failed": "አልተሳካም",
       "deleted": "ተሰርዟል"
-    }
+    },
+    "untitledMeeting": "ርዕስ የሌለው ስብሰባ"
   },
   "settings": {
     "title": "ቅንብሮች",
@@ -886,5 +906,31 @@
       "colPath": "መንገድ",
       "colDetails": "ዝርዝሮች"
     }
+  },
+  "captions": {
+    "unavailable": "የቀጥታ መግለጫዎች በዚህ ስብሰባ ላይ እስካሁን አይገኙም።"
+  },
+  "ptt": {
+    "holdToTalk": "{{key}}ን ተጭነው ያዙ ለማውራት",
+    "live": "ቀጥታ ስርጭት — ዝም ለማሰኘት ይልቀቁ"
+  },
+  "pending": {
+    "title": "የመጠበቂያ ክፍል",
+    "toolbarLabel": "እየጠበቀ ነው",
+    "toolbarTitle": "መግባት የሚጠብቁ ሰዎች",
+    "close": "የጥበቃ ክፍል ዝጋ",
+    "empty": "አሁን ማንም እየጠበቀ የለም።",
+    "admit": "አስገባ",
+    "deny": "አልተቀበለም"
+  },
+  "hand": {
+    "raise": "እጅ አንሳ",
+    "raised": "እጅ አንስቷል",
+    "lower": "እጅ ዝቅ አድርግ",
+    "raiseTitle": "ትኩረት ለማግኘት እጅዎን ያንሱ",
+    "lowerTitle": "እጅህን ዝቅ አድርግ",
+    "tileBadge": "እጅ አንስቷል",
+    "lowerOther": "የዚህን ተሳታፊ እጅ ዝቅ አድርግ",
+    "lowerName": "{{name}}ን እጅ ዝቅ አድርግ"
   }
 }

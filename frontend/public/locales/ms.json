@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Imej penjenamaan",
     "unsupportedImageType": "Jenis imej tidak disokong {{type}}; gunakan JPEG, PNG, WebP, atau GIF.",
     "imageTooLarge": "Imej adalah {{mb}} MB; maksimum 2 MB.",
-    "uploadFailed": "Mesyuarat berjaya dicipta tetapi muat naik penjenamaan gagal: {{message}}"
+    "uploadFailed": "Mesyuarat berjaya dicipta tetapi muat naik penjenamaan gagal: {{message}}",
+    "moderation": "Moderasi",
+    "moderationHint": "Lalai diambil daripada Tetapan anda. Anda boleh mengubahnya mengikut mesyuarat.",
+    "requireNameOnJoin": "Wajibkan peserta memasukkan nama",
+    "autoMuteNewJoiners": "Bisukan pendatang baharu secara automatik",
+    "autoDisableCameraForNew": "Lumpuhkan kamera untuk peserta baharu",
+    "lockRoomAfterStart": "Kunci bilik sebaik sahaja anda menyertai",
+    "lockRoomAfterStartDesc": "Selepas anda menyertai, tiada peserta baharu boleh masuk.",
+    "allowParticipantScreenshare": "Benarkan peserta berkongsi skrin mereka",
+    "allowParticipantChat": "Benarkan peserta untuk menghantar mesej dalam sembang",
+    "waitingRoomEnabled": "Bilik menunggu",
+    "waitingRoomDesc": "Peserta baharu tunggu sehingga anda menerima mereka dari bar alat mesyuarat.",
+    "autoAdmitAuthenticated": "Auto-luluskan pengguna yang telah log masuk (akan datang)",
+    "autoAdmitAuthenticatedDesc": "Langkau bilik menunggu untuk pengguna one.witysk.org yang telah log masuk. Belum dikuatkuasakan — penyertaan tanpa nama sentiasa masuk dalam giliran."
   },
   "discover": {
     "title": "Terokai",
@@ -173,7 +186,12 @@
     "settings": "Tetapan",
     "settingsLabel": "Tetapan dalam mesyuarat",
     "topbarBrandingAlt": "Imej penjenamaan mesyuarat",
-    "requestFailed": "Permintaan gagal"
+    "requestFailed": "Permintaan gagal",
+    "recordLayout": "Susun atur rakaman",
+    "recordLayoutTitle": "Bagaimana peserta dibingkai dalam rakaman",
+    "recordLayoutSpeaker": "Pembesar suara",
+    "recordLayoutGrid": "Grid",
+    "recordLayoutSingle": "Pembesar suara tunggal"
   },
   "inMeetingSettings": {
     "title": "Tetapan",
@@ -223,7 +241,8 @@
     "themeDark": "Gelap",
     "themeLight": "Cahaya",
     "compact": "UI Padat",
-    "moreSettings": "Lagi tetapan tersedia di halaman <1>Tetapan</1> penuh."
+    "moreSettings": "Lagi tetapan tersedia di halaman <1>Tetapan</1> penuh.",
+    "rejoinNote": "Perubahan akan digunakan pada kali seterusnya anda menyertai mesyuarat."
   },
   "recordingIndicator": {
     "label": "RAKAM"
@@ -328,7 +347,8 @@
       "running": "berjalan",
       "failed": "gagal",
       "deleted": "dipadamkan"
-    }
+    },
+    "untitledMeeting": "Mesyuarat tanpa tajuk"
   },
   "settings": {
     "title": "Tetapan",
@@ -886,5 +906,31 @@
       "colPath": "Laluan",
       "colDetails": "Butiran"
     }
+  },
+  "captions": {
+    "unavailable": "Kapsyen langsung belum tersedia untuk mesyuarat ini."
+  },
+  "ptt": {
+    "holdToTalk": "Tekan dan tahan {{key}} untuk bercakap",
+    "live": "Langsung — lepas untuk bisukan"
+  },
+  "pending": {
+    "title": "Bilik menunggu",
+    "toolbarLabel": "Menunggu",
+    "toolbarTitle": "Orang menunggu untuk menyertai",
+    "close": "Tutup bilik menunggu",
+    "empty": "Tiada sesiapa yang menunggu sekarang.",
+    "admit": "Terima",
+    "deny": "Tolak"
+  },
+  "hand": {
+    "raise": "Angkat tangan",
+    "raised": "Tangan diangkat",
+    "lower": "Turunkan tangan",
+    "raiseTitle": "Angkat tangan untuk menarik perhatian",
+    "lowerTitle": "Turunkan tangan anda",
+    "tileBadge": "Tangan diangkat",
+    "lowerOther": "Turunkan tangan peserta ini",
+    "lowerName": "Turunkan tangan {{name}}"
   }
 }

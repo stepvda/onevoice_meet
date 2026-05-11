@@ -101,7 +101,20 @@
     "brandingFieldAlt": "صورة العلامة التجارية",
     "unsupportedImageType": "نوع الصورة غير مدعوم {{type}}؛ استخدم JPEG أو PNG أو WebP أو GIF.",
     "imageTooLarge": "حجم الصورة {{mb}} ميجابايت؛ الحد الأقصى 2 ميجابايت.",
-    "uploadFailed": "تم إنشاء الاجتماع ولكن فشل تحميل العلامة التجارية: {{message}}"
+    "uploadFailed": "تم إنشاء الاجتماع ولكن فشل تحميل العلامة التجارية: {{message}}",
+    "moderation": "الرقابة",
+    "moderationHint": "الإعدادات الافتراضية مأخوذة من إعداداتك. يمكنك تغييرها لكل اجتماع على حدة.",
+    "requireNameOnJoin": "اشتراط إدخال اسم على المشاركين",
+    "autoMuteNewJoiners": "كتم الصوت تلقائيًا للوافدين الجدد",
+    "autoDisableCameraForNew": "تعطيل الكاميرا للمنضمين الجدد",
+    "lockRoomAfterStart": "اقفل الغرفة بمجرد انضمامك",
+    "lockRoomAfterStartDesc": "بعد انضمامك، لن يتمكن أي مشارك جديد من الدخول.",
+    "allowParticipantScreenshare": "السماح للمشاركين بمشاركة شاشتهم",
+    "allowParticipantChat": "السماح للمشاركين بالنشر في الدردشة",
+    "waitingRoomEnabled": "غرفة الانتظار",
+    "waitingRoomDesc": "المنضمون الجدد ينتظرون حتى تقبلهم من شريط أدوات الاجتماع.",
+    "autoAdmitAuthenticated": "السماح تلقائيًا للمستخدمين المسجلين بالدخول (قريبًا)",
+    "autoAdmitAuthenticatedDesc": "تجاوز غرفة الانتظار للمستخدمين المسجلين في one.witysk.org. لم يتم تفعيله بعد — ينضم الزوار المجهولون دائمًا إلى الطابور."
   },
   "discover": {
     "title": "اكتشف",
@@ -173,7 +186,12 @@
     "settings": "الإعدادات",
     "settingsLabel": "إعدادات الاجتماع",
     "topbarBrandingAlt": "صورة العلامة التجارية للاجتماع",
-    "requestFailed": "فشل الطلب"
+    "requestFailed": "فشل الطلب",
+    "recordLayout": "تخطيط التسجيل",
+    "recordLayoutTitle": "كيف يتم تأطير المشاركين في التسجيل",
+    "recordLayoutSpeaker": "المتحدث",
+    "recordLayoutGrid": "شبكة",
+    "recordLayoutSingle": "متحدث واحد"
   },
   "inMeetingSettings": {
     "title": "الإعدادات",
@@ -223,7 +241,8 @@
     "themeDark": "داكن",
     "themeLight": "فاتح",
     "compact": "واجهة مستخدم مضغوطة",
-    "moreSettings": "توجد إعدادات إضافية في صفحة <1>الإعدادات</1> الكاملة."
+    "moreSettings": "توجد إعدادات إضافية في صفحة <1>الإعدادات</1> الكاملة.",
+    "rejoinNote": "سيتم تطبيق التغييرات عند انضمامك إلى الاجتماع في المرة القادمة."
   },
   "recordingIndicator": {
     "label": "سجل"
@@ -328,7 +347,8 @@
       "running": "جارٍ",
       "failed": "فشل",
       "deleted": "تم الحذف"
-    }
+    },
+    "untitledMeeting": "اجتماع بدون عنوان"
   },
   "settings": {
     "title": "الإعدادات",
@@ -886,5 +906,31 @@
       "colPath": "المسار",
       "colDetails": "التفاصيل"
     }
+  },
+  "captions": {
+    "unavailable": "الترجمة النصية المباشرة غير متاحة بعد في هذا الاجتماع."
+  },
+  "ptt": {
+    "holdToTalk": "اضغط مع الاستمرار على {{key}} للتحدث",
+    "live": "مباشر — حرر لكتم الصوت"
+  },
+  "pending": {
+    "title": "غرفة الانتظار",
+    "toolbarLabel": "جارٍ الانتظار",
+    "toolbarTitle": "أشخاص ينتظرون الانضمام",
+    "close": "إغلاق غرفة الانتظار",
+    "empty": "لا يوجد أحد في الانتظار حاليًا.",
+    "admit": "قبول",
+    "deny": "رفض"
+  },
+  "hand": {
+    "raise": "رفع اليد",
+    "raised": "رفع اليد",
+    "lower": "خفض اليد",
+    "raiseTitle": "ارفع يدك لجذب الانتباه",
+    "lowerTitle": "اخفض يدك",
+    "tileBadge": "رفع اليد",
+    "lowerOther": "اخفض يد هذا المشارك",
+    "lowerName": "رفع يد {{name}}"
   }
 }

@@ -101,7 +101,20 @@
     "brandingFieldAlt": "ブランディング画像",
     "unsupportedImageType": "未対応の画像形式 {{type}} です。JPEG、PNG、WebP、GIF をご利用ください。",
     "imageTooLarge": "画像サイズは{{mb}}MBです（最大2MB）。",
-    "uploadFailed": "ミーティングは作成されましたが、ブランディングのアップロードに失敗しました：{{message}}"
+    "uploadFailed": "ミーティングは作成されましたが、ブランディングのアップロードに失敗しました：{{message}}",
+    "moderation": "モデレーション",
+    "moderationHint": "デフォルトは設定から適用されます。ミーティングごとに上書きできます。",
+    "requireNameOnJoin": "参加者に名前の入力を求める",
+    "autoMuteNewJoiners": "新規参加者を自動ミュート",
+    "autoDisableCameraForNew": "新規参加者のカメラを無効にする",
+    "lockRoomAfterStart": "入室後にルームをロックする",
+    "lockRoomAfterStartDesc": "参加後は、新たな参加者は入室できません。",
+    "allowParticipantScreenshare": "参加者が画面を共有できるようにする",
+    "allowParticipantChat": "参加者がチャットに投稿できるようにする",
+    "waitingRoomEnabled": "待機室",
+    "waitingRoomDesc": "新規参加者は、ミーティングツールバーから承認されるまでお待ちください。",
+    "autoAdmitAuthenticated": "サインイン済みユーザーを自動入室（近日公開）",
+    "autoAdmitAuthenticatedDesc": "ログイン済みの one.witysk.org ユーザーは待機室をスキップ。まだ適用されていません — 匿名参加者は常に待機列に入ります。"
   },
   "discover": {
     "title": "見つける",
@@ -173,7 +186,12 @@
     "settings": "設定",
     "settingsLabel": "会議中の設定",
     "topbarBrandingAlt": "会議のブランディング画像",
-    "requestFailed": "リクエストに失敗しました"
+    "requestFailed": "リクエストに失敗しました",
+    "recordLayout": "録画レイアウト",
+    "recordLayoutTitle": "録画内での参加者のフレーミング方法",
+    "recordLayoutSpeaker": "スピーカー",
+    "recordLayoutGrid": "グリッド",
+    "recordLayoutSingle": "単一話者"
   },
   "inMeetingSettings": {
     "title": "設定",
@@ -223,7 +241,8 @@
     "themeDark": "ダーク",
     "themeLight": "明るい",
     "compact": "コンパクトUI",
-    "moreSettings": "詳細な設定は、<1>設定</1>ページにあります。"
+    "moreSettings": "詳細な設定は、<1>設定</1>ページにあります。",
+    "rejoinNote": "変更は次回のミーティング参加時に適用されます。"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "実行中",
       "failed": "失敗しました",
       "deleted": "削除済み"
-    }
+    },
+    "untitledMeeting": "無題の会議"
   },
   "settings": {
     "title": "設定",
@@ -886,5 +906,31 @@
       "colPath": "パス",
       "colDetails": "詳細"
     }
+  },
+  "captions": {
+    "unavailable": "このミーティングではライブキャプションはまだ利用できません。"
+  },
+  "ptt": {
+    "holdToTalk": "{{key}}を押しながら話す",
+    "live": "ライブ — ミュートにするには放送"
+  },
+  "pending": {
+    "title": "待機室",
+    "toolbarLabel": "お待ちください",
+    "toolbarTitle": "参加待ちの人",
+    "close": "待機室を閉じる",
+    "empty": "現在、待機中の人はいません。",
+    "admit": "入室を許可する",
+    "deny": "拒否"
+  },
+  "hand": {
+    "raise": "挙手",
+    "raised": "手を挙げました",
+    "lower": "手を下ろす",
+    "raiseTitle": "挙手で注目を集める",
+    "lowerTitle": "手を下げてください",
+    "tileBadge": "手を挙げました",
+    "lowerOther": "この参加者の挙手を下ろす",
+    "lowerName": "{{name}} の手を下ろす"
   }
 }

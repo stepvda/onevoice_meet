@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Obrázek značky",
     "unsupportedImageType": "Nepodporovaný typ obrázku {{type}}; použijte JPEG, PNG, WebP nebo GIF.",
     "imageTooLarge": "Obrázek má {{mb}} MB; maximum je 2 MB.",
-    "uploadFailed": "Schůzka vytvořena, ale nahrání brandingu selhalo: {{message}}"
+    "uploadFailed": "Schůzka vytvořena, ale nahrání brandingu selhalo: {{message}}",
+    "moderation": "Moderace",
+    "moderationHint": "Výchozí hodnoty pocházejí z vašeho nastavení. Můžete je přepsat pro jednotlivé schůzky.",
+    "requireNameOnJoin": "Požadovat po účastnících zadání jména",
+    "autoMuteNewJoiners": "Automaticky ztlumit nově příchozí",
+    "autoDisableCameraForNew": "Zakázat kameru pro nově příchozí",
+    "lockRoomAfterStart": "Po připojení místnost uzamkněte",
+    "lockRoomAfterStartDesc": "Po vašem připojení se již žádní noví účastníci nebudou moci připojit.",
+    "allowParticipantScreenshare": "Povolit účastníkům sdílení obrazovky",
+    "allowParticipantChat": "Povolit účastníkům psát do chatu",
+    "waitingRoomEnabled": "Čekárna",
+    "waitingRoomDesc": "Noví účastníci čekají, dokud je nepustíte z panelu nástrojů schůzky.",
+    "autoAdmitAuthenticated": "Automaticky vpouštět přihlášené uživatele (již brzy)",
+    "autoAdmitAuthenticatedDesc": "Obejít čekárnu pro přihlášené uživatele one.witysk.org. Zatím nevynuceno — anonymní účastníci vždy čekají ve frontě."
   },
   "discover": {
     "title": "Objevit",
@@ -173,7 +186,12 @@
     "settings": "Nastavení",
     "settingsLabel": "Nastavení během schůzky",
     "topbarBrandingAlt": "Obrázek značky schůzky",
-    "requestFailed": "Požadavek selhal"
+    "requestFailed": "Požadavek selhal",
+    "recordLayout": "Rozložení nahrávání",
+    "recordLayoutTitle": "Jak jsou účastníci zarámováni v nahrávce",
+    "recordLayoutSpeaker": "Mluvčí",
+    "recordLayoutGrid": "Mřížka",
+    "recordLayoutSingle": "Jeden mluvčí"
   },
   "inMeetingSettings": {
     "title": "Nastavení",
@@ -223,7 +241,8 @@
     "themeDark": "Tmavý",
     "themeLight": "Světlo",
     "compact": "Kompaktní rozhraní",
-    "moreSettings": "Další nastavení najdete na celé stránce <1>Nastavení</1>."
+    "moreSettings": "Další nastavení najdete na celé stránce <1>Nastavení</1>.",
+    "rejoinNote": "Změny se projeví při příštím připojení ke schůzce."
   },
   "recordingIndicator": {
     "label": "NAHRÁVAT"
@@ -328,7 +347,8 @@
       "running": "Spuštěno",
       "failed": "selhalo",
       "deleted": "odstraněno"
-    }
+    },
+    "untitledMeeting": "Nepojmenovaná schůzka"
   },
   "settings": {
     "title": "Nastavení",
@@ -886,5 +906,31 @@
       "colPath": "Cesta",
       "colDetails": "Podrobnosti"
     }
+  },
+  "captions": {
+    "unavailable": "Titulky v reálném čase nejsou pro tuto schůzku zatím k dispozici."
+  },
+  "ptt": {
+    "holdToTalk": "Podržte {{key}} pro mluvení",
+    "live": "Živě — uvolněním ztlumíte"
+  },
+  "pending": {
+    "title": "Čekárna",
+    "toolbarLabel": "Čekání",
+    "toolbarTitle": "Lidé čekající na připojení",
+    "close": "Zavřít čekárnu",
+    "empty": "Nikdo nyní nečeká.",
+    "admit": "Přijmout",
+    "deny": "Odmítnout"
+  },
+  "hand": {
+    "raise": "Zvednout ruku",
+    "raised": "Zvednutá ruka",
+    "lower": "Sklopit ruku",
+    "raiseTitle": "Zvedněte ruku, abyste upoutali pozornost",
+    "lowerTitle": "Sklopte ruku",
+    "tileBadge": "Zvednutá ruka",
+    "lowerOther": "Zvednout ruku tohoto účastníka",
+    "lowerName": "Zvednout ruku uživatele {{name}}"
   }
 }

@@ -101,7 +101,20 @@
     "brandingFieldAlt": "બ્રાન્ડિંગ ઇમેજ",
     "unsupportedImageType": "અસમર્થિત ઇમેજ પ્રકાર {{type}}; JPEG, PNG, WebP, અથવા GIF નો ઉપયોગ કરો.",
     "imageTooLarge": "છબી {{mb}} MB છે; મહત્તમ 2 MB છે.",
-    "uploadFailed": "મીટિંગ બનાવાઈ પરંતુ બ્રાન્ડિંગ અપલોડ નિષ્ફળ: {{message}}"
+    "uploadFailed": "મીટિંગ બનાવાઈ પરંતુ બ્રાન્ડિંગ અપલોડ નિષ્ફળ: {{message}}",
+    "moderation": "મધ્યસ્થતા",
+    "moderationHint": "ડિફોલ્ટ તમારી સેટિંગ્સમાંથી આવે છે. તમે તેને મીટિંગ દીઠ બદલી શકો છો.",
+    "requireNameOnJoin": "સહભાગીઓએ નામ દાખલ કરવું ફરજિયાત કરો",
+    "autoMuteNewJoiners": "નવા જોડાનારાઓને ઓટો-મ્યૂટ કરો",
+    "autoDisableCameraForNew": "નવા સભ્યો માટે કેમેરા બંધ કરો",
+    "lockRoomAfterStart": "જોડાયા પછી રૂમને લૉક કરો",
+    "lockRoomAfterStartDesc": "તમે જોડાયા પછી, કોઈ નવા સહભાગી પ્રવેશ કરી શકશે નહીં.",
+    "allowParticipantScreenshare": "સહભાગીઓને તેમની સ્ક્રીન શેર કરવાની મંજૂરી આપો",
+    "allowParticipantChat": "ચેટમાં પોસ્ટ કરવા માટે સહભાગીઓને મંજૂરી આપો",
+    "waitingRoomEnabled": "પ્રતીક્ષા ખંડ",
+    "waitingRoomDesc": "નવા સભ્યો મીટિંગ ટૂલબારમાંથી તમે તેમને પ્રવેશ આપો ત્યાં સુધી રાહ જુએ છે.",
+    "autoAdmitAuthenticated": "સાઇન ઇન કરેલા વપરાશકર્તાઓને આપમેળે પ્રવેશ આપો (ટૂંક સમયમાં આવી રહ્યું છે)",
+    "autoAdmitAuthenticatedDesc": "સાઇન ઇન કરેલા one.witysk.org વપરાશકર્તાઓ માટે રાહ જોવાનો રૂમ બાયપાસ કરો. હજુ સુધી લાગુ કરાયું નથી — અજાણ્યા જોડાનારા હંમેશા કતારમાં રહે છે."
   },
   "discover": {
     "title": "શોધો",
@@ -173,7 +186,12 @@
     "settings": "સેટિંગ્સ",
     "settingsLabel": "મીટિંગ દરમિયાનની સેટિંગ્સ",
     "topbarBrandingAlt": "મીટિંગ બ્રાન્ડિંગ ઇમેજ",
-    "requestFailed": "વિનંતી નિષ્ફળ"
+    "requestFailed": "વિનંતી નિષ્ફળ",
+    "recordLayout": "રેકોર્ડિંગ લેઆઉટ",
+    "recordLayoutTitle": "રેકોર્ડિંગમાં સહભાગીઓ કેવી રીતે ફ્રેમ થાય છે",
+    "recordLayoutSpeaker": "વક્તા",
+    "recordLayoutGrid": "ગ્રીડ",
+    "recordLayoutSingle": "એક જ વક્તા"
   },
   "inMeetingSettings": {
     "title": "સેટિંગ્સ",
@@ -223,7 +241,8 @@
     "themeDark": "શ્યામ",
     "themeLight": "પ્રકાશ",
     "compact": "કોમ્પેક્ટ UI",
-    "moreSettings": "વધુ સેટિંગ્સ સંપૂર્ણ <1>સેટિંગ્સ</1> પેજ પર ઉપલબ્ધ છે."
+    "moreSettings": "વધુ સેટિંગ્સ સંપૂર્ણ <1>સેટિંગ્સ</1> પેજ પર ઉપલબ્ધ છે.",
+    "rejoinNote": "ફેરફારો આગલી વખતે મીટિંગમાં જોડાશો ત્યારે લાગુ થશે."
   },
   "recordingIndicator": {
     "label": "રેક"
@@ -328,7 +347,8 @@
       "running": "ચાલી રહ્યું છે",
       "failed": "નિષ્ફળ",
       "deleted": "કાઢી નાખ્યું"
-    }
+    },
+    "untitledMeeting": "શીર્ષક વિનાની મીટિંગ"
   },
   "settings": {
     "title": "સેટિંગ્સ",
@@ -886,5 +906,31 @@
       "colPath": "પાથ",
       "colDetails": "વિગતો"
     }
+  },
+  "captions": {
+    "unavailable": "આ મીટિંગમાં લાઇવ કૅપ્શન હજુ ઉપલબ્ધ નથી."
+  },
+  "ptt": {
+    "holdToTalk": "બોલવા માટે {{key}} દબાવી રાખો",
+    "live": "લાઇવ — મ્યૂટ કરવા માટે રિલીઝ કરો"
+  },
+  "pending": {
+    "title": "પ્રતીક્ષા ખંડ",
+    "toolbarLabel": "રાહ જુઓ",
+    "toolbarTitle": "જોડાવા માટે રાહ જોઈ રહેલા લોકો",
+    "close": "વેઇટિંગ રૂમ બંધ કરો",
+    "empty": "હમણાં કોઈ રાહ જોતું નથી.",
+    "admit": "પ્રવેશ આપો",
+    "deny": "નકારો"
+  },
+  "hand": {
+    "raise": "હાથ ઊંચો કરો",
+    "raised": "હાથ ઊંચો કર્યો",
+    "lower": "હાથ નીચે કરો",
+    "raiseTitle": "ધ્યાન ખેંચવા માટે હાથ ઊંચો કરો",
+    "lowerTitle": "તમારો હાથ નીચે કરો",
+    "tileBadge": "હાથ ઊંચો કર્યો",
+    "lowerOther": "આ સહભાગીનો હાથ નીચે કરો",
+    "lowerName": "{{name}}નો હાથ નીચે કરો"
   }
 }

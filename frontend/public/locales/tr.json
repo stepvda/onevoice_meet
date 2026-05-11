@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Marka görseli",
     "unsupportedImageType": "Desteklenmeyen resim türü {{type}}; JPEG, PNG, WebP veya GIF kullanın.",
     "imageTooLarge": "Görsel {{mb}} MB; maksimum 2 MB.",
-    "uploadFailed": "Toplantı oluşturuldu ancak marka yüklemesi başarısız oldu: {{message}}"
+    "uploadFailed": "Toplantı oluşturuldu ancak marka yüklemesi başarısız oldu: {{message}}",
+    "moderation": "Moderasyon",
+    "moderationHint": "Varsayılanlar Ayarlarınızdan gelir. Her toplantı için bunları geçersiz kılabilirsiniz.",
+    "requireNameOnJoin": "Katılımcıların bir isim girmesini zorunlu kıl",
+    "autoMuteNewJoiners": "Yeni katılanları otomatik sustur",
+    "autoDisableCameraForNew": "Yeni katılanlar için kamerayı devre dışı bırak",
+    "lockRoomAfterStart": "Odaya katıldıktan sonra kilitle",
+    "lockRoomAfterStartDesc": "Katıldıktan sonra yeni katılımcı giremez.",
+    "allowParticipantScreenshare": "Katılımcıların ekran paylaşımına izin ver",
+    "allowParticipantChat": "Katılımcıların sohbete yazmasına izin ver",
+    "waitingRoomEnabled": "Bekleme odası",
+    "waitingRoomDesc": "Yeni katılımcılar, toplantı araç çubuğundan kabul edene kadar bekler.",
+    "autoAdmitAuthenticated": "Oturum açmış kullanıcıları otomatik kabul et (çok yakında)",
+    "autoAdmitAuthenticatedDesc": "Oturum açmış one.witysk.org kullanıcıları için bekleme odasını atla. Henüz uygulanmıyor — anonim katılımcılar her zaman sıraya girer."
   },
   "discover": {
     "title": "Keşfet",
@@ -173,7 +186,12 @@
     "settings": "Ayarlar",
     "settingsLabel": "Toplantı ayarları",
     "topbarBrandingAlt": "Toplantı marka görseli",
-    "requestFailed": "istek başarısız oldu"
+    "requestFailed": "istek başarısız oldu",
+    "recordLayout": "Kayıt düzeni",
+    "recordLayoutTitle": "Katılımcıların kayıtta nasıl çerçevelendiği",
+    "recordLayoutSpeaker": "Konuşmacı",
+    "recordLayoutGrid": "Izgara",
+    "recordLayoutSingle": "Tek konuşmacı"
   },
   "inMeetingSettings": {
     "title": "Ayarlar",
@@ -223,7 +241,8 @@
     "themeDark": "Koyu",
     "themeLight": "Işık",
     "compact": "Kompakt Arayüz",
-    "moreSettings": "Tüm ayarlar <1>Ayarlar</1> sayfasında yer alır."
+    "moreSettings": "Tüm ayarlar <1>Ayarlar</1> sayfasında yer alır.",
+    "rejoinNote": "Değişiklikler, toplantıya bir sonraki katılışınızda geçerli olur."
   },
   "recordingIndicator": {
     "label": "KAYIT"
@@ -328,7 +347,8 @@
       "running": "çalışıyor",
       "failed": "başarısız",
       "deleted": "(silindi)"
-    }
+    },
+    "untitledMeeting": "İsimsiz toplantı"
   },
   "settings": {
     "title": "Ayarlar",
@@ -886,5 +906,31 @@
       "colPath": "Yol",
       "colDetails": "Detaylar"
     }
+  },
+  "captions": {
+    "unavailable": "Bu toplantıda canlı altyazılar henüz mevcut değil."
+  },
+  "ptt": {
+    "holdToTalk": "Konuşmak için {{key}} basılı tutun",
+    "live": "Canlı — susturmak için bırak"
+  },
+  "pending": {
+    "title": "Bekleme odası",
+    "toolbarLabel": "Bekliyor",
+    "toolbarTitle": "Katılmak için bekleyen kişiler",
+    "close": "Bekleme odasını kapat",
+    "empty": "Şu anda bekleyen kimse yok.",
+    "admit": "Kabul Et",
+    "deny": "Reddet"
+  },
+  "hand": {
+    "raise": "El kaldır",
+    "raised": "El kaldırıldı",
+    "lower": "Elini indir",
+    "raiseTitle": "Dikkat çekmek için el kaldırın",
+    "lowerTitle": "Elini indir",
+    "tileBadge": "El kaldırıldı",
+    "lowerOther": "Bu katılımcının elini indir",
+    "lowerName": "{{name}}'nın elini indir"
   }
 }

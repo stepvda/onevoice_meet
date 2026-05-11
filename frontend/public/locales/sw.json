@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Picha ya chapa",
     "unsupportedImageType": "Aina ya picha isiyotumika {{type}}; tumia JPEG, PNG, WebP, au GIF.",
     "imageTooLarge": "Picha ni {{mb}} MB; upeo ni 2 MB.",
-    "uploadFailed": "Mkutano umeundwa lakini upakiaji wa chapa umeshindikana: {{message}}"
+    "uploadFailed": "Mkutano umeundwa lakini upakiaji wa chapa umeshindikana: {{message}}",
+    "moderation": "Ukakamuzi",
+    "moderationHint": "Chaguo-msingi hutoka kwenye Mipangilio yako. Unaweza kuzibadilisha kwa kila mkutano.",
+    "requireNameOnJoin": "Wahitaji washiriki kuingiza jina",
+    "autoMuteNewJoiners": "Kuzima sauti kiotomatiki kwa wanaojiunga wapya",
+    "autoDisableCameraForNew": "Zima kamera kwa wanaojiunga wapya",
+    "lockRoomAfterStart": "Funga chumba mara tu utakapojiunga.",
+    "lockRoomAfterStartDesc": "Baada ya kujiunga, hakuna washiriki wapya wanaoweza kuingia.",
+    "allowParticipantScreenshare": "Ruhusu washiriki kushiriki skrini zao",
+    "allowParticipantChat": "Ruhusu washiriki kuchapisha kwenye gumzo",
+    "waitingRoomEnabled": "Chumba cha kusubiri",
+    "waitingRoomDesc": "Wageni wapya wasubiri hadi utakapowakubali kutoka kwenye upau wa zana wa mkutano.",
+    "autoAdmitAuthenticated": "Wakubali watumiaji walioingia kiotomatiki (inakuja hivi karibuni)",
+    "autoAdmitAuthenticatedDesc": "Ruka chumba cha kusubiri kwa watumiaji walioingia kwenye one.witysk.org. Bado haijatekelezwa — wanaojiunga bila kujulikana wanapanga foleni kila wakati."
   },
   "discover": {
     "title": "Gundua",
@@ -173,7 +186,12 @@
     "settings": "Mipangilio",
     "settingsLabel": "Mipangilio ya kikao",
     "topbarBrandingAlt": "Picha ya chapa ya mkutano",
-    "requestFailed": "Ombi halikufaulu"
+    "requestFailed": "Ombi halikufaulu",
+    "recordLayout": "Mpangilio wa kurekodi",
+    "recordLayoutTitle": "Jinsi washiriki wanavyopangwa katika rekodi",
+    "recordLayoutSpeaker": "Spika",
+    "recordLayoutGrid": "Grid",
+    "recordLayoutSingle": "Mzungumzaji mmoja"
   },
   "inMeetingSettings": {
     "title": "Mipangilio",
@@ -223,7 +241,8 @@
     "themeDark": "Giza",
     "themeLight": "Mwanga",
     "compact": "UI Iliyoshikana",
-    "moreSettings": "Mipangilio zaidi inapatikana kwenye ukurasa kamili wa <1>Mipangilio</1>."
+    "moreSettings": "Mipangilio zaidi inapatikana kwenye ukurasa kamili wa <1>Mipangilio</1>.",
+    "rejoinNote": "Mabadiliko yataanza kutumika wakati utakapoingia kwenye mkutano ujao."
   },
   "recordingIndicator": {
     "label": "REKODI"
@@ -328,7 +347,8 @@
       "running": "inaendesha",
       "failed": "imeshindwa",
       "deleted": "imefutwa"
-    }
+    },
+    "untitledMeeting": "Mkutano usio na jina"
   },
   "settings": {
     "title": "Mipangilio",
@@ -886,5 +906,31 @@
       "colPath": "Njia",
       "colDetails": "Maelezo"
     }
+  },
+  "captions": {
+    "unavailable": "Manukuu ya moja kwa moja bado hayapatikani kwenye mkutano huu."
+  },
+  "ptt": {
+    "holdToTalk": "Shikilia {{key}} kuzungumza",
+    "live": "Mo — toa ili kunyamazisha"
+  },
+  "pending": {
+    "title": "Chumba cha kusubiri",
+    "toolbarLabel": "Subiri",
+    "toolbarTitle": "Watu wanaosubiri kujiunga",
+    "close": "Funga chumba cha kusubiri",
+    "empty": "Hakuna mtu anayesubiri kwa sasa.",
+    "admit": "Kubali",
+    "deny": "Kataa"
+  },
+  "hand": {
+    "raise": "Inua mkono",
+    "raised": "Mkono umeinuliwa",
+    "lower": "Shusha mkono",
+    "raiseTitle": "Inua mkono wako ili kupata usikivu",
+    "lowerTitle": "Shusha mkono wako",
+    "tileBadge": "Mkono umeinuliwa",
+    "lowerOther": "Punguza mkono wa mshiriki huyu",
+    "lowerName": "Punguza mkono wa {{name}}"
   }
 }

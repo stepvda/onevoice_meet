@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Varumärkesbild",
     "unsupportedImageType": "Bildtypen {{type}} stöds inte; använd JPEG, PNG, WebP eller GIF.",
     "imageTooLarge": "Bilden är {{mb}} MB; max är 2 MB.",
-    "uploadFailed": "Möte skapat men varumärkesuppladdning misslyckades: {{message}}"
+    "uploadFailed": "Möte skapat men varumärkesuppladdning misslyckades: {{message}}",
+    "moderation": "Moderation",
+    "moderationHint": "Standardvärden hämtas från dina inställningar. Du kan åsidosätta dem per möte.",
+    "requireNameOnJoin": "Kräv att deltagare anger ett namn",
+    "autoMuteNewJoiners": "Tysta nya deltagare automatiskt",
+    "autoDisableCameraForNew": "Inaktivera kamera för nya deltagare",
+    "lockRoomAfterStart": "Lås rummet när du har gått med",
+    "lockRoomAfterStartDesc": "När du har gått med kan inga nya deltagare ansluta.",
+    "allowParticipantScreenshare": "Tillåt deltagare att dela sin skärm",
+    "allowParticipantChat": "Tillåt deltagare att skriva i chatten",
+    "waitingRoomEnabled": "Väntrum",
+    "waitingRoomDesc": "Nya deltagare väntar tills du släpper in dem från mötesverktygsfältet.",
+    "autoAdmitAuthenticated": "Tillåt automatiskt inloggade användare (kommer snart)",
+    "autoAdmitAuthenticatedDesc": "Kringgå väntrummet för inloggade one.witysk.org-användare. Ännu inte tillämpat — anonyma deltagare hamnar alltid i kö."
   },
   "discover": {
     "title": "Upptäck",
@@ -173,7 +186,12 @@
     "settings": "Inställningar",
     "settingsLabel": "Inställningar under mötet",
     "topbarBrandingAlt": "Mötesvarumärkesbild",
-    "requestFailed": "förfrågan misslyckades"
+    "requestFailed": "förfrågan misslyckades",
+    "recordLayout": "Inspelningslayout",
+    "recordLayoutTitle": "Hur deltagare visas i inspelningen",
+    "recordLayoutSpeaker": "Högtalare",
+    "recordLayoutGrid": "Rutnät",
+    "recordLayoutSingle": "Enskild talare"
   },
   "inMeetingSettings": {
     "title": "Inställningar",
@@ -223,7 +241,8 @@
     "themeDark": "Mörk",
     "themeLight": "Ljus",
     "compact": "Kompakt gränssnitt",
-    "moreSettings": "Fler inställningar finns på den fullständiga sidan <1>Inställningar</1>."
+    "moreSettings": "Fler inställningar finns på den fullständiga sidan <1>Inställningar</1>.",
+    "rejoinNote": "Ändringarna träder i kraft nästa gång du går med i mötet."
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "Pågående",
       "failed": "misslyckades",
       "deleted": "raderad"
-    }
+    },
+    "untitledMeeting": "Namnlöst möte"
   },
   "settings": {
     "title": "Inställningar",
@@ -886,5 +906,31 @@
       "colPath": "Sökväg",
       "colDetails": "Detaljer"
     }
+  },
+  "captions": {
+    "unavailable": "Live-textning är inte tillgänglig för detta möte än."
+  },
+  "ptt": {
+    "holdToTalk": "Håll {{key}} för att prata",
+    "live": "Live — släpp för att tysta"
+  },
+  "pending": {
+    "title": "Väntrum",
+    "toolbarLabel": "Väntar",
+    "toolbarTitle": "Personer som väntar på att ansluta",
+    "close": "Stäng väntrummet",
+    "empty": "Ingen väntar just nu.",
+    "admit": "Släpp in",
+    "deny": "Neka"
+  },
+  "hand": {
+    "raise": "Räck upp handen",
+    "raised": "Hand upp",
+    "lower": "Sänk handen",
+    "raiseTitle": "Räck upp handen för att få uppmärksamhet",
+    "lowerTitle": "Sänk handen",
+    "tileBadge": "Hand upp",
+    "lowerOther": "Sänk denna deltagares hand",
+    "lowerName": "Sänk {{name}}s hand"
   }
 }

@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Слика бренда",
     "unsupportedImageType": "Nepodržan tip slike {{type}}; koristite JPEG, PNG, WebP ili GIF.",
     "imageTooLarge": "Slika je {{mb}} MB; maksimalna veličina je 2 MB.",
-    "uploadFailed": "Sastanak kreiran, ali otpremanje brendiranja nije uspelo: {{message}}"
+    "uploadFailed": "Sastanak kreiran, ali otpremanje brendiranja nije uspelo: {{message}}",
+    "moderation": "Moderacija",
+    "moderationHint": "Podrazumevane vrednosti dolaze iz vaših podešavanja. Možete ih promeniti za svaki sastanak pojedinačno.",
+    "requireNameOnJoin": "Zahtevaj od učesnika da unesu ime",
+    "autoMuteNewJoiners": "Automatski isključi zvuk novim učesnicima",
+    "autoDisableCameraForNew": "Isključi kameru za nove učesnike",
+    "lockRoomAfterStart": "Zaključaj sobu nakon što se pridružiš",
+    "lockRoomAfterStartDesc": "Након што се придружите, нови учесници не могу ући.",
+    "allowParticipantScreenshare": "Дозволи учесницима да деле свој екран",
+    "allowParticipantChat": "Дозволи учесницима да пишу у ћаскању",
+    "waitingRoomEnabled": "Čekaonica",
+    "waitingRoomDesc": "Novi korisnici čekaju dok ih ne pustite sa trake sa alatkama sastanka.",
+    "autoAdmitAuthenticated": "Automatski prihvati prijavljene korisnike (uskoro)",
+    "autoAdmitAuthenticatedDesc": "Zaobiđite čekaonicu za prijavljene one.witysk.org korisnike. Još nije primenjeno — anonimni učesnici uvek čekaju."
   },
   "discover": {
     "title": "Otkrij",
@@ -173,7 +186,12 @@
     "settings": "Подешавања",
     "settingsLabel": "Подешавања током састанка",
     "topbarBrandingAlt": "Слика за брендирање састанка",
-    "requestFailed": "Zahtev nije uspeo"
+    "requestFailed": "Zahtev nije uspeo",
+    "recordLayout": "Raspored snimanja",
+    "recordLayoutTitle": "Kako su učesnici kadrirani u snimku",
+    "recordLayoutSpeaker": "Zvučnik",
+    "recordLayoutGrid": "Mreža",
+    "recordLayoutSingle": "Jedan govornik"
   },
   "inMeetingSettings": {
     "title": "Подешавања",
@@ -223,7 +241,8 @@
     "themeDark": "Tamno",
     "themeLight": "Svetlo",
     "compact": "Компактан интерфејс",
-    "moreSettings": "Više podešavanja je dostupno na celoj <1>stranici za podešavanja</1>."
+    "moreSettings": "Više podešavanja je dostupno na celoj <1>stranici za podešavanja</1>.",
+    "rejoinNote": "Promene se primenjuju sledeći put kada se pridružite sastanku."
   },
   "recordingIndicator": {
     "label": "SNIMANJE"
@@ -328,7 +347,8 @@
       "running": "покретање",
       "failed": "неуспешно",
       "deleted": "izbrisano"
-    }
+    },
+    "untitledMeeting": "Neimenovani sastanak"
   },
   "settings": {
     "title": "Подешавања",
@@ -886,5 +906,31 @@
       "colPath": "Putanja",
       "colDetails": "Detalji"
     }
+  },
+  "captions": {
+    "unavailable": "Titlovi uživo još uvek nisu dostupni na ovom sastanku."
+  },
+  "ptt": {
+    "holdToTalk": "Držite {{key}} da biste govorili",
+    "live": "Uživo — otpusti za isključivanje zvuka"
+  },
+  "pending": {
+    "title": "Čekaonica",
+    "toolbarLabel": "Čekanje",
+    "toolbarTitle": "Ljudi koji čekaju da se pridruže",
+    "close": "Zatvori čekaonicu",
+    "empty": "Trenutno niko ne čeka.",
+    "admit": "Primi",
+    "deny": "Odbij"
+  },
+  "hand": {
+    "raise": "Podigni ruku",
+    "raised": "Ruka podignuta",
+    "lower": "Spusti ruku",
+    "raiseTitle": "Podignite ruku da biste privukli pažnju",
+    "lowerTitle": "Spustite ruku",
+    "tileBadge": "Ruka podignuta",
+    "lowerOther": "Spusti ruku ovom učesniku",
+    "lowerName": "Spusti ruku korisnika {{name}}"
   }
 }

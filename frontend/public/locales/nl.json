@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Brandingafbeelding",
     "unsupportedImageType": "Niet-ondersteund afbeeldingstype {{type}}; gebruik JPEG, PNG, WebP of GIF.",
     "imageTooLarge": "Afbeelding is {{mb}} MB; max is 2 MB.",
-    "uploadFailed": "Vergadering aangemaakt, maar uploaden van branding mislukt: {{message}}"
+    "uploadFailed": "Vergadering aangemaakt, maar uploaden van branding mislukt: {{message}}",
+    "moderation": "Moderatie",
+    "moderationHint": "Standaarden komen uit je Instellingen. Je kunt ze per vergadering overschrijven.",
+    "requireNameOnJoin": "Vereis dat deelnemers een naam invoeren",
+    "autoMuteNewJoiners": "Nieuwe deelnemers automatisch dempen",
+    "autoDisableCameraForNew": "Camera uitschakelen voor nieuwe deelnemers",
+    "lockRoomAfterStart": "Vergrendel de ruimte zodra je bent toegetreden",
+    "lockRoomAfterStartDesc": "Nadat je bent toegetreden, kunnen er geen nieuwe deelnemers meer binnenkomen.",
+    "allowParticipantScreenshare": "Deelnemers toestaan hun scherm te delen",
+    "allowParticipantChat": "Deelnemers toestaan berichten te plaatsen in de chat",
+    "waitingRoomEnabled": "Wachtkamer",
+    "waitingRoomDesc": "Nieuwe deelnemers wachten tot u hen toelaat via de vergaderwerkbalk.",
+    "autoAdmitAuthenticated": "Automatisch toegelaten voor ingelogde gebruikers (binnenkort beschikbaar)",
+    "autoAdmitAuthenticatedDesc": "Wachtkamer omzeilen voor ingelogde one.witysk.org-gebruikers. Nog niet afgedwongen — anonieme deelnemers worden altijd in de wachtrij geplaatst."
   },
   "discover": {
     "title": "Ontdek",
@@ -173,7 +186,12 @@
     "settings": "Instellingen",
     "settingsLabel": "Instellingen tijdens vergadering",
     "topbarBrandingAlt": "Vergaderingsbrandingafbeelding",
-    "requestFailed": "Verzoek mislukt"
+    "requestFailed": "Verzoek mislukt",
+    "recordLayout": "Opnamelayout",
+    "recordLayoutTitle": "Hoe deelnemers in de opname worden weergegeven",
+    "recordLayoutSpeaker": "Spreker",
+    "recordLayoutGrid": "Raster",
+    "recordLayoutSingle": "Enkele spreker"
   },
   "inMeetingSettings": {
     "title": "Instellingen",
@@ -223,7 +241,8 @@
     "themeDark": "Donker",
     "themeLight": "Licht",
     "compact": "Compacte UI",
-    "moreSettings": "Meer instellingen vind je op de volledige <1>Instellingen</1>-pagina."
+    "moreSettings": "Meer instellingen vind je op de volledige <1>Instellingen</1>-pagina.",
+    "rejoinNote": "Wijzigingen worden van kracht de volgende keer dat je deelneemt aan de vergadering."
   },
   "recordingIndicator": {
     "label": "OPN"
@@ -328,7 +347,8 @@
       "running": "bezig",
       "failed": "mislukt",
       "deleted": "verwijderd"
-    }
+    },
+    "untitledMeeting": "Naamloze vergadering"
   },
   "settings": {
     "title": "Instellingen",
@@ -886,5 +906,31 @@
       "colPath": "Pad",
       "colDetails": "Details"
     }
+  },
+  "captions": {
+    "unavailable": "Live-ondertiteling is nog niet beschikbaar in deze vergadering."
+  },
+  "ptt": {
+    "holdToTalk": "Houd {{key}} ingedrukt om te praten",
+    "live": "Live — loslaten om te dempen"
+  },
+  "pending": {
+    "title": "Wachtkamer",
+    "toolbarLabel": "Wachten",
+    "toolbarTitle": "Mensen die wachten om deel te nemen",
+    "close": "Wachtkamer sluiten",
+    "empty": "Er wacht nu niemand.",
+    "admit": "Toelaten",
+    "deny": "Weigeren"
+  },
+  "hand": {
+    "raise": "Hand opsteken",
+    "raised": "Hand opgestoken",
+    "lower": "Hand omlaag",
+    "raiseTitle": "Steek je hand op om aandacht te krijgen",
+    "lowerTitle": "Steek je hand omlaag",
+    "tileBadge": "Hand opgestoken",
+    "lowerOther": "Steek de hand van deze deelnemer omlaag",
+    "lowerName": "Hand van {{name}} laten zakken"
   }
 }

@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Merkevarebilde",
     "unsupportedImageType": "Ustøttet bildetype {{type}}; bruk JPEG, PNG, WebP eller GIF.",
     "imageTooLarge": "Bildet er {{mb}} MB; maks er 2 MB.",
-    "uploadFailed": "Møte opprettet, men opplasting av merkevare mislyktes: {{message}}"
+    "uploadFailed": "Møte opprettet, men opplasting av merkevare mislyktes: {{message}}",
+    "moderation": "Moderering",
+    "moderationHint": "Standardinnstillingene kommer fra innstillingene dine. Du kan overstyre dem per møte.",
+    "requireNameOnJoin": "Krev at deltakerne oppgir et navn",
+    "autoMuteNewJoiners": "Demp nye deltakere automatisk",
+    "autoDisableCameraForNew": "Deaktiver kamera for nye deltakere",
+    "lockRoomAfterStart": "Lås rommet når du har blitt med",
+    "lockRoomAfterStartDesc": "Etter at du blir med, kan ingen nye deltakere komme inn.",
+    "allowParticipantScreenshare": "Tillat deltakere å dele skjermen sin",
+    "allowParticipantChat": "Tillat deltakere å skrive i chatten",
+    "waitingRoomEnabled": "Venterom",
+    "waitingRoomDesc": "Nye deltakere venter til du slipper dem inn fra møteverktøylinjen.",
+    "autoAdmitAuthenticated": "Auto-godkjenn innloggede brukere (kommer snart)",
+    "autoAdmitAuthenticatedDesc": "Omgå venterommet for innloggede one.witysk.org-brukere. Ikke håndhevet ennå — anonyme deltakere må alltid stå i kø."
   },
   "discover": {
     "title": "Oppdag",
@@ -173,7 +186,12 @@
     "settings": "Innstillinger",
     "settingsLabel": "Innstillingsmøte",
     "topbarBrandingAlt": "Møtebrandingbilde",
-    "requestFailed": "forespørselen mislyktes"
+    "requestFailed": "forespørselen mislyktes",
+    "recordLayout": "Opptakslayout",
+    "recordLayoutTitle": "Hvordan deltakere rammes inn i opptaket",
+    "recordLayoutSpeaker": "Høyttaler",
+    "recordLayoutGrid": "Rutenett",
+    "recordLayoutSingle": "Enkelt foredragsholder"
   },
   "inMeetingSettings": {
     "title": "Innstillinger",
@@ -223,7 +241,8 @@
     "themeDark": "Mørk",
     "themeLight": "Lys",
     "compact": "Kompakt grensesnitt",
-    "moreSettings": "Flere innstillinger finner du på <1>Innstillinger</1>-siden."
+    "moreSettings": "Flere innstillinger finner du på <1>Innstillinger</1>-siden.",
+    "rejoinNote": "Endringer trer i kraft neste gang du blir med i møtet."
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "kjører",
       "failed": "mislyktes",
       "deleted": "Slettet"
-    }
+    },
+    "untitledMeeting": "Unavngitt møte"
   },
   "settings": {
     "title": "Innstillinger",
@@ -886,5 +906,31 @@
       "colPath": "Sti",
       "colDetails": "Detaljer"
     }
+  },
+  "captions": {
+    "unavailable": "Teksting er ikke tilgjengelig i dette møtet ennå."
+  },
+  "ptt": {
+    "holdToTalk": "Hold {{key}} for å snakke",
+    "live": "Live — trykk for å dempe"
+  },
+  "pending": {
+    "title": "Venterom",
+    "toolbarLabel": "Venter",
+    "toolbarTitle": "Personer som venter på å bli med",
+    "close": "Lukk venterom",
+    "empty": "Ingen venter akkurat nå.",
+    "admit": "Slipp inn",
+    "deny": "Avvis"
+  },
+  "hand": {
+    "raise": "Rekk opp hånden",
+    "raised": "Hånden opp",
+    "lower": "Senk hånden",
+    "raiseTitle": "Rekk opp hånden for å få oppmerksomhet",
+    "lowerTitle": "Senk hånden",
+    "tileBadge": "Hånden opp",
+    "lowerOther": "Senk hånden til denne deltakeren",
+    "lowerName": "Senk hånden til {{name}}"
   }
 }

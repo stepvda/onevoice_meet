@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Hoton alamar kamfani",
     "unsupportedImageType": "Nau'in hoton da ba a tallafawa {{type}}; yi amfani da JPEG, PNG, WebP, ko GIF.",
     "imageTooLarge": "Hoton yana da {{mb}} MB; mafi girma shine 2 MB.",
-    "uploadFailed": "An ƙirƙiri taron amma ɗora alamar ya gaza: {{message}}"
+    "uploadFailed": "An ƙirƙiri taron amma ɗora alamar ya gaza: {{message}}",
+    "moderation": "Matsakaici",
+    "moderationHint": "Tsoho daga Saitunanku. Kuna iya canza su kowane taro.",
+    "requireNameOnJoin": "Buki mahalarta su shigar da suna",
+    "autoMuteNewJoiners": "Mute sabbin masu shiga ta atomatik",
+    "autoDisableCameraForNew": "Kashe kyamara ga sabbin masu shiga",
+    "lockRoomAfterStart": "Kulle ɗakin da zarar ka shiga.",
+    "lockRoomAfterStartDesc": "Bayan ka shiga, babu wani sabon mahalartin da zai iya shiga.",
+    "allowParticipantScreenshare": "Bada dama ga mahalarta su raba allon su",
+    "allowParticipantChat": "Ɗauki mahalarta su iya rubuta a cikin hira",
+    "waitingRoomEnabled": "Dakin jira",
+    "waitingRoomDesc": "Sabbin masu shiga suna jira har sai kun shigar da su daga toolbar ɗin taron.",
+    "autoAdmitAuthenticated": "Shigar da masu amfani da suka shiga ta atomatik (zai zo nan ba da jimawa ba)",
+    "autoAdmitAuthenticatedDesc": "Ƙetare dakin jira ga masu amfani da one.witysk.org da suka shiga. Ba a tilasta ba tukuna — masu shiga ba tare da suna koyaushe suna layi."
   },
   "discover": {
     "title": "Gano",
@@ -173,7 +186,12 @@
     "settings": "Saituna",
     "settingsLabel": "Saitunan cikin taro",
     "topbarBrandingAlt": "Hoton tambarin taro",
-    "requestFailed": "buƙatar ta gaza"
+    "requestFailed": "buƙatar ta gaza",
+    "recordLayout": "Tsarin rikodi",
+    "recordLayoutTitle": "Yadda mahalarta ke fitowa a cikin rikodin",
+    "recordLayoutSpeaker": "Mai magana",
+    "recordLayoutGrid": "Grid",
+    "recordLayoutSingle": "Mai magana ɗaya"
   },
   "inMeetingSettings": {
     "title": "Saituna",
@@ -223,7 +241,8 @@
     "themeDark": "Duhu",
     "themeLight": "Hasken wuta",
     "compact": "Ƙaramin UI",
-    "moreSettings": "Cikakkun saituna suna kan shafin <1>Saituna</1>."
+    "moreSettings": "Cikakkun saituna suna kan shafin <1>Saituna</1>.",
+    "rejoinNote": "Canje-canje za su yi aiki a lokacin da kuka shiga taron na gaba."
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "Gudu",
       "failed": "ya kasa",
       "deleted": "goge"
-    }
+    },
+    "untitledMeeting": "Taron da ba a yiwa suna ba"
   },
   "settings": {
     "title": "Saituna",
@@ -886,5 +906,31 @@
       "colPath": "Hanyar",
       "colDetails": "Bayanan"
     }
+  },
+  "captions": {
+    "unavailable": "Ba a samun rubutun magana kai tsaye a wannan taron ba tukuna."
+  },
+  "ptt": {
+    "holdToTalk": "Riƙe {{key}} don yin magana",
+    "live": "Rayuwa — saki don shiru"
+  },
+  "pending": {
+    "title": "Dakin jira",
+    "toolbarLabel": "Jira",
+    "toolbarTitle": "Mutane da ke jira su shiga",
+    "close": "Rufe dakin jira",
+    "empty": "Babu wanda yake jira a yanzu.",
+    "admit": "Shigar da",
+    "deny": "ƙi"
+  },
+  "hand": {
+    "raise": "Tada hannu",
+    "raised": "Hannu ya ɗaga",
+    "lower": "Rage hannu",
+    "raiseTitle": "Taya hannu don jawo hankali",
+    "lowerTitle": "Sauke hannunka",
+    "tileBadge": "Hannu ya tashi",
+    "lowerOther": "Rage hannun wannan mahaluki",
+    "lowerName": "Sauke hannun {{name}}"
   }
 }

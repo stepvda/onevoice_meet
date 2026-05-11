@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Imagine de branding",
     "unsupportedImageType": "Tip de imagine nesuportat {{type}}; folosește JPEG, PNG, WebP sau GIF.",
     "imageTooLarge": "Imaginea are {{mb}} MB; maximul este de 2 MB.",
-    "uploadFailed": "Întâlnire creată, dar încărcarea brandingului a eșuat: {{message}}"
+    "uploadFailed": "Întâlnire creată, dar încărcarea brandingului a eșuat: {{message}}",
+    "moderation": "Moderare",
+    "moderationHint": "Valorile implicite provin din Setările tale. Le poți suprascrie pentru fiecare întâlnire.",
+    "requireNameOnJoin": "Solicitați participanților să introducă un nume",
+    "autoMuteNewJoiners": "Dezactivează automat microfonul noilor participanți",
+    "autoDisableCameraForNew": "Dezactivează camera pentru noii participanți",
+    "lockRoomAfterStart": "Blochează camera după ce te-ai alăturat",
+    "lockRoomAfterStartDesc": "După ce te alături, niciun participant nou nu poate intra.",
+    "allowParticipantScreenshare": "Permite participanților să partajeze ecranul",
+    "allowParticipantChat": "Permite participanților să posteze în chat",
+    "waitingRoomEnabled": "Sală de așteptare",
+    "waitingRoomDesc": "Noii participanți așteaptă până îi admiteți din bara de instrumente a întâlnirii.",
+    "autoAdmitAuthenticated": "Auto-admit utilizatorii autentificați (în curând)",
+    "autoAdmitAuthenticatedDesc": "Ocolește sala de așteptare pentru utilizatorii one.witysk.org autentificați. Încă neaplicat — utilizatorii anonimi sunt întotdeauna puși la coadă."
   },
   "discover": {
     "title": "Descoperă",
@@ -173,7 +186,12 @@
     "settings": "Setări",
     "settingsLabel": "Setări în timpul întâlnirii",
     "topbarBrandingAlt": "Imagine de branding a întâlnirii",
-    "requestFailed": "Cererea a eșuat"
+    "requestFailed": "Cererea a eșuat",
+    "recordLayout": "Aspect înregistrare",
+    "recordLayoutTitle": "Cum sunt încadrați participanții în înregistrare",
+    "recordLayoutSpeaker": "Vorbitor",
+    "recordLayoutGrid": "Grilă",
+    "recordLayoutSingle": "Vorbitor unic"
   },
   "inMeetingSettings": {
     "title": "Setări",
@@ -223,7 +241,8 @@
     "themeDark": "Întunecat",
     "themeLight": "Luminos",
     "compact": "Interfață compactă",
-    "moreSettings": "Mai multe setări sunt disponibile pe pagina completă de <1>Setări</1>."
+    "moreSettings": "Mai multe setări sunt disponibile pe pagina completă de <1>Setări</1>.",
+    "rejoinNote": "Modificările se aplică data viitoare când vă alăturați întâlnirii."
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "rulează",
       "failed": "a eșuat",
       "deleted": "șters"
-    }
+    },
+    "untitledMeeting": "Întâlnire fără titlu"
   },
   "settings": {
     "title": "Setări",
@@ -886,5 +906,31 @@
       "colPath": "Cale",
       "colDetails": "Detalii"
     }
+  },
+  "captions": {
+    "unavailable": "Subtitrările live nu sunt încă disponibile în această întâlnire."
+  },
+  "ptt": {
+    "holdToTalk": "Ține apăsat {{key}} pentru a vorbi",
+    "live": "Live — eliberează pentru a dezactiva sunetul"
+  },
+  "pending": {
+    "title": "Sală de așteptare",
+    "toolbarLabel": "Așteptare",
+    "toolbarTitle": "Persoane care așteaptă să se alăture",
+    "close": "Închide sala de așteptare",
+    "empty": "Nimeni nu așteaptă în acest moment.",
+    "admit": "Admite",
+    "deny": "Refuză"
+  },
+  "hand": {
+    "raise": "Ridică mâna",
+    "raised": "Mână ridicată",
+    "lower": "Coborâți mâna",
+    "raiseTitle": "Ridică mâna pentru a atrage atenția",
+    "lowerTitle": "Coborâți mâna",
+    "tileBadge": "Mână ridicată",
+    "lowerOther": "Coboară mâna acestui participant",
+    "lowerName": "Ridică mâna lui/ei {{name}}"
   }
 }

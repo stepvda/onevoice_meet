@@ -101,7 +101,20 @@
     "brandingFieldAlt": "ਬ੍ਰਾਂਡਿੰਗ ਚਿੱਤਰ",
     "unsupportedImageType": "ਅਸਮਰਥਿਤ ਚਿੱਤਰ ਕਿਸਮ {{type}}; JPEG, PNG, WebP, ਜਾਂ GIF ਵਰਤੋ।",
     "imageTooLarge": "ਤਸਵੀਰ {{mb}} MB ਹੈ; ਵੱਧ ਤੋਂ ਵੱਧ 2 MB ਹੈ।",
-    "uploadFailed": "ਮੀਟਿੰਗ ਬਣ ਗਈ ਪਰ ਬ੍ਰਾਂਡਿੰਗ ਅਪਲੋਡ ਅਸਫਲ ਰਹੀ: {{message}}"
+    "uploadFailed": "ਮੀਟਿੰਗ ਬਣ ਗਈ ਪਰ ਬ੍ਰਾਂਡਿੰਗ ਅਪਲੋਡ ਅਸਫਲ ਰਹੀ: {{message}}",
+    "moderation": "ਸੰਜਮ",
+    "moderationHint": "ਡਿਫਾਲਟ ਤੁਹਾਡੀਆਂ ਸੈਟਿੰਗਾਂ ਤੋਂ ਆਉਂਦੇ ਹਨ। ਤੁਸੀਂ ਹਰ ਮੀਟਿੰਗ ਲਈ ਇਹਨਾਂ ਨੂੰ ਬਦਲ ਸਕਦੇ ਹੋ।",
+    "requireNameOnJoin": "ਭਾਗ ਲੈਣ ਵਾਲਿਆਂ ਲਈ ਨਾਂ ਦਰਜ ਕਰਨਾ ਲਾਜ਼ਮੀ ਕਰੋ",
+    "autoMuteNewJoiners": "ਨਵੇਂ ਜੁੜਨ ਵਾਲਿਆਂ ਨੂੰ ਆਪਣੇ-ਆਪ ਮਿਊਟ ਕਰੋ",
+    "autoDisableCameraForNew": "ਨਵੇਂ ਜੁੜਨ ਵਾਲਿਆਂ ਲਈ ਕੈਮਰਾ ਬੰਦ ਕਰੋ",
+    "lockRoomAfterStart": "ਕਮਰੇ ਵਿੱਚ ਸ਼ਾਮਲ ਹੋਣ ਤੋਂ ਬਾਅਦ ਇਸਨੂੰ ਲਾਕ ਕਰ ਦਿਓ",
+    "lockRoomAfterStartDesc": "ਤੁਹਾਡੇ ਸ਼ਾਮਲ ਹੋਣ ਤੋਂ ਬਾਅਦ, ਕੋਈ ਨਵਾਂ ਭਾਗੀਦਾਰ ਦਾਖਲ ਨਹੀਂ ਹੋ ਸਕਦਾ।",
+    "allowParticipantScreenshare": "ਭਾਗ ਲੈਣ ਵਾਲਿਆਂ ਨੂੰ ਆਪਣੀ ਸਕਰੀਨ ਸਾਂਝੀ ਕਰਨ ਦੀ ਇਜਾਜ਼ਤ ਦਿਓ",
+    "allowParticipantChat": "ਚੈਟ ਵਿੱਚ ਭਾਗ ਲੈਣ ਵਾਲਿਆਂ ਨੂੰ ਪੋਸਟ ਕਰਨ ਦੀ ਇਜਾਜ਼ਤ ਦਿਓ",
+    "waitingRoomEnabled": "ਉਡੀਕ ਕਮਰਾ",
+    "waitingRoomDesc": "ਨਵੇਂ ਜੁੜਨ ਵਾਲੇ ਮੀਟਿੰਗ ਟੂਲਬਾਰ ਤੋਂ ਤੁਹਾਡੇ ਦੁਆਰਾ ਦਾਖਲ ਕੀਤੇ ਜਾਣ ਤੱਕ ਉਡੀਕ ਕਰਦੇ ਹਨ।",
+    "autoAdmitAuthenticated": "ਆਪਣੇ-ਆਪ ਦਾਖ਼ਲ ਕਰੋ ਸਾਈਨ-ਇਨ ਕੀਤੇ ਉਪਭੋਗਤਾਵਾਂ ਨੂੰ (ਜਲਦੀ ਆ ਰਿਹਾ ਹੈ)",
+    "autoAdmitAuthenticatedDesc": "ਸਾਈਨ-ਇਨ ਕੀਤੇ one.witysk.org ਉਪਭੋਗਤਾਵਾਂ ਲਈ ਉਡੀਕ ਕਮਰਾ ਬਾਈਪਾਸ ਕਰੋ। ਅਜੇ ਲਾਗੂ ਨਹੀਂ ਕੀਤਾ ਗਿਆ — ਅਣਪਛਾਤੇ ਜੁੜਨ ਵਾਲੇ ਹਮੇਸ਼ਾ ਕਤਾਰ ਵਿੱਚ ਖੜ੍ਹਦੇ ਹਨ।"
   },
   "discover": {
     "title": "ਖੋਜੋ",
@@ -173,7 +186,12 @@
     "settings": "ਸੈਟਿੰਗਾਂ",
     "settingsLabel": "ਮੀਟਿੰਗ ਦੌਰਾਨ ਸੈਟਿੰਗਾਂ",
     "topbarBrandingAlt": "ਮੀਟਿੰਗ ਬ੍ਰਾਂਡਿੰਗ ਚਿੱਤਰ",
-    "requestFailed": "ਬੇਨਤੀ ਅਸਫਲ"
+    "requestFailed": "ਬੇਨਤੀ ਅਸਫਲ",
+    "recordLayout": "ਰਿਕਾਰਡਿੰਗ ਲੇਆਉਟ",
+    "recordLayoutTitle": "ਰਿਕਾਰਡਿੰਗ ਵਿੱਚ ਭਾਗ ਲੈਣ ਵਾਲਿਆਂ ਨੂੰ ਕਿਵੇਂ ਫਰੇਮ ਕੀਤਾ ਜਾਂਦਾ ਹੈ",
+    "recordLayoutSpeaker": "ਸਪੀਕਰ",
+    "recordLayoutGrid": "ਗਰਿੱਡ",
+    "recordLayoutSingle": "ਇੱਕ ਸਪੀਕਰ"
   },
   "inMeetingSettings": {
     "title": "ਸੈਟਿੰਗਾਂ",
@@ -223,7 +241,8 @@
     "themeDark": "ਹਨੇਰਾ",
     "themeLight": "روشنی",
     "compact": "ਸੰਖੇਪ UI",
-    "moreSettings": "ਹੋਰ ਸੈਟਿੰਗਾਂ ਪੂਰੀ <1>ਸੈਟਿੰਗਾਂ</1> ਸਫ਼ੇ 'ਤੇ ਮੌਜੂਦ ਹਨ।"
+    "moreSettings": "ਹੋਰ ਸੈਟਿੰਗਾਂ ਪੂਰੀ <1>ਸੈਟਿੰਗਾਂ</1> ਸਫ਼ੇ 'ਤੇ ਮੌਜੂਦ ਹਨ।",
+    "rejoinNote": "ਬਦਲਾਅ ਅਗਲੀ ਵਾਰ ਮੀਟਿੰਗ ਵਿੱਚ ਸ਼ਾਮਲ ਹੋਣ 'ਤੇ ਲਾਗੂ ਹੋਣਗੇ।"
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "ਚੱਲ ਰਿਹਾ ਹੈ",
       "failed": "ਅਸਫਲ",
       "deleted": "ਮਿਟਾਇਆ"
-    }
+    },
+    "untitledMeeting": "ਬਿਨਾਂ ਸਿਰਲੇਖ ਮੀਟਿੰਗ"
   },
   "settings": {
     "title": "ਸੈਟਿੰਗਾਂ",
@@ -886,5 +906,31 @@
       "colPath": "",
       "colDetails": "ਵੇਰਵੇ"
     }
+  },
+  "captions": {
+    "unavailable": "ਇਸ ਮੀਟਿੰਗ ਵਿੱਚ ਲਾਈਵ ਕੈਪਸ਼ਨ ਅਜੇ ਉਪਲਬਧ ਨਹੀਂ ਹਨ।"
+  },
+  "ptt": {
+    "holdToTalk": "{{key}} ਨੂੰ ਬੋਲਣ ਲਈ ਦਬਾ ਕੇ ਰੱਖੋ",
+    "live": "ਲਾਈਵ — ਛੱਡੋ ਤਾਂ ਮਿਊਟ ਹੋਵੇਗਾ"
+  },
+  "pending": {
+    "title": "ਉਡੀਕ ਕਮਰਾ",
+    "toolbarLabel": "ਉਡੀਕ ਰਿਹਾ ਹੈ",
+    "toolbarTitle": "ਲੋਕ ਸ਼ਾਮਲ ਹੋਣ ਦੀ ਉਡੀਕ ਕਰ ਰਹੇ ਹਨ",
+    "close": "ਉਡੀਕ ਕਮਰਾ ਬੰਦ ਕਰੋ",
+    "empty": "ਹੁਣ ਕੋਈ ਵੀ ਉਡੀਕ ਨਹੀਂ ਕਰ ਰਿਹਾ।",
+    "admit": "ਦਾਖ਼ਲ ਕਰੋ",
+    "deny": "ਅਸਵੀਕਾਰ ਕਰੋ"
+  },
+  "hand": {
+    "raise": "ਹੱਥ ਉਠਾਓ",
+    "raised": "ਹੱਥ ਉਠਾਇਆ",
+    "lower": "ਹੱਥ ਹੇਠਾਂ ਕਰੋ",
+    "raiseTitle": "ਧਿਆਨ ਖਿੱਚਣ ਲਈ ਹੱਥ ਉਠਾਓ",
+    "lowerTitle": "ਆਪਣਾ ਹੱਥ ਹੇਠਾਂ ਕਰੋ",
+    "tileBadge": "ਹੱਥ ਉੱਠਿਆ",
+    "lowerOther": "ਇਸ ਭਾਗੀਦਾਰ ਦਾ ਹੱਥ ਹੇਠਾਂ ਕਰੋ",
+    "lowerName": "{{name}} ਦਾ ਹੱਥ ਹੇਠਾਂ ਕਰੋ"
   }
 }

@@ -101,7 +101,20 @@
     "brandingFieldAlt": "รูปภาพแบรนด์",
     "unsupportedImageType": "ไม่รองรับประเภทภาพ {{type}}; ให้ใช้ JPEG, PNG, WebP หรือ GIF",
     "imageTooLarge": "รูปภาพมีขนาด {{mb}} MB; สูงสุด 2 MB",
-    "uploadFailed": "สร้างการประชุมสำเร็จแล้ว แต่การอัปโหลดแบรนด์ล้มเหลว: {{message}}"
+    "uploadFailed": "สร้างการประชุมสำเร็จแล้ว แต่การอัปโหลดแบรนด์ล้มเหลว: {{message}}",
+    "moderation": "การกลั่นกรอง",
+    "moderationHint": "ค่าเริ่มต้นมาจากการตั้งค่าของคุณ คุณสามารถปรับเปลี่ยนได้ตามการประชุมแต่ละครั้ง",
+    "requireNameOnJoin": "กำหนดให้ผู้เข้าร่วมต้องป้อนชื่อ",
+    "autoMuteNewJoiners": "ปิดเสียงผู้เข้าร่วมใหม่โดยอัตโนมัติ",
+    "autoDisableCameraForNew": "ปิดกล้องสำหรับผู้เข้าร่วมใหม่",
+    "lockRoomAfterStart": "ล็อกห้องเมื่อคุณเข้าร่วมแล้ว",
+    "lockRoomAfterStartDesc": "หลังจากคุณเข้าร่วมแล้ว จะไม่มีผู้เข้าร่วมใหม่สามารถเข้ามาได้",
+    "allowParticipantScreenshare": "อนุญาตให้ผู้เข้าร่วมแชร์หน้าจอได้",
+    "allowParticipantChat": "อนุญาตให้ผู้เข้าร่วมโพสต์ในแชท",
+    "waitingRoomEnabled": "ห้องรอ",
+    "waitingRoomDesc": "ผู้เข้าร่วมใหม่ต้องรอให้คุณอนุมัติจากแถบเครื่องมือการประชุม",
+    "autoAdmitAuthenticated": "อนุญาตผู้ใช้ที่เข้าสู่ระบบแล้วโดยอัตโนมัติ (เร็วๆ นี้)",
+    "autoAdmitAuthenticatedDesc": "ข้ามห้องรอสำหรับผู้ใช้ one.witysk.org ที่เข้าสู่ระบบแล้ว ยังไม่ได้บังคับใช้ — ผู้เข้าร่วมที่ไม่ระบุตัวตนจะต้องเข้าคิวเสมอ"
   },
   "discover": {
     "title": "ค้นพบ",
@@ -173,7 +186,12 @@
     "settings": "การตั้งค่า",
     "settingsLabel": "การตั้งค่าระหว่างการประชุม",
     "topbarBrandingAlt": "รูปภาพแบรนด์ของการประชุม",
-    "requestFailed": "คำขอไม่สำเร็จ"
+    "requestFailed": "คำขอไม่สำเร็จ",
+    "recordLayout": "เค้าโครงบันทึก",
+    "recordLayoutTitle": "วิธีการจัดเฟรมผู้เข้าร่วมในการบันทึก",
+    "recordLayoutSpeaker": "ผู้พูด",
+    "recordLayoutGrid": "ตาราง",
+    "recordLayoutSingle": "ผู้พูดคนเดียว"
   },
   "inMeetingSettings": {
     "title": "การตั้งค่า",
@@ -223,7 +241,8 @@
     "themeDark": "มืด",
     "themeLight": "สว่าง",
     "compact": "UI ขนาดกะทัดรัด",
-    "moreSettings": "ตั้งค่าเพิ่มเติมมีอยู่ในหน้า <1>การตั้งค่า</1> แบบเต็ม"
+    "moreSettings": "ตั้งค่าเพิ่มเติมมีอยู่ในหน้า <1>การตั้งค่า</1> แบบเต็ม",
+    "rejoinNote": "การเปลี่ยนแปลงจะมีผลเมื่อคุณเข้าร่วมการประชุมครั้งถัดไป"
   },
   "recordingIndicator": {
     "label": "บันทึก"
@@ -328,7 +347,8 @@
       "running": "กำลังทำงาน",
       "failed": "ล้มเหลว",
       "deleted": "ลบแล้ว"
-    }
+    },
+    "untitledMeeting": "การประชุมที่ไม่มีชื่อ"
   },
   "settings": {
     "title": "การตั้งค่า",
@@ -886,5 +906,31 @@
       "colPath": "เส้นทาง",
       "colDetails": "รายละเอียด"
     }
+  },
+  "captions": {
+    "unavailable": "คำบรรยายสดยังไม่พร้อมใช้งานในการประชุมนี้"
+  },
+  "ptt": {
+    "holdToTalk": "กด {{key}} ค้างไว้เพื่อพูด",
+    "live": "ถ่ายทอดสด — ปล่อยเพื่อปิดเสียง"
+  },
+  "pending": {
+    "title": "ห้องรอ",
+    "toolbarLabel": "กำลังรอ",
+    "toolbarTitle": "ผู้ที่รอเข้าร่วม",
+    "close": "ปิดห้องรอ",
+    "empty": "ขณะนี้ไม่มีผู้รออยู่",
+    "admit": "ยอมรับ",
+    "deny": "ปฏิเสธ"
+  },
+  "hand": {
+    "raise": "ยกมือ",
+    "raised": "ยกมือ",
+    "lower": "ลดมือ",
+    "raiseTitle": "ยกมือขึ้นเพื่อขอความสนใจ",
+    "lowerTitle": "ลดมือลง",
+    "tileBadge": "ยกมือ",
+    "lowerOther": "ลดมือของผู้เข้าร่วมนี้",
+    "lowerName": "ลดมือของ {{name}}"
   }
 }

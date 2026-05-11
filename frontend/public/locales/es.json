@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Imagen de marca",
     "unsupportedImageType": "Tipo de imagen no compatible {{type}}; use JPEG, PNG, WebP o GIF.",
     "imageTooLarge": "La imagen es de {{mb}} MB; el máximo es 2 MB.",
-    "uploadFailed": "Reunión creada pero falló la carga de la marca: {{message}}"
+    "uploadFailed": "Reunión creada pero falló la carga de la marca: {{message}}",
+    "moderation": "Moderación",
+    "moderationHint": "Los valores predeterminados provienen de tu Configuración. Puedes anularlos por reunión.",
+    "requireNameOnJoin": "Exigir que los participantes ingresen un nombre",
+    "autoMuteNewJoiners": "Silenciar automáticamente a los nuevos participantes",
+    "autoDisableCameraForNew": "Desactivar cámara para nuevos participantes",
+    "lockRoomAfterStart": "Bloquear la sala una vez que te hayas unido",
+    "lockRoomAfterStartDesc": "Después de que te unas, no podrán entrar nuevos participantes.",
+    "allowParticipantScreenshare": "Permitir que los participantes compartan su pantalla",
+    "allowParticipantChat": "Permitir que los participantes publiquen en el chat",
+    "waitingRoomEnabled": "Sala de espera",
+    "waitingRoomDesc": "Los nuevos participantes esperan hasta que los admitas desde la barra de herramientas de la reunión.",
+    "autoAdmitAuthenticated": "Admitir automáticamente a usuarios conectados (próximamente)",
+    "autoAdmitAuthenticatedDesc": "Omitir la sala de espera para usuarios autenticados de one.witysk.org. Aún no aplicado — los que se unen de forma anónima siempre hacen cola."
   },
   "discover": {
     "title": "Descubrir",
@@ -173,7 +186,12 @@
     "settings": "Configuración",
     "settingsLabel": "Configuración en la reunión",
     "topbarBrandingAlt": "Imagen de marca de la reunión",
-    "requestFailed": "Solicitud fallida"
+    "requestFailed": "Solicitud fallida",
+    "recordLayout": "Diseño de grabación",
+    "recordLayoutTitle": "Cómo se enmarca a los participantes en la grabación",
+    "recordLayoutSpeaker": "Orador",
+    "recordLayoutGrid": "Cuadrícula",
+    "recordLayoutSingle": "Orador único"
   },
   "inMeetingSettings": {
     "title": "Configuración",
@@ -223,7 +241,8 @@
     "themeDark": "Oscuro",
     "themeLight": "Claro",
     "compact": "Interfaz compacta",
-    "moreSettings": "Hay más ajustes en la página completa de <1>Ajustes</1>."
+    "moreSettings": "Hay más ajustes en la página completa de <1>Ajustes</1>.",
+    "rejoinNote": "Los cambios se aplicarán la próxima vez que te unas a la reunión."
   },
   "recordingIndicator": {
     "label": "GRABAR"
@@ -328,7 +347,8 @@
       "running": "ejecutando",
       "failed": "falló",
       "deleted": "eliminado"
-    }
+    },
+    "untitledMeeting": "Reunión sin título"
   },
   "settings": {
     "title": "Configuración",
@@ -886,5 +906,31 @@
       "colPath": "Ruta",
       "colDetails": "Detalles"
     }
+  },
+  "captions": {
+    "unavailable": "Los subtítulos en vivo aún no están disponibles en esta reunión."
+  },
+  "ptt": {
+    "holdToTalk": "Mantén presionado {{key}} para hablar",
+    "live": "En vivo — suelta para silenciar"
+  },
+  "pending": {
+    "title": "Sala de espera",
+    "toolbarLabel": "Esperando",
+    "toolbarTitle": "Personas esperando para unirse",
+    "close": "Cerrar sala de espera",
+    "empty": "Ahora mismo no hay nadie esperando.",
+    "admit": "Admitir",
+    "deny": "Denegar"
+  },
+  "hand": {
+    "raise": "Levantar la mano",
+    "raised": "Mano levantada",
+    "lower": "Bajar la mano",
+    "raiseTitle": "Levanta la mano para llamar la atención.",
+    "lowerTitle": "Baja la mano",
+    "tileBadge": "Mano levantada",
+    "lowerOther": "Bajar la mano de este participante",
+    "lowerName": "Bajar la mano de {{name}}"
   }
 }

@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Brändikuva",
     "unsupportedImageType": "Kuvatyyppiä {{type}} ei tueta; käytä JPEG-, PNG-, WebP- tai GIF-muotoa.",
     "imageTooLarge": "Kuva on {{mb}} MB; maksimi on 2 MB.",
-    "uploadFailed": "Kokous luotu, mutta brändin lataus epäonnistui: {{message}}"
+    "uploadFailed": "Kokous luotu, mutta brändin lataus epäonnistui: {{message}}",
+    "moderation": "Valvonta",
+    "moderationHint": "Oletusarvot tulevat asetuksistasi. Voit muuttaa niitä kokouskohtaisesti.",
+    "requireNameOnJoin": "Vaadi osallistujia syöttämään nimi",
+    "autoMuteNewJoiners": "Mykistä uudet osallistujat automaattisesti",
+    "autoDisableCameraForNew": "Poista kamera käytöstä uusilta osallistujilta",
+    "lockRoomAfterStart": "Lukitse huone, kun olet liittynyt",
+    "lockRoomAfterStartDesc": "Kun liityt, uudet osallistujat eivät voi enää tulla mukaan.",
+    "allowParticipantScreenshare": "Salli osallistujien jakaa näyttönsä",
+    "allowParticipantChat": "Salli osallistujien kirjoittaa chattiin",
+    "waitingRoomEnabled": "Odotushuone",
+    "waitingRoomDesc": "Uudet osallistujat odottavat, että päästät heidät sisään kokoustyökaluriviltä.",
+    "autoAdmitAuthenticated": "Hyväksy kirjautuneet käyttäjät automaattisesti (tulossa pian)",
+    "autoAdmitAuthenticatedDesc": "Ohita odotushuone kirjautuneille one.witysk.org-käyttäjille. Ei vielä käytössä — anonyymit liittyjät menevät aina jonoon."
   },
   "discover": {
     "title": "Löydä",
@@ -173,7 +186,12 @@
     "settings": "Asetukset",
     "settingsLabel": "Kokousasetukset",
     "topbarBrandingAlt": "Kokouksen brändikuva",
-    "requestFailed": "pyyntö epäonnistui"
+    "requestFailed": "pyyntö epäonnistui",
+    "recordLayout": "Tallennusasettelu",
+    "recordLayoutTitle": "Miten osallistujat kehystetään tallenteessa",
+    "recordLayoutSpeaker": "Puhuja",
+    "recordLayoutGrid": "Ruudukko",
+    "recordLayoutSingle": "Yksi puhuja"
   },
   "inMeetingSettings": {
     "title": "Asetukset",
@@ -223,7 +241,8 @@
     "themeDark": "Tumma",
     "themeLight": "Valo",
     "compact": "Kompakti käyttöliittymä",
-    "moreSettings": "Lisää asetuksia löytyy koko <1>Asetukset</1>-sivulta."
+    "moreSettings": "Lisää asetuksia löytyy koko <1>Asetukset</1>-sivulta.",
+    "rejoinNote": "Muutokset tulevat voimaan seuraavan kerran, kun liityt kokoukseen."
   },
   "recordingIndicator": {
     "label": "TALLENNA"
@@ -328,7 +347,8 @@
       "running": "käynnissä",
       "failed": "epäonnistui",
       "deleted": "poistettu"
-    }
+    },
+    "untitledMeeting": "Nimetön kokous"
   },
   "settings": {
     "title": "Asetukset",
@@ -886,5 +906,31 @@
       "colPath": "Polku",
       "colDetails": "Tiedot"
     }
+  },
+  "captions": {
+    "unavailable": "Tekstitykset eivät ole vielä saatavilla tässä kokouksessa."
+  },
+  "ptt": {
+    "holdToTalk": "Pidä {{key}} painettuna puhuaksesi",
+    "live": "Lähetys — vapauta mykistääksesi"
+  },
+  "pending": {
+    "title": "Odotushuone",
+    "toolbarLabel": "Odottaa",
+    "toolbarTitle": "Ihmiset odottamassa liittymistä",
+    "close": "Sulje odotushuone",
+    "empty": "Kukaan ei ole odottamassa juuri nyt.",
+    "admit": "Hyväksy",
+    "deny": "Hylkää"
+  },
+  "hand": {
+    "raise": "Nosta käsi",
+    "raised": "Käsi ylhäällä",
+    "lower": "Laske käsi",
+    "raiseTitle": "Nosta kätesi saadaksesi huomiota",
+    "lowerTitle": "Laske kätesi",
+    "tileBadge": "Käsi ylhäällä",
+    "lowerOther": "Laske tämän osallistujan käsi",
+    "lowerName": "Laske {{name}} käsi"
   }
 }

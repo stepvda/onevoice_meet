@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Obraz marki",
     "unsupportedImageType": "Nieobsługiwany typ obrazu {{type}}; użyj JPEG, PNG, WebP lub GIF.",
     "imageTooLarge": "Obraz ma {{mb}} MB; maksymalny rozmiar to 2 MB.",
-    "uploadFailed": "Spotkanie utworzone, ale przesyłanie brandingu nie powiodło się: {{message}}"
+    "uploadFailed": "Spotkanie utworzone, ale przesyłanie brandingu nie powiodło się: {{message}}",
+    "moderation": "Moderacja",
+    "moderationHint": "Ustawienia domyślne pochodzą z Twoich preferencji. Możesz je zmienić dla każdego spotkania.",
+    "requireNameOnJoin": "Wymagaj od uczestników podania imienia",
+    "autoMuteNewJoiners": "Automatyczne wyciszanie nowych uczestników",
+    "autoDisableCameraForNew": "Wyłącz kamerę dla nowych uczestników",
+    "lockRoomAfterStart": "Zablokuj pokój po dołączeniu",
+    "lockRoomAfterStartDesc": "Po dołączeniu, żaden nowy uczestnik nie będzie mógł wejść.",
+    "allowParticipantScreenshare": "Zezwól uczestnikom na udostępnianie ekranu",
+    "allowParticipantChat": "Zezwól uczestnikom na pisanie na czacie",
+    "waitingRoomEnabled": "Poczekalnia",
+    "waitingRoomDesc": "Nowi uczestnicy czekają, aż wpuścisz ich z paska narzędzi spotkania.",
+    "autoAdmitAuthenticated": "Automatyczne wpuszczanie zalogowanych użytkowników (wkrótce)",
+    "autoAdmitAuthenticatedDesc": "Pomiń poczekalnię dla zalogowanych użytkowników one.witysk.org. Jeszcze nie wymuszane — anonimowi dołączający zawsze czekają w kolejce."
   },
   "discover": {
     "title": "Odkryj",
@@ -173,7 +186,12 @@
     "settings": "Ustawienia",
     "settingsLabel": "Ustawienia podczas spotkania",
     "topbarBrandingAlt": "Obraz marki spotkania",
-    "requestFailed": "Żądanie nie powiodło się"
+    "requestFailed": "Żądanie nie powiodło się",
+    "recordLayout": "Układ nagrywania",
+    "recordLayoutTitle": "Jak uczestnicy są kadrowani w nagraniu",
+    "recordLayoutSpeaker": "Mówca",
+    "recordLayoutGrid": "Siatka",
+    "recordLayoutSingle": "Jeden mówca"
   },
   "inMeetingSettings": {
     "title": "Ustawienia",
@@ -223,7 +241,8 @@
     "themeDark": "Ciemny",
     "themeLight": "Jasny",
     "compact": "Kompaktowy interfejs",
-    "moreSettings": "Więcej ustawień dostępnych jest na pełnej stronie <1>Ustawienia</1>."
+    "moreSettings": "Więcej ustawień dostępnych jest na pełnej stronie <1>Ustawienia</1>.",
+    "rejoinNote": "Zmiany zaczną obowiązywać przy następnym dołączeniu do spotkania."
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "uruchamianie",
       "failed": "nie udało się",
       "deleted": "usunięto"
-    }
+    },
+    "untitledMeeting": "Nienazwane spotkanie"
   },
   "settings": {
     "title": "Ustawienia",
@@ -886,5 +906,31 @@
       "colPath": "Ścieżka",
       "colDetails": "Szczegóły"
     }
+  },
+  "captions": {
+    "unavailable": "Napisy na żywo nie są jeszcze dostępne na tym spotkaniu."
+  },
+  "ptt": {
+    "holdToTalk": "Przytrzymaj {{key}}, aby mówić",
+    "live": "Na żywo — zwolnij, aby wyciszyć"
+  },
+  "pending": {
+    "title": "Poczekalnia",
+    "toolbarLabel": "Oczekiwanie",
+    "toolbarTitle": "Osoby oczekujące na dołączenie",
+    "close": "Zamknij poczekalnię",
+    "empty": "Nikt teraz nie czeka.",
+    "admit": "Dopuść",
+    "deny": "Odrzuć"
+  },
+  "hand": {
+    "raise": "Podnieś rękę",
+    "raised": "Podniesiona ręka",
+    "lower": "Opuść rękę",
+    "raiseTitle": "Podnieś rękę, aby zwrócić na siebie uwagę",
+    "lowerTitle": "Opuść rękę",
+    "tileBadge": "Podniesiona ręka",
+    "lowerOther": "Opuść rękę tego uczestnika",
+    "lowerName": "Opuść rękę {{name}}"
   }
 }

@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Markenbild",
     "unsupportedImageType": "Nicht unterstützter Bildtyp {{type}}; verwenden Sie JPEG, PNG, WebP oder GIF.",
     "imageTooLarge": "Bild ist {{mb}} MB; maximal 2 MB.",
-    "uploadFailed": "Meeting erstellt, aber Branding-Upload fehlgeschlagen: {{message}}"
+    "uploadFailed": "Meeting erstellt, aber Branding-Upload fehlgeschlagen: {{message}}",
+    "moderation": "Moderation",
+    "moderationHint": "Standardeinstellungen stammen aus Ihren Einstellungen. Sie können sie pro Besprechung überschreiben.",
+    "requireNameOnJoin": "Teilnehmer zur Eingabe eines Namens auffordern",
+    "autoMuteNewJoiners": "Neue Teilnehmer automatisch stummschalten",
+    "autoDisableCameraForNew": "Kamera für neue Teilnehmer deaktivieren",
+    "lockRoomAfterStart": "Raum sperren, sobald du beigetreten bist",
+    "lockRoomAfterStartDesc": "Nachdem du beigetreten bist, können keine neuen Teilnehmer mehr beitreten.",
+    "allowParticipantScreenshare": "Teilnehmern erlauben, ihren Bildschirm zu teilen",
+    "allowParticipantChat": "Teilnehmern erlauben, im Chat zu schreiben",
+    "waitingRoomEnabled": "Warteraum",
+    "waitingRoomDesc": "Neue Teilnehmer warten, bis Sie sie über die Meeting-Symbolleiste zulassen.",
+    "autoAdmitAuthenticated": "Automatisch angemeldete Nutzer zulassen (demnächst verfügbar)",
+    "autoAdmitAuthenticatedDesc": "Warteraum für angemeldete one.witysk.org-Benutzer umgehen. Noch nicht aktiviert – anonyme Teilnehmer warten immer in der Schlange."
   },
   "discover": {
     "title": "Entdecken",
@@ -173,7 +186,12 @@
     "settings": "Einstellungen",
     "settingsLabel": "In-Meeting-Einstellungen",
     "topbarBrandingAlt": "Besprechungs-Branding-Bild",
-    "requestFailed": "Anfrage fehlgeschlagen"
+    "requestFailed": "Anfrage fehlgeschlagen",
+    "recordLayout": "Aufnahmelayout",
+    "recordLayoutTitle": "Wie Teilnehmer im Recording gerahmt werden",
+    "recordLayoutSpeaker": "Sprecher",
+    "recordLayoutGrid": "Raster",
+    "recordLayoutSingle": "Einzelner Sprecher"
   },
   "inMeetingSettings": {
     "title": "Einstellungen",
@@ -223,7 +241,8 @@
     "themeDark": "Dunkel",
     "themeLight": "Licht",
     "compact": "Kompakte Benutzeroberfläche",
-    "moreSettings": "Weitere Einstellungen finden Sie auf der vollständigen Seite <1>Einstellungen</1>."
+    "moreSettings": "Weitere Einstellungen finden Sie auf der vollständigen Seite <1>Einstellungen</1>.",
+    "rejoinNote": "Die Änderungen werden beim nächsten Beitritt zum Meeting wirksam."
   },
   "recordingIndicator": {
     "label": "AUFNAHME"
@@ -328,7 +347,8 @@
       "running": "Wird ausgeführt",
       "failed": "fehlgeschlagen",
       "deleted": "gelöscht"
-    }
+    },
+    "untitledMeeting": "Unbenanntes Meeting"
   },
   "settings": {
     "title": "Einstellungen",
@@ -886,5 +906,31 @@
       "colPath": "Pfad",
       "colDetails": "Details"
     }
+  },
+  "captions": {
+    "unavailable": "Live-Untertitel sind in diesem Meeting noch nicht verfügbar."
+  },
+  "ptt": {
+    "holdToTalk": "{{key}} gedrückt halten, um zu sprechen",
+    "live": "Live — zum Stummschalten freigeben"
+  },
+  "pending": {
+    "title": "Warteraum",
+    "toolbarLabel": "Warten",
+    "toolbarTitle": "Wartende Personen",
+    "close": "Warteraum schließen",
+    "empty": "Niemand wartet gerade.",
+    "admit": "Zulassen",
+    "deny": "Ablehnen"
+  },
+  "hand": {
+    "raise": "Hand heben",
+    "raised": "Hand gehoben",
+    "lower": "Hand senken",
+    "raiseTitle": "Heben Sie Ihre Hand, um Aufmerksamkeit zu erregen",
+    "lowerTitle": "Hand senken",
+    "tileBadge": "Hand gehoben",
+    "lowerOther": "Hand dieses Teilnehmers senken",
+    "lowerName": "{{name}} die Hand senken"
   }
 }

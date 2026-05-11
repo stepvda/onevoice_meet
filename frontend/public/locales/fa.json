@@ -101,7 +101,20 @@
     "brandingFieldAlt": "تصویر برند",
     "unsupportedImageType": "نوع تصویر {{type}} پشتیبانی نمی‌شود؛ از JPEG، PNG، WebP یا GIF استفاده کنید.",
     "imageTooLarge": "حجم تصویر {{mb}} مگابایت است؛ حداکثر ۲ مگابایت.",
-    "uploadFailed": "جلسه ایجاد شد اما بارگذاری برندینگ ناموفق بود: {{message}}"
+    "uploadFailed": "جلسه ایجاد شد اما بارگذاری برندینگ ناموفق بود: {{message}}",
+    "moderation": "مدیریت محتوا",
+    "moderationHint": "پیش‌فرض‌ها از تنظیمات شما گرفته می‌شوند. می‌توانید آن‌ها را برای هر جلسه به‌طور جداگانه تغییر دهید.",
+    "requireNameOnJoin": "الزام شرکت‌کنندگان به وارد کردن نام",
+    "autoMuteNewJoiners": "بی‌صدا کردن خودکار اعضای جدید",
+    "autoDisableCameraForNew": "غیرفعال کردن دوربین برای تازه‌واردان",
+    "lockRoomAfterStart": "وقتی به اتاق پیوستی، آن را قفل کن",
+    "lockRoomAfterStartDesc": "پس از پیوستن شما، هیچ شرکت‌کننده جدیدی نمی‌تواند وارد شود.",
+    "allowParticipantScreenshare": "به شرکت‌کنندگان اجازه اشتراک‌گذاری صفحه بدهید",
+    "allowParticipantChat": "اجازه ارسال پیام در چت به شرکت‌کنندگان",
+    "waitingRoomEnabled": "اتاق انتظار",
+    "waitingRoomDesc": "اعضای جدید تا زمانی که از نوار ابزار جلسه آن‌ها را تأیید کنید، منتظر می‌مانند.",
+    "autoAdmitAuthenticated": "پذیرش خودکار کاربران واردشده (بهزودی)",
+    "autoAdmitAuthenticatedDesc": "دور زدن اتاق انتظار برای کاربران واردشده به one.witysk.org. هنوز اعمال نشده است — کاربران ناشناس همیشه در صف می‌مانند."
   },
   "discover": {
     "title": "کشف کنید",
@@ -173,7 +186,12 @@
     "settings": "تنظیمات",
     "settingsLabel": "تنظیمات درون جلسه",
     "topbarBrandingAlt": "تصویر برندینگ جلسه",
-    "requestFailed": "درخواست ناموفق بود"
+    "requestFailed": "درخواست ناموفق بود",
+    "recordLayout": "طرح ضبط",
+    "recordLayoutTitle": "نحوه نمایش شرکت‌کنندگان در ضبط",
+    "recordLayoutSpeaker": "بلندگو",
+    "recordLayoutGrid": "شبکه",
+    "recordLayoutSingle": "گویندهٔ تکی"
   },
   "inMeetingSettings": {
     "title": "تنظیمات",
@@ -223,7 +241,8 @@
     "themeDark": "تیره",
     "themeLight": "روشن",
     "compact": "رابط کاربری فشرده",
-    "moreSettings": "تنظیمات بیشتر در صفحه کامل <1>تنظیمات</1> موجود است."
+    "moreSettings": "تنظیمات بیشتر در صفحه کامل <1>تنظیمات</1> موجود است.",
+    "rejoinNote": "تغییرات در دفعه بعدی که به جلسه ملحق می‌شوید اعمال می‌شوند."
   },
   "recordingIndicator": {
     "label": "ضبط"
@@ -328,7 +347,8 @@
       "running": "در حال اجرا",
       "failed": "ناموفق",
       "deleted": "حذف شد"
-    }
+    },
+    "untitledMeeting": "جلسه بدون عنوان"
   },
   "settings": {
     "title": "تنظیمات",
@@ -886,5 +906,31 @@
       "colPath": "مسیر",
       "colDetails": "جزئیات"
     }
+  },
+  "captions": {
+    "unavailable": "زیرنویس زنده هنوز در این جلسه در دسترس نیست."
+  },
+  "ptt": {
+    "holdToTalk": "برای صحبت کردن، {{key}} را نگه دارید",
+    "live": "زنده — رها کنید تا صدا قطع شود"
+  },
+  "pending": {
+    "title": "اتاق انتظار",
+    "toolbarLabel": "در انتظار",
+    "toolbarTitle": "افراد در انتظار پیوستن",
+    "close": "بستن اتاق انتظار",
+    "empty": "در حال حاضر هیچ‌کس منتظر نیست.",
+    "admit": "پذیرش",
+    "deny": "رد کردن"
+  },
+  "hand": {
+    "raise": "دست بلند کردن",
+    "raised": "دست بلند شده",
+    "lower": "پایین آوردن دست",
+    "raiseTitle": "برای جلب توجه، دست خود را بالا ببرید",
+    "lowerTitle": "دستتان را پایین بیاورید",
+    "tileBadge": "دست بلند شده",
+    "lowerOther": "دست این شرکت‌کننده را پایین بیاورید",
+    "lowerName": "پایین آوردن دست {{name}}"
   }
 }

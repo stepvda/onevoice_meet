@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Hình ảnh thương hiệu",
     "unsupportedImageType": "Loại hình ảnh không được hỗ trợ {{type}}; hãy sử dụng JPEG, PNG, WebP hoặc GIF.",
     "imageTooLarge": "Ảnh có dung lượng {{mb}} MB; tối đa là 2 MB.",
-    "uploadFailed": "Đã tạo cuộc họp nhưng tải lên thương hiệu thất bại: {{message}}"
+    "uploadFailed": "Đã tạo cuộc họp nhưng tải lên thương hiệu thất bại: {{message}}",
+    "moderation": "Kiểm duyệt",
+    "moderationHint": "Mặc định được lấy từ Cài đặt của bạn. Bạn có thể ghi đè chúng cho từng cuộc họp.",
+    "requireNameOnJoin": "Yêu cầu người tham gia nhập tên",
+    "autoMuteNewJoiners": "Tự động tắt mic người tham gia mới",
+    "autoDisableCameraForNew": "Tắt camera cho người tham gia mới",
+    "lockRoomAfterStart": "Khóa phòng ngay sau khi bạn tham gia.",
+    "lockRoomAfterStartDesc": "Sau khi bạn tham gia, sẽ không có người tham gia mới nào vào được nữa.",
+    "allowParticipantScreenshare": "Cho phép người tham gia chia sẻ màn hình",
+    "allowParticipantChat": "Cho phép người tham gia gửi tin nhắn trong chat",
+    "waitingRoomEnabled": "Phòng chờ",
+    "waitingRoomDesc": "Người tham gia mới chờ bạn phê duyệt từ thanh công cụ cuộc họp.",
+    "autoAdmitAuthenticated": "Tự động cho phép người dùng đã đăng nhập (sắp ra mắt)",
+    "autoAdmitAuthenticatedDesc": "Bỏ qua phòng chờ cho người dùng đã đăng nhập one.witysk.org. Chưa áp dụng — người tham gia ẩn danh luôn phải xếp hàng."
   },
   "discover": {
     "title": "Khám phá",
@@ -173,7 +186,12 @@
     "settings": "Cài đặt",
     "settingsLabel": "Cài đặt trong cuộc họp",
     "topbarBrandingAlt": "Hình ảnh thương hiệu cuộc họp",
-    "requestFailed": "Yêu cầu thất bại"
+    "requestFailed": "Yêu cầu thất bại",
+    "recordLayout": "Bố cục ghi hình",
+    "recordLayoutTitle": "Cách người tham gia được đóng khung trong bản ghi",
+    "recordLayoutSpeaker": "Người nói",
+    "recordLayoutGrid": "Lưới",
+    "recordLayoutSingle": "Một người nói"
   },
   "inMeetingSettings": {
     "title": "Cài đặt",
@@ -223,7 +241,8 @@
     "themeDark": "Tối",
     "themeLight": "Sáng",
     "compact": "Giao diện gọn",
-    "moreSettings": "Các cài đặt khác có trên trang <1>Cài đặt</1> đầy đủ."
+    "moreSettings": "Các cài đặt khác có trên trang <1>Cài đặt</1> đầy đủ.",
+    "rejoinNote": "Thay đổi sẽ có hiệu lực vào lần tham gia cuộc họp tiếp theo."
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "đang chạy",
       "failed": "thất bại",
       "deleted": "đã xóa"
-    }
+    },
+    "untitledMeeting": "Cuộc họp chưa có tiêu đề"
   },
   "settings": {
     "title": "Cài đặt",
@@ -886,5 +906,31 @@
       "colPath": "Đường dẫn",
       "colDetails": "Chi tiết"
     }
+  },
+  "captions": {
+    "unavailable": "Phụ đề trực tiếp chưa khả dụng trong cuộc họp này."
+  },
+  "ptt": {
+    "holdToTalk": "Giữ {{key}} để nói",
+    "live": "Trực tiếp — nhả ra để tắt tiếng"
+  },
+  "pending": {
+    "title": "Phòng chờ",
+    "toolbarLabel": "Đang chờ",
+    "toolbarTitle": "Người đang chờ tham gia",
+    "close": "Đóng phòng chờ",
+    "empty": "Hiện không có ai đang chờ.",
+    "admit": "Cho phép",
+    "deny": "Từ chối"
+  },
+  "hand": {
+    "raise": "Giơ tay",
+    "raised": "Giơ tay",
+    "lower": "Hạ tay",
+    "raiseTitle": "Giơ tay để thu hút sự chú ý",
+    "lowerTitle": "Hạ tay xuống",
+    "tileBadge": "Giơ tay",
+    "lowerOther": "Hạ tay người tham gia này xuống",
+    "lowerName": "Hạ tay của {{name}} xuống"
   }
 }

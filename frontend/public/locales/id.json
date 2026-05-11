@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Gambar merek",
     "unsupportedImageType": "Tipe gambar tidak didukung {{type}}; gunakan JPEG, PNG, WebP, atau GIF.",
     "imageTooLarge": "Gambar berukuran {{mb}} MB; maksimal 2 MB.",
-    "uploadFailed": "Rapat berhasil dibuat tetapi unggahan branding gagal: {{message}}"
+    "uploadFailed": "Rapat berhasil dibuat tetapi unggahan branding gagal: {{message}}",
+    "moderation": "Moderasi",
+    "moderationHint": "Default berasal dari Pengaturan Anda. Anda dapat menimpanya per rapat.",
+    "requireNameOnJoin": "Wajibkan peserta memasukkan nama",
+    "autoMuteNewJoiners": "Bisukan otomatis peserta baru",
+    "autoDisableCameraForNew": "Nonaktifkan kamera untuk peserta baru",
+    "lockRoomAfterStart": "Kunci ruangan setelah Anda bergabung",
+    "lockRoomAfterStartDesc": "Setelah Anda bergabung, tidak ada peserta baru yang bisa masuk.",
+    "allowParticipantScreenshare": "Izinkan peserta untuk membagikan layar mereka",
+    "allowParticipantChat": "Izinkan peserta untuk mengirim pesan di chat",
+    "waitingRoomEnabled": "Ruang tunggu",
+    "waitingRoomDesc": "Pendatang baru menunggu hingga Anda menerima mereka dari bilah alat rapat.",
+    "autoAdmitAuthenticated": "Izinkan otomatis pengguna yang sudah masuk (segera hadir)",
+    "autoAdmitAuthenticatedDesc": "Lewati ruang tunggu untuk pengguna one.witysk.org yang sudah masuk. Belum diterapkan — pengguna anonim selalu masuk antrean."
   },
   "discover": {
     "title": "Temukan",
@@ -173,7 +186,12 @@
     "settings": "Pengaturan",
     "settingsLabel": "Pengaturan dalam rapat",
     "topbarBrandingAlt": "Gambar merek rapat",
-    "requestFailed": "Permintaan gagal"
+    "requestFailed": "Permintaan gagal",
+    "recordLayout": "Tata letak rekaman",
+    "recordLayoutTitle": "Bagaimana peserta dibingkai dalam rekaman",
+    "recordLayoutSpeaker": "Pembicara",
+    "recordLayoutGrid": "Kisi",
+    "recordLayoutSingle": "Pembicara tunggal"
   },
   "inMeetingSettings": {
     "title": "Pengaturan",
@@ -223,7 +241,8 @@
     "themeDark": "Gelap",
     "themeLight": "Terang",
     "compact": "UI Ringkas",
-    "moreSettings": "Pengaturan lainnya tersedia di halaman <1>Pengaturan</1> lengkap."
+    "moreSettings": "Pengaturan lainnya tersedia di halaman <1>Pengaturan</1> lengkap.",
+    "rejoinNote": "Perubahan akan berlaku saat Anda bergabung ke rapat berikutnya."
   },
   "recordingIndicator": {
     "label": "REKAM"
@@ -328,7 +347,8 @@
       "running": "berjalan",
       "failed": "gagal",
       "deleted": "dihapus"
-    }
+    },
+    "untitledMeeting": "Rapat tanpa judul"
   },
   "settings": {
     "title": "Pengaturan",
@@ -886,5 +906,31 @@
       "colPath": "Jalur",
       "colDetails": "Detail"
     }
+  },
+  "captions": {
+    "unavailable": "Teks langsung belum tersedia di rapat ini."
+  },
+  "ptt": {
+    "holdToTalk": "Tahan {{key}} untuk berbicara",
+    "live": "Langsung — lepas untuk bisukan"
+  },
+  "pending": {
+    "title": "Ruang tunggu",
+    "toolbarLabel": "Menunggu",
+    "toolbarTitle": "Orang yang menunggu untuk bergabung",
+    "close": "Tutup ruang tunggu",
+    "empty": "Tidak ada yang menunggu saat ini.",
+    "admit": "Terima",
+    "deny": "Tolak"
+  },
+  "hand": {
+    "raise": "Angkat tangan",
+    "raised": "Tangan terangkat",
+    "lower": "Turunkan tangan",
+    "raiseTitle": "Angkat tangan untuk menarik perhatian",
+    "lowerTitle": "Turunkan tangan Anda",
+    "tileBadge": "Tangan terangkat",
+    "lowerOther": "Turunkan tangan peserta ini",
+    "lowerName": "Turunkan tangan {{name}}"
   }
 }

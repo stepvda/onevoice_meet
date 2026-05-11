@@ -101,7 +101,20 @@
     "brandingFieldAlt": "Larawan ng tatak",
     "unsupportedImageType": "Hindi suportadong uri ng imahe {{type}}; gumamit ng JPEG, PNG, WebP, o GIF.",
     "imageTooLarge": "Ang imahe ay {{mb}} MB; ang maximum ay 2 MB.",
-    "uploadFailed": "Gawa ang meeting ngunit nabigo ang pag-upload ng branding: {{message}}"
+    "uploadFailed": "Gawa ang meeting ngunit nabigo ang pag-upload ng branding: {{message}}",
+    "moderation": "Moderasyon",
+    "moderationHint": "Ang mga default ay galing sa iyong Settings. Maaari mong baguhin ang mga ito kada meeting.",
+    "requireNameOnJoin": "Kailanganin ang mga kalahok na maglagay ng pangalan",
+    "autoMuteNewJoiners": "I-auto-mute ang mga bagong sumali",
+    "autoDisableCameraForNew": "I-disable ang camera para sa mga bagong sasali",
+    "lockRoomAfterStart": "I-lock ang room pagkatapos mong sumali.",
+    "lockRoomAfterStartDesc": "Pagkatapos mong sumali, walang bagong kalahok ang makakapasok.",
+    "allowParticipantScreenshare": "Payagan ang mga kalahok na mag-share ng kanilang screen",
+    "allowParticipantChat": "Pahintulutan ang mga kalahok na mag-post sa chat",
+    "waitingRoomEnabled": "Waiting room",
+    "waitingRoomDesc": "Ang mga bagong sasali ay maghihintay hanggang tanggapin mo sila mula sa toolbar ng pulong.",
+    "autoAdmitAuthenticated": "Awtomatikong i-admit ang mga naka-sign in na user (darating na)",
+    "autoAdmitAuthenticatedDesc": "Laktawan ang waiting room para sa mga naka-sign in na user ng one.witysk.org. Hindi pa ipinapatupad — laging pumipila ang mga anonymous na sumasali."
   },
   "discover": {
     "title": "Tuklasin",
@@ -173,7 +186,12 @@
     "settings": "Mga Setting",
     "settingsLabel": "Mga setting sa loob ng pulong",
     "topbarBrandingAlt": "Larawan ng pagba-brand ng pulong",
-    "requestFailed": "Nabigo ang kahilingan"
+    "requestFailed": "Nabigo ang kahilingan",
+    "recordLayout": "Layout ng pag-record",
+    "recordLayoutTitle": "Kung paano naka-frame ang mga kalahok sa recording",
+    "recordLayoutSpeaker": "Tagapagsalita",
+    "recordLayoutGrid": "Grid",
+    "recordLayoutSingle": "Isang tagapagsalita"
   },
   "inMeetingSettings": {
     "title": "Mga Setting",
@@ -223,7 +241,8 @@
     "themeDark": "Madilim",
     "themeLight": "Liwanag",
     "compact": "Compact UI",
-    "moreSettings": "Ang iba pang setting ay nasa buong pahina ng <1>Settings</1>."
+    "moreSettings": "Ang iba pang setting ay nasa buong pahina ng <1>Settings</1>.",
+    "rejoinNote": "Magkakabisa ang mga pagbabago sa susunod mong pagsali sa meeting."
   },
   "recordingIndicator": {
     "label": "REC"
@@ -328,7 +347,8 @@
       "running": "tumatakbo",
       "failed": "nabigo",
       "deleted": "tinanggal"
-    }
+    },
+    "untitledMeeting": "Hindi pinamagatang meeting"
   },
   "settings": {
     "title": "Mga Setting",
@@ -886,5 +906,31 @@
       "colPath": "Daan",
       "colDetails": "Mga Detalye"
     }
+  },
+  "captions": {
+    "unavailable": "Ang live captions ay hindi pa available sa meeting na ito."
+  },
+  "ptt": {
+    "holdToTalk": "Pindutin nang matagal ang {{key}} para makapagsalita",
+    "live": "Live — bitawan para i-mute"
+  },
+  "pending": {
+    "title": "Waiting room",
+    "toolbarLabel": "Naghihintay",
+    "toolbarTitle": "Mga taong naghihintay na sumali",
+    "close": "Isara ang waiting room",
+    "empty": "Wala pang naghihintay sa ngayon.",
+    "admit": "I-admit",
+    "deny": "Tanggihan"
+  },
+  "hand": {
+    "raise": "Itaas ang kamay",
+    "raised": "Itinaas ang kamay",
+    "lower": "Ibaba ang kamay",
+    "raiseTitle": "Itaas ang iyong kamay para mapansin",
+    "lowerTitle": "Ibaba ang iyong kamay",
+    "tileBadge": "Itinaas ang kamay",
+    "lowerOther": "Ibaba ang kamay ng kalahok na ito",
+    "lowerName": "Ibaba ang kamay ni {{name}}"
   }
 }

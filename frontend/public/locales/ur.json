@@ -101,7 +101,20 @@
     "brandingFieldAlt": "برانڈنگ کی تصویر",
     "unsupportedImageType": "غیر معاون تصویری قسم {{type}}؛ JPEG، PNG، WebP، یا GIF استعمال کریں۔",
     "imageTooLarge": "تصویر کا سائز {{mb}} MB ہے؛ زیادہ سے زیادہ 2 MB ہے۔",
-    "uploadFailed": "میٹنگ بن گئی لیکن برانڈنگ اپ لوڈ ناکام ہوئی: {{message}}"
+    "uploadFailed": "میٹنگ بن گئی لیکن برانڈنگ اپ لوڈ ناکام ہوئی: {{message}}",
+    "moderation": "اعتدال",
+    "moderationHint": "پہلے سے طے شدہ آپ کی ترتیبات سے آتے ہیں۔ آپ انہیں ہر میٹنگ کے لیے تبدیل کر سکتے ہیں۔",
+    "requireNameOnJoin": "شرکاء سے نام درج کرنے کی ضرورت ہے",
+    "autoMuteNewJoiners": "نئے شامل ہونے والوں کو خودکار طور پر خاموش کریں",
+    "autoDisableCameraForNew": "نئے آنے والوں کے لیے کیمرہ بند کریں",
+    "lockRoomAfterStart": "کمرے میں شامل ہونے کے بعد اسے لاک کریں",
+    "lockRoomAfterStartDesc": "آپ کے شامل ہونے کے بعد، کوئی نیا شریک داخل نہیں ہو سکے گا۔",
+    "allowParticipantScreenshare": "شرکاء کو اپنی اسکرین شیئر کرنے کی اجازت دیں",
+    "allowParticipantChat": "شرکاء کو چیٹ میں پوسٹ کرنے کی اجازت دیں",
+    "waitingRoomEnabled": "ویٹنگ روم",
+    "waitingRoomDesc": "نئے آنے والے اس وقت تک انتظار کریں جب تک آپ انہیں میٹنگ ٹول بار سے داخل نہ کریں۔",
+    "autoAdmitAuthenticated": "خود بخود لاگ ان صارفین کو داخل کریں (جلد آرہا ہے)",
+    "autoAdmitAuthenticatedDesc": "سائن ان شدہ one.witysk.org صارفین کے لیے ویٹنگ روم کو نظرانداز کریں۔ ابھی تک نافذ نہیں — گمنام شامل ہونے والے ہمیشہ قطار میں لگتے ہیں۔"
   },
   "discover": {
     "title": "دریافت کریں",
@@ -173,7 +186,12 @@
     "settings": "ترتیبات",
     "settingsLabel": "اجلاس کے دوران ترتیبات",
     "topbarBrandingAlt": "میٹنگ کی برانڈنگ تصویر",
-    "requestFailed": "درخواست ناکام ہوگئی"
+    "requestFailed": "درخواست ناکام ہوگئی",
+    "recordLayout": "ریکارڈنگ لے آؤٹ",
+    "recordLayoutTitle": "ریکارڈنگ میں شرکاء کو کیسے فریم کیا جاتا ہے",
+    "recordLayoutSpeaker": "اسپیکر",
+    "recordLayoutGrid": "گرڈ",
+    "recordLayoutSingle": "ایک اسپیکر"
   },
   "inMeetingSettings": {
     "title": "ترتیبات",
@@ -223,7 +241,8 @@
     "themeDark": "اندھیرا",
     "themeLight": "روشنی",
     "compact": "کمپیکٹ UI",
-    "moreSettings": "مزید ترتیبات مکمل <1>ترتیبات</1> صفحے پر دستیاب ہیں۔"
+    "moreSettings": "مزید ترتیبات مکمل <1>ترتیبات</1> صفحے پر دستیاب ہیں۔",
+    "rejoinNote": "تبدیلیاں اگلی بار جب آپ میٹنگ میں شامل ہوں گے لاگو ہوں گی۔"
   },
   "recordingIndicator": {
     "label": "ریکارڈ"
@@ -328,7 +347,8 @@
       "running": "چل رہا ہے",
       "failed": "ناکام",
       "deleted": "حذف کر دیا گیا"
-    }
+    },
+    "untitledMeeting": "بغیر عنوان میٹنگ"
   },
   "settings": {
     "title": "ترتیبات",
@@ -886,5 +906,31 @@
       "colPath": "راستہ",
       "colDetails": "تفصیلات"
     }
+  },
+  "captions": {
+    "unavailable": "اس میٹنگ میں لائیو کیپشنز ابھی دستیاب نہیں ہیں۔"
+  },
+  "ptt": {
+    "holdToTalk": "جب تک بولنا چاہیں {{key}} دبائے رکھیں",
+    "live": "لائیو — چھوڑیں تو خاموش ہو جائیں گے"
+  },
+  "pending": {
+    "title": "ویٹنگ روم",
+    "toolbarLabel": "براہ کرم انتظار کریں",
+    "toolbarTitle": "لوگ شامل ہونے کا انتظار کر رہے ہیں",
+    "close": "ویٹنگ روم بند کریں",
+    "empty": "فی الحال کوئی انتظار نہیں کر رہا۔",
+    "admit": "داخل کریں",
+    "deny": "مسترد کریں"
+  },
+  "hand": {
+    "raise": "ہاتھ اٹھائیں",
+    "raised": "ہاتھ اٹھایا گیا",
+    "lower": "ہاتھ نیچے کریں",
+    "raiseTitle": "توجہ حاصل کرنے کے لیے ہاتھ اٹھائیں",
+    "lowerTitle": "اپنا ہاتھ نیچے کریں",
+    "tileBadge": "ہاتھ اٹھایا گیا",
+    "lowerOther": "اس شریک کا ہاتھ نیچے کریں",
+    "lowerName": "{{name}} کا ہاتھ نیچے کریں"
   }
 }

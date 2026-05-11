@@ -101,7 +101,20 @@
     "brandingFieldAlt": "ब्रँडिंग प्रतिमा",
     "unsupportedImageType": "असमर्थित प्रतिमा प्रकार {{type}}; कृपया JPEG, PNG, WebP, किंवा GIF वापरा.",
     "imageTooLarge": "प्रतिमा {{mb}} MB आहे; कमाल 2 MB आहे.",
-    "uploadFailed": "मीटिंग तयार झाली पण ब्रँडिंग अपलोड अयशस्वी: {{message}}"
+    "uploadFailed": "मीटिंग तयार झाली पण ब्रँडिंग अपलोड अयशस्वी: {{message}}",
+    "moderation": "मध्यस्थता",
+    "moderationHint": "डीफॉल्ट सेटिंग्जमधून येतात. तुम्ही प्रति मीटिंग ते बदलू शकता.",
+    "requireNameOnJoin": "सहभागींनी नाव प्रविष्ट करणे आवश्यक आहे",
+    "autoMuteNewJoiners": "नवीन सहभागींना आपोआप म्यूट करा",
+    "autoDisableCameraForNew": "नवीन सहभागींसाठी कॅमेरा बंद करा",
+    "lockRoomAfterStart": "तुम्ही सामील झाल्यावर खोली लॉक करा",
+    "lockRoomAfterStartDesc": "तुम्ही सामील झाल्यानंतर, नवीन सहभागी प्रवेश करू शकणार नाहीत.",
+    "allowParticipantScreenshare": "सहभागींना त्यांचा स्क्रीन शेअर करण्याची परवानगी द्या",
+    "allowParticipantChat": "सहभागींना चॅटमध्ये पोस्ट करण्याची परवानगी द्या",
+    "waitingRoomEnabled": "प्रतीक्षा कक्ष",
+    "waitingRoomDesc": "नवीन सहभागी तुम्ही मीटिंग टूलबारमधून त्यांना प्रवेश देईपर्यंत थांबतात.",
+    "autoAdmitAuthenticated": "स्वयं-प्रवेश साइन-इन केलेल्या वापरकर्त्यांना (लवकरच येत आहे)",
+    "autoAdmitAuthenticatedDesc": "साइन इन केलेल्या one.witysk.org वापरकर्त्यांसाठी प्रतीक्षा कक्ष टाळा. अद्याप लागू केलेले नाही — अनामिक सामील होणारे नेहमी रांगेत असतात."
   },
   "discover": {
     "title": "शोधा",
@@ -173,7 +186,12 @@
     "settings": "सेटिंग्ज",
     "settingsLabel": "बैठकीतील सेटिंग्ज",
     "topbarBrandingAlt": "मीटिंग ब्रँडिंग प्रतिमा",
-    "requestFailed": "विनंती अयशस्वी"
+    "requestFailed": "विनंती अयशस्वी",
+    "recordLayout": "रेकॉर्डिंग लेआउट",
+    "recordLayoutTitle": "रेकॉर्डिंगमध्ये सहभागी कसे फ्रेम केले जातात",
+    "recordLayoutSpeaker": "वक्ता",
+    "recordLayoutGrid": "ग्रिड",
+    "recordLayoutSingle": "एकच वक्ता"
   },
   "inMeetingSettings": {
     "title": "सेटिंग्ज",
@@ -223,7 +241,8 @@
     "themeDark": "गडद",
     "themeLight": "प्रकाश",
     "compact": "कॉम्पॅक्ट UI",
-    "moreSettings": "अधिक सेटिंग्ज पूर्ण <1>सेटिंग्ज</1> पृष्ठावर उपलब्ध आहेत."
+    "moreSettings": "अधिक सेटिंग्ज पूर्ण <1>सेटिंग्ज</1> पृष्ठावर उपलब्ध आहेत.",
+    "rejoinNote": "बदल पुढच्या वेळी तुम्ही मीटिंगमध्ये सामील झाल्यावर लागू होतील."
   },
   "recordingIndicator": {
     "label": "रेकॉर्ड"
@@ -328,7 +347,8 @@
       "running": "चालू आहे",
       "failed": "अयशस्वी",
       "deleted": "हटवले"
-    }
+    },
+    "untitledMeeting": "शीर्षक नसलेली बैठक"
   },
   "settings": {
     "title": "सेटिंग्ज",
@@ -886,5 +906,31 @@
       "colPath": "पथ",
       "colDetails": "तपशील"
     }
+  },
+  "captions": {
+    "unavailable": "या मीटिंगमध्ये लाइव्ह कॅप्शन्स अद्याप उपलब्ध नाहीत."
+  },
+  "ptt": {
+    "holdToTalk": "बोलण्यासाठी {{key}} दाबून ठेवा",
+    "live": "लाइव्ह — म्यूट करण्यासाठी रिलीझ करा"
+  },
+  "pending": {
+    "title": "प्रतीक्षा कक्ष",
+    "toolbarLabel": "प्रतीक्षा करत आहे",
+    "toolbarTitle": "सामील होण्यासाठी प्रतीक्षेत असलेले लोक",
+    "close": "प्रतीक्षा कक्ष बंद करा",
+    "empty": "सध्या कोणीही प्रतीक्षेत नाही.",
+    "admit": "प्रवेश द्या",
+    "deny": "नकार द्या"
+  },
+  "hand": {
+    "raise": "हात उचला",
+    "raised": "हात उंचावला",
+    "lower": "हात खाली करा",
+    "raiseTitle": "लक्ष वेधण्यासाठी हात वर करा",
+    "lowerTitle": "हात खाली करा",
+    "tileBadge": "हात उंचावला",
+    "lowerOther": "या सहभागीचा हात खाली करा",
+    "lowerName": "{{name}} चा हात खाली करा"
   }
 }
