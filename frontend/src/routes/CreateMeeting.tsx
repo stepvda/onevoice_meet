@@ -355,7 +355,7 @@ export default function CreateMeeting() {
             </div>
           </details>
 
-          <div>
+          <div className="border-t border-primary-700 pt-3">
             <Label htmlFor="meeting-branding">{t("createMeeting.fieldBranding")}</Label>
             <p className="text-xs text-slate-400 mb-2">{t("createMeeting.fieldBrandingHint")}</p>
             <input
