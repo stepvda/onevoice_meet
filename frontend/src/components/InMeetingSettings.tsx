@@ -13,7 +13,6 @@ import type {
   Layout as LayoutT,
   VideoQuality,
   Theme,
-  FontSize,
 } from "../lib/preferences";
 import { Toggle } from "./ui";
 
@@ -167,28 +166,6 @@ export default function InMeetingSettings({ open, onClose }: Props) {
         </Group>
 
         <Group icon={<Accessibility size={14} />} title={t("inMeetingSettings.groupAccessibility")}>
-          <Toggle
-            id="im-captions"
-            label={t("inMeetingSettings.captions")}
-            checked={prefs.accessibility.liveCaptions}
-            onChange={(v) => prefs.setAccessibility({ liveCaptions: v })}
-          />
-          <Field label={t("inMeetingSettings.captionsSize")} htmlFor="im-captions-size">
-            <SelectInline
-              id="im-captions-size"
-              ariaLabel={t("inMeetingSettings.captionsSize")}
-              value={prefs.accessibility.captionsFontSize}
-              onChange={(v) =>
-                prefs.setAccessibility({ captionsFontSize: v as FontSize })
-              }
-              options={[
-                ["small", t("inMeetingSettings.fontSmall")],
-                ["medium", t("inMeetingSettings.fontMedium")],
-                ["large", t("inMeetingSettings.fontLarge")],
-                ["xl", t("inMeetingSettings.fontXl")],
-              ]}
-            />
-          </Field>
           <Toggle
             id="im-reduced-motion"
             label={t("inMeetingSettings.reducedMotion")}
