@@ -11,6 +11,7 @@ from app.config import settings
 from app.db import get_db
 from app.livekit_client import mint_participant_token, short_lived_turn_credentials
 from app.models import Meeting, MeetingParticipant
+from app.routes.waiting_room import enqueue_pending
 
 router = APIRouter(prefix="/v1")
 
@@ -78,6 +79,21 @@ def anon_token(
         )
         if owner_joined:
             raise HTTPException(status_code=403, detail="meeting is locked")
+
+    # Moderation: waiting room — short-circuit without minting a LiveKit
+    # token. The joiner gets a wait_token they poll until the owner admits
+    # them (see app/routes/waiting_room.py).
+    if m.waiting_room_enabled:
+        wait_token = enqueue_pending(
+            meeting_id=m.id,
+            display_name=body.display_name,
+            email=str(body.email) if body.email else None,
+        )
+        return {
+            "status": "waiting",
+            "wait_token": wait_token,
+            "room_name": m.room_name,
+        }
 
     identity = f"anon-{ULID()}"
     # Auto-mute / auto-disable-camera: stamp the participant's join metadata

@@ -19,6 +19,7 @@ import {
   Radio,
   Settings as SettingsIcon,
   Square,
+  UserPlus,
   Users,
 } from "lucide-react";
 import { clearPendingToken, clearRoomMeta, loadPendingToken, loadRoomMeta } from "./Lobby";
@@ -33,6 +34,7 @@ import ParticipantsPanel from "../components/ParticipantsPanel";
 import InMeetingSettings from "../components/InMeetingSettings";
 import InviteModal from "../components/InviteModal";
 import AudioWaveform from "../components/AudioWaveform";
+import PendingJoinersPanel from "../components/PendingJoinersPanel";
 import MeetingClock from "../components/MeetingClock";
 import CaptionsOverlay from "../components/CaptionsOverlay";
 import PushToTalkIndicator from "../components/PushToTalkIndicator";
@@ -68,6 +70,8 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
   useJoinPolicy(room);
   const [recordingActive, setRecordingActive] = useState(false);
   const [recordingLayout, setRecordingLayout] = useState<"speaker" | "grid" | "single-speaker">("speaker");
+  const [pendingOpen, setPendingOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -203,6 +207,35 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
           >
             <Mail size={16} />
             <span className="hidden md:inline">{t("room.invite")}</span>
+          </button>
+        )}
+
+        {isOwner && meetingId && (
+          <button
+            type="button"
+            onClick={() => setPendingOpen((v) => !v)}
+            data-testid="btn-pending"
+            title={t("pending.toolbarTitle")}
+            aria-label={t("pending.title")}
+            className={[
+              "relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
+              pendingOpen
+                ? "bg-primary-500 text-white"
+                : pendingCount > 0
+                ? "bg-amber-500/80 text-white hover:bg-amber-500"
+                : "bg-primary-700 text-slate-100 hover:bg-primary-600",
+            ].join(" ")}
+          >
+            <UserPlus size={16} />
+            <span className="hidden md:inline">{t("pending.toolbarLabel")}</span>
+            {pendingCount > 0 && (
+              <span
+                data-testid="pending-badge"
+                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center"
+              >
+                {pendingCount}
+              </span>
+            )}
           </button>
         )}
 
@@ -422,6 +455,14 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
           meetingId={meetingId}
           isOwner={isOwner}
         />
+        {isOwner && meetingId && (
+          <PendingJoinersPanel
+            meetingId={meetingId}
+            open={pendingOpen}
+            onClose={() => setPendingOpen(false)}
+            onCountChange={setPendingCount}
+          />
+        )}
         <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
       </div>
 

@@ -12,6 +12,29 @@ export interface AnonTokenResponse {
   } | null;
 }
 
+export interface WaitingResponse {
+  status: "waiting";
+  wait_token: string;
+  room_name: string;
+}
+
+export type AnonTokenOrWait = AnonTokenResponse | WaitingResponse;
+
+export interface PendingJoiner {
+  wait_token: string;
+  display_name: string;
+  email: string | null;
+  requested_at: number;
+}
+
+export interface WaitPollOut {
+  status: "pending" | "admitted" | "denied" | "unknown";
+  livekit_url?: string | null;
+  token?: string | null;
+  ice_servers?: AnonTokenResponse["ice_servers"];
+  room_name?: string | null;
+}
+
 export interface MeetingOut {
   id: string;
   room_name: string;
@@ -290,10 +313,28 @@ export const api = {
     }),
 
   anonToken: (roomName: string, body: { display_name: string; email?: string; password?: string }) =>
-    request<AnonTokenResponse>(`/api/v1/rooms/${roomName}/anon-token`, {
+    request<AnonTokenOrWait>(`/api/v1/rooms/${roomName}/anon-token`, {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  pollWait: (roomName: string, waitToken: string) =>
+    request<WaitPollOut>(`/api/v1/rooms/${roomName}/wait/${waitToken}`),
+
+  listPendingJoiners: (meetingId: string) =>
+    request<PendingJoiner[]>(`/api/v1/meetings/${meetingId}/pending`),
+
+  admitPending: (meetingId: string, waitToken: string) =>
+    request<{ ok: boolean; status: string }>(
+      `/api/v1/meetings/${meetingId}/pending/${waitToken}/admit`,
+      { method: "POST" }
+    ),
+
+  denyPending: (meetingId: string, waitToken: string) =>
+    request<{ ok: boolean; status: string }>(
+      `/api/v1/meetings/${meetingId}/pending/${waitToken}/deny`,
+      { method: "POST" }
+    ),
 
   mute: (meetingId: string, body: { participant_identity: string; mute: boolean }) =>
     request(`/api/v1/meetings/${meetingId}/mute`, { method: "POST", body: JSON.stringify(body) }),

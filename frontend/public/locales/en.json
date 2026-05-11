@@ -211,10 +211,10 @@
     "lockRoomAfterStartDesc": "After you join, no new participants can enter.",
     "allowParticipantScreenshare": "Allow participants to share their screen",
     "allowParticipantChat": "Allow participants to post in chat",
-    "waitingRoomEnabled": "Waiting room (coming soon)",
-    "waitingRoomDesc": "Stored on the meeting but not yet enforced — the approval flow is still being built.",
+    "waitingRoomEnabled": "Waiting room",
+    "waitingRoomDesc": "New joiners wait until you admit them from the meeting toolbar.",
     "autoAdmitAuthenticated": "Auto-admit signed-in users (coming soon)",
-    "autoAdmitAuthenticatedDesc": "Bypass the waiting room for signed-in one.witysk.org users."
+    "autoAdmitAuthenticatedDesc": "Bypass the waiting room for signed-in one.witysk.org users. Not yet enforced — anonymous joiners always queue."
   },
   "discover": {
     "title": "Discover",
@@ -353,6 +353,15 @@
   "ptt": {
     "holdToTalk": "Hold {{key}} to talk",
     "live": "Live — release to mute"
+  },
+  "pending": {
+    "title": "Waiting room",
+    "toolbarLabel": "Waiting",
+    "toolbarTitle": "People waiting to join",
+    "close": "Close waiting room",
+    "empty": "No one is waiting right now.",
+    "admit": "Admit",
+    "deny": "Deny"
   },
   "tile": {
     "flip": "Flip horizontally",

@@ -46,6 +46,9 @@ export default function Lobby() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Waiting-room state — non-null while we're polling the API after the
+  // backend told us we're queued.
+  const [waitToken, setWaitToken] = useState<string | null>(null);
   const [info, setInfo] = useState<PublicRoomInfo | null>(null);
   // Pre-flight mic/camera state — null=untested, "ok"=granted, "denied"=blocked,
   // "error"=other (no devices, secure-context, etc.). We surface the result
@@ -147,13 +150,21 @@ export default function Lobby() {
     setBusy(true);
     setErr(null);
     try {
-      const resp = isOwner
-        ? await api.ownerToken(ownerMeetingId!, { display_name: await fetchOneWityskName() })
-        : await api.anonToken(roomName, {
-            display_name: name,
-            email: email || undefined,
-            password: password || undefined,
-          });
+      if (isOwner) {
+        const resp = await api.ownerToken(ownerMeetingId!, { display_name: await fetchOneWityskName() });
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp));
+        navigate(`/r/${roomName}`);
+        return;
+      }
+      const resp = await api.anonToken(roomName, {
+        display_name: name,
+        email: email || undefined,
+        password: password || undefined,
+      });
+      if ("status" in resp && resp.status === "waiting") {
+        setWaitToken(resp.wait_token);
+        return;
+      }
       sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp));
       navigate(`/r/${roomName}`);
     } catch (e) {
@@ -162,6 +173,46 @@ export default function Lobby() {
       setBusy(false);
     }
   }
+
+  // Waiting-room poll: while we hold a wait_token, ask the API every 2s
+  // for our admission status. On admit, save the LiveKit token and proceed
+  // to the room. On deny, drop the token and surface an error.
+  useEffect(() => {
+    if (!waitToken) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const r = await api.pollWait(roomName, waitToken);
+        if (cancelled) return;
+        if (r.status === "admitted" && r.token && r.livekit_url) {
+          const tokenResp: AnonTokenResponse = {
+            livekit_url: r.livekit_url,
+            token: r.token,
+            room_name: r.room_name ?? roomName,
+            ice_servers: r.ice_servers ?? null,
+          };
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify(tokenResp));
+          setWaitToken(null);
+          navigate(`/r/${roomName}`);
+        } else if (r.status === "denied") {
+          setErr(t("lobby.waitDenied", { defaultValue: "The host declined your request to join." }));
+          setWaitToken(null);
+        } else if (r.status === "unknown") {
+          setErr(t("lobby.waitExpired", { defaultValue: "Your request expired. Please try again." }));
+          setWaitToken(null);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        setErr((e as Error).message);
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => void tick(), 2000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [waitToken, roomName, navigate, t]);
 
   return (
     <div className="p-4 lg:p-8 max-w-xl mx-auto">
@@ -191,8 +242,18 @@ export default function Lobby() {
           </div>
         </div>
 
+        {waitToken && (
+          <div
+            data-testid="lobby-waiting"
+            className="rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-3 mb-4"
+          >
+            <p className="font-medium">{t("lobby.waitingTitle", { defaultValue: "Waiting for the host to admit you…" })}</p>
+            <p className="text-sm mt-1">{t("lobby.waitingBody", { defaultValue: "Keep this tab open. You'll join automatically once the host approves." })}</p>
+          </div>
+        )}
+
         <form onSubmit={join} className="flex flex-col gap-4">
-          {!isOwner && (
+          {!isOwner && !waitToken && (
             <>
               <Field id="lobby-name" label={t("lobby.yourName")}>
                 <Input
@@ -223,6 +284,7 @@ export default function Lobby() {
             </>
           )}
 
+          {!waitToken && (
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-3">
               <Button type="submit" disabled={busy || (!isOwner && !name)} data-testid="lobby-submit">
@@ -263,6 +325,8 @@ export default function Lobby() {
             )}
             {err && <div className="text-red-400 text-sm">{err}</div>}
           </div>
+          )}
+          {waitToken && err && <div className="text-red-400 text-sm">{err}</div>}
         </form>
       </Card>
     </div>
