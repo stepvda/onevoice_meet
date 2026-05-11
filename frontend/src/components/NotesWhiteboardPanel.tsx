@@ -13,8 +13,8 @@ interface Props {
 
 type Tab = "notes" | "board";
 
-const NOTES_TOPIC = "meet-notes";
-const BOARD_TOPIC = "meet-board";
+export const NOTES_TOPIC = "meet-notes";
+export const BOARD_TOPIC = "meet-board";
 const TEXT_ENC = new TextEncoder();
 const TEXT_DEC = new TextDecoder();
 

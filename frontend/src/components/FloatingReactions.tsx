@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Room } from "livekit-client";
 import { RoomEvent } from "livekit-client";
 
@@ -90,13 +91,15 @@ export default function FloatingReactions({ room }: Props) {
     };
   }, [room]);
 
-  // Render at viewport level (fixed + z-[60]) so we sit ABOVE every LiveKit
-  // video stacking context and ABOVE the meeting's side panels. Clicks fall
-  // through via `pointer-events-none`.
-  return (
+  // Render via portal to document.body so the overlay's containing block is
+  // the viewport regardless of any ancestor transform / filter / contain
+  // (which would otherwise turn `position: fixed` into "scope to ancestor"
+  // and could hide reactions behind LiveKit's video stacking contexts).
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       data-testid="floating-reactions"
-      className="pointer-events-none fixed inset-x-0 bottom-0 top-0 z-[60] overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-[1000] overflow-hidden"
     >
       {reactions.map((r) => (
         <span
@@ -117,6 +120,7 @@ export default function FloatingReactions({ room }: Props) {
           )}
         </span>
       ))}
-    </div>
+    </div>,
+    document.body,
   );
 }
