@@ -9,6 +9,7 @@ import SignInPrompt from "../components/SignInPrompt";
 interface Recording {
   id: string;
   meeting_id: string;
+  meeting_title: string | null;
   filename: string | null;
   branding_url: string | null;
   status: string;
@@ -146,10 +147,18 @@ export default function Recordings() {
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <code className="text-sm text-slate-200 break-all">{r.filename ?? r.id}</code>
+                    <span
+                      className="text-sm font-semibold text-slate-50 truncate"
+                      data-testid={`rec-meeting-title-${r.id}`}
+                    >
+                      {r.meeting_title ?? t("recordings.untitledMeeting")}
+                    </span>
                     <Badge status={r.status} />
                     {r.youtube_status && <YtBadge status={r.youtube_status} />}
                   </div>
+                  <code className="text-xs text-slate-400 break-all block mt-0.5">
+                    {r.filename ?? r.id}
+                  </code>
                   <div className="text-xs text-slate-400 mt-1">
                     {t("recordings.started", { when: new Date(r.started_at).toLocaleString() })}
                     {r.duration_seconds !== null && ` · ${formatDuration(r.duration_seconds)}`}

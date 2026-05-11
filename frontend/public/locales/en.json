@@ -411,6 +411,7 @@
     "signInTitle": "Sign in to see your recordings",
     "signInBody": "Recordings are owner-only. Sign in with your one.witysk.org account, or with a meet.witysk.org account, then reload this page.",
     "started": "Started {{when}}",
+    "untitledMeeting": "Untitled meeting",
     "publishTitle": "Upload to YouTube and delete the local file on success",
     "download": "Download",
     "downloading": "Downloading…",

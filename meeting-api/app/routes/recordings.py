@@ -121,7 +121,7 @@ async def start_recording(
     started = datetime.now(timezone.utc)
     filepath = str(
         Path(settings.recordings_dir)
-        / f"{m.room_name}-{started.strftime('%Y%m%d-%H%M')}.mp4"
+        / f"{m.room_name}-{started.strftime('%Y%m%d-%H%M%S')}.mp4"
     )
 
     lk = livekit_api()
@@ -363,10 +363,11 @@ def _recording_out(r: Recording) -> dict:
     elif r.meeting and r.started_at:
         ts = _aware_utc(r.started_at)
         if ts:
-            filename = f"{r.meeting.room_name}-{ts.strftime('%Y%m%d-%H%M')}.mp4"
+            filename = f"{r.meeting.room_name}-{ts.strftime('%Y%m%d-%H%M%S')}.mp4"
     return {
         "id": r.id,
         "meeting_id": r.meeting_id,
+        "meeting_title": r.meeting.display_title if r.meeting else None,
         "filename": filename,
         "branding_url": _branding_url(r.meeting) if r.meeting else None,
         "status": r.status,
