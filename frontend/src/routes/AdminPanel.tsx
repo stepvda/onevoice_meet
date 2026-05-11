@@ -7,7 +7,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, ArrowUp, Ban, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, KeyRound, Plus, RefreshCw, Search, Shield, ShieldAlert, Trash2, Unlock, UserX } from "lucide-react";
+import { ArrowDown, ArrowUp, Ban, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, KeyRound, Mail, Plus, RefreshCw, Search, Shield, ShieldAlert, Trash2, Unlock, UserX } from "lucide-react";
 import {
   AdminUserOut,
   BlockedIPOut,
@@ -464,6 +464,7 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
                   <div className="truncate"><span className="text-slate-500">{t("admin.users.colLocation", { defaultValue: "Location" })}:</span> {location ?? (ssoLoading ? "…" : "—")}</div>
                   <div><span className="text-slate-500">{t("admin.users.colCreated", { defaultValue: "Created" })}:</span> {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</div>
                   <div><span className="text-slate-500">{t("admin.users.colLastLogin", { defaultValue: "Last login" })}:</span> {lastLogin ? new Date(lastLogin).toLocaleDateString() : ssoLoading ? "…" : "—"}</div>
+                  <div data-testid={`admin-user-2fa-m-${u.id}`}><span className="text-slate-500">{t("admin.users.col2fa", { defaultValue: "2FA" })}:</span> <TwoFaCell user={u} compact /></div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {u.is_platform_admin && (
@@ -564,6 +565,7 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
                 >
                   {t("admin.users.colLastLogin", { defaultValue: "Last login" })}
                 </th>
+                <th className="py-2 pr-2">{t("admin.users.col2fa", { defaultValue: "2FA" })}</th>
                 <th className="py-2 pr-2">{t("admin.users.colStatus", { defaultValue: "Status" })}</th>
                 <th className="py-2 pr-2 text-right">{t("admin.users.colActions", { defaultValue: "Actions" })}</th>
               </tr>
@@ -607,6 +609,9 @@ function UsersTab({ currentUserId }: { currentUserId: number }) {
                       : ssoLoading
                       ? <span className="text-slate-500">…</span>
                       : <span className="text-slate-500">—</span>}
+                  </td>
+                  <td className="py-2 pr-2 whitespace-nowrap" data-testid={`admin-user-2fa-${u.id}`}>
+                    <TwoFaCell user={u} />
                   </td>
                   <td className="py-2 pr-2 space-x-1">
                     {u.is_platform_admin && (
@@ -1192,5 +1197,44 @@ function Stat({ label, value }: { label: string; value: string }) {
       <div className="text-xs text-slate-400">{label}</div>
       <div className="text-lg font-semibold text-slate-100">{value}</div>
     </div>
+  );
+}
+
+function TwoFaCell({ user, compact = false }: { user: AdminUserOut; compact?: boolean }) {
+  const { t } = useTranslation();
+  // SSO users authenticate via one.witysk.org, so meet doesn't track their
+  // 2FA status — show a dash to keep the column readable.
+  if (user.kind === "sso") {
+    return <span className="text-slate-500">—</span>;
+  }
+  const totp = user.totp_enabled;
+  const email = user.email_otp_enabled;
+  if (!totp && !email) {
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary-800 text-slate-400 text-xs">
+        {t("admin.users.twoFaOff", { defaultValue: "Off" })}
+      </span>
+    );
+  }
+  const pad = compact ? "px-1 py-0" : "px-1.5 py-0.5";
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {totp && (
+        <span
+          className={`inline-flex items-center gap-1 ${pad} rounded bg-accent-500/15 text-accent-400 text-xs`}
+          title={t("admin.users.twoFaTotpTitle", { defaultValue: "TOTP authenticator app" })}
+        >
+          <KeyRound size={10} /> {t("admin.users.twoFaTotp", { defaultValue: "TOTP" })}
+        </span>
+      )}
+      {email && (
+        <span
+          className={`inline-flex items-center gap-1 ${pad} rounded bg-accent-500/15 text-accent-400 text-xs`}
+          title={t("admin.users.twoFaEmailTitle", { defaultValue: "Email one-time code" })}
+        >
+          <Mail size={10} /> {t("admin.users.twoFaEmail", { defaultValue: "Email" })}
+        </span>
+      )}
+    </span>
   );
 }
