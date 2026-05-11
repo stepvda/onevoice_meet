@@ -681,17 +681,6 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
     target.setPointerCapture(e.pointerId);
     const p = pointToNormalised(e);
 
-    // If a text shape is currently being edited, this canvas click is the
-    // event that's blurring the textarea (and so committing the text).
-    // Don't ALSO interpret it as a new tool action — otherwise a click
-    // outside the box creates a new empty text shape (in text mode) or
-    // selects an unrelated shape, both of which make the user think their
-    // text vanished. Closure captures the pre-blur value of editingTextId,
-    // so this branch fires for exactly the "click while editing" case.
-    if (editingTextId) {
-      return;
-    }
-
     if (tool === "pen") {
       drawingRef.current = { active: true, points: [p] };
       return;
