@@ -25,6 +25,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
 from app.auth import RequireUser
@@ -453,20 +454,24 @@ def upsert_whiteboard_shape(
     m = _meeting_for_room(room_name, db, must_be_active=True)
     if not _IDENTITY_RE.match(shape_id):
         raise HTTPException(status_code=400, detail="invalid shape id")
-    row = db.query(WhiteboardShape).filter_by(id=shape_id, meeting_id=m.id).first()
-    if row is None:
-        row = WhiteboardShape(id=shape_id, meeting_id=m.id, kind=body.kind,
-                              x=body.x, y=body.y, w=body.w, h=body.h,
-                              color=body.color, stroke_width=body.stroke_width,
-                              text=body.text, font_size=body.font_size)
-        db.add(row)
-    else:
-        row.kind = body.kind
-        row.x = body.x; row.y = body.y; row.w = body.w; row.h = body.h
-        row.color = body.color
-        row.stroke_width = body.stroke_width
-        row.text = body.text
-        row.font_size = body.font_size
+    # Atomic upsert: clients can fire two writes for the same shape_id
+    # almost simultaneously (e.g. text-tool click creates the shape, then a
+    # fast text-commit fires before the first PUT has returned). A
+    # check-then-act SELECT/INSERT loses that race with a PRIMARY KEY
+    # conflict; INSERT ... ON CONFLICT DO UPDATE doesn't.
+    payload = dict(
+        id=shape_id, meeting_id=m.id, kind=body.kind,
+        x=body.x, y=body.y, w=body.w, h=body.h,
+        color=body.color, stroke_width=body.stroke_width,
+        text=body.text, font_size=body.font_size,
+        updated_at=datetime.now(timezone.utc),
+    )
+    stmt = sqlite_insert(WhiteboardShape).values(**payload)
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[WhiteboardShape.id],
+        set_={k: stmt.excluded[k] for k in payload if k != "id"},
+    )
+    db.execute(stmt)
     db.commit()
     return {"ok": True}
 
