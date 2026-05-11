@@ -1,8 +1,27 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, MessageCircleQuestion, ThumbsUp, Trash2, Vote, X } from "lucide-react";
-import { useLocalParticipant } from "@livekit/components-react";
+import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { api, type PollDTO, type QuestionDTO } from "../lib/api";
+
+export const POLLS_TOPIC = "meet-polls";
+const ENCODER_BROADCAST = new TextEncoder();
+
+/** Broadcast a tiny ping on the meet-polls topic so other clients can
+ * auto-open their Polls/Q&A panel. Body is just a kind discriminator. */
+async function broadcastPollsActivity(
+  room: ReturnType<typeof useRoomContext>,
+  kind: "poll" | "question",
+) {
+  try {
+    await room.localParticipant.publishData(
+      ENCODER_BROADCAST.encode(JSON.stringify({ v: 1, kind })),
+      { reliable: true, topic: POLLS_TOPIC },
+    );
+  } catch {
+    /* offline / non-critical — the polling refresh will still pick it up */
+  }
+}
 
 interface Props {
   open: boolean;
@@ -23,6 +42,7 @@ const POLL_REFRESH_MS = 4000;
 export default function PollsQnaPanel({ open, onClose, meetingId, isModerator }: Props) {
   const { t } = useTranslation();
   const { localParticipant } = useLocalParticipant();
+  const room = useRoomContext();
   const [tab, setTab] = useState<Tab>("polls");
   const [polls, setPolls] = useState<PollDTO[]>([]);
   const [questions, setQuestions] = useState<QuestionDTO[]>([]);
@@ -110,6 +130,7 @@ export default function PollsQnaPanel({ open, onClose, meetingId, isModerator }:
             me={me}
             setErr={setErr}
             refresh={(next) => setPolls(next)}
+            room={room}
           />
         ) : (
           <QnaTab
@@ -120,6 +141,7 @@ export default function PollsQnaPanel({ open, onClose, meetingId, isModerator }:
             myName={myName ?? "Guest"}
             setErr={setErr}
             refresh={(next) => setQuestions(next)}
+            room={room}
           />
         )}
       </div>
@@ -134,6 +156,7 @@ function PollsTab({
   me,
   setErr,
   refresh,
+  room,
 }: {
   polls: PollDTO[];
   meetingId: string | null;
@@ -141,6 +164,7 @@ function PollsTab({
   me: string;
   setErr: (e: string | null) => void;
   refresh: (p: PollDTO[]) => void;
+  room: ReturnType<typeof useRoomContext>;
 }) {
   const { t } = useTranslation();
   const [question, setQuestion] = useState("");
@@ -155,6 +179,7 @@ function PollsTab({
       refresh([p, ...polls]);
       setQuestion("");
       setOptions(["", ""]);
+      void broadcastPollsActivity(room, "poll");
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -293,6 +318,7 @@ function QnaTab({
   myName,
   setErr,
   refresh,
+  room,
 }: {
   questions: QuestionDTO[];
   meetingId: string | null;
@@ -301,6 +327,7 @@ function QnaTab({
   myName: string;
   setErr: (e: string | null) => void;
   refresh: (q: QuestionDTO[]) => void;
+  room: ReturnType<typeof useRoomContext>;
 }) {
   const { t } = useTranslation();
   const [text, setText] = useState("");
@@ -315,6 +342,7 @@ function QnaTab({
       });
       refresh([q, ...questions]);
       setText("");
+      void broadcastPollsActivity(room, "question");
     } catch (e) {
       setErr((e as Error).message);
     }

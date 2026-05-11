@@ -45,7 +45,7 @@ import ReactionsButton from "../components/ReactionsButton";
 import FloatingReactions from "../components/FloatingReactions";
 import PipButton from "../components/PipButton";
 import DeviceSwitcher from "../components/DeviceSwitcher";
-import PollsQnaPanel from "../components/PollsQnaPanel";
+import PollsQnaPanel, { POLLS_TOPIC } from "../components/PollsQnaPanel";
 import NotesWhiteboardPanel, { BOARD_TOPIC, NOTES_TOPIC } from "../components/NotesWhiteboardPanel";
 import MeetingClock from "../components/MeetingClock";
 import CaptionsOverlay from "../components/CaptionsOverlay";
@@ -92,12 +92,13 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
     });
   }, [room, onCaptureFeedbackInfo]);
 
-  // Auto-open the Notes / Whiteboard panel for everyone when ANY remote
-  // participant starts using it. Fires at most once per session so the user
-  // can close the panel and stay closed (e.g. someone who's deliberately
-  // ignoring the whiteboard). LiveKit doesn't echo local data, so this only
-  // triggers from genuinely remote activity.
+  // Auto-open the Notes/Whiteboard and Polls/Q&A panels for everyone when
+  // any remote participant starts using them. Each panel auto-opens at most
+  // once per session — once you close it, it stays closed unless you open
+  // it again manually. LiveKit doesn't echo local data, so these only fire
+  // for genuinely remote activity.
   const notesAutoOpenedRef = useRef(false);
+  const pollsAutoOpenedRef = useRef(false);
   useEffect(() => {
     const onData = (
       _payload: Uint8Array,
@@ -105,10 +106,17 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
       _kind: unknown,
       topic?: string,
     ) => {
-      if (topic !== NOTES_TOPIC && topic !== BOARD_TOPIC) return;
-      if (notesAutoOpenedRef.current) return;
-      notesAutoOpenedRef.current = true;
-      setNotesOpen(true);
+      if (topic === NOTES_TOPIC || topic === BOARD_TOPIC) {
+        if (!notesAutoOpenedRef.current) {
+          notesAutoOpenedRef.current = true;
+          setNotesOpen(true);
+        }
+      } else if (topic === POLLS_TOPIC) {
+        if (!pollsAutoOpenedRef.current) {
+          pollsAutoOpenedRef.current = true;
+          setPollsOpen(true);
+        }
+      }
     };
     room.on(RoomEvent.DataReceived, onData);
     return () => {

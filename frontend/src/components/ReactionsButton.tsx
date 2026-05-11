@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Smile } from "lucide-react";
 import { useRoomContext } from "@livekit/components-react";
@@ -12,13 +13,43 @@ export default function ReactionsButton() {
   const room = useRoomContext();
   const enabled = usePreferences((s) => s.meetingDefaults.enableReactions);
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const popRef = useRef<HTMLDivElement | null>(null);
+  // Anchor coordinates for the portal popover. Set on open and on
+  // scroll/resize so the popover follows the button.
+  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
 
-  // Close popover on outside click / Escape.
+  function reposition() {
+    const btn = buttonRef.current;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    setAnchor({
+      top: r.bottom + 4,
+      right: window.innerWidth - r.right,
+    });
+  }
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    reposition();
+    const onScroll = () => reposition();
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open]);
+
+  // Outside-click / Escape close. Now uses both refs because the popover
+  // is rendered via a portal (not a DOM child of the button wrapper).
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (buttonRef.current?.contains(t)) return;
+      if (popRef.current?.contains(t)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -33,8 +64,6 @@ export default function ReactionsButton() {
 
   async function send(emoji: string) {
     setOpen(false);
-    // Show our own reaction locally even though we won't receive it on the
-    // data channel.
     window.dispatchEvent(
       new CustomEvent("meet:local-reaction", {
         detail: {
@@ -46,14 +75,16 @@ export default function ReactionsButton() {
     try {
       await broadcastReaction(room, emoji);
     } catch {
-      /* offline / reliability=lossy — fine to drop */
+      /* lossy delivery — fine to drop */
     }
   }
 
   if (!enabled) return null;
+
   return (
-    <div ref={wrapRef} className="relative">
+    <>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         data-testid="btn-reactions"
@@ -71,27 +102,30 @@ export default function ReactionsButton() {
         <Smile size={16} />
         <span className="hidden md:inline">{t("reactions.toolbar")}</span>
       </button>
-      {open && (
-        <div
-          role="menu"
-          data-testid="reactions-popover"
-          className="absolute top-full mt-1 right-0 z-40 flex gap-1 px-2 py-1.5 rounded-lg bg-primary-900 border border-primary-700 shadow-lg"
-        >
-          {EMOJIS.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => void send(e)}
-              data-testid={`reaction-${e}`}
-              className="text-2xl hover:scale-125 transition-transform px-1"
-              title={t("reactions.send", { emoji: e })}
-              aria-label={t("reactions.send", { emoji: e })}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+      {open && anchor && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={popRef}
+            data-testid="reactions-popover"
+            className="fixed z-[1000] flex gap-1 px-2 py-1.5 rounded-lg bg-primary-900 border border-primary-700 shadow-xl"
+            style={{ top: anchor.top, right: anchor.right }}
+          >
+            {EMOJIS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => void send(e)}
+                data-testid={`reaction-${e}`}
+                className="text-2xl hover:scale-125 transition-transform px-1"
+                title={t("reactions.send", { emoji: e })}
+                aria-label={t("reactions.send", { emoji: e })}
+              >
+                {e}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
