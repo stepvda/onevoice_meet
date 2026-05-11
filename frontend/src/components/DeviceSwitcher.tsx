@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Check, Headphones } from "lucide-react";
 import { useRoomContext } from "@livekit/components-react";
@@ -35,13 +36,39 @@ export default function DeviceSwitcher() {
     cam: prefs.av.preferredCameraId ?? "",
     speaker: prefs.av.preferredSpeakerId ?? "",
   });
-  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const popRef = useRef<HTMLDivElement | null>(null);
+  // Anchor coordinates for the portal popover.
+  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
 
-  // Outside-click / Escape to close.
+  function reposition() {
+    const btn = buttonRef.current;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    setAnchor({ top: r.bottom + 4, right: window.innerWidth - r.right });
+  }
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    reposition();
+    const onScroll = () => reposition();
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open]);
+
+  // Outside-click / Escape to close. Uses both refs because the popover is
+  // portaled outside the button wrapper.
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (buttonRef.current?.contains(t)) return;
+      if (popRef.current?.contains(t)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -104,12 +131,13 @@ export default function DeviceSwitcher() {
   }
 
   return (
-    <div ref={wrapRef} className="relative">
+    <>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         data-testid="btn-devices"
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         aria-expanded={open ? "true" : "false"}
         aria-label={t("devices.toolbar", { defaultValue: "Audio & video devices" })}
         title={t("devices.toolbarTitle", { defaultValue: "Choose microphone, camera and speaker" })}
@@ -122,36 +150,39 @@ export default function DeviceSwitcher() {
       >
         <Headphones size={16} />
       </button>
-      {open && (
-        <div
-          role="menu"
-          data-testid="devices-popover"
-          className="absolute top-full right-0 mt-1 z-40 w-72 bg-primary-900 border border-primary-700 rounded-lg shadow-lg p-2 text-sm max-h-[60vh] overflow-y-auto"
-        >
-          <DeviceGroup
-            title={t("devices.mic", { defaultValue: "Microphone" })}
-            items={devices.mic}
-            currentId={current.mic}
-            onPick={(id) => void pick("mic", id)}
-            emptyLabel={t("devices.none", { defaultValue: "No devices found" })}
-          />
-          <DeviceGroup
-            title={t("devices.camera", { defaultValue: "Camera" })}
-            items={devices.cam}
-            currentId={current.cam}
-            onPick={(id) => void pick("cam", id)}
-            emptyLabel={t("devices.none", { defaultValue: "No devices found" })}
-          />
-          <DeviceGroup
-            title={t("devices.speaker", { defaultValue: "Speaker" })}
-            items={devices.speaker}
-            currentId={current.speaker}
-            onPick={(id) => void pick("speaker", id)}
-            emptyLabel={t("devices.speakerUnsupported", { defaultValue: "Output device selection isn't supported in this browser." })}
-          />
-        </div>
-      )}
-    </div>
+      {open && anchor && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={popRef}
+            data-testid="devices-popover"
+            className="fixed z-[1000] w-72 max-h-[60vh] overflow-y-auto bg-primary-900 border border-primary-700 rounded-lg shadow-xl p-2 text-sm"
+            style={{ top: anchor.top, right: anchor.right }}
+          >
+            <DeviceGroup
+              title={t("devices.mic", { defaultValue: "Microphone" })}
+              items={devices.mic}
+              currentId={current.mic}
+              onPick={(id) => void pick("mic", id)}
+              emptyLabel={t("devices.none", { defaultValue: "No devices found" })}
+            />
+            <DeviceGroup
+              title={t("devices.camera", { defaultValue: "Camera" })}
+              items={devices.cam}
+              currentId={current.cam}
+              onPick={(id) => void pick("cam", id)}
+              emptyLabel={t("devices.none", { defaultValue: "No devices found" })}
+            />
+            <DeviceGroup
+              title={t("devices.speaker", { defaultValue: "Speaker" })}
+              items={devices.speaker}
+              currentId={current.speaker}
+              onPick={(id) => void pick("speaker", id)}
+              emptyLabel={t("devices.speakerUnsupported", { defaultValue: "Output device selection isn't supported in this browser." })}
+            />
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
