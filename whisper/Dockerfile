@@ -28,8 +28,11 @@ RUN bash ./models/download-ggml-model.sh base.en
 # Stage 2: minimal runtime.
 FROM debian:bookworm-slim
 
+# `libgomp1` provides the OpenMP runtime that whisper.cpp links against
+# (parallel matmul). Without it, whisper-server fails at start with
+# "libgomp.so.1: cannot open shared object file".
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libstdc++6 ca-certificates && \
+        libstdc++6 libgomp1 ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /src/build/bin/ /usr/local/bin/
