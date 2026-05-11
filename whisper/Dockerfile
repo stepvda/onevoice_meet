@@ -33,6 +33,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /src/build/bin/ /usr/local/bin/
+# whisper.cpp's cmake build produces shared libraries (libwhisper.so,
+# libggml*.so) in scattered subdirectories of build/. Walk the entire tree
+# and copy every .so* file into /usr/local/lib so the dynamic loader can
+# find them via ldconfig — without us having to track exact paths that
+# shift between releases.
+COPY --from=builder /src/build /tmp/whisper-build
+RUN find /tmp/whisper-build -name "*.so*" -exec cp -a {} /usr/local/lib/ \; && \
+    rm -rf /tmp/whisper-build && \
+    ldconfig
 COPY --from=builder /src/models/ggml-base.en.bin /models/ggml-base.en.bin
 
 ENV MODEL=/models/ggml-base.en.bin \

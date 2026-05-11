@@ -1,16 +1,23 @@
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import scheduler
 from app.auth import bootstrap_platform_admins
 from app.config import settings
 from app.db import engine, lightweight_migrate
+from app.logging_config import log_event, setup_logging
 from app.models import Base
 from app.routes import admin, auth_native, billing, chat, health, meetings, moderation, polls, recordings, ti_cafe, tokens, totp, users, vouchers, waiting_room
 from app.services import ip_block
 from app.webhooks import router as webhook_router
+
+# Configure file-backed app/requests/db logs (rotates daily, gzips on
+# rotation, keeps 6 months). Called at import time so the very first log
+# line from any subsequent import lands in the right file.
+setup_logging()
 
 
 @asynccontextmanager
@@ -54,6 +61,36 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+# Per-request access log → /var/log/meet/requests.log. One line per
+# request with method, path, status, duration, client IP, and a truncated
+# user-agent. Registered BEFORE the IP block middleware so a 403 from
+# IPBlockMiddleware still appears in the access log (since later-added
+# Starlette middleware wraps earlier-added ones).
+@app.middleware("http")
+async def _request_log_mw(request: Request, call_next):
+    start = time.perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        ms = (time.perf_counter() - start) * 1000.0
+        client = request.client.host if request.client else "-"
+        ua = request.headers.get("user-agent", "-")
+        if len(ua) > 120:
+            ua = ua[:120] + "…"
+        log_event(
+            "http",
+            m=request.method,
+            p=request.url.path,
+            s=status_code,
+            ms=f"{ms:.1f}",
+            ip=client,
+            ua=f'"{ua}"',
+        )
+
+
 # IP blocking runs OUTERMOST: blocked addresses get a 403 before any
 # request body, auth, or DB call happens. Adding it last makes Starlette
 # wrap it around CORS, so it executes first on incoming requests but

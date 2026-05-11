@@ -111,6 +111,10 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - /var/lib/meet:/var/lib/meet
+      # File-backed logs: app.log / requests.log / db.log rotate daily,
+      # gzip on rotation and survive container restarts. Kept on the host
+      # under /var/log/meet/.
+      - /var/log/meet:/var/log/meet
     # Needed so meeting-api can call LiveKit's server API (host network)
     # via host.docker.internal:7880 for moderator + egress operations.
     extra_hosts:

@@ -33,7 +33,7 @@ rsync -avz --delete \
 echo "==> Installing to /opt/meet (preserving .env)…"
 ssh "$HOST" '
   set -e
-  mkdir -p /opt/meet /var/lib/meet/recordings
+  mkdir -p /opt/meet /var/lib/meet/recordings /var/log/meet
   rsync -a --exclude ".env" /tmp/meet-stage/ /opt/meet/
   rm -rf /tmp/meet-stage
 '
