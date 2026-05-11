@@ -6,6 +6,7 @@ import {
   useEnsureTrackRef,
 } from "@livekit/components-react";
 import { FlipHorizontal2 } from "lucide-react";
+import { usePreferences } from "../lib/preferences";
 
 /**
  * A drop-in replacement for `<ParticipantTile />` that overlays a small
@@ -19,7 +20,15 @@ import { FlipHorizontal2 } from "lucide-react";
 export default function FlippableTile() {
   const { t } = useTranslation();
   const ref = useEnsureTrackRef();
-  const [flipped, setFlipped] = useState(false);
+  const isLocal = ref?.participant?.isLocal ?? false;
+  const mirrorOwnPref = usePreferences((s) => s.display.mirrorOwnVideo);
+  // Local tile defaults to mirrored when the preference is on; the button
+  // below can still override it for this session, and the preference re-syncs
+  // whenever it changes.
+  const [flipped, setFlipped] = useState(isLocal && mirrorOwnPref);
+  useEffect(() => {
+    if (isLocal) setFlipped(mirrorOwnPref);
+  }, [isLocal, mirrorOwnPref]);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   // Apply / clear `transform: scaleX(-1)` on every <video> inside the tile.

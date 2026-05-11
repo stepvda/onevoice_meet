@@ -328,10 +328,14 @@
     "themeDark": "Dark",
     "themeLight": "Light",
     "compact": "Compact UI",
-    "moreSettings": "More settings live on the full <1>Settings</1> page."
+    "moreSettings": "More settings live on the full <1>Settings</1> page.",
+    "rejoinNote": "Changes apply the next time you join the meeting."
   },
   "recordingIndicator": {
     "label": "REC"
+  },
+  "captions": {
+    "unavailable": "Live captions are not yet available on this meeting."
   },
   "tile": {
     "flip": "Flip horizontally",

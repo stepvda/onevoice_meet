@@ -89,12 +89,14 @@ export default function InMeetingSettings({ open, onClose }: Props) {
             checked={prefs.av.mirrorPreview}
             onChange={(v) => prefs.setAv({ mirrorPreview: v })}
           />
+          <p className="text-xs text-slate-500">{t("inMeetingSettings.rejoinNote")}</p>
         </Group>
 
         <Group icon={<Monitor size={14} />} title={t("inMeetingSettings.groupDisplay")}>
-          <Field label={t("inMeetingSettings.layout")}>
+          <Field label={t("inMeetingSettings.layout")} htmlFor="im-layout">
             <SelectInline
               id="im-layout"
+              ariaLabel={t("inMeetingSettings.layout")}
               value={prefs.display.layout}
               onChange={(v) => prefs.setDisplay({ layout: v as LayoutT })}
               options={[
@@ -171,9 +173,10 @@ export default function InMeetingSettings({ open, onClose }: Props) {
             checked={prefs.accessibility.liveCaptions}
             onChange={(v) => prefs.setAccessibility({ liveCaptions: v })}
           />
-          <Field label={t("inMeetingSettings.captionsSize")}>
+          <Field label={t("inMeetingSettings.captionsSize")} htmlFor="im-captions-size">
             <SelectInline
               id="im-captions-size"
+              ariaLabel={t("inMeetingSettings.captionsSize")}
               value={prefs.accessibility.captionsFontSize}
               onChange={(v) =>
                 prefs.setAccessibility({ captionsFontSize: v as FontSize })
@@ -201,9 +204,10 @@ export default function InMeetingSettings({ open, onClose }: Props) {
         </Group>
 
         <Group icon={<Wifi size={14} />} title={t("inMeetingSettings.groupNetwork")}>
-          <Field label={t("inMeetingSettings.quality")}>
+          <Field label={t("inMeetingSettings.quality")} htmlFor="im-quality">
             <SelectInline
               id="im-quality"
+              ariaLabel={t("inMeetingSettings.quality")}
               value={prefs.network.preferredVideoQuality}
               onChange={(v) =>
                 prefs.setNetwork({ preferredVideoQuality: v as VideoQuality })
@@ -228,12 +232,14 @@ export default function InMeetingSettings({ open, onClose }: Props) {
             checked={prefs.network.forceRelay}
             onChange={(v) => prefs.setNetwork({ forceRelay: v })}
           />
+          <p className="text-xs text-slate-500">{t("inMeetingSettings.rejoinNote")}</p>
         </Group>
 
         <Group icon={<Palette size={14} />} title={t("inMeetingSettings.groupAppearance")}>
-          <Field label={t("inMeetingSettings.theme")}>
+          <Field label={t("inMeetingSettings.theme")} htmlFor="im-theme">
             <SelectInline
               id="im-theme"
+              ariaLabel={t("inMeetingSettings.theme")}
               value={prefs.appearance.theme}
               onChange={(v) => prefs.setAppearance({ theme: v as Theme })}
               options={[
@@ -282,10 +288,12 @@ function Group({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-xs text-slate-300 mb-1">{label}</div>
+      <label htmlFor={htmlFor} className="block text-xs text-slate-300 mb-1">
+        {label}
+      </label>
       {children}
     </div>
   );
@@ -296,11 +304,13 @@ function SelectInline({
   value,
   onChange,
   options,
+  ariaLabel,
 }: {
   id: string;
   value: string;
   onChange: (v: string) => void;
   options: [string, string][];
+  ariaLabel?: string;
 }) {
   return (
     <select
@@ -308,6 +318,7 @@ function SelectInline({
       data-testid={id}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      aria-label={ariaLabel ?? id}
       className="w-full px-2 py-1.5 rounded-lg bg-primary-800 text-slate-100 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
     >
       {options.map(([v, label]) => (

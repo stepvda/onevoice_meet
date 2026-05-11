@@ -24,6 +24,7 @@ import {
 import { clearPendingToken, clearRoomMeta, loadPendingToken, loadRoomMeta } from "./Lobby";
 import { roomOptions } from "../lib/livekit";
 import { api } from "../lib/api";
+import { usePreferences } from "../lib/preferences";
 import PresenterSpotlight from "../components/PresenterSpotlight";
 import BackgroundPicker from "../components/BackgroundPicker";
 import RecordingIndicator from "../components/RecordingIndicator";
@@ -32,6 +33,12 @@ import ParticipantsPanel from "../components/ParticipantsPanel";
 import InMeetingSettings from "../components/InMeetingSettings";
 import InviteModal from "../components/InviteModal";
 import AudioWaveform from "../components/AudioWaveform";
+import MeetingClock from "../components/MeetingClock";
+import CaptionsOverlay from "../components/CaptionsOverlay";
+import { useJoinSound, useChatSound } from "../lib/sounds";
+import { useMonoAudio } from "../lib/monoAudio";
+import { useThemePref } from "../lib/themePref";
+import { useVideoQualityPref } from "../lib/videoQualityPref";
 
 interface InnerProps {
   meetingId: string | null;
@@ -45,6 +52,15 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
   const { t } = useTranslation();
   const navigate = useNavigate();
   const room = useRoomContext();
+  const display = usePreferences((s) => s.display);
+  const appearance = usePreferences((s) => s.appearance);
+  const accessibility = usePreferences((s) => s.accessibility);
+  // Activate the side-effect hooks that translate prefs into runtime behaviour.
+  useJoinSound(room);
+  useChatSound(room);
+  useMonoAudio();
+  useThemePref();
+  useVideoQualityPref(room);
   const [recordingActive, setRecordingActive] = useState(false);
   const [recordingLayout, setRecordingLayout] = useState<"speaker" | "grid" | "single-speaker">("speaker");
   const [chatOpen, setChatOpen] = useState(false);
@@ -374,9 +390,24 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName }: 
       {/* MIDDLE: stage + side panels (panels are inline so they never overlap
           the stage; stage flexes down to make room). */}
       <div className="flex-1 min-h-0 flex">
-        <div className="flex-1 min-w-0 relative">
+        <div
+          className={[
+            "meet-stage flex-1 min-w-0 relative",
+            display.showParticipantNames ? "" : "no-participant-names",
+            display.showConnectionQuality ? "" : "no-conn-quality",
+            display.highlightSpeaker ? "" : "no-speaker-highlight",
+            appearance.compactMode ? "compact" : "",
+            accessibility.reducedMotion ? "reduced-motion" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           <PresenterSpotlight />
           <RoomAudioRenderer />
+          {display.showMeetingClock && <MeetingClock />}
+          {accessibility.liveCaptions && (
+            <CaptionsOverlay fontSize={accessibility.captionsFontSize} />
+          )}
         </div>
         <InMeetingSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         <ParticipantsPanel
