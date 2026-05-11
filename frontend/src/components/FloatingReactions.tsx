@@ -90,23 +90,28 @@ export default function FloatingReactions({ room }: Props) {
     };
   }, [room]);
 
+  // Render at viewport level (fixed + z-[60]) so we sit ABOVE every LiveKit
+  // video stacking context and ABOVE the meeting's side panels. Clicks fall
+  // through via `pointer-events-none`.
   return (
     <div
       data-testid="floating-reactions"
-      className="pointer-events-none absolute inset-0 overflow-hidden z-30"
+      className="pointer-events-none fixed inset-x-0 bottom-0 top-0 z-[60] overflow-hidden"
     >
       {reactions.map((r) => (
         <span
           key={r.id}
-          className="reaction-float absolute select-none"
+          className="reaction-float absolute select-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]"
           style={{
-            right: `${8 + r.lane * 56}px`,
-            bottom: "20%",
+            // Centre-bottom lanes so reactions are obviously visible even
+            // with a side panel open. Five lanes spread across the middle.
+            left: `calc(50% + ${(r.lane - 2) * 80}px)`,
+            bottom: "18%",
           }}
         >
-          <span className="text-4xl drop-shadow">{r.emoji}</span>
+          <span className="text-6xl">{r.emoji}</span>
           {r.name && (
-            <span className="block text-[10px] text-white/80 text-center -mt-1 whitespace-nowrap">
+            <span className="block text-xs font-medium text-white/90 text-center -mt-1 whitespace-nowrap px-1 py-0.5 rounded bg-black/50">
               {r.name}
             </span>
           )}
