@@ -67,20 +67,28 @@ def _enabled_stream_urls(m: Meeting) -> list[str]:
 
 
 def _encoding_options() -> "api.EncodingOptions":
-    # Re-export from recordings.py — kept here as a thin wrapper so this
-    # module doesn't need to import from a route module (circular risk).
+    """Encoding profile shared by recording, livestreaming, and combined egress.
+
+    A 2-second key-frame interval is mandatory for the livestream path:
+    Mux (used by Substack), YouTube Live, Facebook, Rumble and most other
+    RTMP ingests buffer to the next IDR before decoding anything. With a
+    4-second GOP a viewer who joins late waits up to 4 seconds for picture,
+    and some ingests (Substack/Mux in particular) drop the stream silently
+    — observable symptom: "both audio and video black on the player".
+    2 s also bounds recording-side replay seek latency to a comfortable
+    range without measurably affecting bitrate efficiency at H.264 Main."""
     if settings.recording_preset_1080p:
         return api.EncodingOptions(
             width=1920, height=1080, framerate=30,
             video_codec=api.VideoCodec.H264_MAIN, video_bitrate=3000,
             audio_codec=api.AudioCodec.AAC, audio_bitrate=128, audio_frequency=48000,
-            key_frame_interval=4.0,
+            key_frame_interval=2.0,
         )
     return api.EncodingOptions(
         width=1280, height=720, framerate=30,
         video_codec=api.VideoCodec.H264_MAIN, video_bitrate=1500,
         audio_codec=api.AudioCodec.AAC, audio_bitrate=128, audio_frequency=48000,
-        key_frame_interval=4.0,
+        key_frame_interval=2.0,
     )
 
 

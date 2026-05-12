@@ -49,44 +49,11 @@ async def _set_recording_metadata(lk: api.LiveKitAPI, room_name: str, active: bo
     )
 
 
-# Encoding profile for live recordings.
-#
-# Goals: "decent" compression at low CPU. LiveKit Egress runs Chrome+ffmpeg
-# under the hood and uses libx264 for H.264 encoding. We pick H.264 Main @
-# 720p30, ~1500 kbps video + 128 kbps AAC. Main profile is broadly hardware-
-# accelerated; 720p30 keeps encoder cost ~1 CPU core on the egress container.
-#
-# To bump to 1080p, set RECORDING_PRESET_1080P=1 in .env (still 30 fps; cost
-# roughly doubles). Anything beyond is a cluster-sizing decision.
-def _encoding_options() -> "api.EncodingOptions":
-    if settings.recording_preset_1080p:
-        return api.EncodingOptions(
-            width=1920,
-            height=1080,
-            framerate=30,
-            video_codec=api.VideoCodec.H264_MAIN,
-            video_bitrate=3000,  # kbps
-            audio_codec=api.AudioCodec.AAC,
-            audio_bitrate=128,
-            audio_frequency=48000,
-            key_frame_interval=4.0,
-        )
-    return api.EncodingOptions(
-        width=1280,
-        height=720,
-        framerate=30,
-        video_codec=api.VideoCodec.H264_MAIN,
-        video_bitrate=1500,
-        audio_codec=api.AudioCodec.AAC,
-        audio_bitrate=128,
-        audio_frequency=48000,
-        key_frame_interval=4.0,
-    )
-
-
 # LiveKit's built-in room-composite templates. "speaker" is the historical
 # default; "grid" mirrors the live grid view; "single-speaker" shows only the
-# active speaker with no thumbnails.
+# active speaker with no thumbnails. The encoding profile that goes with
+# either recording or livestreaming lives in app/services/egress_mgr.py
+# (single source of truth, shared by both code paths).
 RecordingLayout = Literal["speaker", "grid", "single-speaker"]
 
 
