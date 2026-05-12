@@ -444,10 +444,34 @@ def disk_usage_ratio(path: str | Path) -> tuple[float, int, int]:
     return (used / total if total else 0.0, used, total)
 
 
+def _recordings_dir_size(rec_dir: Path) -> int:
+    """Sum of sizes of files directly in the recordings dir. Used to decide
+    whether disk pressure is actually caused by recordings or by something
+    else on the same filesystem (docker images, OS bloat, etc.)."""
+    total = 0
+    try:
+        for p in rec_dir.iterdir():
+            try:
+                if p.is_file():
+                    total += p.stat().st_size
+            except OSError:
+                continue
+    except OSError:
+        return 0
+    return total
+
+
 def enforce_disk_cap(target_ratio: float | None = None) -> dict:
-    """If the recordings filesystem is at or above the configured cap (default 75%),
-    delete oldest completed recordings until below the cap. Always called before
-    starting a new recording AND from the nightly retention job.
+    """If the filesystem holding recordings is at or above the configured cap
+    (default 75%) AND the recordings dir is contributing meaningfully to that
+    pressure, delete oldest completed recordings until below the cap.
+
+    The "contributing meaningfully" guard is critical: when the disk is full
+    because of docker build cache, OS logs, or other non-recording content,
+    deleting every recording on the box won't get us under the cap. The old
+    behaviour was to keep evicting until the list was empty (which is what
+    wiped every old recording on 2026-05-11). Now we bail out instead and
+    leave a warning so operators know to clean up the actual cause.
 
     Returns {"deleted": N, "freed_bytes": M, "before_ratio": ..., "after_ratio": ...}
     """
@@ -458,13 +482,34 @@ def enforce_disk_cap(target_ratio: float | None = None) -> dict:
     rec_dir.mkdir(parents=True, exist_ok=True)
 
     before_ratio, _, total = disk_usage_ratio(rec_dir)
+    base_result = {
+        "deleted": 0,
+        "freed_bytes": 0,
+        "before_ratio": before_ratio,
+        "after_ratio": before_ratio,
+        "cap": cap,
+    }
     if before_ratio < cap:
-        return {"deleted": 0, "freed_bytes": 0, "before_ratio": before_ratio, "after_ratio": before_ratio}
+        return base_result
 
-    # How many bytes do we need to free to drop below cap, with a small safety margin
-    # so back-to-back recordings don't immediately trigger the cap again.
     bytes_to_free = int((before_ratio - (cap - 0.05)) * total)
     bytes_to_free = max(bytes_to_free, 0)
+
+    rec_dir_size = _recordings_dir_size(rec_dir)
+    # If even wiping every recording would free less than half of what's
+    # needed, the disk problem is somewhere else. Don't punish the user's
+    # archive for the OS being fat. Operators get a logged warning instead.
+    if rec_dir_size < bytes_to_free / 2:
+        import logging
+        logging.getLogger(__name__).warning(
+            "disk-cap exceeded (%.0f%% >= %.0f%%) but recordings_dir is only "
+            "%.1f MB of %.1f MB needed — refusing to evict (problem is elsewhere)",
+            before_ratio * 100,
+            cap * 100,
+            rec_dir_size / 1e6,
+            bytes_to_free / 1e6,
+        )
+        return {**base_result, "skipped": "recordings_too_small_to_help"}
 
     deleted = 0
     freed = 0
