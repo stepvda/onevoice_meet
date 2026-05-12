@@ -79,7 +79,10 @@ async def start_stream(
 async def stop_stream(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
     m = _require_owner(meeting_id, user.sub, db)
     if not m.livestream_egress_id:
-        raise HTTPException(status_code=404, detail="no active livestream")
+        # Idempotent: see comment in stop_recording. Treating "already off" as
+        # success means a stale SPA / double-click / mid-egress-ended-webhook
+        # click doesn't surface as a confusing 404 toast.
+        return {"ok": True, "already_stopped": True}
 
     # If recording is also riding the same egress, restart with file-only so
     # the recording continues. Otherwise just stop.

@@ -19,6 +19,7 @@ from app.routes.ti_cafe import (
     mark_joined as ticafe_mark_joined,
     mark_left as ticafe_mark_left,
 )
+from app.livekit_client import livekit_api
 
 router = APIRouter(prefix="/v1")
 
@@ -29,6 +30,32 @@ _receiver = api.WebhookReceiver(
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+async def _clear_recording_metadata(room_name: str) -> None:
+    """Flip `recording_active` back to False on the LiveKit room metadata when
+    an egress ends without going through our stop-endpoint flow (e.g. natural
+    end, egress crash, max-duration cutoff). The SPA listens to
+    RoomMetadataChanged to toggle the toolbar's recording dot — without this
+    update it would stay stuck "recording" until the user refreshes."""
+    import json
+    lk = livekit_api()
+    try:
+        rooms = await lk.room.list_rooms(api.ListRoomsRequest(names=[room_name]))
+        if not rooms.rooms:
+            return
+        try:
+            current = json.loads(rooms.rooms[0].metadata or "{}")
+        except ValueError:
+            current = {}
+        if not current.get("recording_active"):
+            return
+        current["recording_active"] = False
+        await lk.room.update_room_metadata(
+            api.UpdateRoomMetadataRequest(room=room_name, metadata=json.dumps(current))
+        )
+    finally:
+        await lk.aclose()
 
 
 @router.post("/webhooks/livekit")
@@ -106,6 +133,12 @@ async def livekit_webhook(
         rec = db.query(Recording).filter_by(egress_id=info.egress_id).first()
         if rec:
             if etype == "egress_ended":
+                # Reset the room-metadata recording flag so the SPA toolbar
+                # updates immediately. Run in the background so the webhook
+                # doesn't block on a LiveKit roundtrip.
+                meeting = db.query(Meeting).filter_by(id=rec.meeting_id).first()
+                if meeting:
+                    background.add_task(_clear_recording_metadata, meeting.room_name)
                 # EgressStatus: 3 = EGRESS_COMPLETE; anything else means failure.
                 rec.status = "completed" if info.status == 3 else "failed"
                 rec.ended_at = _now()

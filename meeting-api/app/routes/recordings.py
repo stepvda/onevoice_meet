@@ -98,7 +98,10 @@ async def stop_recording(meeting_id: str, user: RequireUser, db: Session = Depen
     m = _require_owner(meeting_id, user.sub, db)
     rec = db.query(Recording).filter_by(meeting_id=m.id, status="running").first()
     if not rec:
-        raise HTTPException(status_code=404, detail="no active recording")
+        # Idempotent: from the user's POV the state is already "stopped".
+        # Returning 404 here makes the SPA appear stuck on a Stop button
+        # that "doesn't work" — log shows e.g. four retries in 22 s.
+        return {"ok": True, "recording_id": None, "already_stopped": True}
 
     # If a stream is also active on this egress, restart with stream-only so
     # the broadcast continues. Otherwise just stop everything.

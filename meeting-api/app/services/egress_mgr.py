@@ -149,6 +149,16 @@ async def reconcile_egress(
         lk = livekit_api()
         try:
             await lk.egress.stop_egress(api.StopEgressRequest(egress_id=cur_egress_id))
+            # If the transition leaves NO file output running, flip the room
+            # metadata's `recording_active` flag so the SPA's toolbar reverts
+            # to "Start recording" instead of stranding the user on a Stop
+            # button that 404s. The webhook is too late for this — the SPA
+            # listens for RoomMetadataChanged immediately.
+            if not want_file:
+                try:
+                    await _set_recording_metadata(lk, m.room_name, False)
+                except Exception:  # noqa: BLE001
+                    pass
         finally:
             await lk.aclose()
         if cur_has_stream:
