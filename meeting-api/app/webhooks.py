@@ -94,6 +94,14 @@ async def livekit_webhook(
 
     elif etype in ("egress_started", "egress_updated", "egress_ended") and event.egress_info:
         info = event.egress_info
+        # Livestreams use a separate egress (no Recording row) but still
+        # need cleanup on end — clear the meeting's active egress_id so the
+        # toolbar button reverts to "Start streaming" on next page load.
+        if etype == "egress_ended":
+            m = db.query(Meeting).filter_by(livestream_egress_id=info.egress_id).first()
+            if m:
+                m.livestream_egress_id = None
+                db.commit()
         rec = db.query(Recording).filter_by(egress_id=info.egress_id).first()
         if rec:
             if etype == "egress_ended":

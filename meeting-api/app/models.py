@@ -80,6 +80,19 @@ class Meeting(Base):
     # Free-form collaborative notes (plain text). Last writer wins; the
     # client debounces writes and refreshes on a data-channel hint.
     notes: Mapped[str] = mapped_column(String, default="", nullable=False)
+    # Live-stream-to-X.com configuration. When `livestream_enabled` is True,
+    # the in-meeting toolbar shows a Start/Stop streaming button that pipes
+    # the room composite to an RTMP(S) endpoint. The URL + key are stored
+    # plain because LiveKit egress needs the original credentials and only
+    # the meeting owner can read or write them.
+    livestream_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    livestream_rtmps_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    livestream_stream_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Currently active stream egress id (set on start, cleared on stop or on
+    # `egress_ended` webhook). Used by the frontend to render the right
+    # toolbar button state on page reload and to refuse a second concurrent
+    # start.
+    livestream_egress_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")

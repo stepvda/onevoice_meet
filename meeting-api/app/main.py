@@ -10,7 +10,7 @@ from app.config import settings
 from app.db import engine, lightweight_migrate
 from app.logging_config import log_event, setup_logging
 from app.models import Base
-from app.routes import admin, auth_native, billing, chat, health, meetings, moderation, polls, recordings, ti_cafe, tokens, totp, users, vouchers, waiting_room
+from app.routes import admin, auth_native, billing, chat, health, meetings, moderation, polls, recordings, streams, ti_cafe, tokens, totp, users, vouchers, waiting_room
 from app.services import ip_block
 from app.webhooks import router as webhook_router
 
@@ -102,6 +102,7 @@ app.include_router(meetings.router, prefix="/api")
 app.include_router(tokens.router, prefix="/api")
 app.include_router(moderation.router, prefix="/api")
 app.include_router(recordings.router, prefix="/api")
+app.include_router(streams.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(ti_cafe.router, prefix="/api")

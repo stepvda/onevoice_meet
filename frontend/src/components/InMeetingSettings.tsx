@@ -5,6 +5,7 @@ import {
   Accessibility,
   Wifi,
   Palette,
+  Radio,
   X,
 } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
@@ -19,6 +20,9 @@ import { Toggle } from "./ui";
 interface Props {
   open: boolean;
   onClose: () => void;
+  // Owner-only host entry to open the LivestreamSettingsModal. Hidden for
+  // non-owners and when undefined (which is how guests/cohosts get rendered).
+  onConfigureLivestream?: () => void;
 }
 
 /**
@@ -30,7 +34,7 @@ interface Props {
  * Writes go straight into the same `meet-preferences-v1` zustand store as
  * the full Settings page; persistence is automatic.
  */
-export default function InMeetingSettings({ open, onClose }: Props) {
+export default function InMeetingSettings({ open, onClose, onConfigureLivestream }: Props) {
   const { t } = useTranslation();
   const prefs = usePreferences();
 
@@ -233,6 +237,25 @@ export default function InMeetingSettings({ open, onClose }: Props) {
             onChange={(v) => prefs.setAppearance({ compactMode: v })}
           />
         </Group>
+
+        {onConfigureLivestream && (
+          <Group icon={<Radio size={14} />} title={t("inMeetingSettings.groupLivestream", { defaultValue: "Live stream" })}>
+            <p className="text-xs text-slate-400">
+              {t("inMeetingSettings.livestreamHint", {
+                defaultValue:
+                  "Configure RTMPS URL and stream key for live streaming this meeting to X.com or another RTMP destination.",
+              })}
+            </p>
+            <button
+              type="button"
+              onClick={onConfigureLivestream}
+              data-testid="im-livestream-configure"
+              className="text-left text-sm px-3 py-1.5 rounded-md bg-primary-800 hover:bg-primary-700 text-slate-100 border border-primary-700"
+            >
+              {t("inMeetingSettings.livestreamConfigure", { defaultValue: "Configure live stream…" })}
+            </button>
+          </Group>
+        )}
 
         <p className="text-xs text-slate-500 pt-1">
           <Trans

@@ -91,6 +91,13 @@ class CreateMeetingBody(BaseModel):
     # presets the form offers so we don't have to safely parse free input.
     recurrence_rule: str | None = Field(default=None, max_length=200)
     duration_minutes: int | None = Field(default=None, ge=5, le=8 * 60)
+    # ── Live stream to X.com (or any RTMPS endpoint) ──────────────────
+    # When enabled, the in-meeting toolbar offers a Start/Stop streaming
+    # button. The URL + key are sent to LiveKit egress concatenated as
+    # `<url>/<key>`, which is what every major RTMP endpoint expects.
+    livestream_enabled: bool = False
+    livestream_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_stream_key: str | None = Field(default=None, max_length=500)
 
 
 class UpdateMeetingBody(BaseModel):
@@ -99,6 +106,9 @@ class UpdateMeetingBody(BaseModel):
     list_for_authenticated: bool | None = None
     list_for_anonymous: bool | None = None
     recording_mode: str | None = Field(default=None, pattern="^(manual|auto_on_start|off)$")
+    livestream_enabled: bool | None = None
+    livestream_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_stream_key: str | None = Field(default=None, max_length=500)
 
 
 class MeetingOut(BaseModel):
@@ -128,6 +138,14 @@ class MeetingOut(BaseModel):
     lobby_greeting: str | None = None
     recurrence_rule: str | None = None
     duration_minutes: int | None = None
+    # Livestream config — surfaced so the SPA can render the right toolbar
+    # state and pre-fill the edit modal. The stream key is intentionally
+    # included; the endpoint is owner-only.
+    livestream_enabled: bool = False
+    livestream_rtmps_url: str | None = None
+    livestream_stream_key: str | None = None
+    # True while a livestream egress is active.
+    livestream_active: bool = False
 
 
 def _branding_url(m: Meeting) -> str | None:
@@ -165,6 +183,10 @@ def _to_out(m: Meeting) -> MeetingOut:
         lobby_greeting=m.lobby_greeting,
         recurrence_rule=m.recurrence_rule,
         duration_minutes=m.duration_minutes,
+        livestream_enabled=bool(m.livestream_enabled),
+        livestream_rtmps_url=m.livestream_rtmps_url,
+        livestream_stream_key=m.livestream_stream_key,
+        livestream_active=bool(m.livestream_egress_id),
     )
 
 
@@ -233,6 +255,9 @@ def create_meeting(body: CreateMeetingBody, user: RequireAdmin, db: Session = De
         lobby_greeting=(body.lobby_greeting or "").strip() or None,
         recurrence_rule=_validated_rrule(body.recurrence_rule),
         duration_minutes=body.duration_minutes,
+        livestream_enabled=bool(body.livestream_enabled),
+        livestream_rtmps_url=(body.livestream_rtmps_url or "").strip() or None,
+        livestream_stream_key=(body.livestream_stream_key or "").strip() or None,
     )
     db.add(meeting)
     db.commit()
@@ -492,6 +517,13 @@ def update_meeting(
                 detail="cannot disable list_for_authenticated while list_for_anonymous is true",
             )
         m.list_for_authenticated = body.list_for_authenticated
+
+    if body.livestream_enabled is not None:
+        m.livestream_enabled = body.livestream_enabled
+    if body.livestream_rtmps_url is not None:
+        m.livestream_rtmps_url = body.livestream_rtmps_url.strip() or None
+    if body.livestream_stream_key is not None:
+        m.livestream_stream_key = body.livestream_stream_key.strip() or None
 
     db.commit()
     return _to_out(m).model_dump()

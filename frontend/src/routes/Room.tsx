@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { clearPendingToken, clearRoomMeta, loadPendingToken, loadRoomMeta } from "./Lobby";
 import { roomOptions } from "../lib/livekit";
-import { api } from "../lib/api";
+import { api, MeetingOut } from "../lib/api";
 import { usePreferences } from "../lib/preferences";
 import PresenterSpotlight from "../components/PresenterSpotlight";
 import BackgroundPicker from "../components/BackgroundPicker";
@@ -35,6 +35,7 @@ import ChatPanel from "../components/ChatPanel";
 import ParticipantsPanel from "../components/ParticipantsPanel";
 import InMeetingSettings from "../components/InMeetingSettings";
 import InviteModal from "../components/InviteModal";
+import LivestreamSettingsModal from "../components/LivestreamSettingsModal";
 import AudioWaveform from "../components/AudioWaveform";
 import PendingJoinersPanel from "../components/PendingJoinersPanel";
 import HandRaiseButton from "../components/HandRaiseButton";
@@ -176,6 +177,14 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
   });
   const [recordingActive, setRecordingActive] = useState(false);
   const [recordingLayout, setRecordingLayout] = useState<"speaker" | "grid" | "single-speaker">("speaker");
+  // Livestream-to-X.com. `livestreamEnabled` mirrors the meeting flag
+  // (toolbar button only renders when true); `livestreamActive` flips when
+  // the egress is running. We poll on mount/owner-only because the meeting
+  // metadata doesn't (yet) include livestream state.
+  const [livestreamEnabled, setLivestreamEnabled] = useState(false);
+  const [livestreamActive, setLivestreamActive] = useState(false);
+  const [livestreamSettingsOpen, setLivestreamSettingsOpen] = useState(false);
+  const [livestreamMeeting, setLivestreamMeeting] = useState<MeetingOut | null>(null);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -207,6 +216,44 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
     setErr(m);
     if (errClear.current) window.clearTimeout(errClear.current);
     errClear.current = window.setTimeout(() => setErr(null), 4000);
+  }
+
+  // Load this meeting's livestream config (owner only). The config drives
+  // whether the Start/Stop streaming button appears in the toolbar at all,
+  // and the LivestreamSettingsModal needs the full row to pre-fill itself.
+  useEffect(() => {
+    if (!isOwner || !meetingId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const all = await api.listMeetings();
+        const mine = all.find((x) => x.id === meetingId);
+        if (cancelled || !mine) return;
+        setLivestreamMeeting(mine);
+        setLivestreamEnabled(!!mine.livestream_enabled);
+        setLivestreamActive(!!mine.livestream_active);
+      } catch {
+        /* surface as no button — keeps the toolbar usable */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOwner, meetingId]);
+
+  async function toggleLivestream() {
+    if (!meetingId) return;
+    if (livestreamActive) {
+      await withBusy("stream-stop", async () => {
+        await api.stopStream(meetingId);
+        setLivestreamActive(false);
+      });
+    } else {
+      await withBusy("stream-start", async () => {
+        await api.startStream(meetingId, { layout: recordingLayout });
+        setLivestreamActive(true);
+      });
+    }
   }
 
   // Mirror room.metadata.recording_active locally.
@@ -403,6 +450,42 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
                 <option value="single-speaker">{t("room.recordLayoutSingle")}</option>
               </select>
             )}
+            {livestreamEnabled && (
+              <button
+                type="button"
+                onClick={toggleLivestream}
+                data-testid="btn-stream"
+                disabled={busy !== null}
+                aria-label={
+                  livestreamActive
+                    ? t("room.stopStream", { defaultValue: "Stop streaming" })
+                    : t("room.startStream", { defaultValue: "Start streaming" })
+                }
+                title={
+                  livestreamActive
+                    ? t("room.stopStreamTitle", { defaultValue: "Stop livestreaming to X.com" })
+                    : t("room.startStreamTitle", { defaultValue: "Start livestreaming to X.com" })
+                }
+                className={[
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
+                  livestreamActive
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-primary-700 text-slate-100 hover:bg-primary-600",
+                  "disabled:opacity-50",
+                ].join(" ")}
+              >
+                <Radio size={16} />
+                <span className="hidden md:inline">
+                  {busy === "stream-start"
+                    ? t("room.starting")
+                    : busy === "stream-stop"
+                    ? t("room.stopping")
+                    : livestreamActive
+                    ? t("room.stopStream", { defaultValue: "Stop streaming" })
+                    : t("room.startStream", { defaultValue: "Start streaming" })}
+                </span>
+              </button>
+            )}
             <button
               type="button"
               onClick={toggleRecording}
@@ -597,7 +680,18 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           <PushToTalkIndicator />
           <FloatingReactions room={room} />
         </div>
-        <InMeetingSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+        <InMeetingSettings
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          onConfigureLivestream={
+            isOwner && livestreamMeeting
+              ? () => {
+                  setLivestreamSettingsOpen(true);
+                  setSettingsOpen(false);
+                }
+              : undefined
+          }
+        />
         <ParticipantsPanel
           open={participantsOpen}
           onClose={() => setParticipantsOpen(false)}
@@ -650,6 +744,19 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           meetingTitle={meetingTitle ?? undefined}
           open={inviteOpen}
           onClose={() => setInviteOpen(false)}
+        />
+      )}
+
+      {/* LIVESTREAM CONFIG */}
+      {isOwner && livestreamMeeting && (
+        <LivestreamSettingsModal
+          meeting={livestreamMeeting}
+          open={livestreamSettingsOpen}
+          onClose={() => setLivestreamSettingsOpen(false)}
+          onSaved={(updated) => {
+            setLivestreamMeeting(updated);
+            setLivestreamEnabled(!!updated.livestream_enabled);
+          }}
         />
       )}
     </div>

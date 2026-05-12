@@ -74,6 +74,10 @@ def lightweight_migrate() -> None:
                 ("recurrence_rule", "ALTER TABLE meetings ADD COLUMN recurrence_rule TEXT"),
                 ("duration_minutes", "ALTER TABLE meetings ADD COLUMN duration_minutes INTEGER"),
                 ("notes", "ALTER TABLE meetings ADD COLUMN notes TEXT DEFAULT '' NOT NULL"),
+                ("livestream_enabled", "ALTER TABLE meetings ADD COLUMN livestream_enabled BOOLEAN DEFAULT 0 NOT NULL"),
+                ("livestream_rtmps_url", "ALTER TABLE meetings ADD COLUMN livestream_rtmps_url TEXT"),
+                ("livestream_stream_key", "ALTER TABLE meetings ADD COLUMN livestream_stream_key TEXT"),
+                ("livestream_egress_id", "ALTER TABLE meetings ADD COLUMN livestream_egress_id TEXT"),
             )),
             ("chat_messages", (
                 ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),

@@ -84,6 +84,10 @@ export interface MeetingOut {
   branding_url?: string | null;
   list_for_authenticated?: boolean;
   list_for_anonymous?: boolean;
+  livestream_enabled?: boolean;
+  livestream_rtmps_url?: string | null;
+  livestream_stream_key?: string | null;
+  livestream_active?: boolean;
 }
 
 export interface PublicMeeting {
@@ -324,6 +328,9 @@ export const api = {
     lobby_greeting?: string | null;
     recurrence_rule?: string | null;
     duration_minutes?: number | null;
+    livestream_enabled?: boolean;
+    livestream_rtmps_url?: string | null;
+    livestream_stream_key?: string | null;
   }) =>
     request<{ meeting: MeetingOut; join_url: string }>("/api/v1/meetings", {
       method: "POST",
@@ -337,6 +344,9 @@ export const api = {
       list_for_authenticated?: boolean;
       list_for_anonymous?: boolean;
       recording_mode?: "manual" | "auto_on_start" | "off";
+      livestream_enabled?: boolean;
+      livestream_rtmps_url?: string | null;
+      livestream_stream_key?: string | null;
     }
   ) =>
     request<MeetingOut>(`/api/v1/meetings/${meetingId}`, {
@@ -820,6 +830,23 @@ export const api = {
 
   stopRecording: (meetingId: string) =>
     request(`/api/v1/meetings/${meetingId}/recordings:stop`, { method: "POST" }),
+
+  startStream: (
+    meetingId: string,
+    body: { layout?: "speaker" | "grid" | "single-speaker" } = {},
+  ) =>
+    request<{ ok: boolean; egress_id: string }>(
+      `/api/v1/meetings/${meetingId}/stream:start`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+
+  stopStream: (meetingId: string) =>
+    request<{ ok: boolean }>(`/api/v1/meetings/${meetingId}/stream:stop`, { method: "POST" }),
+
+  streamStatus: (meetingId: string) =>
+    request<{ enabled: boolean; active: boolean; egress_id: string | null }>(
+      `/api/v1/meetings/${meetingId}/stream`,
+    ),
 
   listRecordings: () => request<unknown[]>("/api/v1/recordings"),
 

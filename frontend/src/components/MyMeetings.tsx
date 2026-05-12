@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Copy, Eye, EyeOff, Globe, LogIn, Lock, Mail, MessageSquare, RotateCcw, Trash2, Video } from "lucide-react";
+import { Copy, Eye, EyeOff, Globe, LogIn, Lock, Mail, MessageSquare, Radio, RotateCcw, Trash2, Video } from "lucide-react";
 import { api, MeetingOut } from "../lib/api";
 import { Button, Card } from "./ui";
 import InviteModal from "./InviteModal";
+import LivestreamSettingsModal from "./LivestreamSettingsModal";
 
 export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) {
   const { t } = useTranslation();
@@ -13,6 +14,7 @@ export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) 
   const [err, setErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteFor, setInviteFor] = useState<MeetingOut | null>(null);
+  const [livestreamFor, setLivestreamFor] = useState<MeetingOut | null>(null);
 
   function visibilityIcon(m: MeetingOut) {
     if (m.list_for_anonymous)
@@ -197,6 +199,16 @@ export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) 
                 </Button>
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLivestreamFor(m)}
+                  data-testid={`meeting-livestream-${m.id}`}
+                  title={t("myMeetings.livestreamTitle", { defaultValue: "Configure live stream" })}
+                >
+                  <Radio size={16} className={m.livestream_enabled ? "text-accent-500" : ""} />
+                </Button>
+                <Button
+                  type="button"
                   variant="accent"
                   size="sm"
                   onClick={() => joinAsOwner(m)}
@@ -289,6 +301,16 @@ export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) 
           meetingTitle={inviteFor.display_title}
           open={!!inviteFor}
           onClose={() => setInviteFor(null)}
+        />
+      )}
+      {livestreamFor && (
+        <LivestreamSettingsModal
+          meeting={livestreamFor}
+          open={!!livestreamFor}
+          onClose={() => setLivestreamFor(null)}
+          onSaved={(updated) =>
+            setRows((cur) => (cur ? cur.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)) : cur))
+          }
         />
       )}
     </div>
