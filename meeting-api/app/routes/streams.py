@@ -47,10 +47,14 @@ async def start_stream(
     m = _require_owner(meeting_id, user.sub, db)
     if not m.is_active:
         raise HTTPException(status_code=403, detail="meeting closed")
-    if not m.livestream_enabled:
-        raise HTTPException(status_code=400, detail="livestream not enabled for this meeting")
-    if not m.livestream_rtmps_url or not m.livestream_stream_key:
-        raise HTTPException(status_code=400, detail="rtmps url and stream key required")
+    # Meeting must have at least one enabled destination with creds. Each
+    # destination has its own toggle; "streaming enabled" is the union.
+    from app.services.egress_mgr import _enabled_stream_urls
+    if not _enabled_stream_urls(m):
+        raise HTTPException(
+            status_code=400,
+            detail="no livestream destination configured (enable X.com / Substack / YouTube / Facebook / Rumble with rtmps url + key)",
+        )
     if m.livestream_egress_id:
         raise HTTPException(status_code=409, detail="livestream already in progress")
 

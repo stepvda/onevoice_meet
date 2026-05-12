@@ -87,6 +87,18 @@ export interface MeetingOut {
   livestream_enabled?: boolean;
   livestream_rtmps_url?: string | null;
   livestream_stream_key?: string | null;
+  livestream_substack_enabled?: boolean;
+  livestream_substack_rtmps_url?: string | null;
+  livestream_substack_stream_key?: string | null;
+  livestream_youtube_enabled?: boolean;
+  livestream_youtube_rtmps_url?: string | null;
+  livestream_youtube_stream_key?: string | null;
+  livestream_facebook_enabled?: boolean;
+  livestream_facebook_rtmps_url?: string | null;
+  livestream_facebook_stream_key?: string | null;
+  livestream_rumble_enabled?: boolean;
+  livestream_rumble_rtmps_url?: string | null;
+  livestream_rumble_stream_key?: string | null;
   livestream_active?: boolean;
 }
 
@@ -331,6 +343,18 @@ export const api = {
     livestream_enabled?: boolean;
     livestream_rtmps_url?: string | null;
     livestream_stream_key?: string | null;
+    livestream_substack_enabled?: boolean;
+    livestream_substack_rtmps_url?: string | null;
+    livestream_substack_stream_key?: string | null;
+    livestream_youtube_enabled?: boolean;
+    livestream_youtube_rtmps_url?: string | null;
+    livestream_youtube_stream_key?: string | null;
+    livestream_facebook_enabled?: boolean;
+    livestream_facebook_rtmps_url?: string | null;
+    livestream_facebook_stream_key?: string | null;
+    livestream_rumble_enabled?: boolean;
+    livestream_rumble_rtmps_url?: string | null;
+    livestream_rumble_stream_key?: string | null;
   }) =>
     request<{ meeting: MeetingOut; join_url: string }>("/api/v1/meetings", {
       method: "POST",
@@ -347,6 +371,18 @@ export const api = {
       livestream_enabled?: boolean;
       livestream_rtmps_url?: string | null;
       livestream_stream_key?: string | null;
+      livestream_substack_enabled?: boolean;
+      livestream_substack_rtmps_url?: string | null;
+      livestream_substack_stream_key?: string | null;
+      livestream_youtube_enabled?: boolean;
+      livestream_youtube_rtmps_url?: string | null;
+      livestream_youtube_stream_key?: string | null;
+      livestream_facebook_enabled?: boolean;
+      livestream_facebook_rtmps_url?: string | null;
+      livestream_facebook_stream_key?: string | null;
+      livestream_rumble_enabled?: boolean;
+      livestream_rumble_rtmps_url?: string | null;
+      livestream_rumble_stream_key?: string | null;
     }
   ) =>
     request<MeetingOut>(`/api/v1/meetings/${meetingId}`, {

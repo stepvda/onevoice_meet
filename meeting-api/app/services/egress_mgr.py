@@ -35,8 +35,35 @@ if TYPE_CHECKING:
 
 def _build_stream_url(rtmps_url: str, stream_key: str) -> str:
     """`<url>/<key>` is what every major RTMP ingest expects (X/Twitter via
-    studio.x.com, Twitch, YouTube Live, Facebook). Tolerate stray slashes."""
+    studio.x.com, Substack, Twitch, YouTube Live, Facebook). Tolerate stray
+    slashes."""
     return rtmps_url.rstrip("/") + "/" + stream_key.lstrip("/")
+
+
+# Each entry is (enabled_attr, url_attr, key_attr). X.com keeps the legacy
+# unprefixed column names from when it was the only destination. Adding a
+# new platform = three new columns on Meeting + one entry here + a UI block.
+LIVESTREAM_DESTINATIONS: list[tuple[str, str, str]] = [
+    ("livestream_enabled", "livestream_rtmps_url", "livestream_stream_key"),
+    ("livestream_substack_enabled", "livestream_substack_rtmps_url", "livestream_substack_stream_key"),
+    ("livestream_youtube_enabled", "livestream_youtube_rtmps_url", "livestream_youtube_stream_key"),
+    ("livestream_facebook_enabled", "livestream_facebook_rtmps_url", "livestream_facebook_stream_key"),
+    ("livestream_rumble_enabled", "livestream_rumble_rtmps_url", "livestream_rumble_stream_key"),
+]
+
+
+def _enabled_stream_urls(m: Meeting) -> list[str]:
+    """Return every destination URL the meeting wants to stream to. Empty
+    list means "no streaming destinations configured" — the caller treats
+    this the same as `want_stream=False`."""
+    urls: list[str] = []
+    for en_attr, url_attr, key_attr in LIVESTREAM_DESTINATIONS:
+        en = bool(getattr(m, en_attr, False))
+        url = getattr(m, url_attr, None)
+        key = getattr(m, key_attr, None)
+        if en and url and key:
+            urls.append(_build_stream_url(url, key))
+    return urls
 
 
 def _encoding_options() -> "api.EncodingOptions":
@@ -154,11 +181,17 @@ async def reconcile_egress(
         )
 
     if want_stream:
-        if not m.livestream_rtmps_url or not m.livestream_stream_key:
-            raise HTTPException(status_code=400, detail="rtmps url and stream key required")
-        url = _build_stream_url(m.livestream_rtmps_url, m.livestream_stream_key)
+        urls = _enabled_stream_urls(m)
+        if not urls:
+            raise HTTPException(
+                status_code=400,
+                detail="enable at least one livestream destination (X.com or Substack) with rtmps url + key",
+            )
+        # One StreamOutput with multiple URLs — ffmpeg fans the same encoded
+        # output to all destinations, so adding Substack on top of X.com is
+        # only one extra muxer (~negligible CPU).
         stream_outputs.append(
-            api.StreamOutput(protocol=api.StreamProtocol.RTMP, urls=[url])
+            api.StreamOutput(protocol=api.StreamProtocol.RTMP, urls=urls)
         )
 
     req_kwargs: dict = {

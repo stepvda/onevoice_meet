@@ -27,6 +27,7 @@ import {
 import { clearPendingToken, clearRoomMeta, loadPendingToken, loadRoomMeta } from "./Lobby";
 import { roomOptions } from "../lib/livekit";
 import { api, MeetingOut } from "../lib/api";
+import { LIVESTREAM_DESTINATIONS } from "../lib/livestreamDestinations";
 import { usePreferences } from "../lib/preferences";
 import PresenterSpotlight from "../components/PresenterSpotlight";
 import BackgroundPicker from "../components/BackgroundPicker";
@@ -230,7 +231,15 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
         const mine = all.find((x) => x.id === meetingId);
         if (cancelled || !mine) return;
         setLivestreamMeeting(mine);
-        setLivestreamEnabled(!!mine.livestream_enabled);
+        // Show the toolbar button if ANY destination's toggle is on. The
+        // egress validation on the backend additionally requires URL+key,
+        // but at the UI layer "any toggle on" is enough to surface the
+        // button — if creds are missing the start call returns a 400 with
+        // a clear error which we already toast via `withBusy`.
+        const anyEnabled = LIVESTREAM_DESTINATIONS.some(
+          (d) => !!(mine as unknown as Record<string, unknown>)[d.fields.enabled],
+        );
+        setLivestreamEnabled(anyEnabled);
         setLivestreamActive(!!mine.livestream_active);
       } catch {
         /* surface as no button — keeps the toolbar usable */
@@ -755,7 +764,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           onClose={() => setLivestreamSettingsOpen(false)}
           onSaved={(updated) => {
             setLivestreamMeeting(updated);
-            setLivestreamEnabled(!!updated.livestream_enabled);
+            const anyEnabled = LIVESTREAM_DESTINATIONS.some(
+              (d) => !!(updated as unknown as Record<string, unknown>)[d.fields.enabled],
+            );
+            setLivestreamEnabled(anyEnabled);
           }}
         />
       )}

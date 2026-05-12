@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Radio, X } from "lucide-react";
 import { api, MeetingOut } from "../lib/api";
-import { Button, Card, Field, Input, Toggle } from "./ui";
+import { Button, Card } from "./ui";
+import LivestreamDestinationBlock from "./LivestreamDestinationBlock";
+import { LIVESTREAM_DESTINATIONS } from "../lib/livestreamDestinations";
 
 interface Props {
   meeting: MeetingOut;
@@ -11,42 +13,64 @@ interface Props {
   onSaved: (updated: MeetingOut) => void;
 }
 
+type DestState = { enabled: boolean; url: string; streamKey: string };
+
+function seedFromMeeting(meeting: MeetingOut): Record<string, DestState> {
+  const m = meeting as unknown as Record<string, unknown>;
+  return Object.fromEntries(
+    LIVESTREAM_DESTINATIONS.map((d) => [
+      d.id,
+      {
+        enabled: !!m[d.fields.enabled],
+        url: (m[d.fields.rtmps_url] as string | null) ?? "",
+        streamKey: (m[d.fields.stream_key] as string | null) ?? "",
+      },
+    ]),
+  );
+}
+
 /**
- * Edit the X.com livestream config on an existing meeting. Used both from
- * MyMeetings (Account / Home page) and from the in-meeting toolbar so the
- * host can paste new credentials mid-call without leaving the room.
+ * Edit a meeting's livestream destinations (X, Substack, YouTube, Facebook,
+ * Rumble). Used both from MyMeetings and from the in-meeting toolbar so the
+ * host can paste new credentials mid-call without leaving the room. When
+ * multiple destinations are enabled, the egress fans the same composite out
+ * to all of them — one Chrome, one encoder, N RTMP muxers.
  */
 export default function LivestreamSettingsModal({ meeting, open, onClose, onSaved }: Props) {
   const { t } = useTranslation();
-  const [enabled, setEnabled] = useState(!!meeting.livestream_enabled);
-  const [url, setUrl] = useState(meeting.livestream_rtmps_url ?? "");
-  const [key, setKey] = useState(meeting.livestream_stream_key ?? "");
-  const [showKey, setShowKey] = useState(false);
+  const [state, setState] = useState<Record<string, DestState>>(() => seedFromMeeting(meeting));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   // Re-seed when the modal is reopened against a different meeting.
   useEffect(() => {
     if (!open) return;
-    setEnabled(!!meeting.livestream_enabled);
-    setUrl(meeting.livestream_rtmps_url ?? "");
-    setKey(meeting.livestream_stream_key ?? "");
-    setShowKey(false);
+    setState(seedFromMeeting(meeting));
     setErr(null);
   }, [open, meeting]);
 
   if (!open) return null;
+
+  function setDestState(id: string, next: DestState) {
+    setState((cur) => ({ ...cur, [id]: next }));
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
     setBusy(true);
     try {
-      const updated = await api.updateMeeting(meeting.id, {
-        livestream_enabled: enabled,
-        livestream_rtmps_url: url.trim() || null,
-        livestream_stream_key: key.trim() || null,
-      });
+      const body = Object.fromEntries(
+        LIVESTREAM_DESTINATIONS.flatMap((d) => {
+          const s = state[d.id];
+          return [
+            [d.fields.enabled, s.enabled],
+            [d.fields.rtmps_url, s.url.trim() || null],
+            [d.fields.stream_key, s.streamKey.trim() || null],
+          ];
+        }),
+      );
+      const updated = await api.updateMeeting(meeting.id, body);
       onSaved(updated);
       onClose();
     } catch (e) {
@@ -64,7 +88,7 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
       aria-modal="true"
       aria-label={t("livestream.modalTitle", { defaultValue: "Configure live stream" })}
     >
-      <Card className="w-full max-w-lg relative">
+      <Card className="w-full max-w-lg relative max-h-[85vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
@@ -84,83 +108,24 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
         </p>
 
         <form onSubmit={save} className="flex flex-col gap-4">
-          <Toggle
-            id="ls-enabled"
-            label={t("createMeeting.livestreamEnableX", { defaultValue: "Stream this meeting live to X.com" })}
-            description={t("createMeeting.livestreamEnableDesc", {
+          <p className="text-xs text-slate-400">
+            {t("createMeeting.livestreamHint", {
               defaultValue:
-                "When on, the host gets a Start/Stop streaming button in the meeting toolbar. Streaming is OFF by default — you start it manually when the meeting begins.",
+                "Toggle one or more destinations. The in-meeting Start streaming button fans the same composite out to every enabled destination. Streaming is OFF by default — you start it manually when the meeting begins.",
             })}
-            checked={enabled}
-            onChange={setEnabled}
-          />
+          </p>
 
-          {enabled && (
-            <>
-              <Field id="ls-url" label={t("createMeeting.livestreamUrl", { defaultValue: "RTMPS URL" })}>
-                <Input
-                  id="ls-url"
-                  data-testid="ls-url"
-                  type="url"
-                  placeholder="rtmps://va.pscp.tv:443/x"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                />
-              </Field>
-              <Field id="ls-key" label={t("createMeeting.livestreamKey", { defaultValue: "Stream key" })}>
-                <div className="flex gap-2">
-                  <Input
-                    id="ls-key"
-                    data-testid="ls-key"
-                    type={showKey ? "text" : "password"}
-                    placeholder="abcd-1234-…"
-                    value={key}
-                    onChange={(e) => setKey(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowKey((s) => !s)}
-                    className="px-2 text-xs text-slate-300 rounded-md bg-primary-800 hover:bg-primary-700 border border-primary-700"
-                  >
-                    {showKey
-                      ? t("common.hide", { defaultValue: "Hide" })
-                      : t("common.show", { defaultValue: "Show" })}
-                  </button>
-                </div>
-              </Field>
-              <div className="text-xs text-slate-400 leading-relaxed bg-primary-900/60 border border-primary-700 rounded-md p-3 space-y-1">
-                <p className="font-medium text-slate-300">
-                  {t("createMeeting.livestreamWhereTitle", {
-                    defaultValue: "Where to find these on X (Twitter):",
-                  })}
-                </p>
-                <ol className="list-decimal pl-4 space-y-0.5">
-                  <li>
-                    {t("createMeeting.livestreamStep1", {
-                      defaultValue: "Open studio.x.com and sign in.",
-                    })}
-                  </li>
-                  <li>
-                    {t("createMeeting.livestreamStep2", {
-                      defaultValue: "Click “Producer” in the left sidebar, then “Create broadcast”.",
-                    })}
-                  </li>
-                  <li>
-                    {t("createMeeting.livestreamStep3", {
-                      defaultValue:
-                        "Under “Source”, choose “External encoder”. X shows an RTMPS URL and a stream key — copy them into the two fields above.",
-                    })}
-                  </li>
-                  <li>
-                    {t("createMeeting.livestreamStep4", {
-                      defaultValue:
-                        "The key is single-use per broadcast: regenerate it on studio.x.com if you reuse this meeting later.",
-                    })}
-                  </li>
-                </ol>
-              </div>
-            </>
-          )}
+          {LIVESTREAM_DESTINATIONS.map((d, i) => (
+            <LivestreamDestinationBlock
+              key={d.id}
+              dest={d}
+              enabled={state[d.id].enabled}
+              url={state[d.id].url}
+              streamKey={state[d.id].streamKey}
+              onChange={(next) => setDestState(d.id, next)}
+              isFirst={i === 0}
+            />
+          ))}
 
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={busy} data-testid="ls-save">

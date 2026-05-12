@@ -98,6 +98,18 @@ class CreateMeetingBody(BaseModel):
     livestream_enabled: bool = False
     livestream_rtmps_url: str | None = Field(default=None, max_length=500)
     livestream_stream_key: str | None = Field(default=None, max_length=500)
+    livestream_substack_enabled: bool = False
+    livestream_substack_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_substack_stream_key: str | None = Field(default=None, max_length=500)
+    livestream_youtube_enabled: bool = False
+    livestream_youtube_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_youtube_stream_key: str | None = Field(default=None, max_length=500)
+    livestream_facebook_enabled: bool = False
+    livestream_facebook_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_facebook_stream_key: str | None = Field(default=None, max_length=500)
+    livestream_rumble_enabled: bool = False
+    livestream_rumble_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_rumble_stream_key: str | None = Field(default=None, max_length=500)
 
 
 class UpdateMeetingBody(BaseModel):
@@ -109,6 +121,18 @@ class UpdateMeetingBody(BaseModel):
     livestream_enabled: bool | None = None
     livestream_rtmps_url: str | None = Field(default=None, max_length=500)
     livestream_stream_key: str | None = Field(default=None, max_length=500)
+    livestream_substack_enabled: bool | None = None
+    livestream_substack_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_substack_stream_key: str | None = Field(default=None, max_length=500)
+    livestream_youtube_enabled: bool | None = None
+    livestream_youtube_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_youtube_stream_key: str | None = Field(default=None, max_length=500)
+    livestream_facebook_enabled: bool | None = None
+    livestream_facebook_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_facebook_stream_key: str | None = Field(default=None, max_length=500)
+    livestream_rumble_enabled: bool | None = None
+    livestream_rumble_rtmps_url: str | None = Field(default=None, max_length=500)
+    livestream_rumble_stream_key: str | None = Field(default=None, max_length=500)
 
 
 class MeetingOut(BaseModel):
@@ -144,7 +168,20 @@ class MeetingOut(BaseModel):
     livestream_enabled: bool = False
     livestream_rtmps_url: str | None = None
     livestream_stream_key: str | None = None
-    # True while a livestream egress is active.
+    livestream_substack_enabled: bool = False
+    livestream_substack_rtmps_url: str | None = None
+    livestream_substack_stream_key: str | None = None
+    livestream_youtube_enabled: bool = False
+    livestream_youtube_rtmps_url: str | None = None
+    livestream_youtube_stream_key: str | None = None
+    livestream_facebook_enabled: bool = False
+    livestream_facebook_rtmps_url: str | None = None
+    livestream_facebook_stream_key: str | None = None
+    livestream_rumble_enabled: bool = False
+    livestream_rumble_rtmps_url: str | None = None
+    livestream_rumble_stream_key: str | None = None
+    # True while a livestream egress is active (fanning out to whichever
+    # destinations are configured).
     livestream_active: bool = False
 
 
@@ -186,6 +223,18 @@ def _to_out(m: Meeting) -> MeetingOut:
         livestream_enabled=bool(m.livestream_enabled),
         livestream_rtmps_url=m.livestream_rtmps_url,
         livestream_stream_key=m.livestream_stream_key,
+        livestream_substack_enabled=bool(m.livestream_substack_enabled),
+        livestream_substack_rtmps_url=m.livestream_substack_rtmps_url,
+        livestream_substack_stream_key=m.livestream_substack_stream_key,
+        livestream_youtube_enabled=bool(m.livestream_youtube_enabled),
+        livestream_youtube_rtmps_url=m.livestream_youtube_rtmps_url,
+        livestream_youtube_stream_key=m.livestream_youtube_stream_key,
+        livestream_facebook_enabled=bool(m.livestream_facebook_enabled),
+        livestream_facebook_rtmps_url=m.livestream_facebook_rtmps_url,
+        livestream_facebook_stream_key=m.livestream_facebook_stream_key,
+        livestream_rumble_enabled=bool(m.livestream_rumble_enabled),
+        livestream_rumble_rtmps_url=m.livestream_rumble_rtmps_url,
+        livestream_rumble_stream_key=m.livestream_rumble_stream_key,
         livestream_active=bool(m.livestream_egress_id),
     )
 
@@ -258,6 +307,18 @@ def create_meeting(body: CreateMeetingBody, user: RequireAdmin, db: Session = De
         livestream_enabled=bool(body.livestream_enabled),
         livestream_rtmps_url=(body.livestream_rtmps_url or "").strip() or None,
         livestream_stream_key=(body.livestream_stream_key or "").strip() or None,
+        livestream_substack_enabled=bool(body.livestream_substack_enabled),
+        livestream_substack_rtmps_url=(body.livestream_substack_rtmps_url or "").strip() or None,
+        livestream_substack_stream_key=(body.livestream_substack_stream_key or "").strip() or None,
+        livestream_youtube_enabled=bool(body.livestream_youtube_enabled),
+        livestream_youtube_rtmps_url=(body.livestream_youtube_rtmps_url or "").strip() or None,
+        livestream_youtube_stream_key=(body.livestream_youtube_stream_key or "").strip() or None,
+        livestream_facebook_enabled=bool(body.livestream_facebook_enabled),
+        livestream_facebook_rtmps_url=(body.livestream_facebook_rtmps_url or "").strip() or None,
+        livestream_facebook_stream_key=(body.livestream_facebook_stream_key or "").strip() or None,
+        livestream_rumble_enabled=bool(body.livestream_rumble_enabled),
+        livestream_rumble_rtmps_url=(body.livestream_rumble_rtmps_url or "").strip() or None,
+        livestream_rumble_stream_key=(body.livestream_rumble_stream_key or "").strip() or None,
     )
     db.add(meeting)
     db.commit()
@@ -524,6 +585,30 @@ def update_meeting(
         m.livestream_rtmps_url = body.livestream_rtmps_url.strip() or None
     if body.livestream_stream_key is not None:
         m.livestream_stream_key = body.livestream_stream_key.strip() or None
+    if body.livestream_substack_enabled is not None:
+        m.livestream_substack_enabled = body.livestream_substack_enabled
+    if body.livestream_substack_rtmps_url is not None:
+        m.livestream_substack_rtmps_url = body.livestream_substack_rtmps_url.strip() or None
+    if body.livestream_substack_stream_key is not None:
+        m.livestream_substack_stream_key = body.livestream_substack_stream_key.strip() or None
+    if body.livestream_youtube_enabled is not None:
+        m.livestream_youtube_enabled = body.livestream_youtube_enabled
+    if body.livestream_youtube_rtmps_url is not None:
+        m.livestream_youtube_rtmps_url = body.livestream_youtube_rtmps_url.strip() or None
+    if body.livestream_youtube_stream_key is not None:
+        m.livestream_youtube_stream_key = body.livestream_youtube_stream_key.strip() or None
+    if body.livestream_facebook_enabled is not None:
+        m.livestream_facebook_enabled = body.livestream_facebook_enabled
+    if body.livestream_facebook_rtmps_url is not None:
+        m.livestream_facebook_rtmps_url = body.livestream_facebook_rtmps_url.strip() or None
+    if body.livestream_facebook_stream_key is not None:
+        m.livestream_facebook_stream_key = body.livestream_facebook_stream_key.strip() or None
+    if body.livestream_rumble_enabled is not None:
+        m.livestream_rumble_enabled = body.livestream_rumble_enabled
+    if body.livestream_rumble_rtmps_url is not None:
+        m.livestream_rumble_rtmps_url = body.livestream_rumble_rtmps_url.strip() or None
+    if body.livestream_rumble_stream_key is not None:
+        m.livestream_rumble_stream_key = body.livestream_rumble_stream_key.strip() or None
 
     db.commit()
     return _to_out(m).model_dump()

@@ -85,9 +85,29 @@ class Meeting(Base):
     # the room composite to an RTMP(S) endpoint. The URL + key are stored
     # plain because LiveKit egress needs the original credentials and only
     # the meeting owner can read or write them.
+    # X.com (formerly Twitter) destination. Historical name `livestream_*`
+    # without an `_x_` suffix kept for migration friendliness — semantically
+    # it's the X.com slot. A meeting can stream to X, Substack, both, or
+    # neither; each destination has its own enable toggle + RTMP creds.
     livestream_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     livestream_rtmps_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     livestream_stream_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Substack destination.
+    livestream_substack_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    livestream_substack_rtmps_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    livestream_substack_stream_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # YouTube Live destination.
+    livestream_youtube_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    livestream_youtube_rtmps_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    livestream_youtube_stream_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Facebook Live destination.
+    livestream_facebook_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    livestream_facebook_rtmps_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    livestream_facebook_stream_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Rumble destination.
+    livestream_rumble_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    livestream_rumble_rtmps_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    livestream_rumble_stream_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Currently active stream egress id (set on start, cleared on stop or on
     # `egress_ended` webhook). Used by the frontend to render the right
     # toolbar button state on page reload and to refuse a second concurrent

@@ -10,6 +10,8 @@ import { usePreferences } from "../lib/preferences";
 import { Button, Card, Field, Input, Label, Toggle } from "../components/ui";
 import MyMeetings from "../components/MyMeetings";
 import DiscoverableMeetings from "../components/DiscoverableMeetings";
+import LivestreamDestinationBlock from "../components/LivestreamDestinationBlock";
+import { LIVESTREAM_DESTINATIONS } from "../lib/livestreamDestinations";
 
 const MAX_BRANDING_BYTES = 2 * 1024 * 1024;
 const ALLOWED_BRANDING_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -60,10 +62,17 @@ export default function CreateMeeting() {
   const [lobbyGreeting, setLobbyGreeting] = useState(prefs.greeting || "");
   const [recurrenceRule, setRecurrenceRule] = useState<string>("");
   const [durationMinutes, setDurationMinutes] = useState<number>(60);
-  const [livestreamEnabled, setLivestreamEnabled] = useState(false);
-  const [livestreamUrl, setLivestreamUrl] = useState("");
-  const [livestreamKey, setLivestreamKey] = useState("");
-  const [showStreamKey, setShowStreamKey] = useState(false);
+  // One state slot per destination — driven from LIVESTREAM_DESTINATIONS so
+  // adding a platform never has to touch this form's state shape.
+  type DestState = { enabled: boolean; url: string; streamKey: string };
+  const [livestreamState, setLivestreamState] = useState<Record<string, DestState>>(() =>
+    Object.fromEntries(
+      LIVESTREAM_DESTINATIONS.map((d) => [d.id, { enabled: false, url: "", streamKey: "" }]),
+    ),
+  );
+  function setDestState(id: string, next: DestState) {
+    setLivestreamState((cur) => ({ ...cur, [id]: next }));
+  }
   const [branding, setBranding] = useState<File | null>(null);
   const [brandingPreview, setBrandingPreview] = useState<string | null>(null);
   const brandingInputRef = useRef<HTMLInputElement | null>(null);
@@ -162,9 +171,16 @@ export default function CreateMeeting() {
         lobby_greeting: lobbyGreeting.trim() || null,
         recurrence_rule: recurrenceRule || null,
         duration_minutes: durationMinutes,
-        livestream_enabled: livestreamEnabled,
-        livestream_rtmps_url: livestreamEnabled ? livestreamUrl.trim() || null : null,
-        livestream_stream_key: livestreamEnabled ? livestreamKey.trim() || null : null,
+        ...Object.fromEntries(
+          LIVESTREAM_DESTINATIONS.flatMap((d) => {
+            const s = livestreamState[d.id];
+            return [
+              [d.fields.enabled, s.enabled],
+              [d.fields.rtmps_url, s.enabled ? s.url.trim() || null : null],
+              [d.fields.stream_key, s.enabled ? s.streamKey.trim() || null : null],
+            ];
+          }),
+        ),
       });
       // Upload branding (if chosen) before navigation. Non-fatal if it fails.
       if (branding) {
@@ -436,86 +452,24 @@ export default function CreateMeeting() {
               </span>
               <span className="text-xs text-slate-500 group-open:rotate-180 transition-transform">▾</span>
             </summary>
-            <div className="space-y-3 mt-2">
-              <Toggle
-                id="livestream-enabled"
-                label={t("createMeeting.livestreamEnableX", {
-                  defaultValue: "Stream this meeting live to X.com",
-                })}
-                description={t("createMeeting.livestreamEnableDesc", {
+            <div className="space-y-4 mt-2">
+              <p className="text-xs text-slate-400">
+                {t("createMeeting.livestreamHint", {
                   defaultValue:
-                    "When on, the host gets a Start/Stop streaming button in the meeting toolbar. Streaming is OFF by default — you start it manually when the meeting begins.",
+                    "Toggle one or more destinations. The in-meeting Start streaming button fans the same composite out to every enabled destination. Streaming is OFF by default — you start it manually when the meeting begins.",
                 })}
-                checked={livestreamEnabled}
-                onChange={setLivestreamEnabled}
-              />
-              {livestreamEnabled && (
-                <>
-                  <Field id="livestream-url" label={t("createMeeting.livestreamUrl", { defaultValue: "RTMPS URL" })}>
-                    <Input
-                      id="livestream-url"
-                      data-testid="livestream-url"
-                      type="url"
-                      placeholder="rtmps://va.pscp.tv:443/x"
-                      value={livestreamUrl}
-                      onChange={(e) => setLivestreamUrl(e.target.value)}
-                    />
-                  </Field>
-                  <Field id="livestream-key" label={t("createMeeting.livestreamKey", { defaultValue: "Stream key" })}>
-                    <div className="flex gap-2">
-                      <Input
-                        id="livestream-key"
-                        data-testid="livestream-key"
-                        type={showStreamKey ? "text" : "password"}
-                        placeholder="abcd-1234-…"
-                        value={livestreamKey}
-                        onChange={(e) => setLivestreamKey(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowStreamKey((s) => !s)}
-                        className="px-2 text-xs text-slate-300 rounded-md bg-primary-800 hover:bg-primary-700 border border-primary-700"
-                      >
-                        {showStreamKey
-                          ? t("common.hide", { defaultValue: "Hide" })
-                          : t("common.show", { defaultValue: "Show" })}
-                      </button>
-                    </div>
-                  </Field>
-                  <div className="text-xs text-slate-400 leading-relaxed bg-primary-900/60 border border-primary-700 rounded-md p-3 space-y-1">
-                    <p className="font-medium text-slate-300">
-                      {t("createMeeting.livestreamWhereTitle", {
-                        defaultValue: "Where to find these on X (Twitter):",
-                      })}
-                    </p>
-                    <ol className="list-decimal pl-4 space-y-0.5">
-                      <li>
-                        {t("createMeeting.livestreamStep1", {
-                          defaultValue: "Open studio.x.com and sign in.",
-                        })}
-                      </li>
-                      <li>
-                        {t("createMeeting.livestreamStep2", {
-                          defaultValue:
-                            "Click “Producer” in the left sidebar, then “Create broadcast”.",
-                        })}
-                      </li>
-                      <li>
-                        {t("createMeeting.livestreamStep3", {
-                          defaultValue:
-                            "Under “Source”, choose “External encoder”. X shows an RTMPS URL and a stream key — copy them into the two fields above.",
-                        })}
-                      </li>
-                      <li>
-                        {t("createMeeting.livestreamStep4", {
-                          defaultValue:
-                            "The key is single-use per broadcast: regenerate it on studio.x.com if you reuse this meeting later.",
-                        })}
-                      </li>
-                    </ol>
-                  </div>
-                </>
-              )}
+              </p>
+              {LIVESTREAM_DESTINATIONS.map((d, i) => (
+                <LivestreamDestinationBlock
+                  key={d.id}
+                  dest={d}
+                  enabled={livestreamState[d.id].enabled}
+                  url={livestreamState[d.id].url}
+                  streamKey={livestreamState[d.id].streamKey}
+                  onChange={(next) => setDestState(d.id, next)}
+                  isFirst={i === 0}
+                />
+              ))}
             </div>
           </details>
 
