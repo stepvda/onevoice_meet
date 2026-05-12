@@ -12,15 +12,14 @@ list — that's the form every major RTMP ingest expects, including X/Twitter
 (via studio.x.com), Twitch, YouTube Live, and Facebook Live.
 """
 from fastapi import APIRouter, Depends, HTTPException
-from livekit import api
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.auth import RequireUser
 from app.db import get_db
-from app.livekit_client import livekit_api
-from app.models import Meeting, ModerationAudit
-from app.routes.recordings import RecordingLayout, _encoding_options
+from app.models import Meeting, Recording
+from app.routes.recordings import RecordingLayout
+from app.services.egress_mgr import reconcile_egress
 
 router = APIRouter(prefix="/v1")
 
@@ -36,13 +35,6 @@ def _require_owner(meeting_id: str, user_id: str, db: Session) -> Meeting:
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
     return m
-
-
-def _build_stream_url(rtmps_url: str, stream_key: str) -> str:
-    """Concatenate ingest URL + key as `<url>/<key>`. Tolerates trailing
-    slashes on the URL and leading slashes on the key so the owner can paste
-    either form from studio.x.com."""
-    return rtmps_url.rstrip("/") + "/" + stream_key.lstrip("/")
 
 
 @router.post("/meetings/{meeting_id}/stream:start")
@@ -63,45 +55,44 @@ async def start_stream(
         raise HTTPException(status_code=409, detail="livestream already in progress")
 
     layout: RecordingLayout = body.layout if body else "speaker"
-    url = _build_stream_url(m.livestream_rtmps_url, m.livestream_stream_key)
-    lk = livekit_api()
-    try:
-        egress_info = await lk.egress.start_room_composite_egress(
-            api.RoomCompositeEgressRequest(
-                room_name=m.room_name,
-                layout=layout,
-                stream_outputs=[
-                    api.StreamOutput(protocol=api.StreamProtocol.RTMP, urls=[url])
-                ],
-                advanced=_encoding_options(),
-            )
-        )
-    finally:
-        await lk.aclose()
-
-    m.livestream_egress_id = egress_info.egress_id
-    db.add(ModerationAudit(meeting_id=m.id, actor_user_id=user.sub, action="stream_start", details=egress_info.egress_id))
-    db.commit()
-    return {"ok": True, "egress_id": egress_info.egress_id}
+    # Preserve any active recording — reconcile_egress restarts the egress
+    # with both outputs so we stay within a single worker slot.
+    keep_file = bool(
+        db.query(Recording).filter_by(meeting_id=m.id, status="running").first()
+    )
+    result = await reconcile_egress(
+        m,
+        want_file=keep_file,
+        want_stream=True,
+        layout=layout,
+        user_sub=user.sub,
+        db=db,
+    )
+    return {"ok": True, "egress_id": result["egress_id"]}
 
 
 @router.post("/meetings/{meeting_id}/stream:stop")
 async def stop_stream(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
     m = _require_owner(meeting_id, user.sub, db)
-    egress_id = m.livestream_egress_id
-    if not egress_id:
+    if not m.livestream_egress_id:
         raise HTTPException(status_code=404, detail="no active livestream")
 
-    lk = livekit_api()
-    try:
-        await lk.egress.stop_egress(api.StopEgressRequest(egress_id=egress_id))
-    finally:
-        await lk.aclose()
-
-    # Clear immediately; the webhook is just a safety net for crash recovery.
-    m.livestream_egress_id = None
-    db.add(ModerationAudit(meeting_id=m.id, actor_user_id=user.sub, action="stream_stop", details=egress_id))
-    db.commit()
+    # If recording is also riding the same egress, restart with file-only so
+    # the recording continues. Otherwise just stop.
+    running_rec = (
+        db.query(Recording)
+        .filter_by(meeting_id=m.id, egress_id=m.livestream_egress_id, status="running")
+        .first()
+    )
+    keep_file = bool(running_rec)
+    await reconcile_egress(
+        m,
+        want_file=keep_file,
+        want_stream=False,
+        layout=None,
+        user_sub=user.sub,
+        db=db,
+    )
     return {"ok": True}
 
 

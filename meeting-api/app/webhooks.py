@@ -101,6 +101,7 @@ async def livekit_webhook(
             m = db.query(Meeting).filter_by(livestream_egress_id=info.egress_id).first()
             if m:
                 m.livestream_egress_id = None
+                m.current_egress_layout = None
                 db.commit()
         rec = db.query(Recording).filter_by(egress_id=info.egress_id).first()
         if rec:

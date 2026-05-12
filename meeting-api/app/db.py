@@ -78,6 +78,7 @@ def lightweight_migrate() -> None:
                 ("livestream_rtmps_url", "ALTER TABLE meetings ADD COLUMN livestream_rtmps_url TEXT"),
                 ("livestream_stream_key", "ALTER TABLE meetings ADD COLUMN livestream_stream_key TEXT"),
                 ("livestream_egress_id", "ALTER TABLE meetings ADD COLUMN livestream_egress_id TEXT"),
+                ("current_egress_layout", "ALTER TABLE meetings ADD COLUMN current_egress_layout TEXT"),
             )),
             ("chat_messages", (
                 ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),

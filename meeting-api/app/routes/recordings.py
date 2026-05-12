@@ -106,60 +106,24 @@ async def start_recording(
         raise HTTPException(status_code=403, detail="meeting closed")
 
     layout: RecordingLayout = body.layout if body else "speaker"
-
-    # One active recording per meeting at a time.
     existing = db.query(Recording).filter_by(meeting_id=m.id, status="running").first()
     if existing:
         raise HTTPException(status_code=409, detail="recording already in progress")
 
-    # Disk cap: if the recordings volume is already at >= 75% (or the cap from
-    # config), evict oldest completed recordings to make room before egress writes.
-    enforce_disk_cap()
-
-    rec_id = str(ULID())
-    Path(settings.recordings_dir).mkdir(parents=True, exist_ok=True)
-    started = datetime.now(timezone.utc)
-    filepath = str(
-        Path(settings.recordings_dir)
-        / f"{m.room_name}-{started.strftime('%Y%m%d-%H%M%S')}.mp4"
+    # Preserve the stream output if one is active — reconcile_egress will
+    # stop+restart with the combined output set so we never run two
+    # concurrent egress jobs on a 2-vCPU box.
+    keep_stream = bool(m.livestream_egress_id)
+    from app.services.egress_mgr import reconcile_egress
+    result = await reconcile_egress(
+        m,
+        want_file=True,
+        want_stream=keep_stream,
+        layout=layout,
+        user_sub=user.sub,
+        db=db,
     )
-
-    lk = livekit_api()
-    try:
-        egress_info = await lk.egress.start_room_composite_egress(
-            api.RoomCompositeEgressRequest(
-                room_name=m.room_name,
-                layout=layout,
-                file_outputs=[
-                    api.EncodedFileOutput(
-                        file_type=api.EncodedFileType.MP4,
-                        filepath=filepath,
-                        disable_manifest=True,
-                    )
-                ],
-                advanced=_encoding_options(),
-            )
-        )
-        try:
-            await _set_recording_metadata(lk, m.room_name, True)
-        except Exception:  # noqa: BLE001 — metadata update is best-effort
-            pass
-    finally:
-        await lk.aclose()
-
-    rec = Recording(
-        id=rec_id,
-        meeting_id=m.id,
-        egress_id=egress_info.egress_id,
-        file_path=filepath,
-        started_at=started,
-        expires_at=started + timedelta(days=settings.recording_retention_days),
-        status="running",
-    )
-    db.add(rec)
-    db.add(ModerationAudit(meeting_id=m.id, actor_user_id=user.sub, action="recording_start", details=rec_id))
-    db.commit()
-    return {"ok": True, "recording_id": rec_id, "egress_id": egress_info.egress_id}
+    return {"ok": True, "recording_id": result["recording_id"], "egress_id": result["egress_id"]}
 
 
 @router.post("/meetings/{meeting_id}/recordings:stop")
@@ -169,19 +133,18 @@ async def stop_recording(meeting_id: str, user: RequireUser, db: Session = Depen
     if not rec:
         raise HTTPException(status_code=404, detail="no active recording")
 
-    lk = livekit_api()
-    try:
-        await lk.egress.stop_egress(api.StopEgressRequest(egress_id=rec.egress_id))
-        try:
-            await _set_recording_metadata(lk, m.room_name, False)
-        except Exception:  # noqa: BLE001
-            pass
-    finally:
-        await lk.aclose()
-
-    db.add(ModerationAudit(meeting_id=m.id, actor_user_id=user.sub, action="recording_stop", details=rec.id))
-    db.commit()
-    # status stays 'running' until the egress_ended webhook flips it to 'completed'.
+    # If a stream is also active on this egress, restart with stream-only so
+    # the broadcast continues. Otherwise just stop everything.
+    keep_stream = bool(m.livestream_egress_id) and m.livestream_egress_id == rec.egress_id
+    from app.services.egress_mgr import reconcile_egress
+    await reconcile_egress(
+        m,
+        want_file=False,
+        want_stream=keep_stream,
+        layout=None,  # reuse the layout the egress was started with
+        user_sub=user.sub,
+        db=db,
+    )
     return {"ok": True, "recording_id": rec.id}
 
 

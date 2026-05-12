@@ -93,6 +93,11 @@ class Meeting(Base):
     # toolbar button state on page reload and to refuse a second concurrent
     # start.
     livestream_egress_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Layout that the current egress was started with. Needed so a stop-one-
+    # keep-other toggle (record off / stream on, or vice versa) can restart
+    # the egress with the same layout the user originally picked instead of
+    # silently switching to "speaker".
+    current_egress_layout: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")

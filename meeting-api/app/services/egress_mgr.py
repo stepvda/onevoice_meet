@@ -1,0 +1,238 @@
+"""Shared egress reconciler for recording + livestreaming.
+
+LiveKit's egress dispatcher treats each room-composite job as a worker slot
+and refuses a second one on a 2-vCPU host (we hit Twirp 503 in production
+when starting a recording while a stream was active). The fix is to never
+run more than one egress per meeting: instead, a single `RoomCompositeEgress`
+holds whichever combination of file + stream outputs the host has currently
+toggled on.
+
+LiveKit doesn't support hot-adding new *output types* to a running egress
+(only adding/removing stream URLs on an already-streaming egress). So when
+the user toggles the second feature on, we stop the current egress and start
+a fresh one with the combined outputs. Cost: a ~2 s gap in the stream and a
+split in the recording file. Benefit: only one worker slot is ever consumed,
+and the second toggle stops hanging for 22 s and returning 500.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from fastapi import HTTPException
+from livekit import api
+from sqlalchemy.orm import Session
+from ulid import ULID
+
+from app.config import settings
+from app.livekit_client import livekit_api
+from app.models import Meeting, ModerationAudit, Recording
+
+if TYPE_CHECKING:
+    from app.routes.recordings import RecordingLayout
+
+
+def _build_stream_url(rtmps_url: str, stream_key: str) -> str:
+    """`<url>/<key>` is what every major RTMP ingest expects (X/Twitter via
+    studio.x.com, Twitch, YouTube Live, Facebook). Tolerate stray slashes."""
+    return rtmps_url.rstrip("/") + "/" + stream_key.lstrip("/")
+
+
+def _encoding_options() -> "api.EncodingOptions":
+    # Re-export from recordings.py — kept here as a thin wrapper so this
+    # module doesn't need to import from a route module (circular risk).
+    if settings.recording_preset_1080p:
+        return api.EncodingOptions(
+            width=1920, height=1080, framerate=30,
+            video_codec=api.VideoCodec.H264_MAIN, video_bitrate=3000,
+            audio_codec=api.AudioCodec.AAC, audio_bitrate=128, audio_frequency=48000,
+            key_frame_interval=4.0,
+        )
+    return api.EncodingOptions(
+        width=1280, height=720, framerate=30,
+        video_codec=api.VideoCodec.H264_MAIN, video_bitrate=1500,
+        audio_codec=api.AudioCodec.AAC, audio_bitrate=128, audio_frequency=48000,
+        key_frame_interval=4.0,
+    )
+
+
+def _current_state(m: Meeting, db: Session) -> tuple[str | None, bool, bool]:
+    """Returns (egress_id, has_file, has_stream) for the meeting's current
+    egress, if any. has_file/has_stream describe which outputs the active
+    egress was started with."""
+    running_rec = (
+        db.query(Recording)
+        .filter_by(meeting_id=m.id, status="running")
+        .first()
+    )
+    stream_egress = m.livestream_egress_id
+    file_egress = running_rec.egress_id if running_rec else None
+    egress_id = stream_egress or file_egress
+    return egress_id, bool(file_egress), bool(stream_egress)
+
+
+async def reconcile_egress(
+    m: Meeting,
+    *,
+    want_file: bool,
+    want_stream: bool,
+    layout: "RecordingLayout | None",
+    user_sub: str,
+    db: Session,
+) -> dict:
+    """Bring the meeting's egress state to (want_file, want_stream).
+
+    Returns {"egress_id": str | None, "recording_id": str | None, "no_change": bool}
+    where `recording_id` is the NEW Recording row id if one was created.
+
+    Validation is the caller's responsibility — this function trusts that the
+    caller has already checked owner permissions, meeting active state, and
+    (for `want_stream`) that the meeting has RTMPS credentials configured.
+    """
+    cur_egress_id, cur_has_file, cur_has_stream = _current_state(m, db)
+
+    # If the caller didn't pass an explicit layout (typical for stop/toggle-off
+    # paths), reuse whatever the current egress was started with so a stream
+    # that continues across a recording-stop doesn't suddenly switch layouts.
+    if layout is None:
+        layout = m.current_egress_layout or "speaker"  # type: ignore[assignment]
+
+    # Idempotent: if the current state already matches what's wanted, leave
+    # the egress alone. (Caller endpoints still raise 409 for "already
+    # running" to keep the API contract familiar; this branch handles the
+    # case where the caller passes through redundantly.)
+    if cur_has_file == want_file and cur_has_stream == want_stream:
+        return {"egress_id": cur_egress_id, "recording_id": None, "no_change": True}
+
+    # Stop the current egress (if any). The `egress_ended` webhook is the
+    # one that finalises the old Recording row's size/duration/status, so we
+    # don't touch the Recording table for the stopping side — only clear
+    # the Meeting pointer synchronously so subsequent reads see the new
+    # state immediately.
+    if cur_egress_id:
+        lk = livekit_api()
+        try:
+            await lk.egress.stop_egress(api.StopEgressRequest(egress_id=cur_egress_id))
+        finally:
+            await lk.aclose()
+        if cur_has_stream:
+            m.livestream_egress_id = None
+        if not want_file and not want_stream:
+            m.current_egress_layout = None
+        db.commit()
+
+    # If both outputs are off after this transition, we're done.
+    if not want_file and not want_stream:
+        db.add(ModerationAudit(meeting_id=m.id, actor_user_id=user_sub, action="egress_stop", details=cur_egress_id or ""))
+        db.commit()
+        return {"egress_id": None, "recording_id": None, "no_change": False}
+
+    # Start a fresh egress with the desired output combination.
+    new_filepath: str | None = None
+    new_started: datetime | None = None
+    file_outputs: list[api.EncodedFileOutput] = []
+    stream_outputs: list[api.StreamOutput] = []
+
+    if want_file:
+        # Lazily import to dodge the circular module load — enforce_disk_cap
+        # lives in routes/recordings which imports this module indirectly.
+        from app.routes.recordings import enforce_disk_cap
+        enforce_disk_cap()
+        Path(settings.recordings_dir).mkdir(parents=True, exist_ok=True)
+        new_started = datetime.now(timezone.utc)
+        new_filepath = str(
+            Path(settings.recordings_dir)
+            / f"{m.room_name}-{new_started.strftime('%Y%m%d-%H%M%S')}.mp4"
+        )
+        file_outputs.append(
+            api.EncodedFileOutput(
+                file_type=api.EncodedFileType.MP4,
+                filepath=new_filepath,
+                disable_manifest=True,
+            )
+        )
+
+    if want_stream:
+        if not m.livestream_rtmps_url or not m.livestream_stream_key:
+            raise HTTPException(status_code=400, detail="rtmps url and stream key required")
+        url = _build_stream_url(m.livestream_rtmps_url, m.livestream_stream_key)
+        stream_outputs.append(
+            api.StreamOutput(protocol=api.StreamProtocol.RTMP, urls=[url])
+        )
+
+    req_kwargs: dict = {
+        "room_name": m.room_name,
+        "layout": layout,
+        "advanced": _encoding_options(),
+    }
+    if file_outputs:
+        req_kwargs["file_outputs"] = file_outputs
+    if stream_outputs:
+        req_kwargs["stream_outputs"] = stream_outputs
+
+    lk = livekit_api()
+    try:
+        egress_info = await lk.egress.start_room_composite_egress(
+            api.RoomCompositeEgressRequest(**req_kwargs)
+        )
+        # Surface the recording-active flag on room metadata only when a file
+        # output is part of the new egress — the in-meeting "recording" dot
+        # is driven from this.
+        try:
+            await _set_recording_metadata(lk, m.room_name, want_file)
+        except Exception:  # noqa: BLE001
+            pass
+    finally:
+        await lk.aclose()
+
+    new_egress_id = egress_info.egress_id
+    new_recording_id: str | None = None
+
+    if want_file:
+        assert new_started is not None and new_filepath is not None
+        new_recording_id = str(ULID())
+        rec = Recording(
+            id=new_recording_id,
+            meeting_id=m.id,
+            egress_id=new_egress_id,
+            file_path=new_filepath,
+            started_at=new_started,
+            expires_at=new_started + timedelta(days=settings.recording_retention_days),
+            status="running",
+        )
+        db.add(rec)
+
+    if want_stream:
+        m.livestream_egress_id = new_egress_id
+
+    m.current_egress_layout = layout
+
+    db.add(
+        ModerationAudit(
+            meeting_id=m.id,
+            actor_user_id=user_sub,
+            action=f"egress_reconcile",
+            details=f"file={int(want_file)} stream={int(want_stream)} egress={new_egress_id}",
+        )
+    )
+    db.commit()
+    return {"egress_id": new_egress_id, "recording_id": new_recording_id, "no_change": False}
+
+
+async def _set_recording_metadata(lk: api.LiveKitAPI, room_name: str, active: bool) -> None:
+    """Mirror of the helper in routes/recordings.py. Duplicated here to avoid
+    importing a route module from a service module."""
+    import json
+
+    rooms = await lk.room.list_rooms(api.ListRoomsRequest(names=[room_name]))
+    current: dict = {}
+    if rooms.rooms:
+        try:
+            current = json.loads(rooms.rooms[0].metadata or "{}")
+        except ValueError:
+            current = {}
+    current["recording_active"] = active
+    await lk.room.update_room_metadata(
+        api.UpdateRoomMetadataRequest(room=room_name, metadata=json.dumps(current))
+    )
