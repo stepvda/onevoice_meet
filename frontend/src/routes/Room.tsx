@@ -17,6 +17,8 @@ import {
   MessageSquare,
   MicOff,
   Radio,
+  Play,
+  Film,
   FileText,
   Settings as SettingsIcon,
   Square,
@@ -37,6 +39,7 @@ import ParticipantsPanel from "../components/ParticipantsPanel";
 import InMeetingSettings from "../components/InMeetingSettings";
 import InviteModal from "../components/InviteModal";
 import LivestreamSettingsModal from "../components/LivestreamSettingsModal";
+import VideoPlaybackPanel from "../components/VideoPlaybackPanel";
 import AudioWaveform from "../components/AudioWaveform";
 import PendingJoinersPanel from "../components/PendingJoinersPanel";
 import HandRaiseButton from "../components/HandRaiseButton";
@@ -157,6 +160,32 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
         }
         setPollsInitialTab(tab);
         setPollsOpen(true);
+      } else if (topic === "meet-playback") {
+        // Video playback signals from the server: start / next / end.
+        // On `playback-start` we force-mute the local mic + camera so the
+        // viewer doesn't accidentally bleed into the shared video; the
+        // SFU is also force-muting their tracks server-side but updating
+        // local LiveKit state keeps the buttons in sync. On `playback-end`
+        // we leave their state alone — re-enabling is their call.
+        try {
+          const obj = JSON.parse(decoder.decode(payload)) as {
+            type?: string;
+            filename?: string;
+          };
+          if (obj?.type === "playback-start" || obj?.type === "playback-next") {
+            setPlaybackActive(true);
+            setPlaybackCurrentName(obj.filename ?? null);
+            if (obj.type === "playback-start") {
+              void room.localParticipant.setMicrophoneEnabled(false).catch(() => undefined);
+              void room.localParticipant.setCameraEnabled(false).catch(() => undefined);
+            }
+          } else if (obj?.type === "playback-end") {
+            setPlaybackActive(false);
+            setPlaybackCurrentName(null);
+          }
+        } catch {
+          /* ignore malformed playback packet */
+        }
       }
     };
     room.on(RoomEvent.DataReceived, onData);
@@ -186,6 +215,15 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
   const [livestreamActive, setLivestreamActive] = useState(false);
   const [livestreamSettingsOpen, setLivestreamSettingsOpen] = useState(false);
   const [livestreamMeeting, setLivestreamMeeting] = useState<MeetingOut | null>(null);
+  // Video playback. `playbackEnabled` mirrors the meeting toggle; we also
+  // need the playlist length to decide whether to surface the Play button
+  // (Play is hidden until at least one item exists). `playbackActive`
+  // reflects whether a LiveKit ingress is currently publishing.
+  const [playbackEnabled, setPlaybackEnabled] = useState(false);
+  const [playbackActive, setPlaybackActive] = useState(false);
+  const [playbackItemCount, setPlaybackItemCount] = useState(0);
+  const [playbackPanelOpen, setPlaybackPanelOpen] = useState(false);
+  const [playbackCurrentName, setPlaybackCurrentName] = useState<string | null>(null);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -242,6 +280,14 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
         );
         setLivestreamEnabled(anyEnabled);
         setLivestreamActive(!!mine.livestream_active);
+        setPlaybackEnabled(!!mine.playback_enabled);
+        setPlaybackActive(!!mine.playback_active);
+        try {
+          const items = await api.listPlaybackItems(meetingId);
+          if (!cancelled) setPlaybackItemCount(items.length);
+        } catch {
+          /* not fatal */
+        }
       } catch {
         /* surface as no button — keeps the toolbar usable */
       }
@@ -262,6 +308,25 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
       await withBusy("stream-start", async () => {
         await api.startStream(meetingId, { layout: recordingLayout });
         setLivestreamActive(true);
+      });
+    }
+  }
+
+  async function togglePlayback() {
+    if (!meetingId) return;
+    if (playbackActive) {
+      await withBusy("playback-stop", async () => {
+        await api.stopPlayback(meetingId);
+        setPlaybackActive(false);
+        setPlaybackCurrentName(null);
+      });
+    } else {
+      await withBusy("playback-start", async () => {
+        await api.startPlayback(meetingId);
+        // `playback-start` data-channel signal flips setPlaybackActive
+        // when it arrives — set it optimistically too so the button
+        // doesn't flicker between the Start request and the broadcast.
+        setPlaybackActive(true);
       });
     }
   }
@@ -443,7 +508,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
               <MicOff size={16} />
               <span className="hidden md:inline">{t("room.muteAll")}</span>
             </button>
-            {!recordingActive && (
+            {!recordingActive && !playbackActive && (
               <select
                 value={recordingLayout}
                 onChange={(e) =>
@@ -459,6 +524,47 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
                 <option value="grid">{t("room.recordLayoutGrid")}</option>
                 <option value="single-speaker">{t("room.recordLayoutSingle")}</option>
               </select>
+            )}
+            {playbackEnabled && playbackItemCount > 0 && (
+              <button
+                type="button"
+                onClick={togglePlayback}
+                data-testid="btn-playback"
+                disabled={busy !== null}
+                aria-label={
+                  playbackActive
+                    ? t("room.stopPlayback", { defaultValue: "Stop video playback" })
+                    : t("room.startPlayback", { defaultValue: "Play video" })
+                }
+                title={
+                  playbackActive
+                    ? t("room.stopPlaybackTitle", {
+                        defaultValue: "Stop the current video — all participants' mics/cams stay off",
+                      })
+                    : t("room.startPlaybackTitle", {
+                        defaultValue:
+                          "Play the playlist to everyone. Mics and cameras will be muted automatically.",
+                      })
+                }
+                className={[
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
+                  playbackActive
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-primary-700 text-slate-100 hover:bg-primary-600",
+                  "disabled:opacity-50",
+                ].join(" ")}
+              >
+                {playbackActive ? <CircleStopIcon size={16} /> : <Play size={16} />}
+                <span className="hidden md:inline">
+                  {busy === "playback-start"
+                    ? t("room.starting")
+                    : busy === "playback-stop"
+                    ? t("room.stopping")
+                    : playbackActive
+                    ? t("room.stopPlayback", { defaultValue: "Stop video playback" })
+                    : t("room.startPlayback", { defaultValue: "Play video" })}
+                </span>
+              </button>
             )}
             {livestreamEnabled && (
               <button
@@ -496,31 +602,37 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
                 </span>
               </button>
             )}
-            <button
-              type="button"
-              onClick={toggleRecording}
-              data-testid="btn-record"
-              disabled={busy !== null}
-              aria-label={recordingActive ? t("room.stopRecording") : t("room.record")}
-              className={[
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
-                recordingActive
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-accent-500 text-white hover:bg-accent-600",
-                "disabled:opacity-50",
-              ].join(" ")}
-            >
-              {recordingActive ? <CircleStopIcon size={16} /> : <Radio size={16} />}
-              <span className="hidden md:inline">
-                {busy === "rec-start"
-                  ? t("room.starting")
-                  : busy === "rec-stop"
-                  ? t("room.stopping")
-                  : recordingActive
-                  ? t("room.stopRecording")
-                  : t("room.record")}
-              </span>
-            </button>
+            {/* Recording is mutually exclusive with video playback — see
+                the 2-vCPU CPU budget in playback_mgr.py. Hide the button
+                rather than fail-with-toast so the host can't accidentally
+                click it. Streaming stays available during playback. */}
+            {!playbackActive && (
+              <button
+                type="button"
+                onClick={toggleRecording}
+                data-testid="btn-record"
+                disabled={busy !== null}
+                aria-label={recordingActive ? t("room.stopRecording") : t("room.record")}
+                className={[
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
+                  recordingActive
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-accent-500 text-white hover:bg-accent-600",
+                  "disabled:opacity-50",
+                ].join(" ")}
+              >
+                {recordingActive ? <CircleStopIcon size={16} /> : <Radio size={16} />}
+                <span className="hidden md:inline">
+                  {busy === "rec-start"
+                    ? t("room.starting")
+                    : busy === "rec-stop"
+                    ? t("room.stopping")
+                    : recordingActive
+                    ? t("room.stopRecording")
+                    : t("room.record")}
+                </span>
+              </button>
+            )}
             <button
               type="button"
               onClick={endMeeting}
@@ -701,6 +813,14 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
                 }
               : undefined
           }
+          onConfigurePlayback={
+            isOwner && livestreamMeeting
+              ? () => {
+                  setPlaybackPanelOpen(true);
+                  setSettingsOpen(false);
+                }
+              : undefined
+          }
         />
         <ParticipantsPanel
           open={participantsOpen}
@@ -771,6 +891,44 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
             setLivestreamEnabled(anyEnabled);
           }}
         />
+      )}
+
+      {/* VIDEO PLAYBACK PANEL */}
+      {isOwner && livestreamMeeting && (
+        <VideoPlaybackPanel
+          meeting={livestreamMeeting}
+          open={playbackPanelOpen}
+          onClose={() => setPlaybackPanelOpen(false)}
+          onMeetingUpdated={async (updated) => {
+            setLivestreamMeeting(updated);
+            setPlaybackEnabled(!!updated.playback_enabled);
+            // Item count may have changed via uploads/deletes; re-poll.
+            try {
+              const items = await api.listPlaybackItems(updated.id);
+              setPlaybackItemCount(items.length);
+            } catch {
+              /* not fatal */
+            }
+          }}
+        />
+      )}
+
+      {/* "Now playing" banner — visible to everyone while a video is on the
+          stage. Sits in the top toolbar's negative-margin area; uses a
+          left ribbon so it doesn't fight with the existing recording dot. */}
+      {playbackActive && (
+        <div
+          data-testid="playback-banner"
+          className="fixed top-2 left-1/2 -translate-x-1/2 z-40 px-3 py-1.5 rounded-full bg-accent-500/90 text-white text-xs font-medium shadow-lg inline-flex items-center gap-2 pointer-events-none"
+        >
+          <Film size={14} />
+          {playbackCurrentName
+            ? t("room.nowPlayingNamed", {
+                defaultValue: "Now playing: {{name}}",
+                name: playbackCurrentName,
+              })
+            : t("room.nowPlaying", { defaultValue: "Now playing" })}
+        </div>
       )}
     </div>
   );

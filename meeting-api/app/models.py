@@ -118,6 +118,17 @@ class Meeting(Base):
     # the egress with the same layout the user originally picked instead of
     # silently switching to "speaker".
     current_egress_layout: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Video playback: host uploads MP4s into a playlist (PlaybackItem rows
+    # below) and clicks Play to ingest them as a participant track via
+    # LiveKit Ingress (URL_INPUT). `playback_enabled` is the per-meeting
+    # toggle that gates whether the Play button appears in the toolbar at
+    # all; `playback_ingress_id` is set while a video is actively playing.
+    playback_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # When True, the last playlist item wraps back to position 0 instead of
+    # ending playback. Toggleable from the same Video-playback panel.
+    playback_loop: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    playback_ingress_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    playback_current_item_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")
@@ -472,6 +483,37 @@ class WhiteboardStroke(Base):
     meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), nullable=False, index=True)
     payload_json: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class PlaybackItem(Base):
+    """One MP4 in the in-meeting video-playback playlist. The host uploads
+    files in advance; when Play is clicked, the items are streamed in
+    `position` order via LiveKit Ingress (URL_INPUT) as a participant
+    track everyone in the room sees.
+
+    Files live under /var/lib/meet/playback/<meeting_id>/<id>.mp4 — the
+    container path is shared between meeting-api (writer) and the
+    livekit-ingress container (reader).
+    """
+    __tablename__ = "playback_items"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), nullable=False, index=True)
+    # 0-based ordering; lower = plays first. Rewritten on reorder.
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Display name shown in the playlist UI. Stored separately from the
+    # on-disk filename so renaming the upload doesn't break disk lookups.
+    filename: Mapped[str] = mapped_column(String, nullable=False)
+    file_path: Mapped[str] = mapped_column(String, nullable=False)
+    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    # MIME type captured at upload time — we cap to video/mp4 today but
+    # storing the value keeps a path open for webm/ogv later.
+    mime_type: Mapped[str] = mapped_column(String, nullable=False, default="video/mp4")
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("ix_playback_items_meeting_position", "meeting_id", "position"),
+    )
 
 
 class MeetingFeedback(Base):

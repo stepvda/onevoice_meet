@@ -105,6 +105,26 @@ export default function PresenterSpotlight() {
     return null;
   }, [presenterId, tracks, display.layout, display.pinFirstScreenshare, activeSpeakerId]);
 
+  // Video-playback hijacks the stage: when LiveKit Ingress publishes the
+  // current playlist item as participant identity "playback", show that
+  // tile full-screen and hide every other tile (no sidebar grid). This is
+  // independent of the presenter logic — playback always wins.
+  const playbackTrack = useMemo(
+    () => tracks.find((t) => t.participant.identity === "playback" && t.source === Track.Source.Camera),
+    [tracks],
+  );
+  if (playbackTrack) {
+    return (
+      <div className="flex h-full bg-black">
+        <div className="flex-1 min-w-0 min-h-0">
+          <TrackRefContext.Provider value={playbackTrack}>
+            <FlippableTile />
+          </TrackRefContext.Provider>
+        </div>
+      </div>
+    );
+  }
+
   if (focus) {
     const others = tracks.filter(
       (t) => !(t.participant.identity === focus.participant.identity && t.source === focus.source)

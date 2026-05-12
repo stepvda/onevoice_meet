@@ -133,6 +133,8 @@ class UpdateMeetingBody(BaseModel):
     livestream_rumble_enabled: bool | None = None
     livestream_rumble_rtmps_url: str | None = Field(default=None, max_length=500)
     livestream_rumble_stream_key: str | None = Field(default=None, max_length=500)
+    playback_enabled: bool | None = None
+    playback_loop: bool | None = None
 
 
 class MeetingOut(BaseModel):
@@ -183,6 +185,11 @@ class MeetingOut(BaseModel):
     # True while a livestream egress is active (fanning out to whichever
     # destinations are configured).
     livestream_active: bool = False
+    playback_enabled: bool = False
+    playback_loop: bool = False
+    # True while a LiveKit ingress is publishing the current playlist item.
+    playback_active: bool = False
+    playback_current_item_id: str | None = None
 
 
 def _branding_url(m: Meeting) -> str | None:
@@ -236,6 +243,10 @@ def _to_out(m: Meeting) -> MeetingOut:
         livestream_rumble_rtmps_url=m.livestream_rumble_rtmps_url,
         livestream_rumble_stream_key=m.livestream_rumble_stream_key,
         livestream_active=bool(m.livestream_egress_id),
+        playback_enabled=bool(m.playback_enabled),
+        playback_loop=bool(m.playback_loop),
+        playback_active=bool(m.playback_ingress_id),
+        playback_current_item_id=m.playback_current_item_id,
     )
 
 
@@ -609,6 +620,10 @@ def update_meeting(
         m.livestream_rumble_rtmps_url = body.livestream_rumble_rtmps_url.strip() or None
     if body.livestream_rumble_stream_key is not None:
         m.livestream_rumble_stream_key = body.livestream_rumble_stream_key.strip() or None
+    if body.playback_enabled is not None:
+        m.playback_enabled = body.playback_enabled
+    if body.playback_loop is not None:
+        m.playback_loop = body.playback_loop
 
     db.commit()
     return _to_out(m).model_dump()

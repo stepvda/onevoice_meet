@@ -91,6 +91,10 @@ def lightweight_migrate() -> None:
                 ("livestream_rumble_enabled", "ALTER TABLE meetings ADD COLUMN livestream_rumble_enabled BOOLEAN DEFAULT 0 NOT NULL"),
                 ("livestream_rumble_rtmps_url", "ALTER TABLE meetings ADD COLUMN livestream_rumble_rtmps_url TEXT"),
                 ("livestream_rumble_stream_key", "ALTER TABLE meetings ADD COLUMN livestream_rumble_stream_key TEXT"),
+                ("playback_enabled", "ALTER TABLE meetings ADD COLUMN playback_enabled BOOLEAN DEFAULT 0 NOT NULL"),
+                ("playback_loop", "ALTER TABLE meetings ADD COLUMN playback_loop BOOLEAN DEFAULT 0 NOT NULL"),
+                ("playback_ingress_id", "ALTER TABLE meetings ADD COLUMN playback_ingress_id TEXT"),
+                ("playback_current_item_id", "ALTER TABLE meetings ADD COLUMN playback_current_item_id TEXT"),
             )),
             ("chat_messages", (
                 ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),

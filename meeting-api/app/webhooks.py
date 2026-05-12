@@ -193,4 +193,26 @@ async def livekit_webhook(
                     background.add_task(transcribe_recording, rec.id)
             db.commit()
 
+    elif etype in ("ingress_started", "ingress_updated", "ingress_ended") and event.ingress_info:
+        # Video-playback ingress lifecycle. We only care about the "ended"
+        # event — when the current playlist item finishes (or fails), pick
+        # the next one (with loop support) or end playback. The whole
+        # transition runs in a background task so the webhook ack is fast.
+        info = event.ingress_info
+        if etype == "ingress_ended":
+            from app.services.playback_mgr import advance_after_ingress_ended
+
+            async def _advance(ingress_id: str) -> None:
+                from app.db import SessionLocal
+                with SessionLocal() as session:
+                    try:
+                        await advance_after_ingress_ended(ingress_id, session)
+                    except Exception:
+                        import logging
+                        logging.getLogger(__name__).exception(
+                            "playback: advance_after_ingress_ended failed"
+                        )
+
+            background.add_task(_advance, info.ingress_id)
+
     return {"ok": True, "event": etype}

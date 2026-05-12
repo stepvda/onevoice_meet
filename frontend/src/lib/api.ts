@@ -100,6 +100,19 @@ export interface MeetingOut {
   livestream_rumble_rtmps_url?: string | null;
   livestream_rumble_stream_key?: string | null;
   livestream_active?: boolean;
+  playback_enabled?: boolean;
+  playback_loop?: boolean;
+  playback_active?: boolean;
+  playback_current_item_id?: string | null;
+}
+
+export interface PlaybackItemOut {
+  id: string;
+  position: number;
+  filename: string;
+  file_size_bytes: number;
+  mime_type: string;
+  uploaded_at: string | null;
 }
 
 export interface PublicMeeting {
@@ -383,6 +396,8 @@ export const api = {
       livestream_rumble_enabled?: boolean;
       livestream_rumble_rtmps_url?: string | null;
       livestream_rumble_stream_key?: string | null;
+      playback_enabled?: boolean;
+      playback_loop?: boolean;
     }
   ) =>
     request<MeetingOut>(`/api/v1/meetings/${meetingId}`, {
@@ -1110,4 +1125,70 @@ export const api = {
     }
     return res.json();
   },
+
+  // ─── Video playback (LiveKit Ingress URL_INPUT) ─────────────────────
+
+  listPlaybackItems: (meetingId: string) =>
+    request<PlaybackItemOut[]>(`/api/v1/meetings/${meetingId}/playback/items`),
+
+  /** Multipart upload of one MP4 to the meeting's playlist. Streamed
+   *  on the server so a 400 MB file doesn't sit in memory. */
+  async uploadPlaybackItem(
+    meetingId: string,
+    file: File,
+    displayName?: string,
+  ): Promise<PlaybackItemOut> {
+    const tok = getAccessToken();
+    const fd = new FormData();
+    fd.append("file", file);
+    if (displayName) fd.append("filename", displayName);
+    let res = await fetch(`/api/v1/meetings/${meetingId}/playback/items`, {
+      method: "POST",
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+      body: fd,
+    });
+    if (res.status === 401) {
+      clearAccessToken();
+      const fresh = await bootstrapFromOneWitysk();
+      if (fresh) {
+        res = await fetch(`/api/v1/meetings/${meetingId}/playback/items`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${fresh}` },
+          body: fd,
+        });
+      }
+    }
+    if (!res.ok) {
+      let detail = res.statusText;
+      try {
+        const j = await res.clone().json();
+        detail = j.detail ?? detail;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(detail);
+    }
+    return res.json();
+  },
+
+  deletePlaybackItem: (meetingId: string, itemId: string) =>
+    request<void>(`/api/v1/meetings/${meetingId}/playback/items/${itemId}`, { method: "DELETE" }),
+
+  reorderPlaybackItems: (meetingId: string, itemIds: string[]) =>
+    request<PlaybackItemOut[]>(
+      `/api/v1/meetings/${meetingId}/playback/items:reorder`,
+      { method: "PUT", body: JSON.stringify({ item_ids: itemIds }) },
+    ),
+
+  startPlayback: (meetingId: string) =>
+    request<{ ok: boolean; ingress_id: string; item_id: string }>(
+      `/api/v1/meetings/${meetingId}/playback:start`,
+      { method: "POST" },
+    ),
+
+  stopPlayback: (meetingId: string) =>
+    request<{ ok: boolean; already_stopped?: boolean }>(
+      `/api/v1/meetings/${meetingId}/playback:stop`,
+      { method: "POST" },
+    ),
 };
