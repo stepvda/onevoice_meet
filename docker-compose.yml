@@ -114,11 +114,14 @@ services:
         whip_port: 8080
         http_relay_port: 9090
         # Compete for one of the 2 vCPUs on the box without starving egress.
+        # `url_cpu_cost` is clamped to 1.0 minimum by the ingress binary —
+        # 0.5 throws "url input requirement too low" on startup. 1.0 means
+        # URL_INPUT + one egress saturates the 2 vCPUs but does fit.
         cpu_cost:
           rtmp_cpu_cost: 1.0
           whip_cpu_cost: 1.0
           whip_bypass_transcoding_cpu_cost: 0.5
-          url_cpu_cost: 0.5
+          url_cpu_cost: 1.0
     # Shared volume so ingress can read playlist files written by meeting-api.
     # Mounted at the same path so absolute file-URLs work without translation.
     volumes:
