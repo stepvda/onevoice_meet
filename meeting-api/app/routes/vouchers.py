@@ -202,6 +202,21 @@ def redeem_voucher(
         raise HTTPException(status_code=410, detail="voucher has expired")
 
     now = datetime.now(timezone.utc)
+    # Atomic claim: a single UPDATE that succeeds only if the voucher is
+    # still unredeemed. Two concurrent requests can both pass the SELECT
+    # above; only one passes the UPDATE's WHERE clause, the other gets
+    # rowcount=0 and we treat it as "already redeemed". This is the same
+    # pattern as the whiteboard-shape race fix.
+    from sqlalchemy import update
+    result = db.execute(
+        update(Voucher)
+        .where(Voucher.id == v.id, Voucher.redeemed_by_user_id.is_(None))
+        .values(redeemed_by_user_id=u.id, redeemed_at=now)
+    )
+    if result.rowcount == 0:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="voucher already redeemed")
+
     # SQLite strips tzinfo on read; normalise the stored expiry to UTC-aware
     # before comparing against `now`, otherwise the > raises TypeError.
     cur = u.entitlement_expires_at
@@ -212,8 +227,6 @@ def redeem_voucher(
 
     u.entitlement_kind = "voucher"
     u.entitlement_expires_at = new_expiry
-    v.redeemed_by_user_id = u.id
-    v.redeemed_at = now
     db.commit()
     db.refresh(u)
 

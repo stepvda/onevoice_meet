@@ -302,23 +302,20 @@ def put_reaction(
     msg = db.query(ChatMessage).filter_by(id=message_id, meeting_id=m.id).first()
     if not msg:
         raise HTTPException(status_code=404, detail="message not found")
-    existing = (
-        db.query(ChatReaction)
-        .filter_by(message_id=msg.id, reactor_identity=body.reactor_identity)
-        .first()
+    # Atomic upsert via INSERT … ON CONFLICT DO UPDATE so double-clicks on
+    # the same emoji don't trip the (message_id, reactor_identity) unique
+    # constraint and surface as 500.
+    stmt = sqlite_insert(ChatReaction).values(
+        message_id=msg.id,
+        reactor_identity=body.reactor_identity,
+        reactor_name=body.reactor_name,
+        emoji=body.emoji,
     )
-    if existing:
-        existing.emoji = body.emoji
-        existing.reactor_name = body.reactor_name
-    else:
-        db.add(
-            ChatReaction(
-                message_id=msg.id,
-                reactor_identity=body.reactor_identity,
-                reactor_name=body.reactor_name,
-                emoji=body.emoji,
-            )
-        )
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[ChatReaction.message_id, ChatReaction.reactor_identity],
+        set_={"emoji": stmt.excluded.emoji, "reactor_name": stmt.excluded.reactor_name},
+    )
+    db.execute(stmt)
     db.commit()
     return {"ok": True}
 
@@ -345,6 +342,13 @@ def delete_reaction(
 # ─── Shared whiteboard (room-scoped) ──────────────────────────────────
 
 _WHITEBOARD_MAX_STROKES = 5000  # safety cap per meeting
+# Stroke-cap state cache. A free-draw flick can fire 30+ strokes per second
+# per participant; doing `COUNT(*)` on every insert is O(N) per stroke and
+# scans the table. We do the count stochastically (~1 in 50 calls) and
+# remember which meetings hit the cap so subsequent inserts fast-fail
+# without touching the table.
+_WHITEBOARD_CAP_CHECK_PROB = 0.02
+_whiteboard_at_cap: set[str] = set()
 
 
 @router.get("/rooms/{room_name}/whiteboard/strokes")
@@ -378,10 +382,17 @@ def post_whiteboard_stroke(
     db: Session = Depends(get_db),
 ) -> dict:
     m = _meeting_for_room(room_name, db, must_be_active=True)
-    # Soft cap so a runaway script can't fill the table for one room.
-    n = db.query(WhiteboardStroke).filter_by(meeting_id=m.id).count()
-    if n >= _WHITEBOARD_MAX_STROKES:
+    if m.id in _whiteboard_at_cap:
         raise HTTPException(status_code=413, detail="whiteboard at capacity")
+    # Re-check the cap stochastically (~1 in 50 calls). The first call
+    # past the cap pays a single COUNT(*) and pins the cache; every
+    # subsequent insert short-circuits on the cache above.
+    import random
+    if random.random() < _WHITEBOARD_CAP_CHECK_PROB:
+        n = db.query(WhiteboardStroke).filter_by(meeting_id=m.id).count()
+        if n >= _WHITEBOARD_MAX_STROKES:
+            _whiteboard_at_cap.add(m.id)
+            raise HTTPException(status_code=413, detail="whiteboard at capacity")
     db.add(
         WhiteboardStroke(
             meeting_id=m.id,
@@ -400,6 +411,8 @@ def clear_whiteboard_strokes(room_name: str, db: Session = Depends(get_db)) -> d
     m = _meeting_for_room(room_name, db, must_be_active=True)
     db.query(WhiteboardStroke).filter_by(meeting_id=m.id).delete()
     db.query(WhiteboardShape).filter_by(meeting_id=m.id).delete()
+    # Reset the at-cap cache — once cleared, room is fresh again.
+    _whiteboard_at_cap.discard(m.id)
     db.commit()
     return {"ok": True}
 

@@ -142,8 +142,49 @@ def lightweight_migrate() -> None:
             "ON meetings (is_active, hidden, list_for_anonymous, list_for_authenticated)",
             "CREATE INDEX IF NOT EXISTS ix_chat_messages_meeting_sent "
             "ON chat_messages (meeting_id, sent_at)",
+            # MyMeetings page: filter owner_user_id + hidden, ORDER BY created_at DESC.
+            "CREATE INDEX IF NOT EXISTS ix_meetings_owner_created "
+            "ON meetings (owner_user_id, created_at)",
+            # Hot path in egress_mgr._current_state and recordings listing —
+            # filter by meeting_id then status. Without this it scans the
+            # recordings table on every record-start / stream-start call.
+            "CREATE INDEX IF NOT EXISTS ix_recordings_meeting_status "
+            "ON recordings (meeting_id, status)",
+            # Webhook handler: filter_by(livestream_egress_id=info.egress_id)
+            # on every LiveKit egress event.
+            "CREATE INDEX IF NOT EXISTS ix_meetings_livestream_egress "
+            "ON meetings (livestream_egress_id)",
         ):
             try:
                 conn.exec_driver_sql(ddl)
             except Exception:
                 continue
+
+        # Partial unique index needs a clean slate. Older rows from before
+        # the dedupe logic was added may have duplicates that block the
+        # CREATE; collapse those to one active row per (meeting, identity)
+        # by marking the older copies as left=now, then create the index.
+        try:
+            conn.exec_driver_sql(
+                """
+                UPDATE meeting_participants
+                SET left_at = CURRENT_TIMESTAMP
+                WHERE id IN (
+                    SELECT mp.id
+                    FROM meeting_participants mp
+                    JOIN meeting_participants newer
+                      ON newer.meeting_id = mp.meeting_id
+                     AND newer.livekit_identity = mp.livekit_identity
+                     AND newer.left_at IS NULL
+                     AND newer.id > mp.id
+                    WHERE mp.left_at IS NULL
+                )
+                """
+            )
+            conn.exec_driver_sql(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ux_meeting_participants_active "
+                "ON meeting_participants (meeting_id, livekit_identity) "
+                "WHERE left_at IS NULL"
+            )
+        except Exception:
+            pass

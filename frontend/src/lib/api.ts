@@ -392,6 +392,9 @@ export const api = {
 
   listMeetings: () => request<MeetingOut[]>("/api/v1/meetings"),
 
+  getMeeting: (meetingId: string) =>
+    request<MeetingOut>(`/api/v1/meetings/${meetingId}`),
+
   listDiscoverable: () => request<PublicMeeting[]>("/api/v1/discoverable"),
 
   listPublicMeetings: () => request<PublicMeeting[]>("/api/v1/public-meetings"),

@@ -150,9 +150,37 @@ async def capture_billing_order(
         raise HTTPException(status_code=404, detail="order not found")
     if row.status == "COMPLETED":
         return {"ok": True, "already_captured": True}
+
+    # Atomic claim: mark the row as CAPTURING in a single UPDATE that wins
+    # only if it's NOT already COMPLETED/CAPTURING. Two parallel taps on
+    # "Confirm payment" can both pass the COMPLETED check above; only the
+    # first passes the UPDATE, the other sees rowcount=0 and returns
+    # "already captured". Without this, both calls hit PayPal (PayPal's
+    # capture is idempotent — no double charge) and both extend the user's
+    # entitlement by 30/365 days (the bug — real money for us).
+    from sqlalchemy import update
+    claim = db.execute(
+        update(PaypalOrder)
+        .where(
+            PaypalOrder.paypal_order_id == order_id,
+            PaypalOrder.user_id == user.user_id,
+            PaypalOrder.status.notin_(["COMPLETED", "CAPTURING"]),
+        )
+        .values(status="CAPTURING")
+    )
+    if claim.rowcount == 0:
+        db.commit()
+        # Re-read to surface the current state to the caller.
+        db.refresh(row)
+        return {"ok": True, "already_captured": row.status == "COMPLETED", "status": row.status}
+    db.commit()
+
     try:
         result = await capture_order(order_id)
     except PaypalApiError as e:
+        # Roll the row back to its prior state so a retry can try again.
+        row.status = "CREATED"
+        db.commit()
         raise HTTPException(status_code=502, detail=str(e)) from e
     row.status = result.get("status", "COMPLETED")
     if row.status == "COMPLETED":

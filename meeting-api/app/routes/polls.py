@@ -18,6 +18,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from ulid import ULID
 
+from sqlalchemy import func
+
 from app.auth import RequireUser
 from app.db import get_db
 from app.models import Meeting, Poll, PollVote, Question, QuestionUpvote
@@ -48,13 +50,13 @@ class CreatePollBody(BaseModel):
     options: list[str] = Field(min_length=2, max_length=6)
 
 
-def _serialise_poll(poll: Poll, db: Session) -> dict:
+def _serialise_poll(poll: Poll, counts: list[int]) -> dict:
     options = json.loads(poll.options_json or "[]")
-    counts = [0] * len(options)
-    rows = db.query(PollVote).filter_by(poll_id=poll.id).all()
-    for r in rows:
-        if 0 <= r.option_index < len(counts):
-            counts[r.option_index] += 1
+    # Trim/pad counts to match the option list — defensive against stale
+    # votes pointing at indexes that no longer exist.
+    if len(counts) < len(options):
+        counts = counts + [0] * (len(options) - len(counts))
+    counts = counts[: len(options)]
     return {
         "id": poll.id,
         "meeting_id": poll.meeting_id,
@@ -66,6 +68,23 @@ def _serialise_poll(poll: Poll, db: Session) -> dict:
         "created_at": poll.created_at.isoformat() if poll.created_at else None,
         "closed_at": poll.closed_at.isoformat() if poll.closed_at else None,
     }
+
+
+def _counts_for_poll(poll: Poll, db: Session) -> list[int]:
+    """Single GROUP BY query against PollVote for one poll. Used on
+    create/vote/close where only one poll is in scope."""
+    options = json.loads(poll.options_json or "[]")
+    counts = [0] * len(options)
+    rows = (
+        db.query(PollVote.option_index, func.count(PollVote.id))
+        .filter(PollVote.poll_id == poll.id)
+        .group_by(PollVote.option_index)
+        .all()
+    )
+    for idx, n in rows:
+        if 0 <= idx < len(counts):
+            counts[idx] = n
+    return counts
 
 
 @router.get("/meetings/{meeting_id}/polls")
@@ -80,7 +99,25 @@ def list_polls(meeting_id: str, db: Session = Depends(get_db)) -> list[dict]:
         .order_by(Poll.created_at.desc())
         .all()
     )
-    return [_serialise_poll(p, db) for p in polls]
+    if not polls:
+        return []
+    # One aggregate query for all polls' vote counts instead of N+1 selects.
+    poll_ids = [p.id for p in polls]
+    vote_rows = (
+        db.query(PollVote.poll_id, PollVote.option_index, func.count(PollVote.id))
+        .filter(PollVote.poll_id.in_(poll_ids))
+        .group_by(PollVote.poll_id, PollVote.option_index)
+        .all()
+    )
+    counts_by_poll: dict[str, dict[int, int]] = {}
+    for pid, idx, n in vote_rows:
+        counts_by_poll.setdefault(pid, {})[idx] = n
+    out: list[dict] = []
+    for p in polls:
+        options = json.loads(p.options_json or "[]")
+        counts = [counts_by_poll.get(p.id, {}).get(i, 0) for i in range(len(options))]
+        out.append(_serialise_poll(p, counts))
+    return out
 
 
 @router.post("/meetings/{meeting_id}/polls", status_code=201)
@@ -107,7 +144,7 @@ def create_poll(
     db.add(poll)
     db.commit()
     db.refresh(poll)
-    return _serialise_poll(poll, db)
+    return _serialise_poll(poll, _counts_for_poll(poll, db))
 
 
 class VoteBody(BaseModel):
@@ -131,23 +168,23 @@ def vote_on_poll(
     options = json.loads(poll.options_json or "[]")
     if body.option_index >= len(options):
         raise HTTPException(status_code=400, detail="option_index out of range")
-    existing = (
-        db.query(PollVote)
-        .filter_by(poll_id=poll.id, voter_identity=body.voter_identity)
-        .first()
+    # Atomic upsert: SELECT-then-INSERT loses the race when the same voter
+    # double-clicks; the second INSERT would hit the uq_poll_voter
+    # UniqueConstraint and 500. ON CONFLICT DO UPDATE keeps both calls
+    # idempotent and converges to the latest option_index.
+    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+    stmt = sqlite_insert(PollVote).values(
+        poll_id=poll.id,
+        voter_identity=body.voter_identity,
+        option_index=body.option_index,
     )
-    if existing:
-        existing.option_index = body.option_index
-    else:
-        db.add(
-            PollVote(
-                poll_id=poll.id,
-                voter_identity=body.voter_identity,
-                option_index=body.option_index,
-            )
-        )
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[PollVote.poll_id, PollVote.voter_identity],
+        set_={"option_index": stmt.excluded.option_index},
+    )
+    db.execute(stmt)
     db.commit()
-    return _serialise_poll(poll, db)
+    return _serialise_poll(poll, _counts_for_poll(poll, db))
 
 
 @router.post("/polls/{poll_id}/close")
@@ -161,7 +198,7 @@ def close_poll(poll_id: str, user: RequireUser, db: Session = Depends(get_db)) -
     poll.status = "closed"
     poll.closed_at = datetime.now(timezone.utc)
     db.commit()
-    return _serialise_poll(poll, db)
+    return _serialise_poll(poll, _counts_for_poll(poll, db))
 
 
 # ─── Q&A ──────────────────────────────────────────────────────────────
@@ -173,8 +210,7 @@ class AskBody(BaseModel):
     question: str = Field(min_length=1, max_length=600)
 
 
-def _serialise_question(q: Question, db: Session) -> dict:
-    upvotes = db.query(QuestionUpvote).filter_by(question_id=q.id).count()
+def _serialise_question(q: Question, upvotes: int) -> dict:
     return {
         "id": q.id,
         "meeting_id": q.meeting_id,
@@ -188,6 +224,10 @@ def _serialise_question(q: Question, db: Session) -> dict:
     }
 
 
+def _upvote_count(q: Question, db: Session) -> int:
+    return db.query(QuestionUpvote).filter_by(question_id=q.id).count()
+
+
 @router.get("/meetings/{meeting_id}/questions")
 def list_questions(meeting_id: str, db: Session = Depends(get_db)) -> list[dict]:
     rows = (
@@ -196,7 +236,17 @@ def list_questions(meeting_id: str, db: Session = Depends(get_db)) -> list[dict]
         .order_by(Question.created_at.desc())
         .all()
     )
-    return [_serialise_question(q, db) for q in rows]
+    if not rows:
+        return []
+    # One aggregate query for all questions' upvote counts instead of N+1.
+    qids = [q.id for q in rows]
+    counts = dict(
+        db.query(QuestionUpvote.question_id, func.count(QuestionUpvote.id))
+        .filter(QuestionUpvote.question_id.in_(qids))
+        .group_by(QuestionUpvote.question_id)
+        .all()
+    )
+    return [_serialise_question(q, counts.get(q.id, 0)) for q in rows]
 
 
 @router.post("/meetings/{meeting_id}/questions", status_code=201)
@@ -215,7 +265,7 @@ def ask_question(meeting_id: str, body: AskBody, db: Session = Depends(get_db)) 
     db.add(q)
     db.commit()
     db.refresh(q)
-    return _serialise_question(q, db)
+    return _serialise_question(q, _upvote_count(q, db))
 
 
 class UpvoteBody(BaseModel):
@@ -239,7 +289,7 @@ def upvote_question(question_id: int, body: UpvoteBody, db: Session = Depends(ge
     else:
         db.add(QuestionUpvote(question_id=q.id, voter_identity=body.voter_identity))
     db.commit()
-    return _serialise_question(q, db)
+    return _serialise_question(q, _upvote_count(q, db))
 
 
 @router.post("/questions/{question_id}/answer")
@@ -257,7 +307,7 @@ def mark_question_answered(
     q.status = "answered"
     q.answered_at = datetime.now(timezone.utc)
     db.commit()
-    return _serialise_question(q, db)
+    return _serialise_question(q, _upvote_count(q, db))
 
 
 @router.delete("/questions/{question_id}")
@@ -274,4 +324,4 @@ def dismiss_question(
         raise HTTPException(status_code=403, detail="only moderators can dismiss questions")
     q.status = "dismissed"
     db.commit()
-    return _serialise_question(q, db)
+    return _serialise_question(q, _upvote_count(q, db))

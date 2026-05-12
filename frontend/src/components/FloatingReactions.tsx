@@ -46,15 +46,31 @@ export default function FloatingReactions({ room }: Props) {
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const nextIdRef = useRef(1);
   const nextLaneRef = useRef(0);
+  // Track in-flight removal timers so we can cancel them on unmount —
+  // otherwise an unmount mid-lifespan fires setReactions on an unmounted
+  // component (React warning) and pins the closure-captured setter.
+  const timersRef = useRef<Set<number>>(new Set());
 
   function add(emoji: string, name: string) {
     const id = nextIdRef.current++;
     const lane = nextLaneRef.current++ % 5;
     setReactions((cur) => [...cur, { id, emoji, name, lane }]);
-    window.setTimeout(() => {
+    const handle = window.setTimeout(() => {
+      timersRef.current.delete(handle);
       setReactions((cur) => cur.filter((r) => r.id !== id));
     }, LIFESPAN_MS);
+    timersRef.current.add(handle);
   }
+
+  useEffect(() => {
+    // Snapshot the ref so the cleanup closes over a stable Set even after
+    // strict-mode double-invocations.
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach((h) => window.clearTimeout(h));
+      timers.clear();
+    };
+  }, []);
 
   // Expose a way for the local Reactions button to push the user's own emoji
   // into the same overlay (they wouldn't otherwise see it via DataReceived).

@@ -232,8 +232,10 @@ async def publish_to_youtube(
     if not path.exists():
         raise HTTPException(status_code=410, detail="recording file missing on disk")
 
-    # Default title/description from the meeting metadata.
-    meeting = db.query(Meeting).filter_by(id=r.meeting_id).first()
+    # Default title/description from the meeting metadata. The Meeting was
+    # already JOINed in the query above; use the eager-loaded relationship
+    # instead of issuing a second SELECT.
+    meeting = r.meeting
     default_title = body.title or (meeting.display_title if meeting else f"meet.witysk recording {r.id}")
     default_desc = body.description or (
         f"Recorded via meet.witysk.org\n"

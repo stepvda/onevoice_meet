@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from livekit import api
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -93,7 +94,15 @@ async def livekit_webhook(
                         is_owner=False,
                     )
                 )
-                db.commit()
+                # LiveKit can deliver `participant_joined` more than once for
+                # the same session (network blip → retry). The partial-unique
+                # index `ux_meeting_participants_active` enforces "one
+                # active row per (meeting, identity)"; we catch and ignore
+                # the conflict so the retry is a no-op.
+                try:
+                    db.commit()
+                except IntegrityError:
+                    db.rollback()
 
     elif etype == "participant_left" and event.participant and event.room:
         if is_ti_cafe_room(event.room.name):

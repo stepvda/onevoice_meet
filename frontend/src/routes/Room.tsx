@@ -227,8 +227,9 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
     let cancelled = false;
     void (async () => {
       try {
-        const all = await api.listMeetings();
-        const mine = all.find((x) => x.id === meetingId);
+        // Single-meeting fetch instead of listMeetings + client-side find —
+        // saves transferring every meeting the owner has just to read one.
+        const mine = await api.getMeeting(meetingId);
         if (cancelled || !mine) return;
         setLivestreamMeeting(mine);
         // Show the toolbar button if ANY destination's toggle is on. The
