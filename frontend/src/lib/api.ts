@@ -1172,7 +1172,7 @@ export const api = {
   },
 
   deletePlaybackItem: (meetingId: string, itemId: string) =>
-    request<void>(`/api/v1/meetings/${meetingId}/playback/items/${itemId}`, { method: "DELETE" }),
+    request<{ ok: boolean }>(`/api/v1/meetings/${meetingId}/playback/items/${itemId}`, { method: "DELETE" }),
 
   reorderPlaybackItems: (meetingId: string, itemIds: string[]) =>
     request<PlaybackItemOut[]>(

@@ -155,13 +155,13 @@ async def upload_playback_item(
     return _to_out(item)
 
 
-@router.delete("/meetings/{meeting_id}/playback/items/{item_id}", status_code=204)
+@router.delete("/meetings/{meeting_id}/playback/items/{item_id}")
 def delete_playback_item(
     meeting_id: str,
     item_id: str,
     user: RequireUser,
     db: Session = Depends(get_db),
-) -> None:
+) -> dict:
     m = _require_moderator(meeting_id, user.sub, db)
     item = db.query(PlaybackItem).filter_by(id=item_id, meeting_id=m.id).first()
     if not item:
@@ -184,6 +184,7 @@ def delete_playback_item(
         .values(position=PlaybackItem.position - 1)
     )
     db.commit()
+    return {"ok": True}
 
 
 class ReorderBody(BaseModel):
