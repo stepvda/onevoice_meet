@@ -18,8 +18,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from ulid import ULID
@@ -239,15 +239,67 @@ async def playback_stop(
 # ─── Internal file-fetch (called by livekit-ingress container) ────────
 
 
+def _parse_range_header(value: str, file_size: int) -> tuple[int, int] | None:
+    """Parse a single-range `Range: bytes=START-END` header. Returns
+    (start, end_inclusive) or None if the header is malformed/unsupported.
+    Multi-range and suffix-range (`bytes=-N`) are explicitly handled."""
+    if not value or not value.lower().startswith("bytes="):
+        return None
+    spec = value[len("bytes="):].strip()
+    if "," in spec:
+        return None  # multi-range not supported
+    if spec.startswith("-"):
+        try:
+            suffix_len = int(spec[1:])
+        except ValueError:
+            return None
+        if suffix_len <= 0:
+            return None
+        start = max(0, file_size - suffix_len)
+        return start, file_size - 1
+    try:
+        start_s, _, end_s = spec.partition("-")
+        start = int(start_s)
+        end = int(end_s) if end_s else file_size - 1
+    except ValueError:
+        return None
+    if start < 0 or end < start or start >= file_size:
+        return None
+    end = min(end, file_size - 1)
+    return start, end
+
+
+_RANGE_CHUNK = 1024 * 1024  # 1 MiB reads
+
+
+def _iter_file_range(path: Path, start: int, end: int):
+    """Yield bytes [start, end_inclusive] from `path` in 1 MiB chunks. Used
+    as the StreamingResponse body so we don't load 500 MB into RAM."""
+    remaining = end - start + 1
+    with path.open("rb") as fh:
+        fh.seek(start)
+        while remaining > 0:
+            chunk = fh.read(min(_RANGE_CHUNK, remaining))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+            yield chunk
+
+
 @router.get("/internal/playback/{item_id}")
 def fetch_playback_file(
     item_id: str,
     token: Annotated[str, Query()],
+    request: Request,
+    range_header: Annotated[str | None, Header(alias="Range")] = None,
     db: Session = Depends(get_db),
-) -> FileResponse:
+) -> Response:
     """Open endpoint — gated on the HMAC token issued by playback_mgr at
-    ingress-create time. Returns the MP4 with the right content-type so
-    ffmpeg inside the ingress container streams it correctly."""
+    ingress-create time. Supports HTTP Range requests so GStreamer's
+    `souphttpsrc` (used by the LiveKit ingress URL_INPUT pipeline) can
+    seek into the MP4 to read the `moov` atom; without Range support
+    GStreamer aborts with "Server does not support seeking." even though
+    the file is fully readable linearly."""
     if not verify_playback_url(item_id, token):
         raise HTTPException(status_code=403, detail="invalid or expired token")
     item = db.query(PlaybackItem).filter_by(id=item_id).first()
@@ -256,10 +308,42 @@ def fetch_playback_file(
     path = Path(item.file_path)
     if not path.exists():
         raise HTTPException(status_code=410, detail="file missing on disk")
-    return FileResponse(
-        path=str(path),
-        media_type=item.mime_type or "video/mp4",
-        filename=item.filename,
+
+    file_size = path.stat().st_size
+    media_type = item.mime_type or "video/mp4"
+    common_headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Disposition": f'inline; filename="{item.filename}"',
+        "Cache-Control": "private, no-store",
+    }
+
+    if range_header is None:
+        return FileResponse(
+            path=str(path),
+            media_type=media_type,
+            filename=item.filename,
+            headers=common_headers,
+        )
+
+    parsed = _parse_range_header(range_header, file_size)
+    if parsed is None:
+        # Malformed / unsatisfiable range → 416 with the actual file size
+        # so the client can retry without Range or with a valid range.
+        return Response(
+            status_code=416,
+            headers={**common_headers, "Content-Range": f"bytes */{file_size}"},
+        )
+    start, end = parsed
+    length = end - start + 1
+    return StreamingResponse(
+        _iter_file_range(path, start, end),
+        status_code=206,
+        media_type=media_type,
+        headers={
+            **common_headers,
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Content-Length": str(length),
+        },
     )
 
 
