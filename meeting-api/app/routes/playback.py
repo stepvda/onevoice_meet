@@ -69,7 +69,23 @@ def _to_out(item: PlaybackItem) -> dict:
         "file_size_bytes": item.file_size_bytes,
         "mime_type": item.mime_type,
         "uploaded_at": item.uploaded_at.isoformat() if item.uploaded_at else None,
+        "source_item_id": item.source_item_id,
     }
+
+
+def _resolve_source(item: PlaybackItem, db: Session) -> PlaybackItem:
+    """Return the file-owning row for a playlist item. For source rows
+    that's the item itself; for aliases it's the row pointed to by
+    `source_item_id`. Aliases never chain (we resolve to the root when
+    one is created) so a single hop is always enough."""
+    if item.source_item_id is None:
+        return item
+    src = db.query(PlaybackItem).filter_by(id=item.source_item_id).first()
+    if src is None:
+        # Source was deleted out from under the alias — caller surfaces
+        # this as a 410 "file missing".
+        return item
+    return src
 
 
 @router.get("/meetings/{meeting_id}/playback/items")
@@ -155,6 +171,50 @@ async def upload_playback_item(
     return _to_out(item)
 
 
+@router.post("/meetings/{meeting_id}/playback/items/{item_id}:duplicate", status_code=201)
+def duplicate_playback_item(
+    meeting_id: str,
+    item_id: str,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Create a playlist ALIAS that references an existing item's file —
+    lets the host place the same video at multiple positions without
+    duplicating the MP4 on disk. The alias goes to the end of the
+    playlist; the host reorders it from there using the regular
+    up/down or reorder calls."""
+    m = _require_moderator(meeting_id, user.sub, db)
+    src = db.query(PlaybackItem).filter_by(id=item_id, meeting_id=m.id).first()
+    if not src:
+        raise HTTPException(status_code=404, detail="item not found")
+    existing_count = db.query(PlaybackItem).filter_by(meeting_id=m.id).count()
+    if existing_count >= _MAX_ITEMS_PER_MEETING:
+        raise HTTPException(
+            status_code=413,
+            detail=f"playlist is full ({_MAX_ITEMS_PER_MEETING} items max per meeting)",
+        )
+    # Resolve to the root source so aliases never chain — a single hop
+    # is always enough at playback time and `delete` only has to walk
+    # one set of dependants.
+    root = _resolve_source(src, db)
+    alias = PlaybackItem(
+        id=str(ULID()),
+        meeting_id=m.id,
+        position=existing_count,
+        filename=root.filename,
+        source_item_id=root.id,
+        # File data lives on the source row. Keep these NOT NULL columns
+        # filled with empties so the schema invariant holds.
+        file_path="",
+        file_size_bytes=0,
+        mime_type=root.mime_type,
+    )
+    db.add(alias)
+    db.commit()
+    db.refresh(alias)
+    return _to_out(alias)
+
+
 @router.delete("/meetings/{meeting_id}/playback/items/{item_id}")
 def delete_playback_item(
     meeting_id: str,
@@ -170,8 +230,29 @@ def delete_playback_item(
     # stop playback first (or wait for it to finish).
     if m.playback_current_item_id == item.id:
         raise HTTPException(status_code=409, detail="item is currently playing")
+    # Refuse to delete a source row that other (alias) rows depend on —
+    # forces the host to remove aliases first so we don't strand them
+    # with a broken file pointer.
+    if item.source_item_id is None:
+        alias_count = (
+            db.query(PlaybackItem)
+            .filter_by(meeting_id=m.id, source_item_id=item.id)
+            .count()
+        )
+        if alias_count > 0:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"this item is referenced by {alias_count} playlist link"
+                    f"{'s' if alias_count != 1 else ''}; remove the link"
+                    f"{'s' if alias_count != 1 else ''} first"
+                ),
+            )
 
-    Path(item.file_path).unlink(missing_ok=True)
+    # Only delete the file on disk for self-contained rows; alias rows
+    # have no file of their own.
+    if item.source_item_id is None and item.file_path:
+        Path(item.file_path).unlink(missing_ok=True)
     deleted_position = item.position
     db.delete(item)
     db.commit()
@@ -305,14 +386,21 @@ def fetch_playback_file(
     item = db.query(PlaybackItem).filter_by(id=item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="item not found")
-    path = Path(item.file_path)
+    # Alias rows have no file of their own; serve the source's file.
+    source = _resolve_source(item, db)
+    if not source.file_path:
+        raise HTTPException(status_code=410, detail="file missing on disk")
+    path = Path(source.file_path)
     if not path.exists():
         raise HTTPException(status_code=410, detail="file missing on disk")
 
     file_size = path.stat().st_size
-    media_type = item.mime_type or "video/mp4"
+    media_type = source.mime_type or "video/mp4"
     common_headers = {
         "Accept-Ranges": "bytes",
+        # The alias's own filename is what we want shown to clients —
+        # it usually mirrors the source's name but the host can rename
+        # it independently in a future iteration.
         "Content-Disposition": f'inline; filename="{item.filename}"',
         "Cache-Control": "private, no-store",
     }

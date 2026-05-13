@@ -120,6 +120,14 @@ def lightweight_migrate() -> None:
                 ("anonymise_email_in_join_log", "ALTER TABLE user_preferences ADD COLUMN anonymise_email_in_join_log BOOLEAN DEFAULT 0 NOT NULL"),
                 ("dont_log_my_ip", "ALTER TABLE user_preferences ADD COLUMN dont_log_my_ip BOOLEAN DEFAULT 0 NOT NULL"),
             )),
+            ("playback_items", (
+                # Aliases reference a source row's file. NULL = self-contained
+                # item (own file on disk). Non-NULL = no file of its own; the
+                # playback layer resolves to the source's file. SQLite ALTER
+                # TABLE can't add a FOREIGN KEY constraint to an existing
+                # table, but the model annotates it and we never join-check.
+                ("source_item_id", "ALTER TABLE playback_items ADD COLUMN source_item_id TEXT"),
+            )),
             ("users", (
                 ("totp_secret", "ALTER TABLE users ADD COLUMN totp_secret TEXT"),
                 ("totp_enabled", "ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT 0 NOT NULL"),

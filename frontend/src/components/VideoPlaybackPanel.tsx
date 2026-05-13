@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, ArrowUp, Film, Repeat, Trash2, Upload, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Film, Link2, Repeat, Trash2, Upload, X } from "lucide-react";
 import { api, MeetingOut, PlaybackItemOut } from "../lib/api";
 import { Button, Card, Toggle } from "./ui";
 
@@ -122,6 +122,19 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
     }
   }
 
+  async function duplicateItem(item: PlaybackItemOut) {
+    setBusy(`duplicate:${item.id}`);
+    setErr(null);
+    try {
+      await api.duplicatePlaybackItem(meeting.id, item.id);
+      await refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function move(item: PlaybackItemOut, direction: -1 | 1) {
     if (!items) return;
     const idx = items.findIndex((x) => x.id === item.id);
@@ -223,6 +236,7 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
               className="hidden"
               onChange={(e) => onPick(e.target.files)}
               data-testid="playback-file-input"
+              aria-label={t("playback.add", { defaultValue: "Add MP4" })}
             />
           </div>
 
@@ -236,7 +250,9 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
             </p>
           ) : (
             <ul className="flex flex-col divide-y divide-primary-700">
-              {items.map((it, i) => (
+              {items.map((it, i) => {
+                const isAlias = it.source_item_id !== null;
+                return (
                 <li
                   key={it.id}
                   data-testid={`playback-item-${it.id}`}
@@ -244,11 +260,41 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                 >
                   <span className="text-xs text-slate-500 w-5 text-right">{i + 1}.</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-slate-100 truncate" title={it.filename}>
-                      {it.filename}
+                    <div
+                      className={[
+                        "text-sm truncate flex items-center gap-1.5",
+                        isAlias ? "text-slate-300 italic" : "text-slate-100",
+                      ].join(" ")}
+                      title={
+                        isAlias
+                          ? t("playback.aliasTitle", {
+                              defaultValue: "Link to another video in this playlist",
+                            })
+                          : it.filename
+                      }
+                    >
+                      {isAlias && (
+                        <Link2 size={12} className="text-accent-500 flex-shrink-0" aria-hidden />
+                      )}
+                      <span className="truncate">{it.filename}</span>
                     </div>
-                    <div className="text-xs text-slate-500">{fmtSize(it.file_size_bytes)}</div>
+                    <div className="text-xs text-slate-500">
+                      {isAlias
+                        ? t("playback.aliasLabel", { defaultValue: "Link" })
+                        : fmtSize(it.file_size_bytes)}
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => duplicateItem(it)}
+                    disabled={!!busy || items.length >= 20}
+                    aria-label={t("playback.duplicate", { defaultValue: "Add a link to this video" })}
+                    title={t("playback.duplicate", { defaultValue: "Add a link to this video" })}
+                    data-testid={`playback-duplicate-${it.id}`}
+                    className="p-1 rounded hover:bg-primary-700 disabled:opacity-30 text-slate-300"
+                  >
+                    <Link2 size={14} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => move(it, -1)}
@@ -282,7 +328,8 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                     <Trash2 size={14} />
                   </button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
 

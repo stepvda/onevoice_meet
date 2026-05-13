@@ -504,8 +504,18 @@ class PlaybackItem(Base):
     # Display name shown in the playlist UI. Stored separately from the
     # on-disk filename so renaming the upload doesn't break disk lookups.
     filename: Mapped[str] = mapped_column(String, nullable=False)
-    file_path: Mapped[str] = mapped_column(String, nullable=False)
-    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    # When `source_item_id` is set this row is an ALIAS: it has no file
+    # of its own and reads `file_path` / `file_size_bytes` / `mime_type`
+    # from the source row at playback time. Aliases let the host place
+    # the same video at multiple positions in the playlist without
+    # duplicating the MP4 on disk. Aliases never chain — when an alias
+    # is created from another alias we resolve to the root source first
+    # so a single hop is always enough at playback time. file_path on
+    # alias rows is an empty string ("") rather than NULL to keep the
+    # column NOT NULL invariant.
+    source_item_id: Mapped[str | None] = mapped_column(String, ForeignKey("playback_items.id"), nullable=True)
+    file_path: Mapped[str] = mapped_column(String, nullable=False, default="")
+    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     # MIME type captured at upload time — we cap to video/mp4 today but
     # storing the value keeps a path open for webm/ogv later.
     mime_type: Mapped[str] = mapped_column(String, nullable=False, default="video/mp4")

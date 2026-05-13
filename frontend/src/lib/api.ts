@@ -113,6 +113,10 @@ export interface PlaybackItemOut {
   file_size_bytes: number;
   mime_type: string;
   uploaded_at: string | null;
+  // When non-null this row is an ALIAS: it has no file of its own and
+  // resolves to the source row's file at playback time. file_size_bytes
+  // is 0 on alias rows (the source's size is canonical).
+  source_item_id: string | null;
 }
 
 export interface PublicMeeting {
@@ -1173,6 +1177,15 @@ export const api = {
 
   deletePlaybackItem: (meetingId: string, itemId: string) =>
     request<{ ok: boolean }>(`/api/v1/meetings/${meetingId}/playback/items/${itemId}`, { method: "DELETE" }),
+
+  /** Create an ALIAS to an existing playlist item. Appears at the end
+   *  of the playlist; reorder normally. Plays the same file as the
+   *  source without duplicating it on disk. */
+  duplicatePlaybackItem: (meetingId: string, itemId: string) =>
+    request<PlaybackItemOut>(
+      `/api/v1/meetings/${meetingId}/playback/items/${itemId}:duplicate`,
+      { method: "POST" },
+    ),
 
   reorderPlaybackItems: (meetingId: string, itemIds: string[]) =>
     request<PlaybackItemOut[]>(
