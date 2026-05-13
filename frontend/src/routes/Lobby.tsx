@@ -166,12 +166,29 @@ export default function Lobby() {
     setErr(null);
     try {
       if (isOwner) {
-        const resp = await api.ownerToken(ownerMeetingId!, { display_name: await fetchOneWityskName() });
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp));
-        // Mark this session as moderator so Room.tsx exposes host controls.
-        sessionStorage.setItem(`role:${roomName}`, resp.role ?? "owner");
-        navigate(`/r/${roomName}`);
-        return;
+        try {
+          const resp = await api.ownerToken(ownerMeetingId!, { display_name: await fetchOneWityskName() });
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp));
+          // Mark this session as moderator so Room.tsx exposes host controls.
+          sessionStorage.setItem(`role:${roomName}`, resp.role ?? "owner");
+          navigate(`/r/${roomName}`);
+          return;
+        } catch (err) {
+          // Cached `owner:<room>` was set during a previous session
+          // (e.g. while we were a co-host). If the owner just demoted us
+          // the backend now returns 404. Clear the stale flag and fall
+          // through to the cohost-check / anon-token branch so we
+          // rejoin as a regular participant.
+          const msg = (err as Error).message || "";
+          if (msg.includes("meeting not found") || msg.includes("404")) {
+            sessionStorage.removeItem(`owner:${roomName}`);
+            sessionStorage.removeItem(`role:${roomName}`);
+            setOwnerMeetingId(null);
+            // Fall through — do NOT rethrow.
+          } else {
+            throw err;
+          }
+        }
       }
       // If we're signed in, ask the API whether this room treats us as a
       // co-host. If so, mint a moderator token (room_admin grant) instead
