@@ -785,7 +785,13 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
       <div className="flex-1 min-h-0 flex">
         <div
           className={[
-            "meet-stage flex-1 min-w-0 relative",
+            // `min-h-0` is the critical bit: flex children default to
+            // `min-height: auto` (their content's intrinsic minimum),
+            // which lets the grid push past the parent and clip at the
+            // bottom when the viewport gets short. `overflow-hidden` is
+            // the safety net so any residual overflow doesn't bleed into
+            // the bottom control bar.
+            "meet-stage flex-1 min-w-0 min-h-0 overflow-hidden relative",
             display.showParticipantNames ? "" : "no-participant-names",
             display.showConnectionQuality ? "" : "no-conn-quality",
             display.highlightSpeaker ? "" : "no-speaker-highlight",
