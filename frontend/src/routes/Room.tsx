@@ -347,14 +347,20 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
     }
   }
 
-  // Mirror room.metadata.recording_active locally.
+  // Mirror room.metadata.recording_active + streaming_active locally so
+  // every moderator's toolbar reflects the live state. Without this the
+  // second co-host's button stays on "Start streaming" even after the
+  // first co-host has actually started — clicking then gets a 409
+  // "livestream already in progress" instead of toggling stop.
   useEffect(() => {
     const read = () => {
       try {
         const md = JSON.parse(room.metadata || "{}");
         setRecordingActive(!!md.recording_active);
+        setLivestreamActive(!!md.streaming_active);
       } catch {
         setRecordingActive(false);
+        setLivestreamActive(false);
       }
     };
     read();
