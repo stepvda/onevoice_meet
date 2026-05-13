@@ -41,10 +41,16 @@ router = APIRouter(prefix="/v1")
 # Storage layout: /var/lib/meet/playback/<meeting_id>/<item_id>.mp4
 _PLAYBACK_ROOT = Path(settings.recordings_dir).parent / "playback"
 
-# Limits — keep modest to avoid bloating the host disk and the upload
-# round-trip. A 15-minute 720p H.264 file at ~1.5 Mbps lands around 170 MB.
+# Per-file size cap stays — protects the upload round-trip and the host
+# disk. A 15-minute 720p H.264 file at ~1.5 Mbps lands around 170 MB.
+# There is intentionally no per-playlist item count cap: the host
+# decides; reasonable wall-clock total runtime constrains itself
+# naturally via the disk-cap retention job.
 _MAX_FILE_BYTES = 500 * 1024 * 1024
-_MAX_ITEMS_PER_MEETING = 20
+# Reorder requests are size-bounded to a value comfortably above any
+# realistic playlist length so a malformed request can't exhaust the
+# server. Not user-visible.
+_REORDER_MAX_ITEMS = 1000
 _ALLOWED_CONTENT_TYPES = {"video/mp4", "video/quicktime", "video/x-m4v"}
 
 
@@ -124,12 +130,6 @@ async def upload_playback_item(
         raise HTTPException(status_code=415, detail=f"unsupported type: {file.content_type}")
 
     existing_count = db.query(PlaybackItem).filter_by(meeting_id=m.id).count()
-    if existing_count >= _MAX_ITEMS_PER_MEETING:
-        raise HTTPException(
-            status_code=413,
-            detail=f"playlist is full ({_MAX_ITEMS_PER_MEETING} items max per meeting)",
-        )
-
     new_id = str(ULID())
     dest = _item_dir(m.id) / f"{new_id}.mp4"
     total = 0
@@ -188,11 +188,6 @@ def duplicate_playback_item(
     if not src:
         raise HTTPException(status_code=404, detail="item not found")
     existing_count = db.query(PlaybackItem).filter_by(meeting_id=m.id).count()
-    if existing_count >= _MAX_ITEMS_PER_MEETING:
-        raise HTTPException(
-            status_code=413,
-            detail=f"playlist is full ({_MAX_ITEMS_PER_MEETING} items max per meeting)",
-        )
     # Resolve to the root source so aliases never chain — a single hop
     # is always enough at playback time and `delete` only has to walk
     # one set of dependants.
@@ -269,7 +264,7 @@ def delete_playback_item(
 
 
 class ReorderBody(BaseModel):
-    item_ids: list[str] = Field(min_length=1, max_length=_MAX_ITEMS_PER_MEETING)
+    item_ids: list[str] = Field(min_length=1, max_length=_REORDER_MAX_ITEMS)
 
 
 @router.put("/meetings/{meeting_id}/playback/items:reorder")

@@ -249,7 +249,12 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
               })}
             </p>
           ) : (
-            <ul className="flex flex-col divide-y divide-primary-700">
+            // Cap the list at ~half the viewport so the toggles + upload
+            // header stay visible above and the host can scroll long
+            // playlists independently. The outer Card scroll still acts
+            // as a safety net when the whole modal somehow grows past
+            // 88vh (e.g. tiny screens).
+            <ul className="flex flex-col divide-y divide-primary-700 max-h-[50vh] overflow-y-auto pr-1">
               {items.map((it, i) => {
                 const isAlias = it.source_item_id !== null;
                 return (
@@ -287,7 +292,7 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                   <button
                     type="button"
                     onClick={() => duplicateItem(it)}
-                    disabled={!!busy || items.length >= 20}
+                    disabled={!!busy}
                     aria-label={t("playback.duplicate", { defaultValue: "Add a link to this video" })}
                     title={t("playback.duplicate", { defaultValue: "Add a link to this video" })}
                     data-testid={`playback-duplicate-${it.id}`}
