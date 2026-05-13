@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from passlib.hash import argon2
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ulid import ULID
 
@@ -793,17 +794,41 @@ def mint_owner_token(
     stored_email = user.email
     if prefs_row and prefs_row.anonymise_email_in_join_log:
         stored_email = _anonymise_email(stored_email)
-    db.add(
-        MeetingParticipant(
-            meeting_id=m.id,
-            livekit_identity=identity,
-            display_name=display_name,
-            email=stored_email,
-            is_authenticated=True,
-            is_owner=is_real_owner,
-        )
+    # If the moderator already has an active participant row (page refresh,
+    # reconnect, or fresh token after cohost promotion), reuse it. The
+    # partial-unique index `ux_meeting_participants_active` would otherwise
+    # raise IntegrityError on the INSERT and 500 the entire token mint,
+    # which caused the "joining the meeting fails / very long delay"
+    # symptom in production logs.
+    existing = (
+        db.query(MeetingParticipant)
+        .filter_by(meeting_id=m.id, livekit_identity=identity, left_at=None)
+        .first()
     )
-    db.commit()
+    if existing is None:
+        db.add(
+            MeetingParticipant(
+                meeting_id=m.id,
+                livekit_identity=identity,
+                display_name=display_name,
+                email=stored_email,
+                is_authenticated=True,
+                is_owner=is_real_owner,
+            )
+        )
+        try:
+            db.commit()
+        except IntegrityError:
+            # Lost the race against the participant_joined webhook or a
+            # concurrent token mint; the row is now there either way.
+            db.rollback()
+    else:
+        # Keep the display name + role on the existing row fresh in case
+        # cohost was just promoted to owner or the owner renamed.
+        existing.display_name = display_name
+        existing.email = stored_email
+        existing.is_owner = is_real_owner
+        db.commit()
     return {
         "livekit_url": settings.livekit_ws_url,
         "token": token,

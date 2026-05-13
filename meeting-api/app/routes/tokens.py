@@ -4,6 +4,7 @@ import redis
 from fastapi import APIRouter, Depends, HTTPException, Request
 from passlib.hash import argon2
 from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ulid import ULID
 
@@ -118,17 +119,37 @@ def anon_token(
         metadata=join_meta or None,
         allow_screenshare=m.allow_participant_screenshare,
     )
-    db.add(
-        MeetingParticipant(
-            meeting_id=m.id,
-            livekit_identity=identity,
-            display_name=body.display_name,
-            email=str(body.email) if body.email else None,
-            is_authenticated=is_authenticated,
-            is_owner=False,
-        )
+    # Authenticated joiners (identity `user-<sub>`) can hit anon-token a
+    # second time on refresh / reconnect — the partial unique index on
+    # active rows would then 500. For anonymous joiners (`anon-<ULID>`)
+    # the identity is fresh per call so a collision can't happen, but
+    # the same defensive pattern is harmless. See the mirror fix in
+    # meetings.mint_owner_token.
+    existing = (
+        db.query(MeetingParticipant)
+        .filter_by(meeting_id=m.id, livekit_identity=identity, left_at=None)
+        .first()
     )
-    db.commit()
+    if existing is None:
+        db.add(
+            MeetingParticipant(
+                meeting_id=m.id,
+                livekit_identity=identity,
+                display_name=body.display_name,
+                email=str(body.email) if body.email else None,
+                is_authenticated=is_authenticated,
+                is_owner=False,
+            )
+        )
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+    else:
+        existing.display_name = body.display_name
+        if body.email:
+            existing.email = str(body.email)
+        db.commit()
     return {
         "livekit_url": settings.livekit_ws_url,
         "token": token,
