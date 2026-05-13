@@ -189,13 +189,15 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           /* ignore malformed playback packet */
         }
       } else if (topic === "meet-cohost") {
-        // Owner just promoted this user to co-host. Their current
-        // LiveKit token still lacks the room_admin grant (only the
-        // Lobby flow mints that on rejoin), so we surface a banner
-        // asking them to refresh to activate the moderator tools.
+        // Owner just promoted (or demoted) this user. The current
+        // LiveKit token either lacks the room_admin grant they just
+        // received, or still carries one they just lost — only the
+        // Lobby flow mints / strips it on rejoin. We surface a banner
+        // asking them to refresh so the toolbar reflects the new role.
         try {
           const obj = JSON.parse(decoder.decode(payload)) as { type?: string };
-          if (obj?.type === "promoted") setCohostPromoted(true);
+          if (obj?.type === "promoted") setCohostNotice("promoted");
+          else if (obj?.type === "demoted") setCohostNotice("demoted");
         } catch {
           /* ignore malformed */
         }
@@ -237,9 +239,12 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
   const [playbackItemCount, setPlaybackItemCount] = useState(0);
   const [playbackPanelOpen, setPlaybackPanelOpen] = useState(false);
   const [playbackCurrentName, setPlaybackCurrentName] = useState<string | null>(null);
-  // True when this user was promoted to co-host mid-session — flips the
-  // "Refresh to activate moderator tools" banner on.
-  const [cohostPromoted, setCohostPromoted] = useState(false);
+  // "promoted" | "demoted" | null. When the owner toggles this user's
+  // co-host status mid-session, the LiveKit token already in hand still
+  // reflects the OLD role (room_admin grant either present or absent —
+  // only the Lobby flow flips it on rejoin). The banner asks the user
+  // to rejoin so the moderator toolbar reflects reality.
+  const [cohostNotice, setCohostNotice] = useState<"promoted" | "demoted" | null>(null);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -943,26 +948,40 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
         />
       )}
 
-      {/* Co-host promotion notice — appears only on the promoted user's
-          screen. The current LiveKit token lacks the room_admin grant
-          (Lobby mints the moderator token on rejoin), so we surface a
-          banner with a single-click rejoin shortcut. Dismissing keeps
-          the panel out of the way; the crown badge in the participants
-          panel still indicates their new role. */}
-      {cohostPromoted && (
+      {/* Co-host role-change notice — same banner for both promotion AND
+          demotion. The token in hand still reflects the OLD role until
+          the user rejoins (room_admin grant either present or absent),
+          so a single rejoin shortcut covers both cases. Dismissing
+          keeps the moderator UI in its current (stale) state until the
+          user does refresh; the participants-panel crown / role tag
+          updates on the next listCohosts poll regardless. */}
+      {cohostNotice && (
         <div
-          data-testid="cohost-promoted-banner"
-          className="fixed top-2 right-2 z-50 max-w-sm px-3 py-2 rounded-lg bg-accent-500/95 text-white text-sm shadow-lg flex items-start gap-2"
+          data-testid={`cohost-${cohostNotice}-banner`}
+          className={[
+            "fixed top-2 right-2 z-50 max-w-sm px-3 py-2 rounded-lg text-white text-sm shadow-lg flex items-start gap-2",
+            cohostNotice === "promoted" ? "bg-accent-500/95" : "bg-amber-600/95",
+          ].join(" ")}
           role="status"
         >
           <div className="flex-1">
             <div className="font-semibold">
-              {t("room.cohostPromotedTitle", { defaultValue: "You're now a co-host" })}
+              {cohostNotice === "promoted"
+                ? t("room.cohostPromotedTitle", { defaultValue: "You're now a co-host" })
+                : t("room.cohostDemotedTitle", {
+                    defaultValue: "You're no longer a co-host",
+                  })}
             </div>
             <div className="text-xs opacity-90 mt-0.5">
-              {t("room.cohostPromotedBody", {
-                defaultValue: "Rejoin the meeting to activate moderator tools (mute all, record, kick, etc.).",
-              })}
+              {cohostNotice === "promoted"
+                ? t("room.cohostPromotedBody", {
+                    defaultValue:
+                      "Rejoin the meeting to activate moderator tools (mute all, record, kick, etc.).",
+                  })
+                : t("room.cohostDemotedBody", {
+                    defaultValue:
+                      "Rejoin the meeting so the moderator tools (mute all, record, kick, etc.) are removed from your toolbar.",
+                  })}
             </div>
             <div className="mt-2 flex items-center gap-2">
               <button
@@ -975,7 +994,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
               </button>
               <button
                 type="button"
-                onClick={() => setCohostPromoted(false)}
+                onClick={() => setCohostNotice(null)}
                 data-testid="cohost-dismiss"
                 className="px-2.5 py-1 rounded bg-transparent hover:bg-white/10 text-white/80 text-xs"
               >

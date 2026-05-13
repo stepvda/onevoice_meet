@@ -394,16 +394,27 @@ async def end_or_hide_meeting(meeting_id: str, user: RequireUser, db: Session = 
 
     - **Active meeting**: ends the meeting for everyone — closes the LiveKit room
       (kicks all participants) and marks `is_active=False`. Stays in the list as
-      "Closed".
-    - **Already-closed meeting**: soft-deletes the row by setting `hidden=True`,
-      so it disappears from the user's MyMeetings list. Recordings belonging to
-      it remain reachable in the recordings list (they keep their meeting_id).
+      "Closed". **Co-hosts may end an active meeting** since it's a moderation
+      action with parity to mute-all / kick.
+    - **Already-closed meeting**: soft-deletes (hides) the row from MyMeetings.
+      This stays **owner-only** because it's a destructive bookkeeping action
+      on the owner's account, not a moderation primitive.
+    Recordings belonging to the meeting stay reachable in either case.
     """
     from livekit import api as lkapi
 
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
+    is_owner = m.owner_user_id == user.sub
+    if m.is_active:
+        # Ending an active meeting → any moderator may do it.
+        if not is_moderator(m, user.sub):
+            raise HTTPException(status_code=404, detail="meeting not found")
+    else:
+        # Hiding a closed meeting → owner only.
+        if not is_owner:
+            raise HTTPException(status_code=404, detail="meeting not found")
 
     if m.is_active:
         lk = livekit_api()
@@ -919,7 +930,7 @@ async def add_cohost(
 
 
 @router.delete("/meetings/{meeting_id}/cohosts/{user_sub}")
-def remove_cohost(
+async def remove_cohost(
     meeting_id: str,
     user_sub: str,
     user: RequireUser,
@@ -929,7 +940,40 @@ def remove_cohost(
     if not m:
         raise HTTPException(status_code=404, detail="meeting not found")
     cur = _cohost_set(m)
+    was_cohost = user_sub in cur
     cur.discard(user_sub)
     _save_cohosts(m, cur)
     db.commit()
+
+    # Mirror of add_cohost: when we actually remove someone (not an
+    # idempotent re-discard) and they're in the room right now, send
+    # them a data-channel signal so the SPA can show a rejoin banner.
+    # Their existing LiveKit token still carries `room_admin` — the
+    # moderator toolbar would otherwise stay active even though their
+    # role is gone — so until they rejoin to pick up a guest-level
+    # token, calls they make against owner-only endpoints would succeed
+    # at LiveKit but be refused by our HTTP layer. Notification + rejoin
+    # makes the state consistent end-to-end.
+    if was_cohost:
+        import json as _json
+        from livekit import api as _lkapi
+        target_identity = f"user-{user_sub}"
+        lk = livekit_api()
+        try:
+            await lk.room.send_data(
+                _lkapi.SendDataRequest(
+                    room=m.room_name,
+                    data=_json.dumps({"v": 1, "type": "demoted"}).encode("utf-8"),
+                    kind=_lkapi.DataPacket.Kind.RELIABLE,
+                    topic="meet-cohost",
+                    destination_identities=[target_identity],
+                )
+            )
+        except Exception:
+            # Best-effort; on next refresh the Lobby will issue an
+            # anon-token (no longer a cohost) and the UI corrects itself.
+            pass
+        finally:
+            await lk.aclose()
+
     return {"ok": True, "cohosts": sorted(cur)}
