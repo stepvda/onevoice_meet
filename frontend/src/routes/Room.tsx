@@ -34,6 +34,7 @@ import { usePreferences } from "../lib/preferences";
 import PresenterSpotlight from "../components/PresenterSpotlight";
 import BackgroundPicker from "../components/BackgroundPicker";
 import RecordingIndicator from "../components/RecordingIndicator";
+import StreamingIndicator from "../components/StreamingIndicator";
 import ChatPanel from "../components/ChatPanel";
 import ParticipantsPanel from "../components/ParticipantsPanel";
 import InMeetingSettings from "../components/InMeetingSettings";
@@ -436,6 +437,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           </div>
           <AudioWaveform width={120} height={28} className="flex-shrink-0" />
           <RecordingIndicator />
+          <StreamingIndicator />
         </div>
 
         <div className="flex-1" />

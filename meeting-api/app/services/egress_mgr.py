@@ -154,11 +154,15 @@ async def reconcile_egress(
             # to "Start recording" instead of stranding the user on a Stop
             # button that 404s. The webhook is too late for this — the SPA
             # listens for RoomMetadataChanged immediately.
-            if not want_file:
-                try:
-                    await _set_recording_metadata(lk, m.room_name, False)
-                except Exception:  # noqa: BLE001
-                    pass
+            # Always write the post-stop state for both flags so the
+            # indicator pills (Recording / Streaming) clear together
+            # when the user stops the last active output.
+            try:
+                await _set_recording_metadata(
+                    lk, m.room_name, recording_active=False, streaming_active=False
+                )
+            except Exception:  # noqa: BLE001
+                pass
         finally:
             await lk.aclose()
         if cur_has_stream:
@@ -227,11 +231,17 @@ async def reconcile_egress(
         egress_info = await lk.egress.start_room_composite_egress(
             api.RoomCompositeEgressRequest(**req_kwargs)
         )
-        # Surface the recording-active flag on room metadata only when a file
-        # output is part of the new egress — the in-meeting "recording" dot
-        # is driven from this.
+        # Surface the recording / streaming flags on room metadata — the
+        # in-meeting Recording and Streaming pills are driven from these,
+        # so every participant sees them update the same tick the egress
+        # is (re)started.
         try:
-            await _set_recording_metadata(lk, m.room_name, want_file)
+            await _set_recording_metadata(
+                lk,
+                m.room_name,
+                recording_active=want_file,
+                streaming_active=want_stream,
+            )
         except Exception:  # noqa: BLE001
             pass
     finally:
@@ -271,9 +281,18 @@ async def reconcile_egress(
     return {"egress_id": new_egress_id, "recording_id": new_recording_id, "no_change": False}
 
 
-async def _set_recording_metadata(lk: api.LiveKitAPI, room_name: str, active: bool) -> None:
-    """Mirror of the helper in routes/recordings.py. Duplicated here to avoid
-    importing a route module from a service module."""
+async def _set_recording_metadata(
+    lk: api.LiveKitAPI,
+    room_name: str,
+    recording_active: bool,
+    streaming_active: bool | None = None,
+) -> None:
+    """Update the room-metadata flags that drive the in-meeting indicator
+    badges. `recording_active` flips the red Recording pill for every
+    viewer; `streaming_active` (when not None) flips a similarly-styled
+    Streaming pill. Passing None for streaming preserves whatever value
+    is already on the room metadata, which lets the recording-only stop
+    path avoid clobbering a livestream that's still running."""
     import json
 
     rooms = await lk.room.list_rooms(api.ListRoomsRequest(names=[room_name]))
@@ -283,7 +302,9 @@ async def _set_recording_metadata(lk: api.LiveKitAPI, room_name: str, active: bo
             current = json.loads(rooms.rooms[0].metadata or "{}")
         except ValueError:
             current = {}
-    current["recording_active"] = active
+    current["recording_active"] = recording_active
+    if streaming_active is not None:
+        current["streaming_active"] = streaming_active
     await lk.room.update_room_metadata(
         api.UpdateRoomMetadataRequest(room=room_name, metadata=json.dumps(current))
     )

@@ -34,11 +34,12 @@ def _now() -> datetime:
 
 
 async def _clear_recording_metadata(room_name: str) -> None:
-    """Flip `recording_active` back to False on the LiveKit room metadata when
-    an egress ends without going through our stop-endpoint flow (e.g. natural
-    end, egress crash, max-duration cutoff). The SPA listens to
-    RoomMetadataChanged to toggle the toolbar's recording dot — without this
-    update it would stay stuck "recording" until the user refreshes."""
+    """Flip the `recording_active` / `streaming_active` flags back to False
+    on the LiveKit room metadata when an egress ends outside our normal
+    stop-endpoint flow (natural end, egress crash, max-duration cutoff).
+    The SPA listens to `RoomMetadataChanged` to drive the in-meeting
+    indicator pills — without this update they would stay stuck "on"
+    until the user refreshes."""
     import json
     lk = livekit_api()
     try:
@@ -49,9 +50,10 @@ async def _clear_recording_metadata(room_name: str) -> None:
             current = json.loads(rooms.rooms[0].metadata or "{}")
         except ValueError:
             current = {}
-        if not current.get("recording_active"):
+        if not current.get("recording_active") and not current.get("streaming_active"):
             return
         current["recording_active"] = False
+        current["streaming_active"] = False
         await lk.room.update_room_metadata(
             api.UpdateRoomMetadataRequest(room=room_name, metadata=json.dumps(current))
         )
