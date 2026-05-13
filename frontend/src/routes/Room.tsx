@@ -187,6 +187,17 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
         } catch {
           /* ignore malformed playback packet */
         }
+      } else if (topic === "meet-cohost") {
+        // Owner just promoted this user to co-host. Their current
+        // LiveKit token still lacks the room_admin grant (only the
+        // Lobby flow mints that on rejoin), so we surface a banner
+        // asking them to refresh to activate the moderator tools.
+        try {
+          const obj = JSON.parse(decoder.decode(payload)) as { type?: string };
+          if (obj?.type === "promoted") setCohostPromoted(true);
+        } catch {
+          /* ignore malformed */
+        }
       }
     };
     room.on(RoomEvent.DataReceived, onData);
@@ -225,6 +236,9 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
   const [playbackItemCount, setPlaybackItemCount] = useState(0);
   const [playbackPanelOpen, setPlaybackPanelOpen] = useState(false);
   const [playbackCurrentName, setPlaybackCurrentName] = useState<string | null>(null);
+  // True when this user was promoted to co-host mid-session — flips the
+  // "Refresh to activate moderator tools" banner on.
+  const [cohostPromoted, setCohostPromoted] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -919,6 +933,49 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
             }
           }}
         />
+      )}
+
+      {/* Co-host promotion notice — appears only on the promoted user's
+          screen. The current LiveKit token lacks the room_admin grant
+          (Lobby mints the moderator token on rejoin), so we surface a
+          banner with a single-click rejoin shortcut. Dismissing keeps
+          the panel out of the way; the crown badge in the participants
+          panel still indicates their new role. */}
+      {cohostPromoted && (
+        <div
+          data-testid="cohost-promoted-banner"
+          className="fixed top-2 right-2 z-50 max-w-sm px-3 py-2 rounded-lg bg-accent-500/95 text-white text-sm shadow-lg flex items-start gap-2"
+          role="status"
+        >
+          <div className="flex-1">
+            <div className="font-semibold">
+              {t("room.cohostPromotedTitle", { defaultValue: "You're now a co-host" })}
+            </div>
+            <div className="text-xs opacity-90 mt-0.5">
+              {t("room.cohostPromotedBody", {
+                defaultValue: "Rejoin the meeting to activate moderator tools (mute all, record, kick, etc.).",
+              })}
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                data-testid="cohost-rejoin"
+                className="px-2.5 py-1 rounded bg-white/15 hover:bg-white/25 text-white text-xs font-medium"
+              >
+                {t("room.cohostRejoin", { defaultValue: "Rejoin now" })}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCohostPromoted(false)}
+                data-testid="cohost-dismiss"
+                className="px-2.5 py-1 rounded bg-transparent hover:bg-white/10 text-white/80 text-xs"
+              >
+                {t("common.dismiss", { defaultValue: "Dismiss" })}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* "Now playing" banner — visible to everyone while a video is on the

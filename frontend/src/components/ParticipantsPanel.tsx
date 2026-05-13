@@ -176,57 +176,63 @@ function ParticipantRow({
       data-testid={`participant-${p.identity}`}
       data-hand-raised={hand.raised ? "true" : "false"}
       className={[
-        "px-3 py-2 flex items-center gap-3 hover:bg-primary-800/60",
+        "px-3 py-2 flex flex-col gap-1.5 hover:bg-primary-800/60",
         hand.raised ? "bg-amber-500/10" : "",
       ].join(" ")}
     >
-      <div className="flex-shrink-0 h-7 w-7 rounded-full bg-primary-600 flex items-center justify-center text-xs font-semibold text-slate-50">
-        {name.slice(0, 1).toUpperCase()}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm text-slate-100 truncate flex items-center gap-1.5">
-          <span className="truncate">{name}</span>
-          {isMe && <span className="text-xs text-slate-400">{t("participants.you")}</span>}
-          {p.identity?.startsWith("user-") && (
-            <span title={t("participants.authenticatedOwner")} className="text-amber-400">
-              <Crown size={12} />
-            </span>
-          )}
-          {isCohost && (
-            <span
-              title={t("participants.cohost", { defaultValue: "Co-host" })}
-              className="text-accent-400"
-            >
-              <ShieldCheck size={12} />
-            </span>
-          )}
-          {hand.raised && (
-            <span
-              title={t("hand.tileBadge")}
-              data-testid={`participant-hand-${p.identity}`}
-              className="text-amber-400"
-            >
-              <Hand size={12} />
-            </span>
-          )}
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="flex-shrink-0 h-7 w-7 rounded-full bg-primary-600 flex items-center justify-center text-xs font-semibold text-slate-50">
+          {name.slice(0, 1).toUpperCase()}
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
-          {audioOn ? (
-            <Mic size={12} className="text-accent-500" />
-          ) : (
-            <MicOff size={12} className="text-slate-500" />
-          )}
-          {videoOn ? (
-            <Video size={12} className="text-accent-500" />
-          ) : (
-            <VideoOff size={12} className="text-slate-500" />
-          )}
+        <div className="flex-1 min-w-0">
+          <div className="text-sm text-slate-100 truncate flex items-center gap-1.5">
+            <span className="truncate">{name}</span>
+            {isMe && <span className="text-xs text-slate-400 flex-shrink-0">{t("participants.you")}</span>}
+            {p.identity?.startsWith("user-") && (
+              <span title={t("participants.authenticatedOwner")} className="text-amber-400 flex-shrink-0">
+                <Crown size={12} />
+              </span>
+            )}
+            {isCohost && (
+              <span
+                title={t("participants.cohost", { defaultValue: "Co-host" })}
+                className="text-accent-400 flex-shrink-0"
+              >
+                <ShieldCheck size={12} />
+              </span>
+            )}
+            {hand.raised && (
+              <span
+                title={t("hand.tileBadge")}
+                data-testid={`participant-hand-${p.identity}`}
+                className="text-amber-400 flex-shrink-0"
+              >
+                <Hand size={12} />
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+            {audioOn ? (
+              <Mic size={12} className="text-accent-500" />
+            ) : (
+              <MicOff size={12} className="text-slate-500" />
+            )}
+            {videoOn ? (
+              <Video size={12} className="text-accent-500" />
+            ) : (
+              <VideoOff size={12} className="text-slate-500" />
+            )}
+          </div>
         </div>
       </div>
-      {/* Owner-only per-participant controls (not on self). 44px touch
-          targets so phone-tapping mute/kick is reliable. */}
+      {/* Owner-only per-participant controls on their own row beneath the
+          name. The panel is 288 px wide on desktop; putting 4 × 44 px
+          touch targets on the same row as the name would crush the name
+          to ~36 px and truncate it to invisible — exactly the bug the
+          screenshot showed for "stepvda". A second row gives controls
+          the full panel width AND keeps the 44 px tap target. */}
       {isOwner && !isMe && meetingId && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 justify-end">
           {userSub && onToggleCohost && (
             <button
               type="button"

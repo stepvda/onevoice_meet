@@ -833,7 +833,7 @@ def list_cohosts(meeting_id: str, user: RequireUser, db: Session = Depends(get_d
 
 
 @router.post("/meetings/{meeting_id}/cohosts")
-def add_cohost(
+async def add_cohost(
     meeting_id: str,
     body: CohostBody,
     user: RequireUser,
@@ -845,9 +845,38 @@ def add_cohost(
     if body.user_sub == m.owner_user_id:
         return {"ok": True, "cohosts": sorted(_cohost_set(m))}
     cur = _cohost_set(m)
+    was_already_cohost = body.user_sub in cur
     cur.add(body.user_sub)
     _save_cohosts(m, cur)
     db.commit()
+
+    # If this is a fresh promotion (not idempotent re-add) and the
+    # promoted user is in the room right now, notify them so they can
+    # rejoin and pick up a moderator token. The Lobby's existing
+    # cohost-detection branch mints the right token on rejoin; without
+    # this notice the promoted user has no idea they need to refresh.
+    if not was_already_cohost:
+        import json as _json
+        from livekit import api as _lkapi
+        target_identity = f"user-{body.user_sub}"
+        lk = livekit_api()
+        try:
+            await lk.room.send_data(
+                _lkapi.SendDataRequest(
+                    room=m.room_name,
+                    data=_json.dumps({"v": 1, "type": "promoted"}).encode("utf-8"),
+                    kind=_lkapi.DataPacket.Kind.RELIABLE,
+                    topic="meet-cohost",
+                    destination_identities=[target_identity],
+                )
+            )
+        except Exception:
+            # Best-effort — they just won't see the toast. The crown badge
+            # still appears in the participants panel on next refresh.
+            pass
+        finally:
+            await lk.aclose()
+
     return {"ok": True, "cohosts": sorted(cur)}
 
 
