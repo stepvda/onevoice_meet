@@ -31,8 +31,14 @@ class StartStreamBody(BaseModel):
 
 
 def _require_owner(meeting_id: str, user_id: str, db: Session) -> Meeting:
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user_id).first()
+    """Accepts owner OR co-host. Same broadening as recordings.py — the
+    in-meeting co-host UX requires parity with the host for streaming,
+    recording, and video playback controls."""
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
     if not m:
+        raise HTTPException(status_code=404, detail="meeting not found")
+    from app.routes.meetings import is_moderator
+    if not is_moderator(m, user_id):
         raise HTTPException(status_code=404, detail="meeting not found")
     return m
 

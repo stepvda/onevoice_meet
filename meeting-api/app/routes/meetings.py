@@ -360,8 +360,11 @@ def list_my_meetings(user: RequireUser, db: Session = Depends(get_db)) -> list[d
 
 @router.get("/meetings/{meeting_id}")
 def get_meeting(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> dict:
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
-    if not m:
+    """Owners and co-hosts can fetch the full meeting record (including
+    streaming credentials, since they have parity with the owner for
+    starting / stopping streams). Other users get 404."""
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
+    if not m or not is_moderator(m, user.sub):
         raise HTTPException(status_code=404, detail="meeting not found")
     return _to_out(m).model_dump()
 
@@ -371,9 +374,10 @@ def reopen_meeting(meeting_id: str, user: RequireUser, db: Session = Depends(get
     """Reopen a closed meeting. Flips `is_active` back to True and clears
     `closed_at`. The room_name is unchanged so existing share links keep
     working. The LiveKit room is recreated on demand when the first
-    participant joins (auto_create on the LiveKit server)."""
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
-    if not m:
+    participant joins (auto_create on the LiveKit server). Co-hosts are
+    allowed to reopen (parity with owner moderation surface)."""
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
+    if not m or not is_moderator(m, user.sub):
         raise HTTPException(status_code=404, detail="meeting not found")
     if not m.is_active:
         m.is_active = True
@@ -433,15 +437,21 @@ async def invite_by_email(
     user: RequireUser,
     db: Session = Depends(get_db),
 ) -> dict:
-    """Send a Resend-backed invite email to one or more recipients."""
+    """Send a Resend-backed invite email to one or more recipients.
+    Co-hosts can invite as well — the From: name shown to recipients is
+    the meeting owner's name regardless of who sends, so attribution
+    stays consistent."""
     from app.services.email import send_email
     from app.services.email_templates import meeting_invite
 
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
-    if not m:
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
+    if not m or not is_moderator(m, user.sub):
         raise HTTPException(status_code=404, detail="meeting not found")
 
-    if body.display_name:
+    if body.display_name and m.owner_user_id == user.sub:
+        # Only the owner gets to refresh `owner_name` on the meeting from
+        # the invite call; a co-host's display name shouldn't overwrite
+        # the owner's snapshot.
         m.owner_name = body.display_name
         db.commit()
 
@@ -565,9 +575,12 @@ def update_meeting(
     user: RequireUser,
     db: Session = Depends(get_db),
 ) -> dict:
-    """Owner updates editable fields on a meeting (visibility, title, recording mode)."""
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user.sub).first()
-    if not m:
+    """Owner or co-host updates editable operational fields on a meeting:
+    visibility, title, recording mode, livestream destinations, video
+    playback config. The owner-only operations (delete, branding, co-host
+    grants) remain gated separately."""
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
+    if not m or not is_moderator(m, user.sub):
         raise HTTPException(status_code=404, detail="meeting not found")
 
     if body.display_title is not None:

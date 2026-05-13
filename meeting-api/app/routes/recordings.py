@@ -29,8 +29,15 @@ router = APIRouter(prefix="/v1")
 
 
 def _require_owner(meeting_id: str, user_id: str, db: Session) -> Meeting:
-    m = db.query(Meeting).filter_by(id=meeting_id, owner_user_id=user_id).first()
+    """Accepts the owner OR any co-host of the meeting. The name is kept
+    for backwards compatibility with existing call sites; "moderator"
+    would be more accurate. Recording / livestream / playback parity
+    with the host is part of the co-host contract."""
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
     if not m:
+        raise HTTPException(status_code=404, detail="meeting not found")
+    from app.routes.meetings import is_moderator
+    if not is_moderator(m, user_id):
         raise HTTPException(status_code=404, detail="meeting not found")
     return m
 
