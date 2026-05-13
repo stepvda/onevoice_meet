@@ -259,7 +259,45 @@ def bootstrap_platform_admins() -> None:
         db.commit()
 
 
+def optional_user(
+    authorization: Annotated[str | None, Header()] = None,
+    db: Session = Depends(get_db),
+) -> "AuthUser | None":
+    """Best-effort auth: returns the AuthUser if a valid access JWT is
+    supplied, None otherwise (no header, malformed, expired, wrong type,
+    disabled account). Used by endpoints that are anonymous-friendly but
+    behave slightly differently for signed-in users — for example
+    `anon-token` mints a `user-<sub>` LiveKit identity instead of an
+    `anon-<ULID>` one so the owner can promote them to co-host."""
+    if not authorization:
+        return None
+    try:
+        token = _extract_bearer(authorization)
+        claims = decode_access_token(token)
+    except HTTPException:
+        return None
+    if claims.get("type") != "access":
+        return None
+    try:
+        user = _user_from_claims(claims, db)
+    except HTTPException:
+        return None
+    if user.is_disabled:
+        return None
+    now = datetime.now(timezone.utc)
+    return AuthUser(
+        user_id=user.id,
+        kind=user.kind,
+        external_id=user.external_id,
+        email=user.email,
+        is_admin=user.is_admin_now(now),
+        is_platform_admin=bool(user.is_platform_admin),
+        sub=str(claims.get("sub")),
+    )
+
+
 RequireUser = Annotated[AuthUser, Depends(require_user)]
+OptionalUser = Annotated["AuthUser | None", Depends(optional_user)]
 RequireAdmin = Annotated[AuthUser, Depends(require_admin)]
 RequireVoucherAdmin = Annotated[AuthUser, Depends(require_voucher_admin)]
 RequirePlatformAdmin = Annotated[AuthUser, Depends(require_platform_admin)]

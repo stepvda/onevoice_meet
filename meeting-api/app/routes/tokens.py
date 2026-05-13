@@ -7,6 +7,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from ulid import ULID
 
+from app.auth import OptionalUser
 from app.config import settings
 from app.db import get_db
 from app.livekit_client import mint_participant_token, short_lived_turn_credentials
@@ -48,6 +49,7 @@ def anon_token(
     room_name: str,
     body: AnonTokenBody,
     request: Request,
+    auth_user: OptionalUser = None,
     db: Session = Depends(get_db),
 ) -> dict:
     client_ip = request.client.host if request.client else "unknown"
@@ -95,7 +97,12 @@ def anon_token(
             "room_name": m.room_name,
         }
 
-    identity = f"anon-{ULID()}"
+    # Signed-in joiners get `user-<sub>` as their LiveKit identity so the
+    # owner's participants panel can match them against the cohost set
+    # (which is keyed on user.sub). Anonymous joiners still get a fresh
+    # ULID-suffixed `anon-` identity — they have no stable id to elevate.
+    is_authenticated = auth_user is not None
+    identity = f"user-{auth_user.sub}" if is_authenticated else f"anon-{ULID()}"
     # Auto-mute / auto-disable-camera: stamp the participant's join metadata
     # so the SPA reads it on connect and starts with mic/camera off.
     join_meta: dict = {}
@@ -117,7 +124,7 @@ def anon_token(
             livekit_identity=identity,
             display_name=body.display_name,
             email=str(body.email) if body.email else None,
-            is_authenticated=False,
+            is_authenticated=is_authenticated,
             is_owner=False,
         )
     )
