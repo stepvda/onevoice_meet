@@ -40,6 +40,7 @@ import InMeetingSettings from "../components/InMeetingSettings";
 import InviteModal from "../components/InviteModal";
 import LivestreamSettingsModal from "../components/LivestreamSettingsModal";
 import VideoPlaybackPanel from "../components/VideoPlaybackPanel";
+import OutputVolumeControl from "../components/OutputVolumeControl";
 import AudioWaveform from "../components/AudioWaveform";
 import PendingJoinersPanel from "../components/PendingJoinersPanel";
 import HandRaiseButton from "../components/HandRaiseButton";
@@ -648,6 +649,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           </>
         )}
 
+        <OutputVolumeControl />
         <HandRaiseButton />
         <ReactionsButton />
         <button

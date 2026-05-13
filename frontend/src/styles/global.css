@@ -63,6 +63,20 @@ body {
 .meet-stage.compact .lk-grid-layout { gap: 4px !important; }
 .meet-stage.compact .lk-participant-tile { padding: 0 !important; }
 
+/* Lock webcam / screen-share aspect ratio. LiveKit's default video CSS
+ * uses `object-fit: cover` so the video crops to fill its tile, which
+ * distorts the way the streamer expects to be framed (especially for
+ * 16:9 webcams shown in a tall portrait tile). `contain` letterboxes
+ * the video inside the tile — the tile can still be any size, but the
+ * webcam pixels keep their native aspect ratio. The black background
+ * fills the letterbox bars so the gap doesn't read as a UI glitch. */
+.meet-stage .lk-participant-tile video,
+.meet-stage .lk-participant-tile .lk-participant-placeholder + video,
+.meet-stage .lk-focus-layout video {
+  object-fit: contain !important;
+  background: #000;
+}
+
 .captions-overlay {
   position: absolute;
   left: 50%;
