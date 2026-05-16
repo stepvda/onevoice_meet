@@ -36,11 +36,21 @@ function seedFromMeeting(meeting: MeetingOut): Record<string, DestState> {
  * multiple destinations are enabled, the egress fans the same composite out
  * to all of them — one Chrome, one encoder, N RTMP muxers.
  */
+type DestStatus = {
+  status: "idle" | "streaming" | "failed" | "complete";
+  error: string | null;
+};
+
 export default function LivestreamSettingsModal({ meeting, open, onClose, onSaved }: Props) {
   const { t } = useTranslation();
   const [state, setState] = useState<Record<string, DestState>>(() => seedFromMeeting(meeting));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Live publish status per destination, updated by polling
+  // `streamDestinations` every 4 s while the modal is open AND a
+  // livestream is active. We keep polling even when status is
+  // "failed" so a fixed key flips back to green within ~4 s.
+  const [statuses, setStatuses] = useState<Record<string, DestStatus>>({});
 
   // Re-seed when the modal is reopened against a different meeting.
   useEffect(() => {
@@ -48,6 +58,32 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
     setState(seedFromMeeting(meeting));
     setErr(null);
   }, [open, meeting]);
+
+  // Poll per-destination status while the modal is open. We always
+  // attempt the fetch — when no stream is active the backend returns
+  // `idle` rows for every enabled destination, which still gives the
+  // host useful "yes I have creds for this" feedback.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const rows = await api.streamDestinations(meeting.id);
+        if (cancelled) return;
+        setStatuses(
+          Object.fromEntries(rows.map((r) => [r.platform_id, { status: r.status, error: r.error }])),
+        );
+      } catch {
+        /* not fatal — the dots just won't update this tick */
+      }
+    };
+    void tick();
+    const id = window.setInterval(tick, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [open, meeting.id]);
 
   if (!open) return null;
 
@@ -124,6 +160,8 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
               streamKey={state[d.id].streamKey}
               onChange={(next) => setDestState(d.id, next)}
               isFirst={i === 0}
+              status={statuses[d.id]?.status}
+              statusError={statuses[d.id]?.error ?? null}
             />
           ))}
 

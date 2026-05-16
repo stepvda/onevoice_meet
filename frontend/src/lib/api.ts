@@ -906,6 +906,20 @@ export const api = {
       `/api/v1/meetings/${meetingId}/stream`,
     ),
 
+  /** Per-destination RTMP publish status — one entry per enabled
+   *  platform. Status drives the green/red/grey dots in the
+   *  LivestreamSettingsModal so the host can see at a glance which
+   *  destination is broken (and the exact error string from egress). */
+  streamDestinations: (meetingId: string) =>
+    request<
+      Array<{
+        platform_id: "x" | "substack" | "youtube" | "facebook" | "rumble";
+        status: "idle" | "streaming" | "failed" | "complete";
+        error: string | null;
+        updated_at: string | null;
+      }>
+    >(`/api/v1/meetings/${meetingId}/stream/destinations`),
+
   listRecordings: () => request<unknown[]>("/api/v1/recordings"),
 
   downloadTranscript: async (recordingId: string, filename: string) => {

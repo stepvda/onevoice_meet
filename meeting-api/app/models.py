@@ -526,6 +526,40 @@ class PlaybackItem(Base):
     )
 
 
+class LivestreamDestinationState(Base):
+    """Per-platform "is the RTMP push to this destination currently
+    healthy?" snapshot. Updated by the LiveKit `egress_updated` webhook
+    every time the egress reports per-URL `stream_results[]`. Read by
+    the frontend (`GET /v1/meetings/{id}/stream/destinations`) so the
+    host can see at a glance which destinations are streaming and
+    which are failing, with the egress's own error string.
+
+    Status vocabulary mirrors LiveKit's `StreamInfo.Status`:
+      - "idle"       : we have credentials but no egress has touched this URL yet
+      - "streaming"  : egress is actively pushing bytes (status=ACTIVE in LK)
+      - "failed"     : egress couldn't connect / was rejected
+      - "complete"   : egress finished sending (typically when the stream stops)
+    """
+    __tablename__ = "livestream_destination_states"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"), nullable=False, index=True)
+    # "x" / "substack" / "youtube" / "facebook" / "rumble". The same id
+    # surfaces in LIVESTREAM_DESTINATIONS in egress_mgr and in the
+    # frontend's per-platform metadata.
+    platform_id: Mapped[str] = mapped_column(String(40), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="idle")
+    # When `status=failed` this carries the human-readable reason
+    # straight from LiveKit (e.g. "Failed to connect: 'publish' cmd
+    # failed: connection closed remotely"). NULL otherwise.
+    error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("meeting_id", "platform_id", name="uq_dest_state_meeting_platform"),
+    )
+
+
 class MeetingFeedback(Base):
     """Post-meeting NPS / satisfaction rating. One row per submission;
     a single participant can submit at most once but we don't enforce that

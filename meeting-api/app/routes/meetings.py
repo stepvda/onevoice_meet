@@ -581,7 +581,7 @@ def delete_branding(meeting_id: str, user: RequireUser, db: Session = Depends(ge
 
 
 @router.patch("/meetings/{meeting_id}")
-def update_meeting(
+async def update_meeting(
     meeting_id: str,
     body: UpdateMeetingBody,
     user: RequireUser,
@@ -590,10 +590,18 @@ def update_meeting(
     """Owner or co-host updates editable operational fields on a meeting:
     visibility, title, recording mode, livestream destinations, video
     playback config. The owner-only operations (delete, branding, co-host
-    grants) remain gated separately."""
+    grants) remain gated separately. When the meeting has an active
+    livestream egress and the destination set changes, we call LiveKit
+    `UpdateStreamRequest` to add/remove URLs without restarting the
+    egress — so a new destination starts receiving the stream the same
+    tick the toggle flips."""
     m = db.query(Meeting).filter_by(id=meeting_id).first()
     if not m or not is_moderator(m, user.sub):
         raise HTTPException(status_code=404, detail="meeting not found")
+
+    # Snapshot the URL set BEFORE applying changes so we can diff after.
+    from app.services.egress_mgr import _enabled_stream_urls
+    pre_urls = set(_enabled_stream_urls(m)) if m.livestream_egress_id else None
 
     if body.display_title is not None:
         m.display_title = body.display_title
@@ -651,6 +659,37 @@ def update_meeting(
         m.playback_loop = body.playback_loop
 
     db.commit()
+
+    # If a livestream is running and the destination URLs changed, push
+    # the diff to LiveKit so the existing egress fans out to the new set
+    # immediately — no stop/restart needed.
+    if pre_urls is not None and m.livestream_egress_id:
+        post_urls = set(_enabled_stream_urls(m))
+        to_add = sorted(post_urls - pre_urls)
+        to_remove = sorted(pre_urls - post_urls)
+        if to_add or to_remove:
+            from livekit import api as lkapi
+            lk = livekit_api()
+            try:
+                await lk.egress.update_stream(
+                    lkapi.UpdateStreamRequest(
+                        egress_id=m.livestream_egress_id,
+                        add_output_urls=to_add,
+                        remove_output_urls=to_remove,
+                    )
+                )
+            except Exception:
+                # If the live update fails (egress already stopped,
+                # network glitch, key validation) we just return success
+                # for the meeting update. Next stream restart will pick
+                # up the new set anyway.
+                import logging as _log
+                _log.getLogger(__name__).exception(
+                    "live destination update failed for meeting %s", m.id
+                )
+            finally:
+                await lk.aclose()
+
     return _to_out(m).model_dump()
 
 

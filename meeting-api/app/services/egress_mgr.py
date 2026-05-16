@@ -40,15 +40,18 @@ def _build_stream_url(rtmps_url: str, stream_key: str) -> str:
     return rtmps_url.rstrip("/") + "/" + stream_key.lstrip("/")
 
 
-# Each entry is (enabled_attr, url_attr, key_attr). X.com keeps the legacy
-# unprefixed column names from when it was the only destination. Adding a
-# new platform = three new columns on Meeting + one entry here + a UI block.
-LIVESTREAM_DESTINATIONS: list[tuple[str, str, str]] = [
-    ("livestream_enabled", "livestream_rtmps_url", "livestream_stream_key"),
-    ("livestream_substack_enabled", "livestream_substack_rtmps_url", "livestream_substack_stream_key"),
-    ("livestream_youtube_enabled", "livestream_youtube_rtmps_url", "livestream_youtube_stream_key"),
-    ("livestream_facebook_enabled", "livestream_facebook_rtmps_url", "livestream_facebook_stream_key"),
-    ("livestream_rumble_enabled", "livestream_rumble_rtmps_url", "livestream_rumble_stream_key"),
+# Each entry is (platform_id, enabled_attr, url_attr, key_attr). X.com keeps
+# the legacy unprefixed column names from when it was the only destination.
+# Adding a new platform = three new columns on Meeting + one entry here + a
+# UI block. The `platform_id` is the short stable key used by the
+# LivestreamDestinationState rows and surfaced to the frontend so it can
+# render the right brand label / icon.
+LIVESTREAM_DESTINATIONS: list[tuple[str, str, str, str]] = [
+    ("x",        "livestream_enabled",          "livestream_rtmps_url",          "livestream_stream_key"),
+    ("substack", "livestream_substack_enabled", "livestream_substack_rtmps_url", "livestream_substack_stream_key"),
+    ("youtube",  "livestream_youtube_enabled",  "livestream_youtube_rtmps_url",  "livestream_youtube_stream_key"),
+    ("facebook", "livestream_facebook_enabled", "livestream_facebook_rtmps_url", "livestream_facebook_stream_key"),
+    ("rumble",   "livestream_rumble_enabled",   "livestream_rumble_rtmps_url",   "livestream_rumble_stream_key"),
 ]
 
 
@@ -57,13 +60,27 @@ def _enabled_stream_urls(m: Meeting) -> list[str]:
     list means "no streaming destinations configured" — the caller treats
     this the same as `want_stream=False`."""
     urls: list[str] = []
-    for en_attr, url_attr, key_attr in LIVESTREAM_DESTINATIONS:
+    for _platform, en_attr, url_attr, key_attr in LIVESTREAM_DESTINATIONS:
         en = bool(getattr(m, en_attr, False))
         url = getattr(m, url_attr, None)
         key = getattr(m, key_attr, None)
         if en and url and key:
             urls.append(_build_stream_url(url, key))
     return urls
+
+
+def enabled_url_by_platform(m: Meeting) -> dict[str, str]:
+    """Same data as `_enabled_stream_urls` but keyed by platform_id so the
+    webhook layer can map a `stream_results[].url` straight back to the
+    platform that owns it."""
+    out: dict[str, str] = {}
+    for platform, en_attr, url_attr, key_attr in LIVESTREAM_DESTINATIONS:
+        en = bool(getattr(m, en_attr, False))
+        url = getattr(m, url_attr, None)
+        key = getattr(m, key_attr, None)
+        if en and url and key:
+            out[platform] = _build_stream_url(url, key)
+    return out
 
 
 def _encoding_options() -> "api.EncodingOptions":

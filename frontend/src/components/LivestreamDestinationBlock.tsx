@@ -12,6 +12,12 @@ interface Props {
   // First block in a vertical stack has no top border / top padding so it
   // sits flush against the description paragraph above it.
   isFirst?: boolean;
+  // Per-destination publish status from LiveKit (via /stream/destinations
+  // polling). Drives the coloured dot next to the toggle label. Undefined
+  // = no data yet (e.g. in CreateMeeting where the meeting doesn't exist
+  // server-side yet) — renders nothing.
+  status?: "idle" | "streaming" | "failed" | "complete";
+  statusError?: string | null;
 }
 
 /**
@@ -26,9 +32,34 @@ export default function LivestreamDestinationBlock({
   streamKey,
   onChange,
   isFirst,
+  status,
+  statusError,
 }: Props) {
   const { t } = useTranslation();
   const [showKey, setShowKey] = useState(false);
+
+  // Map status → colour + accessible label. Each row gets the same
+  // visual language as the toolbar Recording / Streaming pills.
+  const dot = (() => {
+    if (!enabled || !status) return null;
+    const map: Record<string, { bg: string; label: string }> = {
+      streaming: { bg: "bg-green-500", label: t("livestream.statusStreaming", { defaultValue: "Streaming live" }) },
+      failed:    { bg: "bg-red-500",   label: t("livestream.statusFailed",    { defaultValue: "Failed" }) },
+      complete:  { bg: "bg-slate-500", label: t("livestream.statusComplete",  { defaultValue: "Last stream completed" }) },
+      idle:      { bg: "bg-slate-600", label: t("livestream.statusIdle",      { defaultValue: "Idle" }) },
+    };
+    const v = map[status] ?? map.idle;
+    return (
+      <span
+        data-testid={`ls-${dest.id}-status`}
+        title={statusError ? `${v.label}: ${statusError}` : v.label}
+        aria-label={v.label}
+        className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${v.bg} ${
+          status === "streaming" ? "animate-pulse" : ""
+        }`}
+      />
+    );
+  })();
 
   return (
     <div
@@ -38,12 +69,25 @@ export default function LivestreamDestinationBlock({
           : "space-y-3 border-t border-primary-700 pt-3"
       }
     >
-      <Toggle
-        id={`ls-${dest.id}-enabled`}
-        label={t(dest.toggleI18nKey, { defaultValue: dest.toggleDefault })}
-        checked={enabled}
-        onChange={(v) => onChange({ enabled: v, url, streamKey })}
-      />
+      <div className="flex items-center gap-2">
+        {dot}
+        <div className="flex-1 min-w-0">
+          <Toggle
+            id={`ls-${dest.id}-enabled`}
+            label={t(dest.toggleI18nKey, { defaultValue: dest.toggleDefault })}
+            checked={enabled}
+            onChange={(v) => onChange({ enabled: v, url, streamKey })}
+          />
+        </div>
+      </div>
+      {enabled && status === "failed" && statusError && (
+        <div
+          data-testid={`ls-${dest.id}-error`}
+          className="text-xs text-red-300 bg-red-900/30 border border-red-900 rounded-md px-2 py-1"
+        >
+          {statusError}
+        </div>
+      )}
       {enabled && (
         <>
           <Field id={`ls-${dest.id}-url`} label={t(dest.urlLabel.key, { defaultValue: dest.urlLabel.def })}>

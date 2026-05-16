@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
-from app.models import Meeting, MeetingParticipant, Recording
+from app.models import LivestreamDestinationState, Meeting, MeetingParticipant, Recording
 from app.routes.ti_cafe import (
     clear_room as ticafe_clear_room,
     is_ti_cafe_room,
@@ -31,6 +31,90 @@ _receiver = api.WebhookReceiver(
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _update_destination_states(db, info, etype: str) -> None:
+    """Walk the egress_info.stream_results entries and write a status row
+    per (meeting_id, platform_id). Idempotent — runs on every
+    egress_started / egress_updated / egress_ended event so the latest
+    snapshot always wins.
+
+    Per LiveKit `StreamInfo.Status` proto (values may differ across SDK
+    versions; we match by name string to be forward-compatible):
+      ACTIVE     → "streaming"
+      FINISHED   → "complete"
+      FAILED     → "failed"
+      anything else → "idle"
+    """
+    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+    from app.services.egress_mgr import enabled_url_by_platform
+    from datetime import datetime, timezone
+
+    stream_results = list(getattr(info, "stream_results", []) or [])
+    if not stream_results:
+        return
+
+    m = db.query(Meeting).filter_by(livestream_egress_id=info.egress_id).first()
+    if m is None:
+        # Recording-only egress or an egress we don't track for streaming —
+        # nothing to record. (Recording state lives on the Recording row.)
+        return
+
+    url_to_platform = {v: k for k, v in enabled_url_by_platform(m).items()}
+
+    for sr in stream_results:
+        url = getattr(sr, "url", None) or ""
+        platform = url_to_platform.get(url)
+        if not platform:
+            # URL doesn't match any currently-enabled destination — could
+            # be a destination that was removed mid-stream via the
+            # update-stream call, or a key rotation. Either way no state
+            # row to maintain for it.
+            continue
+
+        raw_status = getattr(sr, "status", None)
+        status_name = (
+            type(raw_status).Name(raw_status) if hasattr(type(raw_status), "Name") else str(raw_status)
+        ).upper() if raw_status is not None else ""
+        if "ACTIVE" in status_name:
+            status = "streaming"
+        elif "FINISHED" in status_name or "COMPLETE" in status_name:
+            status = "complete"
+        elif "FAILED" in status_name:
+            status = "failed"
+        else:
+            status = "idle"
+        # If the whole egress ended, anything still listed as streaming
+        # transitions to complete so the UI doesn't show a green dot
+        # against a dead egress.
+        if etype == "egress_ended" and status == "streaming":
+            status = "complete"
+
+        err = (getattr(sr, "error", "") or "").strip()[:500] or None
+
+        stmt = sqlite_insert(LivestreamDestinationState).values(
+            meeting_id=m.id,
+            platform_id=platform,
+            status=status,
+            error=err,
+            updated_at=datetime.now(timezone.utc),
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[LivestreamDestinationState.meeting_id, LivestreamDestinationState.platform_id],
+            set_={
+                "status": stmt.excluded.status,
+                "error": stmt.excluded.error,
+                "updated_at": stmt.excluded.updated_at,
+            },
+        )
+        try:
+            db.execute(stmt)
+        except Exception:
+            # Per-destination state is a UI nicety — never fail the
+            # whole webhook because of a write hiccup here.
+            db.rollback()
+            continue
+    db.commit()
 
 
 async def _clear_recording_metadata(room_name: str) -> None:
@@ -132,6 +216,13 @@ async def livekit_webhook(
 
     elif etype in ("egress_started", "egress_updated", "egress_ended") and event.egress_info:
         info = event.egress_info
+        # Per-destination stream health: every egress event carries an
+        # updated `stream_results[]` with one entry per RTMP URL. We map
+        # each URL back to the platform_id that owns it (X / YouTube /
+        # Facebook / etc.) and upsert a state row so the frontend can
+        # render coloured status dots and surface the egress's own
+        # error string when a destination is rejecting the publish.
+        _update_destination_states(db, info, etype)
         # Livestreams use a separate egress (no Recording row) but still
         # need cleanup on end — clear the meeting's active egress_id so the
         # toolbar button reverts to "Start streaming" on next page load.

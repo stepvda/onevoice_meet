@@ -117,3 +117,39 @@ def get_stream_status(meeting_id: str, user: RequireUser, db: Session = Depends(
         "active": bool(m.livestream_egress_id),
         "egress_id": m.livestream_egress_id,
     }
+
+
+@router.get("/meetings/{meeting_id}/stream/destinations")
+def get_stream_destinations(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> list[dict]:
+    """Per-destination publish status. One row per platform that is
+    currently *enabled* on the meeting. Status comes from the latest
+    `egress_updated` webhook event LiveKit sent for the running (or
+    most-recently-stopped) egress.
+
+    Vocabulary (mirrors `LivestreamDestinationState.status`):
+      - "idle"      : credentials present, no egress has reported yet
+      - "streaming" : RTMP push to this destination is healthy
+      - "failed"    : the destination rejected the publish; `error`
+                      carries the egress's reason
+      - "complete"  : the destination finished cleanly (last stream ended)
+    """
+    from app.models import LivestreamDestinationState
+    from app.services.egress_mgr import LIVESTREAM_DESTINATIONS
+
+    m = _require_owner(meeting_id, user.sub, db)
+    states_by_platform = {
+        s.platform_id: s
+        for s in db.query(LivestreamDestinationState).filter_by(meeting_id=m.id).all()
+    }
+    out: list[dict] = []
+    for platform, en_attr, _url_attr, _key_attr in LIVESTREAM_DESTINATIONS:
+        if not bool(getattr(m, en_attr, False)):
+            continue
+        st = states_by_platform.get(platform)
+        out.append({
+            "platform_id": platform,
+            "status": st.status if st else "idle",
+            "error": st.error if st else None,
+            "updated_at": st.updated_at.isoformat() if st and st.updated_at else None,
+        })
+    return out
