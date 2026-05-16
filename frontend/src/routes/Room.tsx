@@ -520,7 +520,12 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
               <MicOff size={16} />
               <span className="hidden md:inline">{t("room.muteAll")}</span>
             </button>
-            {!recordingActive && (
+            {/* Layout dropdown is hidden while playback is active —
+                the egress is force-locked to single-speaker server-side
+                so the playback participant owns the composite. The
+                host's choice is restored automatically once playback
+                ends. */}
+            {!recordingActive && !playbackActive && (
               <select
                 value={recordingLayout}
                 onChange={(e) =>

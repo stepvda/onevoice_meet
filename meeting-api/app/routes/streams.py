@@ -69,7 +69,18 @@ async def start_stream(
     if m.livestream_egress_id:
         raise HTTPException(status_code=409, detail="livestream already in progress")
 
-    layout: RecordingLayout = body.layout if body else "speaker"
+    requested: RecordingLayout = body.layout if body else "speaker"
+    # Playback override: while a video is playing the egress is locked
+    # to single-speaker so the playback participant owns the frame. The
+    # host's requested layout is stashed on the meeting and restored
+    # when playback ends.
+    layout: RecordingLayout = requested
+    if m.playback_ingress_id:
+        if m.layout_before_playback is None:
+            m.layout_before_playback = requested
+            db.commit()
+        layout = "single-speaker"
+
     # Preserve any active recording — reconcile_egress restarts the egress
     # with both outputs so we stay within a single worker slot.
     keep_file = bool(

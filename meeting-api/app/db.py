@@ -98,6 +98,10 @@ def lightweight_migrate() -> None:
                 # Tracks when the active ingress started so the SPA can
                 # compute elapsed time for the progress bar.
                 ("playback_started_at", "ALTER TABLE meetings ADD COLUMN playback_started_at TIMESTAMP"),
+                # Layout the egress was using right before playback
+                # forced it to "single-speaker". Restored when playback
+                # ends so the host's chosen recording layout sticks.
+                ("layout_before_playback", "ALTER TABLE meetings ADD COLUMN layout_before_playback TEXT"),
             )),
             ("chat_messages", (
                 ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),

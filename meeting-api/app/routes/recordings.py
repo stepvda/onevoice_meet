@@ -82,10 +82,21 @@ async def start_recording(
     # The composite egress simply picks up the playback participant as
     # any other speaker; no extra wiring is needed here.
 
-    layout: RecordingLayout = body.layout if body else "speaker"
+    requested: RecordingLayout = body.layout if body else "speaker"
     existing = db.query(Recording).filter_by(meeting_id=m.id, status="running").first()
     if existing:
         raise HTTPException(status_code=409, detail="recording already in progress")
+
+    # Playback override: while a video is playing the egress is
+    # locked to single-speaker so the playback participant owns the
+    # frame. We still record the host's requested layout so it can
+    # be restored when playback ends.
+    layout: RecordingLayout = requested
+    if m.playback_ingress_id:
+        if m.layout_before_playback is None:
+            m.layout_before_playback = requested
+            db.commit()
+        layout = "single-speaker"
 
     # Preserve the stream output if one is active — reconcile_egress will
     # stop+restart with the combined output set so we never run two

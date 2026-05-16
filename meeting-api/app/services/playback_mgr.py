@@ -142,6 +142,72 @@ async def _broadcast(room_name: str, signal: str, payload: dict) -> None:
         await lk.aclose()
 
 
+PLAYBACK_LAYOUT = "single-speaker"
+
+
+async def _force_single_speaker_layout(m: Meeting, db: Session) -> None:
+    """If an egress is running (recording or livestream), restart it
+    with `single-speaker` so the playback participant — the only
+    unmuted speaker after `_mute_all_other_participants` — owns the
+    full composite frame. The host's prior layout is saved on the
+    meeting so `_restore_layout_after_playback` can switch back when
+    playback ends. No-op when no egress is active; in that case the
+    `start_recording` / `start_stream` paths force single-speaker on
+    their next call (see playback-guard in those handlers)."""
+    # Defer import to dodge the egress_mgr → playback_mgr circular import.
+    from app.services.egress_mgr import _current_state, reconcile_egress
+
+    cur_egress_id, cur_has_file, cur_has_stream = _current_state(m, db)
+    if not cur_egress_id:
+        # Remember the user's most-recently-picked layout (if any) so
+        # an egress started later — during playback — can restore the
+        # right post-playback layout. Falls back to "speaker" later.
+        if m.layout_before_playback is None and m.current_egress_layout:
+            m.layout_before_playback = m.current_egress_layout
+            db.commit()
+        return
+    if m.current_egress_layout == PLAYBACK_LAYOUT:
+        return  # already on the right template; nothing to do
+    if m.layout_before_playback is None:
+        m.layout_before_playback = m.current_egress_layout or "speaker"
+        db.commit()
+    await reconcile_egress(
+        m,
+        want_file=cur_has_file,
+        want_stream=cur_has_stream,
+        layout=PLAYBACK_LAYOUT,
+        user_sub="playback",
+        db=db,
+    )
+
+
+async def _restore_layout_after_playback(m: Meeting, db: Session) -> None:
+    """Inverse of `_force_single_speaker_layout`. Called from the two
+    code paths that end playback (`stop_playback`, natural-end branch in
+    `advance_after_ingress_ended`). Restarts the active egress (if any)
+    with the host's pre-playback layout and clears the snapshot."""
+    from app.services.egress_mgr import _current_state, reconcile_egress
+
+    saved = m.layout_before_playback
+    m.layout_before_playback = None
+    db.commit()
+    if not saved:
+        return
+    cur_egress_id, cur_has_file, cur_has_stream = _current_state(m, db)
+    if not cur_egress_id:
+        return  # no egress to switch; just clearing the snapshot is enough
+    if m.current_egress_layout == saved:
+        return  # already on the right template
+    await reconcile_egress(
+        m,
+        want_file=cur_has_file,
+        want_stream=cur_has_stream,
+        layout=saved,  # type: ignore[arg-type]
+        user_sub="playback",
+        db=db,
+    )
+
+
 async def _start_ingress_for_item(
     m: Meeting,
     item: PlaybackItem,
@@ -152,14 +218,20 @@ async def _start_ingress_for_item(
 ) -> str:
     """Create a fresh LiveKit ingress for `item`, store its id on the
     meeting, and (only on the very first item of a play session) mute all
-    other participants + broadcast the playback-start signal. Returns the
-    new ingress_id.
+    other participants, force the egress layout to single-speaker, and
+    broadcast the playback-start signal. Returns the new ingress_id.
 
     `from_seconds` > 0 starts the source mid-file via ffmpeg-seek (used
     by `seek_playback` for drag-on-slider). The `playback_started_at`
     stamp is adjusted to `now - from_seconds` so the SPA's elapsed
     calculation lands at the seek position without an extra field."""
     url = _build_signed_url(item, t_seconds=from_seconds)
+    if initial:
+        # Switch the egress layout BEFORE creating the ingress so the
+        # new (single-speaker) egress is already running by the time the
+        # playback track lands — avoids a brief flash of the old layout
+        # on the recording / livestream.
+        await _force_single_speaker_layout(m, db)
     lk = livekit_api()
     try:
         ingress = await lk.ingress.create_ingress(
@@ -254,6 +326,11 @@ async def stop_playback(m: Meeting, user_sub: str, db: Session) -> dict:
     m.playback_started_at = None
     db.commit()
 
+    # Flip the egress back to the host's pre-playback layout before
+    # broadcasting the end signal — otherwise the SPA would surface
+    # the participant grid while the egress is still on single-speaker.
+    await _restore_layout_after_playback(m, db)
+
     await _broadcast(m.room_name, "playback-end", {})
     db.add(
         ModerationAudit(
@@ -307,6 +384,7 @@ async def advance_after_ingress_ended(
         m.playback_current_item_id = None
         m.playback_started_at = None
         db.commit()
+        await _restore_layout_after_playback(m, db)
         await _broadcast(m.room_name, "playback-end", {})
         return None
 

@@ -133,6 +133,10 @@ class Meeting(Base):
     # time from this for the playlist progress bar. NULL when no
     # playback is running.
     playback_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Snapshot of `current_egress_layout` taken right before playback
+    # forced the egress to "single-speaker" so the playback participant
+    # owns the composite. Restored when playback ends; NULL otherwise.
+    layout_before_playback: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")

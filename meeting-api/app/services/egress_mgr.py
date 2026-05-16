@@ -150,11 +150,12 @@ async def reconcile_egress(
     if layout is None:
         layout = m.current_egress_layout or "speaker"  # type: ignore[assignment]
 
-    # Idempotent: if the current state already matches what's wanted, leave
-    # the egress alone. (Caller endpoints still raise 409 for "already
-    # running" to keep the API contract familiar; this branch handles the
-    # case where the caller passes through redundantly.)
-    if cur_has_file == want_file and cur_has_stream == want_stream:
+    # Idempotent: if the current state already matches what's wanted AND
+    # the layout is the same, leave the egress alone. A layout change
+    # always requires a restart — LiveKit egress can't swap room
+    # composite templates mid-stream.
+    layout_changed = bool(cur_egress_id) and m.current_egress_layout != layout
+    if cur_has_file == want_file and cur_has_stream == want_stream and not layout_changed:
         return {"egress_id": cur_egress_id, "recording_id": None, "no_change": True}
 
     # Stop the current egress (if any). The `egress_ended` webhook is the
