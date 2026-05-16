@@ -292,6 +292,36 @@ def reorder_playback_items(
     return [_to_out(by_id[iid]) for iid in body.item_ids]
 
 
+@router.get("/meetings/{meeting_id}/playback/items/{item_id}/download")
+def download_playback_item(
+    meeting_id: str,
+    item_id: str,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    """Owner/co-host download of an uploaded playlist item. Alias rows
+    resolve to the source row's file so a Link can be downloaded too —
+    same bytes either way. Served with `Content-Disposition: attachment`
+    so the browser triggers a Save dialog instead of trying to play
+    inline."""
+    m = _require_moderator(meeting_id, user.sub, db)
+    item = db.query(PlaybackItem).filter_by(id=item_id, meeting_id=m.id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="item not found")
+    source = _resolve_source(item, db)
+    if not source.file_path:
+        raise HTTPException(status_code=410, detail="file missing on disk")
+    path = Path(source.file_path)
+    if not path.exists():
+        raise HTTPException(status_code=410, detail="file missing on disk")
+    return FileResponse(
+        path=str(path),
+        media_type=source.mime_type or "video/mp4",
+        filename=item.filename,
+        headers={"Content-Disposition": f'attachment; filename="{item.filename}"'},
+    )
+
+
 @router.post("/meetings/{meeting_id}/playback:start")
 async def playback_start(
     meeting_id: str,

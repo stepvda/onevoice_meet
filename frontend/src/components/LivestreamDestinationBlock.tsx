@@ -38,15 +38,31 @@ export default function LivestreamDestinationBlock({
   const { t } = useTranslation();
   const [showKey, setShowKey] = useState(false);
 
-  // Map status → colour + accessible label. Each row gets the same
-  // visual language as the toolbar Recording / Streaming pills.
+  // Map status → colour + accessible label. The "streaming" state is a
+  // **bright** green with a glow ring + pulsing, so a host can confirm
+  // at a glance which destinations are actually receiving the stream.
+  // Failure is red, idle/complete are muted slate so they don't compete.
   const dot = (() => {
     if (!enabled || !status) return null;
-    const map: Record<string, { bg: string; label: string }> = {
-      streaming: { bg: "bg-green-500", label: t("livestream.statusStreaming", { defaultValue: "Streaming live" }) },
-      failed:    { bg: "bg-red-500",   label: t("livestream.statusFailed",    { defaultValue: "Failed" }) },
-      complete:  { bg: "bg-slate-500", label: t("livestream.statusComplete",  { defaultValue: "Last stream completed" }) },
-      idle:      { bg: "bg-slate-600", label: t("livestream.statusIdle",      { defaultValue: "Idle" }) },
+    const map: Record<string, { className: string; label: string }> = {
+      streaming: {
+        // bright green-400 background + green-300 glow ring + pulse.
+        className:
+          "bg-green-400 ring-2 ring-green-400/50 shadow-[0_0_8px_rgba(74,222,128,0.7)] animate-pulse",
+        label: t("livestream.statusStreaming", { defaultValue: "Streaming live" }),
+      },
+      failed: {
+        className: "bg-red-500",
+        label: t("livestream.statusFailed", { defaultValue: "Failed" }),
+      },
+      complete: {
+        className: "bg-slate-500",
+        label: t("livestream.statusComplete", { defaultValue: "Last stream completed" }),
+      },
+      idle: {
+        className: "bg-slate-600",
+        label: t("livestream.statusIdle", { defaultValue: "Idle" }),
+      },
     };
     const v = map[status] ?? map.idle;
     return (
@@ -54,9 +70,7 @@ export default function LivestreamDestinationBlock({
         data-testid={`ls-${dest.id}-status`}
         title={statusError ? `${v.label}: ${statusError}` : v.label}
         aria-label={v.label}
-        className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${v.bg} ${
-          status === "streaming" ? "animate-pulse" : ""
-        }`}
+        className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${v.className}`}
       />
     );
   })();

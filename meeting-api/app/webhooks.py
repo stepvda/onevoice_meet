@@ -39,15 +39,21 @@ def _update_destination_states(db, info, etype: str) -> None:
     egress_started / egress_updated / egress_ended event so the latest
     snapshot always wins.
 
-    Per LiveKit `StreamInfo.Status` proto (values may differ across SDK
-    versions; we match by name string to be forward-compatible):
-      ACTIVE     → "streaming"
-      FINISHED   → "complete"
-      FAILED     → "failed"
-      anything else → "idle"
+    Match strategy is **URL prefix**, NOT full URL equality: LiveKit
+    egress *redacts* the stream-key portion of `stream_results[].url`
+    (security feature so keys don't leak in webhook payloads — comes
+    out as `rtmps://host/path/{abc...xyz}`). The configured per-meeting
+    URL (`livestream_<platform>_rtmps_url`) IS a prefix of what egress
+    reports, so prefix matching is the reliable signal.
+
+    LiveKit `StreamInfo.Status` int values:
+      1 ACTIVE   → "streaming"
+      2 FAILED   → "failed"
+      3 FINISHED → "complete"
+      else       → "idle"
     """
     from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-    from app.services.egress_mgr import enabled_url_by_platform
+    from app.services.egress_mgr import LIVESTREAM_DESTINATIONS
     from datetime import datetime, timezone
 
     stream_results = list(getattr(info, "stream_results", []) or [])
@@ -60,28 +66,44 @@ def _update_destination_states(db, info, etype: str) -> None:
         # nothing to record. (Recording state lives on the Recording row.)
         return
 
-    url_to_platform = {v: k for k, v in enabled_url_by_platform(m).items()}
+    # Build a list of (configured_url_prefix, platform_id) from the
+    # meeting's currently-enabled destinations. Longest prefix wins so
+    # platforms with similar hosts don't collide.
+    prefixes: list[tuple[str, str]] = []
+    for platform, en_attr, url_attr, _key_attr in LIVESTREAM_DESTINATIONS:
+        if not bool(getattr(m, en_attr, False)):
+            continue
+        url = getattr(m, url_attr, None)
+        if url:
+            prefixes.append((url.rstrip("/"), platform))
+    prefixes.sort(key=lambda p: len(p[0]), reverse=True)
 
+    def match_platform(reported_url: str) -> str | None:
+        for prefix, platform in prefixes:
+            if reported_url.startswith(prefix):
+                return platform
+        return None
+
+    wrote_any = False
     for sr in stream_results:
         url = getattr(sr, "url", None) or ""
-        platform = url_to_platform.get(url)
+        platform = match_platform(url)
         if not platform:
-            # URL doesn't match any currently-enabled destination — could
-            # be a destination that was removed mid-stream via the
-            # update-stream call, or a key rotation. Either way no state
-            # row to maintain for it.
             continue
 
         raw_status = getattr(sr, "status", None)
-        status_name = (
-            type(raw_status).Name(raw_status) if hasattr(type(raw_status), "Name") else str(raw_status)
-        ).upper() if raw_status is not None else ""
-        if "ACTIVE" in status_name:
+        # LiveKit StreamInfo.Status enum is an int. 1=ACTIVE 2=FAILED
+        # 3=FINISHED. Treat anything else (incl. 0=NEW) as idle.
+        try:
+            status_int = int(raw_status) if raw_status is not None else -1
+        except (TypeError, ValueError):
+            status_int = -1
+        if status_int == 1:
             status = "streaming"
-        elif "FINISHED" in status_name or "COMPLETE" in status_name:
-            status = "complete"
-        elif "FAILED" in status_name:
+        elif status_int == 2:
             status = "failed"
+        elif status_int == 3:
+            status = "complete"
         else:
             status = "idle"
         # If the whole egress ended, anything still listed as streaming
@@ -109,12 +131,14 @@ def _update_destination_states(db, info, etype: str) -> None:
         )
         try:
             db.execute(stmt)
+            wrote_any = True
         except Exception:
             # Per-destination state is a UI nicety — never fail the
             # whole webhook because of a write hiccup here.
             db.rollback()
             continue
-    db.commit()
+    if wrote_any:
+        db.commit()
 
 
 async def _clear_recording_metadata(room_name: str) -> None:

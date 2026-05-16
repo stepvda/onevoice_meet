@@ -1201,6 +1201,45 @@ export const api = {
       { method: "POST" },
     ),
 
+  /** Download a previously-uploaded playlist item. The endpoint
+   *  requires a Bearer token (owner / co-host) so an `<a href>` won't
+   *  work — same fetch-as-blob pattern as `downloadRecording`. Alias
+   *  rows resolve to the source's file on the backend. */
+  async downloadPlaybackItem(meetingId: string, itemId: string, filename: string): Promise<void> {
+    const tok = getAccessToken();
+    let res = await fetch(`/api/v1/meetings/${meetingId}/playback/items/${itemId}/download`, {
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+    });
+    if (res.status === 401) {
+      clearAccessToken();
+      const fresh = await bootstrapFromOneWitysk();
+      if (fresh) {
+        res = await fetch(`/api/v1/meetings/${meetingId}/playback/items/${itemId}/download`, {
+          headers: { Authorization: `Bearer ${fresh}` },
+        });
+      }
+    }
+    if (!res.ok) {
+      let detail = res.statusText;
+      try {
+        const j = await res.clone().json();
+        detail = j.detail ?? detail;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(detail);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  },
+
   reorderPlaybackItems: (meetingId: string, itemIds: string[]) =>
     request<PlaybackItemOut[]>(
       `/api/v1/meetings/${meetingId}/playback/items:reorder`,

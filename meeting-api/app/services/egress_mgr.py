@@ -171,12 +171,20 @@ async def reconcile_egress(
             # to "Start recording" instead of stranding the user on a Stop
             # button that 404s. The webhook is too late for this — the SPA
             # listens for RoomMetadataChanged immediately.
-            # Always write the post-stop state for both flags so the
-            # indicator pills (Recording / Streaming) clear together
-            # when the user stops the last active output.
+            # Write the POST-RECONCILE state directly so we don't
+            # briefly publish "neither active" between the stop and the
+            # subsequent start — the SPA listens to RoomMetadataChanged
+            # and would otherwise blink the Recording / Streaming pills
+            # off for the few hundred ms the new egress takes to spin
+            # up. When the transition is a true stop (no follow-up
+            # start), the next branch returns early before we'd write
+            # again, so the indicators clear correctly there too.
             try:
                 await _set_recording_metadata(
-                    lk, m.room_name, recording_active=False, streaming_active=False
+                    lk,
+                    m.room_name,
+                    recording_active=want_file,
+                    streaming_active=want_stream,
                 )
             except Exception:  # noqa: BLE001
                 pass

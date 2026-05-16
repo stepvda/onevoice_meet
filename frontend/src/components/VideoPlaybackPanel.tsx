@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, ArrowUp, Film, Link2, Repeat, Trash2, Upload, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Download, Film, Link2, Repeat, Trash2, Upload, X } from "lucide-react";
 import { api, MeetingOut, PlaybackItemOut } from "../lib/api";
 import { Button, Card, Toggle } from "./ui";
 
@@ -119,6 +119,15 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
       setErr((e as Error).message);
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function downloadItem(item: PlaybackItemOut) {
+    setErr(null);
+    try {
+      await api.downloadPlaybackItem(meeting.id, item.id, item.filename);
+    } catch (e) {
+      setErr((e as Error).message);
     }
   }
 
@@ -289,6 +298,17 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                         : fmtSize(it.file_size_bytes)}
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => downloadItem(it)}
+                    disabled={!!busy}
+                    aria-label={t("playback.download", { defaultValue: "Download original file" })}
+                    title={t("playback.download", { defaultValue: "Download original file" })}
+                    data-testid={`playback-download-${it.id}`}
+                    className="p-1 rounded hover:bg-primary-700 disabled:opacity-30 text-slate-300"
+                  >
+                    <Download size={14} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => duplicateItem(it)}
