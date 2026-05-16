@@ -4,12 +4,15 @@ LiveKit webhook receiver.
 LiveKit POSTs events here with a signed JWT in the Authorization header. We
 verify the signature using the LiveKit WebhookReceiver, then update our DB.
 """
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from livekit import api
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
+log = logging.getLogger(__name__)
 
 from app.config import settings
 from app.db import get_db
@@ -57,6 +60,27 @@ def _update_destination_states(db, info, etype: str) -> None:
     from datetime import datetime, timezone
 
     stream_results = list(getattr(info, "stream_results", []) or [])
+    # Diagnostic: log every event so we can see why the per-destination
+    # dot stays grey when streaming is actually live. If
+    # `stream_results` is empty on egress_started, it's normal — the
+    # streams haven't been opened yet. If it stays empty on
+    # egress_updated / egress_ended, the egress build isn't reporting
+    # stream health at all and we need a different signal.
+    log.info(
+        "egress event %s eg=%s status=%s stream_results=%d sample=%s",
+        etype,
+        getattr(info, "egress_id", "?"),
+        getattr(info, "status", "?"),
+        len(stream_results),
+        [
+            {
+                "url": (getattr(sr, "url", "") or "")[:60],
+                "status": getattr(sr, "status", None),
+                "error": (getattr(sr, "error", "") or "")[:80],
+            }
+            for sr in stream_results[:3]
+        ],
+    )
     if not stream_results:
         return
 
@@ -64,6 +88,7 @@ def _update_destination_states(db, info, etype: str) -> None:
     if m is None:
         # Recording-only egress or an egress we don't track for streaming —
         # nothing to record. (Recording state lives on the Recording row.)
+        log.info("egress %s: not a livestream egress (no Meeting match)", getattr(info, "egress_id", "?"))
         return
 
     # Build a list of (configured_url_prefix, platform_id) from the

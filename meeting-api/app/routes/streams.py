@@ -11,17 +11,22 @@ The URL+key pair is concatenated as `<url>/<key>` for the StreamOutput.urls
 list — that's the form every major RTMP ingest expects, including X/Twitter
 (via studio.x.com), Twitch, YouTube Live, and Facebook Live.
 """
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
+from livekit import api as lk_api
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.auth import RequireUser
 from app.db import get_db
+from app.livekit_client import livekit_api
 from app.models import Meeting, Recording
 from app.routes.recordings import RecordingLayout
 from app.services.egress_mgr import reconcile_egress
 
 router = APIRouter(prefix="/v1")
+log = logging.getLogger(__name__)
 
 
 class StartStreamBody(BaseModel):
@@ -120,30 +125,99 @@ def get_stream_status(meeting_id: str, user: RequireUser, db: Session = Depends(
 
 
 @router.get("/meetings/{meeting_id}/stream/destinations")
-def get_stream_destinations(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> list[dict]:
+async def get_stream_destinations(meeting_id: str, user: RequireUser, db: Session = Depends(get_db)) -> list[dict]:
     """Per-destination publish status. One row per platform that is
-    currently *enabled* on the meeting. Status comes from the latest
-    `egress_updated` webhook event LiveKit sent for the running (or
-    most-recently-stopped) egress.
+    currently *enabled* on the meeting.
 
-    Vocabulary (mirrors `LivestreamDestinationState.status`):
-      - "idle"      : credentials present, no egress has reported yet
+    While a livestream egress is active we live-read `stream_results`
+    from LiveKit's egress API on every poll, so the SPA's coloured dot
+    reflects the actual publish state within ~4s. Webhook-cached state
+    is used as the fallback once the egress is gone (e.g. completed /
+    failed final state for the most-recent stream).
+
+    Live-reading bypasses two webhook timing issues:
+      1. `egress_updated` events firing late or not at all in this
+         egress build, leaving the cached state stuck on "idle".
+      2. The meeting's `livestream_egress_id` getting cleared by Stop
+         before `egress_ended` arrives, so the webhook's URL→platform
+         match fails and the "complete" transition is lost.
+
+    Vocabulary:
+      - "idle"      : credentials present, RTMP push hasn't reported yet
       - "streaming" : RTMP push to this destination is healthy
-      - "failed"    : the destination rejected the publish; `error`
-                      carries the egress's reason
-      - "complete"  : the destination finished cleanly (last stream ended)
+      - "failed"    : the destination rejected the publish (`error` set)
+      - "complete"  : last stream ended cleanly
     """
+    from datetime import datetime, timezone
     from app.models import LivestreamDestinationState
     from app.services.egress_mgr import LIVESTREAM_DESTINATIONS
 
     m = _require_owner(meeting_id, user.sub, db)
+    enabled_platforms: list[tuple[str, str]] = []
+    prefixes: list[tuple[str, str]] = []
+    for platform, en_attr, url_attr, _key_attr in LIVESTREAM_DESTINATIONS:
+        if not bool(getattr(m, en_attr, False)):
+            continue
+        enabled_platforms.append((platform, en_attr))
+        url = getattr(m, url_attr, None)
+        if url:
+            prefixes.append((url.rstrip("/"), platform))
+    prefixes.sort(key=lambda p: len(p[0]), reverse=True)
+
+    # Live-read pass when a stream egress is active. We map each
+    # reported URL back to its platform using the same URL-prefix
+    # strategy as the webhook handler (LiveKit redacts the
+    # stream-key portion of the reported URL).
+    live: dict[str, dict] = {}
+    if m.livestream_egress_id:
+        try:
+            cli = livekit_api()
+            try:
+                resp = await cli.egress.list_egress(
+                    lk_api.ListEgressRequest(egress_ids=[m.livestream_egress_id])
+                )
+            finally:
+                await cli.aclose()
+            for info in resp.items:
+                for sr in (info.stream_results or []):
+                    url = (getattr(sr, "url", "") or "")
+                    platform = next(
+                        (p for prefix, p in prefixes if url.startswith(prefix)),
+                        None,
+                    )
+                    if not platform:
+                        continue
+                    raw = getattr(sr, "status", None)
+                    try:
+                        st_int = int(raw) if raw is not None else -1
+                    except (TypeError, ValueError):
+                        st_int = -1
+                    if st_int == 1:
+                        status = "streaming"
+                    elif st_int == 2:
+                        status = "failed"
+                    elif st_int == 3:
+                        status = "complete"
+                    else:
+                        status = "idle"
+                    err = (getattr(sr, "error", "") or "").strip()[:500] or None
+                    live[platform] = {
+                        "status": status,
+                        "error": err,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                    }
+        except Exception:  # noqa: BLE001
+            log.exception("stream/destinations: live egress read failed eg=%s", m.livestream_egress_id)
+            # Fall through to webhook-cached state below.
+
     states_by_platform = {
         s.platform_id: s
         for s in db.query(LivestreamDestinationState).filter_by(meeting_id=m.id).all()
     }
     out: list[dict] = []
-    for platform, en_attr, _url_attr, _key_attr in LIVESTREAM_DESTINATIONS:
-        if not bool(getattr(m, en_attr, False)):
+    for platform, _en_attr in enabled_platforms:
+        if platform in live:
+            out.append({"platform_id": platform, **live[platform]})
             continue
         st = states_by_platform.get(platform)
         out.append({
