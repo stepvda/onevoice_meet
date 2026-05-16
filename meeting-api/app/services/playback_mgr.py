@@ -75,9 +75,16 @@ def verify_playback_url(item_id: str, token: str) -> bool:
     return hmac.compare_digest(mac, expected)
 
 
-def _build_signed_url(item: PlaybackItem) -> str:
+def _build_signed_url(item: PlaybackItem, t_seconds: float = 0.0) -> str:
+    """Build the URL ingress fetches for this item. When `t_seconds`
+    > 0 the URL includes a `&t=<seconds>` parameter; the internal
+    file-fetch endpoint then pipes the file from that timestamp via
+    ffmpeg (MPEG-TS stream-copy). Used by drag-to-seek."""
     token = _sign_playback_url(item.id)
-    return f"{_INGRESS_INTERNAL_BASE}/api/v1/internal/playback/{item.id}?token={token}"
+    base = f"{_INGRESS_INTERNAL_BASE}/api/v1/internal/playback/{item.id}?token={token}"
+    if t_seconds and t_seconds > 0:
+        base += f"&t={t_seconds:.3f}"
+    return base
 
 
 async def _mute_all_other_participants(lk: "api.LiveKitAPI", room_name: str) -> None:
@@ -141,12 +148,18 @@ async def _start_ingress_for_item(
     db: Session,
     *,
     initial: bool,
+    from_seconds: float = 0.0,
 ) -> str:
     """Create a fresh LiveKit ingress for `item`, store its id on the
     meeting, and (only on the very first item of a play session) mute all
     other participants + broadcast the playback-start signal. Returns the
-    new ingress_id."""
-    url = _build_signed_url(item)
+    new ingress_id.
+
+    `from_seconds` > 0 starts the source mid-file via ffmpeg-seek (used
+    by `seek_playback` for drag-on-slider). The `playback_started_at`
+    stamp is adjusted to `now - from_seconds` so the SPA's elapsed
+    calculation lands at the seek position without an extra field."""
+    url = _build_signed_url(item, t_seconds=from_seconds)
     lk = livekit_api()
     try:
         ingress = await lk.ingress.create_ingress(
@@ -164,13 +177,15 @@ async def _start_ingress_for_item(
     finally:
         await lk.aclose()
 
-    from datetime import datetime, timezone
+    from datetime import datetime, timedelta, timezone
     m.playback_ingress_id = ingress.ingress_id
     m.playback_current_item_id = item.id
     # Stamp the start time so the SPA can compute elapsed playback for
-    # the progress bar (`elapsed = now - playback_started_at`). Updated
-    # on every item switch — each item starts at 0:00 on the bar.
-    m.playback_started_at = datetime.now(timezone.utc)
+    # the progress bar (`elapsed = now - playback_started_at`). When
+    # the egress is starting mid-file via ffmpeg-seek we anchor the
+    # stamp `from_seconds` back so the bar's elapsed value matches the
+    # actual playhead.
+    m.playback_started_at = datetime.now(timezone.utc) - timedelta(seconds=from_seconds)
     db.commit()
 
     await _broadcast(
@@ -364,3 +379,50 @@ async def play_specific_item(
     )
     db.commit()
     return {"ok": True, "ingress_id": ingress_id, "item_id": item.id}
+
+
+async def seek_playback(
+    m: Meeting,
+    position_seconds: float,
+    user_sub: str,
+    db: Session,
+) -> dict:
+    """Drag-to-seek: stop the running ingress and restart the SAME
+    item at `position_seconds`. The internal file-fetch endpoint
+    receives `?t=<seconds>` and pipes ffmpeg-seek output (MPEG-TS,
+    stream-copy → cheap). No-op if no playback is running."""
+    if not m.playback_ingress_id or not m.playback_current_item_id:
+        raise HTTPException(status_code=409, detail="no playback in progress")
+    cur = db.query(PlaybackItem).filter_by(id=m.playback_current_item_id).first()
+    if not cur:
+        raise HTTPException(status_code=404, detail="current item not found")
+    position_seconds = max(0.0, float(position_seconds))
+
+    # Stop current ingress directly (no playback-end broadcast — we
+    # want a seamless seek, not a session end).
+    old_ingress_id = m.playback_ingress_id
+    lk = livekit_api()
+    try:
+        try:
+            await lk.ingress.delete_ingress(api.DeleteIngressRequest(ingress_id=old_ingress_id))
+        except Exception:
+            log.exception("playback: delete_ingress failed for %s on seek", old_ingress_id)
+    finally:
+        await lk.aclose()
+    m.playback_ingress_id = None
+    m.playback_started_at = None
+    db.commit()
+
+    ingress_id = await _start_ingress_for_item(
+        m, cur, db, initial=False, from_seconds=position_seconds
+    )
+    db.add(
+        ModerationAudit(
+            meeting_id=m.id,
+            actor_user_id=user_sub,
+            action="playback_seek",
+            details=f"{cur.id}:{position_seconds:.3f}:{ingress_id}",
+        )
+    )
+    db.commit()
+    return {"ok": True, "ingress_id": ingress_id, "position_seconds": position_seconds}

@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -40,6 +40,92 @@ router = APIRouter(prefix="/v1")
 
 # Storage layout: /var/lib/meet/playback/<meeting_id>/<item_id>.mp4
 _PLAYBACK_ROOT = Path(settings.recordings_dir).parent / "playback"
+
+
+def _ffprobe_duration(file_path: str) -> float | None:
+    """Read the duration of an MP4 via ffprobe. ffmpeg/ffprobe are
+    already in the meeting-api image (transcription uses ffmpeg). 5
+    second timeout — a non-decodable container shouldn't hang the
+    upload thread or the lazy-backfill background task."""
+    import subprocess
+    try:
+        out = subprocess.run(
+            [
+                "ffprobe",
+                "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                file_path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if out.returncode != 0:
+            return None
+        d = float(out.stdout.strip())
+        return d if d > 0 else None
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, ValueError):
+        return None
+
+
+def _ffmpeg_seek_stream(file_path: str, t_seconds: float):
+    """Generator that yields bytes from `ffmpeg -ss <t> -i <file> -c
+    copy -f mpegts pipe:1`. We stream-copy H.264/AAC into MPEG-TS so
+    there's no re-encode (CPU cheap). LiveKit Ingress's URL_INPUT
+    uses GStreamer's `decodebin` which autodetects MPEG-TS.
+
+    `-ss` placed BEFORE `-i` makes ffmpeg seek by demux-skipping
+    (fast, slightly less accurate; lands at the nearest keyframe
+    before T). For our use case (host scrubs the slider) that's the
+    right trade-off — sub-second accuracy is fine and a re-encode
+    accurate seek would peg one core."""
+    import subprocess
+    cmd = [
+        "ffmpeg",
+        "-hide_banner", "-loglevel", "error",
+        "-ss", f"{max(0.0, float(t_seconds)):.3f}",
+        "-i", file_path,
+        "-c", "copy",
+        "-f", "mpegts",
+        "pipe:1",
+    ]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    try:
+        assert proc.stdout is not None
+        while True:
+            chunk = proc.stdout.read(64 * 1024)
+            if not chunk:
+                break
+            yield chunk
+    finally:
+        if proc.poll() is None:
+            try:
+                proc.terminate()
+                proc.wait(timeout=2)
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+
+
+def _backfill_duration(item_id: str) -> None:
+    """Background task: probe and persist duration for a single item.
+    Idempotent — re-runs are safe (file unchanged → same duration). On
+    failure (no file, ffprobe error) we set the duration to NULL so the
+    next list-call doesn't reschedule this item every poll."""
+    from app.db import SessionLocal
+    with SessionLocal() as db:
+        item = db.query(PlaybackItem).filter_by(id=item_id).first()
+        if not item or not item.file_path or item.source_item_id is not None:
+            return
+        # Aliases inherit duration from their source; we never probe an
+        # alias because it has no file of its own.
+        dur = _ffprobe_duration(item.file_path)
+        if dur is not None:
+            item.duration_seconds = dur
+            db.commit()
 
 # Per-file size cap stays — protects the upload round-trip and the host
 # disk. A 15-minute 720p H.264 file at ~1.5 Mbps lands around 170 MB.
@@ -99,10 +185,17 @@ def _resolve_source(item: PlaybackItem, db: Session) -> PlaybackItem:
 def list_playback_items(
     meeting_id: str,
     user: RequireUser,
+    background: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> list[dict]:
     """Owner / co-host only. The playlist isn't surfaced to participants
-    directly; they discover playback state via the data-channel signal."""
+    directly; they discover playback state via the data-channel signal.
+
+    Lazy duration backfill: any non-alias item with NULL duration gets a
+    background ffprobe scheduled. The response returns whatever's
+    currently in the DB (NULLs on first call); subsequent calls show
+    durations as soon as the background tasks finish. Idempotent —
+    once duration is set, the row isn't re-probed."""
     _require_moderator(meeting_id, user.sub, db)
     rows = (
         db.query(PlaybackItem)
@@ -110,7 +203,25 @@ def list_playback_items(
         .order_by(PlaybackItem.position.asc())
         .all()
     )
-    return [_to_out(r) for r in rows]
+    # Build a source-duration map so aliases whose source has been
+    # backfilled-since-creation still show the right duration without
+    # an extra query per row.
+    src_duration: dict[str, float] = {
+        r.id: r.duration_seconds
+        for r in rows
+        if r.source_item_id is None and r.duration_seconds is not None
+    }
+    for r in rows:
+        if r.duration_seconds is None and r.source_item_id is None and r.file_path:
+            background.add_task(_backfill_duration, r.id)
+
+    out: list[dict] = []
+    for r in rows:
+        d = _to_out(r)
+        if r.source_item_id and not d["duration_seconds"]:
+            d["duration_seconds"] = src_duration.get(r.source_item_id)
+        out.append(d)
+    return out
 
 
 @router.post("/meetings/{meeting_id}/playback/items", status_code=201)
@@ -160,6 +271,12 @@ async def upload_playback_item(
 
     display_name = (filename or file.filename or new_id).strip() or new_id
     # Next available position = current item count (we just incremented).
+    # Duration: prefer the SPA-supplied value (cheap, no ffprobe roundtrip).
+    # If absent or zero, fall back to server-side ffprobe so legacy
+    # clients without the duration-probe code still get a populated bar.
+    dur = duration_seconds if (duration_seconds and duration_seconds > 0) else None
+    if dur is None:
+        dur = _ffprobe_duration(str(dest))
     item = PlaybackItem(
         id=new_id,
         meeting_id=m.id,
@@ -168,7 +285,7 @@ async def upload_playback_item(
         file_path=str(dest),
         file_size_bytes=total,
         mime_type=file.content_type or "video/mp4",
-        duration_seconds=duration_seconds if (duration_seconds and duration_seconds > 0) else None,
+        duration_seconds=dur,
     )
     db.add(item)
     db.commit()
@@ -208,6 +325,11 @@ def duplicate_playback_item(
         file_path="",
         file_size_bytes=0,
         mime_type=root.mime_type,
+        # Mirror the source's duration so the alias shows the same
+        # time in the playlist UI. If the source is still pending a
+        # lazy backfill, the alias gets a follow-up update path via
+        # `_to_out` (which resolves alias→source on read).
+        duration_seconds=root.duration_seconds,
     )
     db.add(alias)
     db.commit()
@@ -395,6 +517,25 @@ async def playback_stop(
     return await stop_playback(m, user.sub, db)
 
 
+class SeekBody(BaseModel):
+    position_seconds: float = Field(ge=0.0)
+
+
+@router.post("/meetings/{meeting_id}/playback:seek")
+async def playback_seek(
+    meeting_id: str,
+    body: SeekBody,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Click-on-progress-bar seek. Restarts the currently-playing
+    ingress at the requested position; participants see a brief
+    cut as the new ingress connects. 409 if nothing is playing."""
+    from app.services.playback_mgr import seek_playback
+    m = _require_moderator(meeting_id, user.sub, db)
+    return await seek_playback(m, body.position_seconds, user.sub, db)
+
+
 # ─── Internal file-fetch (called by livekit-ingress container) ────────
 
 
@@ -451,6 +592,7 @@ def fetch_playback_file(
     token: Annotated[str, Query()],
     request: Request,
     range_header: Annotated[str | None, Header(alias="Range")] = None,
+    t: Annotated[float | None, Query()] = None,
     db: Session = Depends(get_db),
 ) -> Response:
     """Open endpoint — gated on the HMAC token issued by playback_mgr at
@@ -458,7 +600,14 @@ def fetch_playback_file(
     `souphttpsrc` (used by the LiveKit ingress URL_INPUT pipeline) can
     seek into the MP4 to read the `moov` atom; without Range support
     GStreamer aborts with "Server does not support seeking." even though
-    the file is fully readable linearly."""
+    the file is fully readable linearly.
+
+    The optional `?t=<seconds>` parameter triggers a server-side seek
+    path: ffmpeg stream-copies the file from time T as MPEG-TS, and we
+    pipe its stdout straight to the response. Used by the playlist
+    panel's slider for drag-to-seek and by the seek endpoint when the
+    host clicks on a position. Range support is skipped on this path
+    (the pipe is a one-shot stream, not a seekable file)."""
     if not verify_playback_url(item_id, token):
         raise HTTPException(status_code=403, detail="invalid or expired token")
     item = db.query(PlaybackItem).filter_by(id=item_id).first()
@@ -471,6 +620,17 @@ def fetch_playback_file(
     path = Path(source.file_path)
     if not path.exists():
         raise HTTPException(status_code=410, detail="file missing on disk")
+
+    # Seek path — bypass Range/FileResponse and stream from ffmpeg.
+    if t is not None and t > 0:
+        return StreamingResponse(
+            _ffmpeg_seek_stream(str(path), t),
+            media_type="video/mp2t",
+            headers={
+                "Content-Disposition": f'inline; filename="{item.filename}"',
+                "Cache-Control": "private, no-store",
+            },
+        )
 
     file_size = path.stat().st_size
     media_type = source.mime_type or "video/mp4"

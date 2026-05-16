@@ -1289,4 +1289,16 @@ export const api = {
       `/api/v1/meetings/${meetingId}/playback:stop`,
       { method: "POST" },
     ),
+
+  /** Drag-to-seek the current item to `positionSeconds`. The server
+   *  restarts the ingress at the requested offset; participants see a
+   *  brief gap as the new ingress reconnects. */
+  seekPlayback: (meetingId: string, positionSeconds: number) =>
+    request<{ ok: boolean; ingress_id: string; position_seconds: number }>(
+      `/api/v1/meetings/${meetingId}/playback:seek`,
+      {
+        method: "POST",
+        body: JSON.stringify({ position_seconds: positionSeconds }),
+      },
+    ),
 };

@@ -307,9 +307,40 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
     }
   }
 
+  async function seekTo(positionSeconds: number) {
+    if (!pbState?.active || !durationSeconds) return;
+    const clamped = Math.max(0, Math.min(durationSeconds - 0.5, positionSeconds));
+    setBusy("play-seek");
+    setErr(null);
+    try {
+      await api.seekPlayback(meeting.id, clamped);
+      await refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function onProgressClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!pbState?.active || !durationSeconds) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    void seekTo(fraction * durationSeconds);
+  }
+
   const playing = !!pbState?.active;
   const currentId = pbState?.current_item_id ?? null;
   const hasItems = !!items && items.length > 0;
+  // Sum every item's duration — including aliases, since the server
+  // populates an alias's `duration_seconds` from its source row. NULLs
+  // (legacy items still pending lazy backfill) contribute 0; the footer
+  // surfaces this with a "—" suffix when any row is unknown.
+  const totalDurationSeconds = items
+    ? items.reduce((acc, it) => acc + (it.duration_seconds ?? 0), 0)
+    : 0;
+  const hasUnknownDuration = !!items && items.some((it) => it.duration_seconds == null);
 
   return (
     <aside
@@ -371,20 +402,39 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
           {pbState?.current_item_filename ?? <span className="text-slate-500">{t("playback.idle", { defaultValue: "Idle" })}</span>}
         </div>
 
-        {/* Progress bar — read-only for now. Real seek requires ffmpeg
-            in meeting-api; with LiveKit's URL_INPUT pull-ingest there
-            is no per-input seek API on the egress side. */}
+        {/* Click-to-seek bar — only active while something is playing
+            and the current item's duration is known. The server
+            restarts the ingress at the requested offset via
+            POST /playback:seek (ffmpeg stream-copies the source from
+            time T as MPEG-TS into the LiveKit ingress). */}
         <div className="space-y-1">
           <div
-            className="h-1.5 w-full rounded-full bg-primary-800 overflow-hidden"
-            role="progressbar"
-            aria-valuenow={Math.round(progressPct)}
+            className={[
+              "h-2 w-full rounded-full bg-primary-800 overflow-hidden",
+              playing && durationSeconds ? "cursor-pointer" : "cursor-default",
+            ].join(" ")}
+            role="slider"
+            tabIndex={playing && durationSeconds ? 0 : -1}
+            aria-valuenow={Math.round(playing ? elapsedSeconds : 0)}
             aria-valuemin={0}
-            aria-valuemax={100}
+            aria-valuemax={Math.round(durationSeconds ?? 0)}
             aria-label={t("playback.progress", { defaultValue: "Playback progress" })}
+            aria-disabled={!playing || !durationSeconds}
+            onClick={onProgressClick}
+            onKeyDown={(e) => {
+              if (!playing || !durationSeconds) return;
+              if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                void seekTo(elapsedSeconds - 5);
+              } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                void seekTo(elapsedSeconds + 5);
+              }
+            }}
+            data-testid="playback-progress"
           >
             <div
-              className="h-full bg-accent-500 transition-[width] duration-150"
+              className="h-full bg-accent-500 transition-[width] duration-150 pointer-events-none"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -601,6 +651,28 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
           </p>
         )}
       </div>
+
+      {hasItems && (
+        <div
+          className="px-4 py-2 border-t border-primary-700 flex items-center justify-between text-xs text-slate-400"
+          data-testid="playback-total-duration"
+        >
+          <span>{t("playback.totalDuration", { defaultValue: "Total duration" })}</span>
+          <span className="tabular-nums text-slate-200 font-medium">
+            {fmtTime(totalDurationSeconds)}
+            {hasUnknownDuration && (
+              <span
+                className="text-slate-500 ml-1"
+                title={t("playback.someDurationsPending", {
+                  defaultValue: "Some videos are still being measured",
+                })}
+              >
+                +
+              </span>
+            )}
+          </span>
+        </div>
+      )}
 
       {err && (
         <div className="px-3 py-2 text-xs text-red-400 border-t border-primary-700">{err}</div>
