@@ -78,14 +78,9 @@ async def start_recording(
     m = _require_owner(meeting_id, user.sub, db)
     if not m.is_active:
         raise HTTPException(status_code=403, detail="meeting closed")
-    if m.playback_ingress_id:
-        # See playback_mgr.start_playback comment — recording + ingress
-        # together saturates the 2-vCPU box. Livestreaming is allowed to
-        # coexist with playback (single egress slot, multiple destinations).
-        raise HTTPException(
-            status_code=409,
-            detail="video playback is running — stop playback before starting a recording",
-        )
+    # Recording + playback may run concurrently on the rescaled host.
+    # The composite egress simply picks up the playback participant as
+    # any other speaker; no extra wiring is needed here.
 
     layout: RecordingLayout = body.layout if body else "speaker"
     existing = db.query(Recording).filter_by(meeting_id=m.id, status="running").first()

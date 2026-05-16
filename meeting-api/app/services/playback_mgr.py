@@ -204,20 +204,11 @@ async def start_playback(m: Meeting, user_sub: str, db: Session) -> dict:
         raise HTTPException(status_code=400, detail="video playback not enabled for this meeting")
     if m.playback_ingress_id:
         raise HTTPException(status_code=409, detail="playback already in progress")
-    # Egress + ingress concurrency limit on the 2-vCPU host: recording
-    # (RoomCompositeEgress with file output) + ingress (URL_INPUT
-    # transcode) saturates CPU. Livestreaming is allowed (one egress slot
-    # shared across destinations). The user-facing rule: stop recording
-    # before starting video playback.
-    from app.models import Recording
-    running_rec = (
-        db.query(Recording).filter_by(meeting_id=m.id, status="running").first()
-    )
-    if running_rec:
-        raise HTTPException(
-            status_code=409,
-            detail="recording is active — stop recording before starting video playback",
-        )
+    # Recording + playback may run concurrently on the rescaled host
+    # (was mutually exclusive on the original 2-vCPU box). The recording
+    # egress composes the playback participant alongside other
+    # participants and writes both file_outputs and stream_outputs in
+    # one egress slot, same as before — only the host-side gate is gone.
     first = (
         db.query(PlaybackItem)
         .filter_by(meeting_id=m.id)
@@ -338,15 +329,7 @@ async def play_specific_item(
         raise HTTPException(status_code=403, detail="meeting closed")
     if not m.playback_enabled:
         raise HTTPException(status_code=400, detail="video playback not enabled for this meeting")
-    from app.models import Recording
-    running_rec = (
-        db.query(Recording).filter_by(meeting_id=m.id, status="running").first()
-    )
-    if running_rec:
-        raise HTTPException(
-            status_code=409,
-            detail="recording is active — stop recording before starting video playback",
-        )
+    # Recording + playback can run concurrently — see start_playback.
 
     was_playing = bool(m.playback_ingress_id)
     if was_playing:

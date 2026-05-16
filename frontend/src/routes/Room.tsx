@@ -520,7 +520,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
               <MicOff size={16} />
               <span className="hidden md:inline">{t("room.muteAll")}</span>
             </button>
-            {!recordingActive && !playbackActive && (
+            {!recordingActive && (
               <select
                 value={recordingLayout}
                 onChange={(e) =>
@@ -610,37 +610,35 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
                 </span>
               </button>
             )}
-            {/* Recording is mutually exclusive with video playback — see
-                the 2-vCPU CPU budget in playback_mgr.py. Hide the button
-                rather than fail-with-toast so the host can't accidentally
-                click it. Streaming stays available during playback. */}
-            {!playbackActive && (
-              <button
-                type="button"
-                onClick={toggleRecording}
-                data-testid="btn-record"
-                disabled={busy !== null}
-                aria-label={recordingActive ? t("room.stopRecording") : t("room.record")}
-                className={[
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
-                  recordingActive
-                    ? "bg-red-600 text-white hover:bg-red-700"
-                    : "bg-accent-500 text-white hover:bg-accent-600",
-                  "disabled:opacity-50",
-                ].join(" ")}
-              >
-                {recordingActive ? <CircleStopIcon size={16} /> : <Radio size={16} />}
-                <span className="hidden md:inline">
-                  {busy === "rec-start"
-                    ? t("room.starting")
-                    : busy === "rec-stop"
-                    ? t("room.stopping")
-                    : recordingActive
-                    ? t("room.stopRecording")
-                    : t("room.record")}
-                </span>
-              </button>
-            )}
+            {/* Recording stays available during video playback — the
+                composite egress picks up the playback participant the
+                same way it picks up any other speaker. Host server was
+                rescaled past the original 2-vCPU mutex budget. */}
+            <button
+              type="button"
+              onClick={toggleRecording}
+              data-testid="btn-record"
+              disabled={busy !== null}
+              aria-label={recordingActive ? t("room.stopRecording") : t("room.record")}
+              className={[
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
+                recordingActive
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-accent-500 text-white hover:bg-accent-600",
+                "disabled:opacity-50",
+              ].join(" ")}
+            >
+              {recordingActive ? <CircleStopIcon size={16} /> : <Radio size={16} />}
+              <span className="hidden md:inline">
+                {busy === "rec-start"
+                  ? t("room.starting")
+                  : busy === "rec-stop"
+                  ? t("room.stopping")
+                  : recordingActive
+                  ? t("room.stopRecording")
+                  : t("room.record")}
+              </span>
+            </button>
             <button
               type="button"
               onClick={endMeeting}
