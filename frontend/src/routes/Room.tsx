@@ -17,7 +17,6 @@ import {
   MessageSquare,
   MicOff,
   Radio,
-  Play,
   Film,
   FileText,
   Settings as SettingsIcon,
@@ -176,14 +175,12 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           };
           if (obj?.type === "playback-start" || obj?.type === "playback-next") {
             setPlaybackActive(true);
-            setPlaybackCurrentName(obj.filename ?? null);
             if (obj.type === "playback-start") {
               void room.localParticipant.setMicrophoneEnabled(false).catch(() => undefined);
               void room.localParticipant.setCameraEnabled(false).catch(() => undefined);
             }
           } else if (obj?.type === "playback-end") {
             setPlaybackActive(false);
-            setPlaybackCurrentName(null);
           }
         } catch {
           /* ignore malformed playback packet */
@@ -230,15 +227,14 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
   const [livestreamActive, setLivestreamActive] = useState(false);
   const [livestreamSettingsOpen, setLivestreamSettingsOpen] = useState(false);
   const [livestreamMeeting, setLivestreamMeeting] = useState<MeetingOut | null>(null);
-  // Video playback. `playbackEnabled` mirrors the meeting toggle; we also
-  // need the playlist length to decide whether to surface the Play button
-  // (Play is hidden until at least one item exists). `playbackActive`
-  // reflects whether a LiveKit ingress is currently publishing.
+  // Video playback. `playbackEnabled` mirrors the meeting toggle —
+  // when off, the Playlist toolbar button stays hidden. `playbackActive`
+  // is whether an ingress is currently publishing (drives a small
+  // pulsing indicator on the Playlist button itself; the side panel
+  // owns the now-playing highlight and progress bar).
   const [playbackEnabled, setPlaybackEnabled] = useState(false);
   const [playbackActive, setPlaybackActive] = useState(false);
-  const [playbackItemCount, setPlaybackItemCount] = useState(0);
   const [playbackPanelOpen, setPlaybackPanelOpen] = useState(false);
-  const [playbackCurrentName, setPlaybackCurrentName] = useState<string | null>(null);
   // "promoted" | "demoted" | null. When the owner toggles this user's
   // co-host status mid-session, the LiveKit token already in hand still
   // reflects the OLD role (room_admin grant either present or absent —
@@ -303,11 +299,17 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
         setLivestreamActive(!!mine.livestream_active);
         setPlaybackEnabled(!!mine.playback_enabled);
         setPlaybackActive(!!mine.playback_active);
-        try {
-          const items = await api.listPlaybackItems(meetingId);
-          if (!cancelled) setPlaybackItemCount(items.length);
-        } catch {
-          /* not fatal */
+        // Seed the layout dropdown from whatever the running (or last)
+        // egress was started with, so rejoining a meeting whose stream
+        // is on "single-speaker" doesn't reset the toolbar dropdown to
+        // "speaker" and tempt the host into restarting with a layout
+        // they didn't pick. NULL → keep the default "speaker".
+        if (mine.current_egress_layout && (
+          mine.current_egress_layout === "speaker" ||
+          mine.current_egress_layout === "grid" ||
+          mine.current_egress_layout === "single-speaker"
+        )) {
+          setRecordingLayout(mine.current_egress_layout);
         }
       } catch {
         /* surface as no button — keeps the toolbar usable */
@@ -333,24 +335,6 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
     }
   }
 
-  async function togglePlayback() {
-    if (!meetingId) return;
-    if (playbackActive) {
-      await withBusy("playback-stop", async () => {
-        await api.stopPlayback(meetingId);
-        setPlaybackActive(false);
-        setPlaybackCurrentName(null);
-      });
-    } else {
-      await withBusy("playback-start", async () => {
-        await api.startPlayback(meetingId);
-        // `playback-start` data-channel signal flips setPlaybackActive
-        // when it arrives — set it optimistically too so the button
-        // doesn't flicker between the Start request and the broadcast.
-        setPlaybackActive(true);
-      });
-    }
-  }
 
   // Mirror room.metadata.recording_active + streaming_active locally so
   // every moderator's toolbar reflects the live state. Without this the
@@ -553,45 +537,41 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
                 <option value="single-speaker">{t("room.recordLayoutSingle")}</option>
               </select>
             )}
-            {playbackEnabled && playbackItemCount > 0 && (
+            {/* Owner-only Playlist button — toggles the right-hand
+                side panel. The panel itself contains the
+                play/pause/stop controls and the click-to-play list,
+                so this is just an opener (no inline play action). The
+                small pulsing accent dot indicates a video is
+                currently playing so the host knows playback is live
+                even with the panel closed. */}
+            {isOwner && playbackEnabled && (
               <button
                 type="button"
-                onClick={togglePlayback}
-                data-testid="btn-playback"
-                disabled={busy !== null}
-                aria-label={
-                  playbackActive
-                    ? t("room.stopPlayback", { defaultValue: "Stop video playback" })
-                    : t("room.startPlayback", { defaultValue: "Play video" })
-                }
-                title={
-                  playbackActive
-                    ? t("room.stopPlaybackTitle", {
-                        defaultValue: "Stop the current video — all participants' mics/cams stay off",
-                      })
-                    : t("room.startPlaybackTitle", {
-                        defaultValue:
-                          "Play the playlist to everyone. Mics and cameras will be muted automatically.",
-                      })
-                }
+                onClick={() => setPlaybackPanelOpen((v) => !v)}
+                data-testid="btn-playlist"
+                aria-pressed={playbackPanelOpen ? "true" : "false"}
+                aria-label={t("room.playlist", { defaultValue: "Playlist" })}
+                title={t("room.playlistTitle", {
+                  defaultValue:
+                    "Open the video playlist (upload, reorder, play). All mics and cameras auto-mute while a video is playing.",
+                })}
                 className={[
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium",
-                  playbackActive
-                    ? "bg-red-600 text-white hover:bg-red-700"
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium relative",
+                  playbackPanelOpen
+                    ? "bg-primary-500 text-white"
                     : "bg-primary-700 text-slate-100 hover:bg-primary-600",
-                  "disabled:opacity-50",
                 ].join(" ")}
               >
-                {playbackActive ? <CircleStopIcon size={16} /> : <Play size={16} />}
+                <Film size={16} />
                 <span className="hidden md:inline">
-                  {busy === "playback-start"
-                    ? t("room.starting")
-                    : busy === "playback-stop"
-                    ? t("room.stopping")
-                    : playbackActive
-                    ? t("room.stopPlayback", { defaultValue: "Stop video playback" })
-                    : t("room.startPlayback", { defaultValue: "Play video" })}
+                  {t("room.playlist", { defaultValue: "Playlist" })}
                 </span>
+                {playbackActive && (
+                  <span
+                    aria-hidden
+                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-400 ring-2 ring-primary-900 animate-pulse"
+                  />
+                )}
               </button>
             )}
             {livestreamEnabled && (
@@ -848,14 +828,6 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
                 }
               : undefined
           }
-          onConfigurePlayback={
-            isOwner && livestreamMeeting
-              ? () => {
-                  setPlaybackPanelOpen(true);
-                  setSettingsOpen(false);
-                }
-              : undefined
-          }
         />
         <ParticipantsPanel
           open={participantsOpen}
@@ -891,6 +863,17 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           isOwner={isOwner}
           meetingId={meetingId}
         />
+        {isOwner && livestreamMeeting && (
+          <VideoPlaybackPanel
+            meeting={livestreamMeeting}
+            open={playbackPanelOpen}
+            onClose={() => setPlaybackPanelOpen(false)}
+            onMeetingUpdated={(updated) => {
+              setLivestreamMeeting(updated);
+              setPlaybackEnabled(!!updated.playback_enabled);
+            }}
+          />
+        )}
       </div>
 
       {/* BOTTOM CONTROL BAR — always reachable, full width below panels.
@@ -924,26 +907,6 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
               (d) => !!(updated as unknown as Record<string, unknown>)[d.fields.enabled],
             );
             setLivestreamEnabled(anyEnabled);
-          }}
-        />
-      )}
-
-      {/* VIDEO PLAYBACK PANEL */}
-      {isOwner && livestreamMeeting && (
-        <VideoPlaybackPanel
-          meeting={livestreamMeeting}
-          open={playbackPanelOpen}
-          onClose={() => setPlaybackPanelOpen(false)}
-          onMeetingUpdated={async (updated) => {
-            setLivestreamMeeting(updated);
-            setPlaybackEnabled(!!updated.playback_enabled);
-            // Item count may have changed via uploads/deletes; re-poll.
-            try {
-              const items = await api.listPlaybackItems(updated.id);
-              setPlaybackItemCount(items.length);
-            } catch {
-              /* not fatal */
-            }
           }}
         />
       )}
@@ -1005,23 +968,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
         </div>
       )}
 
-      {/* "Now playing" banner — visible to everyone while a video is on the
-          stage. Sits in the top toolbar's negative-margin area; uses a
-          left ribbon so it doesn't fight with the existing recording dot. */}
-      {playbackActive && (
-        <div
-          data-testid="playback-banner"
-          className="fixed top-2 left-1/2 -translate-x-1/2 z-40 px-3 py-1.5 rounded-full bg-accent-500/90 text-white text-xs font-medium shadow-lg inline-flex items-center gap-2 pointer-events-none"
-        >
-          <Film size={14} />
-          {playbackCurrentName
-            ? t("room.nowPlayingNamed", {
-                defaultValue: "Now playing: {{name}}",
-                name: playbackCurrentName,
-              })
-            : t("room.nowPlaying", { defaultValue: "Now playing" })}
-        </div>
-      )}
+      {/* "Now playing" toolbar pill removed — the Playlist side panel
+          highlights the currently-playing row instead, which the user
+          asked for. The pulsing dot on the toolbar Playlist button
+          (above) is the at-a-glance "video is playing" cue. */}
     </div>
   );
 }

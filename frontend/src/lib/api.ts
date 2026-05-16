@@ -100,6 +100,7 @@ export interface MeetingOut {
   livestream_rumble_rtmps_url?: string | null;
   livestream_rumble_stream_key?: string | null;
   livestream_active?: boolean;
+  current_egress_layout?: string | null;
   playback_enabled?: boolean;
   playback_loop?: boolean;
   playback_active?: boolean;
@@ -113,10 +114,21 @@ export interface PlaybackItemOut {
   file_size_bytes: number;
   mime_type: string;
   uploaded_at: string | null;
+  duration_seconds: number | null;
   // When non-null this row is an ALIAS: it has no file of its own and
   // resolves to the source row's file at playback time. file_size_bytes
   // is 0 on alias rows (the source's size is canonical).
   source_item_id: string | null;
+}
+
+export interface PlaybackStateOut {
+  enabled: boolean;
+  loop: boolean;
+  active: boolean;
+  current_item_id: string | null;
+  current_item_filename: string | null;
+  current_item_duration_seconds: number | null;
+  started_at: string | null;
 }
 
 export interface PublicMeeting {
@@ -1150,16 +1162,23 @@ export const api = {
     request<PlaybackItemOut[]>(`/api/v1/meetings/${meetingId}/playback/items`),
 
   /** Multipart upload of one MP4 to the meeting's playlist. Streamed
-   *  on the server so a 400 MB file doesn't sit in memory. */
+   *  on the server so a 400 MB file doesn't sit in memory. We also
+   *  probe the video's duration in the SPA via HTMLVideoElement and
+   *  send it as a form field so the playback panel can render a
+   *  progress bar without ffprobe on the server. */
   async uploadPlaybackItem(
     meetingId: string,
     file: File,
     displayName?: string,
+    durationSeconds?: number,
   ): Promise<PlaybackItemOut> {
     const tok = getAccessToken();
     const fd = new FormData();
     fd.append("file", file);
     if (displayName) fd.append("filename", displayName);
+    if (durationSeconds && Number.isFinite(durationSeconds) && durationSeconds > 0) {
+      fd.append("duration_seconds", String(durationSeconds));
+    }
     let res = await fetch(`/api/v1/meetings/${meetingId}/playback/items`, {
       method: "POST",
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
@@ -1251,6 +1270,19 @@ export const api = {
       `/api/v1/meetings/${meetingId}/playback:start`,
       { method: "POST" },
     ),
+
+  /** Jump to a specific item in the playlist — switches the source
+   *  without ending the playback session if one's already running. */
+  playPlaybackItem: (meetingId: string, itemId: string) =>
+    request<{ ok: boolean; ingress_id: string; item_id: string }>(
+      `/api/v1/meetings/${meetingId}/playback/items/${itemId}:play`,
+      { method: "POST" },
+    ),
+
+  /** Current playback state — polled by the side panel for the
+   *  progress bar and current-item highlight. */
+  playbackState: (meetingId: string) =>
+    request<PlaybackStateOut>(`/api/v1/meetings/${meetingId}/playback`),
 
   stopPlayback: (meetingId: string) =>
     request<{ ok: boolean; already_stopped?: boolean }>(

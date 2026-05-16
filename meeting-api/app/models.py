@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -129,6 +129,10 @@ class Meeting(Base):
     playback_loop: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     playback_ingress_id: Mapped[str | None] = mapped_column(String, nullable=True)
     playback_current_item_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # When the current ingress was started — frontend computes elapsed
+    # time from this for the playlist progress bar. NULL when no
+    # playback is running.
+    playback_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")
@@ -519,6 +523,10 @@ class PlaybackItem(Base):
     # MIME type captured at upload time — we cap to video/mp4 today but
     # storing the value keeps a path open for webm/ogv later.
     mime_type: Mapped[str] = mapped_column(String, nullable=False, default="video/mp4")
+    # Duration in seconds, populated by the SPA on upload via
+    # HTMLVideoElement.duration metadata. NULL for legacy items — the
+    # frontend renders an indeterminate progress bar in that case.
+    duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     __table_args__ = (

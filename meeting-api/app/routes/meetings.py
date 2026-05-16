@@ -186,6 +186,12 @@ class MeetingOut(BaseModel):
     # True while a livestream egress is active (fanning out to whichever
     # destinations are configured).
     livestream_active: bool = False
+    # The layout the running (or last) egress was started with — the SPA
+    # uses this to initialise the layout dropdown on rejoin so it
+    # matches what's actually playing instead of falling back to
+    # "speaker" and tempting the host to restart with a layout they
+    # didn't intend.
+    current_egress_layout: str | None = None
     playback_enabled: bool = False
     playback_loop: bool = False
     # True while a LiveKit ingress is publishing the current playlist item.
@@ -244,6 +250,7 @@ def _to_out(m: Meeting) -> MeetingOut:
         livestream_rumble_rtmps_url=m.livestream_rumble_rtmps_url,
         livestream_rumble_stream_key=m.livestream_rumble_stream_key,
         livestream_active=bool(m.livestream_egress_id),
+        current_egress_layout=m.current_egress_layout,
         playback_enabled=bool(m.playback_enabled),
         playback_loop=bool(m.playback_loop),
         playback_active=bool(m.playback_ingress_id),

@@ -72,6 +72,7 @@ def _to_out(item: PlaybackItem) -> dict:
         "id": item.id,
         "position": item.position,
         "filename": item.filename,
+        "duration_seconds": item.duration_seconds,
         "file_size_bytes": item.file_size_bytes,
         "mime_type": item.mime_type,
         "uploaded_at": item.uploaded_at.isoformat() if item.uploaded_at else None,
@@ -118,12 +119,15 @@ async def upload_playback_item(
     user: RequireUser,
     file: Annotated[UploadFile, File(...)],
     filename: Annotated[str | None, Form()] = None,
+    duration_seconds: Annotated[float | None, Form()] = None,
     db: Session = Depends(get_db),
 ) -> dict:
     """Multipart upload of one MP4. The host can override the displayed
     name via the optional `filename` form field — defaults to the
-    uploaded file's own name. Streamed to disk so a 400 MB file doesn't
-    sit in memory."""
+    uploaded file's own name. `duration_seconds` is set by the SPA
+    from `HTMLVideoElement.duration` before upload so the panel can
+    render a progress bar without ffprobe on the server. Streamed to
+    disk so a 400 MB file doesn't sit in memory."""
     m = _require_moderator(meeting_id, user.sub, db)
 
     if file.content_type and file.content_type not in _ALLOWED_CONTENT_TYPES:
@@ -164,6 +168,7 @@ async def upload_playback_item(
         file_path=str(dest),
         file_size_bytes=total,
         mime_type=file.content_type or "video/mp4",
+        duration_seconds=duration_seconds if (duration_seconds and duration_seconds > 0) else None,
     )
     db.add(item)
     db.commit()
@@ -320,6 +325,54 @@ def download_playback_item(
         filename=item.filename,
         headers={"Content-Disposition": f'attachment; filename="{item.filename}"'},
     )
+
+
+@router.post("/meetings/{meeting_id}/playback/items/{item_id}:play")
+async def play_specific_item_endpoint(
+    meeting_id: str,
+    item_id: str,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Click-to-play: jump to this playlist item now, skipping the
+    play-in-order behaviour. If nothing is playing, this starts
+    playback at the chosen item. If playback is already running, this
+    switches to the chosen item without ending the spotlight (other
+    participants stay muted, the playback participant stays pinned —
+    only the source video swaps). Alias rows resolve to source at
+    playback time via the existing fetch endpoint."""
+    from app.services.playback_mgr import play_specific_item
+    m = _require_moderator(meeting_id, user.sub, db)
+    item = db.query(PlaybackItem).filter_by(id=item_id, meeting_id=m.id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="item not found")
+    return await play_specific_item(m, item, user.sub, db)
+
+
+@router.get("/meetings/{meeting_id}/playback")
+def get_playback_state(
+    meeting_id: str,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Current playback state for the side-panel — polled while the
+    panel is open. Includes the item that's actively playing (if any),
+    when it started (so the SPA can compute elapsed time for the
+    progress bar), and the item's duration so the bar can be
+    proportional. Open to owner/co-host only."""
+    m = _require_moderator(meeting_id, user.sub, db)
+    cur_item: PlaybackItem | None = None
+    if m.playback_current_item_id:
+        cur_item = db.query(PlaybackItem).filter_by(id=m.playback_current_item_id).first()
+    return {
+        "enabled": bool(m.playback_enabled),
+        "loop": bool(m.playback_loop),
+        "active": bool(m.playback_ingress_id),
+        "current_item_id": m.playback_current_item_id,
+        "current_item_filename": cur_item.filename if cur_item else None,
+        "current_item_duration_seconds": cur_item.duration_seconds if cur_item else None,
+        "started_at": m.playback_started_at.isoformat() if m.playback_started_at else None,
+    }
 
 
 @router.post("/meetings/{meeting_id}/playback:start")

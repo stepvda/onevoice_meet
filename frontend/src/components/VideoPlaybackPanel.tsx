@@ -1,8 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, ArrowUp, Download, Film, Link2, Repeat, Trash2, Upload, X } from "lucide-react";
-import { api, MeetingOut, PlaybackItemOut } from "../lib/api";
-import { Button, Card, Toggle } from "./ui";
+import {
+  ArrowDown,
+  ArrowUp,
+  CircleStopIcon,
+  Download,
+  Film,
+  Link2,
+  Pause,
+  Play,
+  Repeat,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import { api, MeetingOut, PlaybackItemOut, PlaybackStateOut } from "../lib/api";
+import { Button, Toggle } from "./ui";
 
 interface Props {
   meeting: MeetingOut;
@@ -21,16 +34,67 @@ function fmtSize(b: number): string {
   return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
+function fmtTime(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return "—:—";
+  const total = Math.floor(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 /**
- * Per-meeting video playback configurator. Host uploads MP4s into the
- * playlist, optionally enables loop, and toggles the master "Video
- * playback" switch — that switch is what makes the Play/Stop button
- * appear in the meeting toolbar. Modal-style so we don't fight for
- * the side-drawer space with chat / participants / settings.
+ * Probe a chosen video file via a hidden HTMLVideoElement to read its
+ * duration. Resolves the duration in seconds, or `null` if the browser
+ * can't decode the metadata (e.g. exotic codec). Uses a 10-second
+ * timeout so a hung load doesn't block the upload.
+ */
+async function probeDuration(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    let settled = false;
+    const finish = (d: number | null) => {
+      if (settled) return;
+      settled = true;
+      try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+      resolve(d);
+    };
+    v.onloadedmetadata = () => {
+      const d = v.duration;
+      finish(Number.isFinite(d) && d > 0 ? d : null);
+    };
+    v.onerror = () => finish(null);
+    v.src = url;
+    window.setTimeout(() => finish(null), 10_000);
+  });
+}
+
+/**
+ * Playlist side drawer — same right-edge panel pattern as ChatPanel /
+ * ParticipantsPanel. Replaces the older modal. Holds:
+ *
+ *   - Enable + Loop toggles (gates the toolbar Playlist button entirely
+ *     and the playlist-wrap behaviour respectively).
+ *   - Now Playing controls: a Play / Pause / Stop trio plus a
+ *     read-only progress bar (computed from `playback_started_at`).
+ *   - The playlist itself: each row is clickable to jump to that
+ *     item; the currently-playing row is highlighted. The existing
+ *     per-row download / link / reorder / delete buttons stay where
+ *     they were.
+ *
+ * Note: Pause currently stops the ingress with no resume-from-position
+ * (true seek requires ffmpeg in meeting-api). Clicking Play again
+ * restarts the same item from the beginning. The slider is read-only
+ * for the same reason. Both are spelled out in the relevant comments
+ * below so future work can swap in real seek without rearchitecting.
  */
 export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUpdated }: Props) {
   const { t } = useTranslation();
   const [items, setItems] = useState<PlaybackItemOut[] | null>(null);
+  const [pbState, setPbState] = useState<PlaybackStateOut | null>(null);
   const [enabled, setEnabled] = useState(!!meeting.playback_enabled);
   const [loop, setLoop] = useState(!!meeting.playback_loop);
   const [busy, setBusy] = useState<string | null>(null);
@@ -39,13 +103,19 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
 
   const refresh = useCallback(async () => {
     try {
-      const list = await api.listPlaybackItems(meeting.id);
+      const [list, state] = await Promise.all([
+        api.listPlaybackItems(meeting.id),
+        api.playbackState(meeting.id).catch(() => null),
+      ]);
       setItems(list);
+      if (state) setPbState(state);
     } catch (e) {
       setErr((e as Error).message);
     }
   }, [meeting.id]);
 
+  // First load + re-seed when the panel opens (or the meeting changes
+  // — e.g. cohost promotion). The poller below keeps it fresh.
   useEffect(() => {
     if (!open) return;
     setEnabled(!!meeting.playback_enabled);
@@ -53,6 +123,40 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
     setErr(null);
     void refresh();
   }, [open, meeting, refresh]);
+
+  // Poll while open so the progress bar advances and the
+  // currently-playing highlight stays accurate when items advance
+  // via the auto-advance webhook.
+  useEffect(() => {
+    if (!open) return;
+    const id = window.setInterval(() => {
+      void api
+        .playbackState(meeting.id)
+        .then(setPbState)
+        .catch(() => undefined);
+    }, 1500);
+    return () => window.clearInterval(id);
+  }, [open, meeting.id]);
+
+  // Ticking elapsed time — derived from the server's `started_at`
+  // timestamp so multiple participants stay in sync. We tick locally
+  // every 250 ms to make the bar smooth without hammering the server.
+  const [tickNow, setTickNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!open || !pbState?.active) return;
+    const id = window.setInterval(() => setTickNow(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, [open, pbState?.active, pbState?.started_at]);
+  const elapsedSeconds = (() => {
+    if (!pbState?.started_at) return 0;
+    const t0 = new Date(pbState.started_at).getTime();
+    return Math.max(0, (tickNow - t0) / 1000);
+  })();
+  const durationSeconds = pbState?.current_item_duration_seconds ?? null;
+  const progressPct = (() => {
+    if (!durationSeconds) return 0;
+    return Math.max(0, Math.min(100, (elapsedSeconds / durationSeconds) * 100));
+  })();
 
   if (!open) return null;
 
@@ -95,7 +199,11 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
       }
       setBusy(`upload:${file.name}`);
       try {
-        await api.uploadPlaybackItem(meeting.id, file);
+        // Probe duration locally so the panel can render a progress
+        // bar after upload. Best-effort: if probing fails (codec,
+        // timeout) we still upload with null duration.
+        const dur = await probeDuration(file);
+        await api.uploadPlaybackItem(meeting.id, file, undefined, dur ?? undefined);
       } catch (e) {
         setErr((e as Error).message);
         break;
@@ -153,151 +261,280 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
     [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
     setItems(next.map((x, i) => ({ ...x, position: i })));
     try {
-      await api.reorderPlaybackItems(
-        meeting.id,
-        next.map((x) => x.id),
-      );
+      await api.reorderPlaybackItems(meeting.id, next.map((x) => x.id));
     } catch (e) {
       setErr((e as Error).message);
       await refresh();
     }
   }
 
+  async function playItem(item: PlaybackItemOut) {
+    setBusy(`play:${item.id}`);
+    setErr(null);
+    try {
+      await api.playPlaybackItem(meeting.id, item.id);
+      await refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function startFromBeginning() {
+    setBusy("play-start");
+    setErr(null);
+    try {
+      await api.startPlayback(meeting.id);
+      await refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function stop() {
+    setBusy("play-stop");
+    setErr(null);
+    try {
+      await api.stopPlayback(meeting.id);
+      await refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const playing = !!pbState?.active;
+  const currentId = pbState?.current_item_id ?? null;
+  const hasItems = !!items && items.length > 0;
+
   return (
-    <div
-      data-testid="playback-modal"
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm pt-10 px-4 pb-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("playback.title", { defaultValue: "Video playback" })}
+    <aside
+      data-testid="playback-panel"
+      className={[
+        // Same overlay/inline split as ChatPanel: overlays the stage on
+        // mobile, becomes a flex column on sm+.
+        "absolute inset-y-0 right-0 z-20 sm:static sm:z-auto",
+        "h-full w-full sm:w-96 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col",
+      ].join(" ")}
+      role="complementary"
+      aria-label={t("playback.title", { defaultValue: "Playlist" })}
     >
-      <Card className="w-full max-w-xl relative max-h-[88vh] overflow-y-auto">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-primary-700">
+        <h2 className="text-sm font-semibold text-slate-100 inline-flex items-center gap-2">
+          <Film size={14} className="text-accent-500" />
+          {t("playback.title", { defaultValue: "Playlist" })}
+          {items && <span className="text-slate-500 font-normal">({items.length})</span>}
+        </h2>
         <button
           type="button"
           onClick={onClose}
           aria-label={t("common.close", { defaultValue: "Close" })}
-          data-testid="playback-modal-close"
-          className="absolute top-3 right-3 p-1 rounded-md text-slate-300 hover:bg-primary-700"
+          data-testid="playback-close"
+          className="p-1 rounded hover:bg-primary-700 text-slate-300"
         >
           <X size={18} />
         </button>
-        <h2 className="text-lg font-semibold mb-1 flex items-center gap-2 text-slate-50">
-          <Film size={18} className="text-accent-500" />
-          {t("playback.title", { defaultValue: "Video playback" })}
-        </h2>
-        <p className="text-sm text-slate-400 mb-4">
-          {t("playback.subtitle", {
-            defaultValue:
-              "Upload MP4 files to play to everyone in the meeting. When playback starts, all participants' mics and cameras are muted automatically and everyone sees the same single video stream.",
-          })}
-        </p>
+      </header>
 
-        <div className="space-y-3">
-          <Toggle
-            id="playback-enabled"
-            label={t("playback.enable", { defaultValue: "Enable video playback for this meeting" })}
-            description={t("playback.enableDesc", {
-              defaultValue:
-                "When on, a Play / Stop button appears in the meeting toolbar (only once the playlist has at least one item). Playback never starts automatically — the host clicks Play.",
-            })}
-            checked={enabled}
-            onChange={toggleEnabled}
-          />
-          <Toggle
-            id="playback-loop"
-            label={
-              <span className="inline-flex items-center gap-1.5">
-                <Repeat size={14} />
-                {t("playback.loop", { defaultValue: "Loop the playlist" })}
-              </span>
-            }
-            description={t("playback.loopDesc", {
-              defaultValue: "When the last item finishes, restart from the first.",
-            })}
-            checked={loop}
-            onChange={toggleLoop}
-          />
+      <div className="px-4 py-3 border-b border-primary-700 space-y-2">
+        <Toggle
+          id="playback-enabled"
+          label={t("playback.enable", { defaultValue: "Enable video playback" })}
+          checked={enabled}
+          onChange={toggleEnabled}
+        />
+        <Toggle
+          id="playback-loop"
+          label={
+            <span className="inline-flex items-center gap-1.5">
+              <Repeat size={14} />
+              {t("playback.loop", { defaultValue: "Loop the playlist" })}
+            </span>
+          }
+          checked={loop}
+          onChange={toggleLoop}
+        />
+      </div>
+
+      {/* Now-playing / playback controls. Visible even when nothing is
+          actively playing — Play starts from the top, the bar is at
+          zero. Stop is disabled until something is running. */}
+      <div className="px-4 py-3 border-b border-primary-700 space-y-2">
+        <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">
+          {t("playback.nowPlaying", { defaultValue: "Now playing" })}
+        </div>
+        <div className="text-sm text-slate-200 truncate" title={pbState?.current_item_filename ?? undefined}>
+          {pbState?.current_item_filename ?? <span className="text-slate-500">{t("playback.idle", { defaultValue: "Idle" })}</span>}
         </div>
 
-        <div className="border-t border-primary-700 my-4" />
+        {/* Progress bar — read-only for now. Real seek requires ffmpeg
+            in meeting-api; with LiveKit's URL_INPUT pull-ingest there
+            is no per-input seek API on the egress side. */}
+        <div className="space-y-1">
+          <div
+            className="h-1.5 w-full rounded-full bg-primary-800 overflow-hidden"
+            role="progressbar"
+            aria-valuenow={Math.round(progressPct)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={t("playback.progress", { defaultValue: "Playback progress" })}
+          >
+            <div
+              className="h-full bg-accent-500 transition-[width] duration-150"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-slate-400 tabular-nums">
+            <span>{fmtTime(playing ? elapsedSeconds : 0)}</span>
+            <span>{fmtTime(durationSeconds)}</span>
+          </div>
+        </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-200">
-              {t("playback.playlistTitle", { defaultValue: "Playlist" })}
-              {items && <span className="text-slate-500 font-normal"> ({items.length})</span>}
-            </h3>
+        <div className="flex items-center gap-2 pt-1">
+          {playing ? (
+            // Server-side this calls stopPlayback. Labelled "Pause"
+            // because the UX is "stop the stream, want to resume" —
+            // restoring with seek is a follow-up.
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => fileInput.current?.click()}
+              onClick={stop}
               disabled={!!busy}
-              data-testid="playback-upload-btn"
+              data-testid="playback-pause"
             >
-              <Upload size={14} /> {t("playback.add", { defaultValue: "Add MP4" })}
+              <Pause size={14} /> {t("playback.pause", { defaultValue: "Pause" })}
             </Button>
-            <input
-              ref={fileInput}
-              type="file"
-              accept={ACCEPT}
-              multiple
-              className="hidden"
-              onChange={(e) => onPick(e.target.files)}
-              data-testid="playback-file-input"
-              aria-label={t("playback.add", { defaultValue: "Add MP4" })}
-            />
-          </div>
-
-          {items === null ? (
-            <p className="text-sm text-slate-400">{t("playback.loading", { defaultValue: "Loading…" })}</p>
-          ) : items.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              {t("playback.empty", {
-                defaultValue: "No videos yet. Add one or more MP4 files to build a playlist.",
-              })}
-            </p>
           ) : (
-            // Cap the list at ~half the viewport so the toggles + upload
-            // header stay visible above and the host can scroll long
-            // playlists independently. The outer Card scroll still acts
-            // as a safety net when the whole modal somehow grows past
-            // 88vh (e.g. tiny screens).
-            <ul className="flex flex-col divide-y divide-primary-700 max-h-[50vh] overflow-y-auto pr-1">
-              {items.map((it, i) => {
-                const isAlias = it.source_item_id !== null;
-                return (
+            <Button
+              type="button"
+              variant="accent"
+              size="sm"
+              onClick={startFromBeginning}
+              disabled={!!busy || !enabled || !hasItems}
+              data-testid="playback-play"
+              title={
+                !enabled
+                  ? t("playback.disabledHint", { defaultValue: "Enable video playback first" })
+                  : !hasItems
+                  ? t("playback.emptyHint", { defaultValue: "Add a video first" })
+                  : undefined
+              }
+            >
+              <Play size={14} /> {t("playback.play", { defaultValue: "Play" })}
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={stop}
+            disabled={!!busy || !playing}
+            data-testid="playback-stop"
+          >
+            <CircleStopIcon size={14} /> {t("playback.stop", { defaultValue: "Stop" })}
+          </Button>
+        </div>
+      </div>
+
+      {/* Playlist scroller — flex-1 so it claims the remaining height
+          and scrolls independently of the toggles + controls above. */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 py-2">
+        <div className="flex items-center justify-between px-2 pb-2">
+          <span className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">
+            {t("playback.playlistTitle", { defaultValue: "Playlist" })}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => fileInput.current?.click()}
+            disabled={!!busy}
+            data-testid="playback-upload-btn"
+          >
+            <Upload size={14} /> {t("playback.add", { defaultValue: "Add MP4" })}
+          </Button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept={ACCEPT}
+            multiple
+            className="hidden"
+            onChange={(e) => onPick(e.target.files)}
+            data-testid="playback-file-input"
+            aria-label={t("playback.add", { defaultValue: "Add MP4" })}
+          />
+        </div>
+
+        {items === null ? (
+          <p className="text-sm text-slate-400 px-2">{t("playback.loading", { defaultValue: "Loading…" })}</p>
+        ) : items.length === 0 ? (
+          <p className="text-sm text-slate-500 px-2">
+            {t("playback.empty", { defaultValue: "No videos yet. Add one or more MP4 files to build a playlist." })}
+          </p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-primary-700">
+            {items.map((it, i) => {
+              const isAlias = it.source_item_id !== null;
+              const isCurrent = currentId === it.id;
+              return (
                 <li
                   key={it.id}
                   data-testid={`playback-item-${it.id}`}
-                  className="py-2.5 flex items-center gap-3 first:pt-0 last:pb-0"
+                  data-current={isCurrent ? "true" : "false"}
+                  className={[
+                    "py-2 px-2 flex items-center gap-2 first:pt-1 last:pb-1",
+                    // Bright accent highlight on the currently-playing
+                    // row — replaces the old "Now playing: <file>" pill
+                    // in the toolbar, which the user explicitly asked
+                    // to remove now that this is visible.
+                    isCurrent
+                      ? "bg-accent-500/20 border-l-2 border-accent-500"
+                      : "hover:bg-primary-800/60 border-l-2 border-transparent",
+                  ].join(" ")}
                 >
-                  <span className="text-xs text-slate-500 w-5 text-right">{i + 1}.</span>
-                  <div className="flex-1 min-w-0">
+                  <span className="text-xs text-slate-500 w-5 text-right flex-shrink-0">{i + 1}.</span>
+                  {/* Click-to-play: pressing the title area starts (or
+                      switches to) this item. We don't make the whole
+                      <li> clickable so the per-row buttons keep their
+                      individual click targets. */}
+                  <button
+                    type="button"
+                    onClick={() => playItem(it)}
+                    disabled={!!busy || !enabled}
+                    title={
+                      !enabled
+                        ? t("playback.disabledHint", { defaultValue: "Enable video playback first" })
+                        : isCurrent
+                        ? t("playback.alreadyPlaying", { defaultValue: "Already playing" })
+                        : t("playback.playThisItem", { defaultValue: "Play this item" })
+                    }
+                    data-testid={`playback-play-item-${it.id}`}
+                    className="flex-1 min-w-0 text-left disabled:cursor-default disabled:opacity-70"
+                  >
                     <div
                       className={[
                         "text-sm truncate flex items-center gap-1.5",
                         isAlias ? "text-slate-300 italic" : "text-slate-100",
+                        isCurrent ? "font-semibold" : "",
                       ].join(" ")}
-                      title={
-                        isAlias
-                          ? t("playback.aliasTitle", {
-                              defaultValue: "Link to another video in this playlist",
-                            })
-                          : it.filename
-                      }
                     >
-                      {isAlias && (
-                        <Link2 size={12} className="text-accent-500 flex-shrink-0" aria-hidden />
+                      {isAlias && <Link2 size={12} className="text-accent-500 flex-shrink-0" aria-hidden />}
+                      {isCurrent && (
+                        <Play size={12} className="text-accent-500 flex-shrink-0 animate-pulse" aria-hidden />
                       )}
                       <span className="truncate">{it.filename}</span>
                     </div>
                     <div className="text-xs text-slate-500">
                       {isAlias
                         ? t("playback.aliasLabel", { defaultValue: "Link" })
-                        : fmtSize(it.file_size_bytes)}
+                        : `${fmtTime(it.duration_seconds)} · ${fmtSize(it.file_size_bytes)}`}
                     </div>
-                  </div>
+                  </button>
                   <button
                     type="button"
                     onClick={() => downloadItem(it)}
@@ -341,10 +578,10 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                   <button
                     type="button"
                     onClick={() => deleteItem(it)}
-                    disabled={!!busy || meeting.playback_current_item_id === it.id}
+                    disabled={!!busy || isCurrent}
                     aria-label={t("playback.delete", { defaultValue: "Delete" })}
                     title={
-                      meeting.playback_current_item_id === it.id
+                      isCurrent
                         ? t("playback.cantDeleteCurrent", { defaultValue: "Currently playing — stop first" })
                         : undefined
                     }
@@ -353,19 +590,21 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                     <Trash2 size={14} />
                   </button>
                 </li>
-                );
-              })}
-            </ul>
-          )}
+              );
+            })}
+          </ul>
+        )}
 
-          {busy?.startsWith("upload:") && (
-            <p className="text-xs text-slate-400" data-testid="playback-uploading">
-              {t("playback.uploading", { defaultValue: "Uploading…" })}
-            </p>
-          )}
-          {err && <div className="text-red-400 text-sm">{err}</div>}
-        </div>
-      </Card>
-    </div>
+        {busy?.startsWith("upload:") && (
+          <p className="text-xs text-slate-400 px-2 pt-2" data-testid="playback-uploading">
+            {t("playback.uploading", { defaultValue: "Uploading…" })}
+          </p>
+        )}
+      </div>
+
+      {err && (
+        <div className="px-3 py-2 text-xs text-red-400 border-t border-primary-700">{err}</div>
+      )}
+    </aside>
   );
 }

@@ -164,8 +164,13 @@ async def _start_ingress_for_item(
     finally:
         await lk.aclose()
 
+    from datetime import datetime, timezone
     m.playback_ingress_id = ingress.ingress_id
     m.playback_current_item_id = item.id
+    # Stamp the start time so the SPA can compute elapsed playback for
+    # the progress bar (`elapsed = now - playback_started_at`). Updated
+    # on every item switch — each item starts at 0:00 on the bar.
+    m.playback_started_at = datetime.now(timezone.utc)
     db.commit()
 
     await _broadcast(
@@ -240,6 +245,7 @@ async def stop_playback(m: Meeting, user_sub: str, db: Session) -> dict:
 
     m.playback_ingress_id = None
     m.playback_current_item_id = None
+    m.playback_started_at = None
     db.commit()
 
     await _broadcast(m.room_name, "playback-end", {})
@@ -293,8 +299,68 @@ async def advance_after_ingress_ended(
         # No next item and not looping — end the playback cleanly.
         m.playback_ingress_id = None
         m.playback_current_item_id = None
+        m.playback_started_at = None
         db.commit()
         await _broadcast(m.room_name, "playback-end", {})
         return None
 
     return await _start_ingress_for_item(m, next_item, db, initial=False)
+
+
+async def play_specific_item(
+    m: Meeting,
+    item: PlaybackItem,
+    user_sub: str,
+    db: Session,
+) -> dict:
+    """Click-to-play: switch the currently-playing item (or start
+    playback if nothing's playing) to the chosen one. Implementation
+    mirrors `advance_after_ingress_ended` — stop the running ingress
+    (if any), then start a fresh one for `item`. The "initial" flag
+    is True only when nothing was playing — that's the case where we
+    need the global mute-all + playback-start broadcast."""
+    if not m.is_active:
+        raise HTTPException(status_code=403, detail="meeting closed")
+    if not m.playback_enabled:
+        raise HTTPException(status_code=400, detail="video playback not enabled for this meeting")
+    from app.models import Recording
+    running_rec = (
+        db.query(Recording).filter_by(meeting_id=m.id, status="running").first()
+    )
+    if running_rec:
+        raise HTTPException(
+            status_code=409,
+            detail="recording is active — stop recording before starting video playback",
+        )
+
+    was_playing = bool(m.playback_ingress_id)
+    if was_playing:
+        # Stop the current ingress before starting the new one. We do
+        # this directly (rather than via stop_playback) because we
+        # don't want to broadcast "playback-end" — the SPA would close
+        # its spotlight; we want a seamless item-switch instead.
+        old_ingress_id = m.playback_ingress_id
+        lk = livekit_api()
+        try:
+            try:
+                await lk.ingress.delete_ingress(api.DeleteIngressRequest(ingress_id=old_ingress_id))
+            except Exception:
+                log.exception("playback: delete_ingress failed for %s on item switch", old_ingress_id)
+        finally:
+            await lk.aclose()
+        m.playback_ingress_id = None
+        m.playback_current_item_id = None
+        m.playback_started_at = None
+        db.commit()
+
+    ingress_id = await _start_ingress_for_item(m, item, db, initial=not was_playing)
+    db.add(
+        ModerationAudit(
+            meeting_id=m.id,
+            actor_user_id=user_sub,
+            action="playback_play_item",
+            details=f"{item.id}:{ingress_id}",
+        )
+    )
+    db.commit()
+    return {"ok": True, "ingress_id": ingress_id, "item_id": item.id}

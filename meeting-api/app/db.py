@@ -95,6 +95,9 @@ def lightweight_migrate() -> None:
                 ("playback_loop", "ALTER TABLE meetings ADD COLUMN playback_loop BOOLEAN DEFAULT 0 NOT NULL"),
                 ("playback_ingress_id", "ALTER TABLE meetings ADD COLUMN playback_ingress_id TEXT"),
                 ("playback_current_item_id", "ALTER TABLE meetings ADD COLUMN playback_current_item_id TEXT"),
+                # Tracks when the active ingress started so the SPA can
+                # compute elapsed time for the progress bar.
+                ("playback_started_at", "ALTER TABLE meetings ADD COLUMN playback_started_at TIMESTAMP"),
             )),
             ("chat_messages", (
                 ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),
@@ -127,6 +130,9 @@ def lightweight_migrate() -> None:
                 # TABLE can't add a FOREIGN KEY constraint to an existing
                 # table, but the model annotates it and we never join-check.
                 ("source_item_id", "ALTER TABLE playback_items ADD COLUMN source_item_id TEXT"),
+                # Duration in seconds — populated by the SPA on upload via
+                # HTMLVideoElement.duration. NULL for legacy items.
+                ("duration_seconds", "ALTER TABLE playback_items ADD COLUMN duration_seconds REAL"),
             )),
             ("users", (
                 ("totp_secret", "ALTER TABLE users ADD COLUMN totp_secret TEXT"),

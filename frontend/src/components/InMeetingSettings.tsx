@@ -6,7 +6,6 @@ import {
   Wifi,
   Palette,
   Radio,
-  Film,
   X,
 } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
@@ -26,7 +25,6 @@ interface Props {
   onConfigureLivestream?: () => void;
   // Owner-only entry to open the VideoPlaybackPanel. Same gating rules as
   // livestream: hidden for non-owners, hidden when undefined.
-  onConfigurePlayback?: () => void;
 }
 
 /**
@@ -38,7 +36,7 @@ interface Props {
  * Writes go straight into the same `meet-preferences-v1` zustand store as
  * the full Settings page; persistence is automatic.
  */
-export default function InMeetingSettings({ open, onClose, onConfigureLivestream, onConfigurePlayback }: Props) {
+export default function InMeetingSettings({ open, onClose, onConfigureLivestream }: Props) {
   const { t } = useTranslation();
   const prefs = usePreferences();
 
@@ -261,24 +259,6 @@ export default function InMeetingSettings({ open, onClose, onConfigureLivestream
           </Group>
         )}
 
-        {onConfigurePlayback && (
-          <Group icon={<Film size={14} />} title={t("inMeetingSettings.groupPlayback", { defaultValue: "Video playback" })}>
-            <p className="text-xs text-slate-400">
-              {t("inMeetingSettings.playbackHint", {
-                defaultValue:
-                  "Upload MP4 files into a playlist and play them to every participant as a single stream. While playing, all mics and cameras auto-mute.",
-              })}
-            </p>
-            <button
-              type="button"
-              onClick={onConfigurePlayback}
-              data-testid="im-playback-configure"
-              className="text-left text-sm px-3 py-1.5 rounded-md bg-primary-800 hover:bg-primary-700 text-slate-100 border border-primary-700"
-            >
-              {t("inMeetingSettings.playbackConfigure", { defaultValue: "Video playback…" })}
-            </button>
-          </Group>
-        )}
 
         <p className="text-xs text-slate-500 pt-1">
           <Trans
