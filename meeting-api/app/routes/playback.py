@@ -14,7 +14,7 @@ Authorization model:
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
@@ -486,6 +486,18 @@ def get_playback_state(
     cur_item: PlaybackItem | None = None
     if m.playback_current_item_id:
         cur_item = db.query(PlaybackItem).filter_by(id=m.playback_current_item_id).first()
+    # SQLite drops tzinfo on round-trip even though the column is declared
+    # `DateTime(timezone=True)`. The stored wall-clock IS UTC (every write
+    # site uses `datetime.now(timezone.utc)`); reattach UTC tzinfo so the
+    # ISO string carries `+00:00` and the SPA's `new Date(...)` doesn't
+    # silently interpret it as local time (which would shift elapsed
+    # by the browser's UTC offset — e.g. +2h in Brussels DST).
+    started_at_iso: str | None = None
+    if m.playback_started_at is not None:
+        sa = m.playback_started_at
+        if sa.tzinfo is None:
+            sa = sa.replace(tzinfo=timezone.utc)
+        started_at_iso = sa.isoformat()
     return {
         "enabled": bool(m.playback_enabled),
         "loop": bool(m.playback_loop),
@@ -493,7 +505,7 @@ def get_playback_state(
         "current_item_id": m.playback_current_item_id,
         "current_item_filename": cur_item.filename if cur_item else None,
         "current_item_duration_seconds": cur_item.duration_seconds if cur_item else None,
-        "started_at": m.playback_started_at.isoformat() if m.playback_started_at else None,
+        "started_at": started_at_iso,
     }
 
 
