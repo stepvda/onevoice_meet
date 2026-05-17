@@ -11,7 +11,11 @@ from ulid import ULID
 from app.auth import OptionalUser
 from app.config import settings
 from app.db import get_db
-from app.livekit_client import mint_participant_token, short_lived_turn_credentials
+from app.livekit_client import (
+    mint_participant_token,
+    mint_viewer_token,
+    short_lived_turn_credentials,
+)
 from app.models import Meeting, MeetingFeedback, MeetingParticipant
 from app.routes.waiting_room import enqueue_pending
 
@@ -61,6 +65,18 @@ def anon_token(
         raise HTTPException(status_code=404, detail="room not found")
     if not m.is_active:
         raise HTTPException(status_code=403, detail="meeting closed")
+
+    # Visibility gates joining, not just discoverability. A meeting with
+    # `list_for_anonymous=False` is "Private" (no listing AND no
+    # anonymous joins) — anonymous users with the URL get refused here.
+    # Authenticated users still go through (they can be invited / be on
+    # the cohost list); owners use a separate `/meetings/{id}/token`
+    # endpoint and bypass this path entirely.
+    if auth_user is None and not m.list_for_anonymous:
+        raise HTTPException(
+            status_code=403,
+            detail="this meeting is not open to anonymous joiners",
+        )
 
     if m.require_password:
         if not body.password or not m.password_hash or not argon2.verify(body.password, m.password_hash):
@@ -161,6 +177,87 @@ def anon_token(
             "allow_screenshare": bool(m.allow_participant_screenshare),
             "allow_chat": bool(m.allow_participant_chat),
         },
+    }
+
+
+def _branding_url_for(m: Meeting) -> str | None:
+    if not m.branding_image_path:
+        return None
+    return f"{settings.public_url}/api/v1/rooms/{m.room_name}/branding"
+
+
+@router.get("/public-room/{public_slug}")
+def public_room_info(public_slug: str, db: Session = Depends(get_db)) -> dict:
+    """Public lookup for the /public/<slug> page. No auth. Returns 404 when
+    the slug doesn't match an active, public-enabled meeting so an invalid
+    URL doesn't leak whether a slug used to exist."""
+    slug = (public_slug or "").strip().lower()
+    if not slug:
+        raise HTTPException(status_code=404, detail="public stream not found")
+    m = (
+        db.query(Meeting)
+        .filter(Meeting.public_slug == slug)
+        .filter(Meeting.public_enabled.is_(True))
+        .filter(Meeting.is_active.is_(True))
+        .first()
+    )
+    if not m:
+        raise HTTPException(status_code=404, detail="public stream not found")
+    return {
+        "room_name": m.room_name,
+        "display_title": m.display_title,
+        "owner_name": m.owner_name,
+        "branding_url": _branding_url_for(m),
+        "public_slug": m.public_slug,
+    }
+
+
+class ViewerTokenBody(BaseModel):
+    display_name: str = Field(default="Viewer", max_length=80)
+
+
+@router.post("/public-room/{public_slug}/viewer-token")
+def public_viewer_token(
+    public_slug: str,
+    body: ViewerTokenBody,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Mint a subscribe-only LiveKit token for the public viewer page.
+
+    The token has `hidden=True` so the viewer doesn't show up in the
+    meeting's participant panel and doesn't count against
+    `max_participants`. They can't publish audio, video, or data; they
+    only subscribe to the existing participants' tracks.
+    """
+    client_ip = request.client.host if request.client else "unknown"
+    _rate_limit(client_ip)
+    slug = (public_slug or "").strip().lower()
+    if not slug:
+        raise HTTPException(status_code=404, detail="public stream not found")
+    m = (
+        db.query(Meeting)
+        .filter(Meeting.public_slug == slug)
+        .filter(Meeting.public_enabled.is_(True))
+        .filter(Meeting.is_active.is_(True))
+        .first()
+    )
+    if not m:
+        raise HTTPException(status_code=404, detail="public stream not found")
+    identity = f"viewer-{ULID()}"
+    display_name = (body.display_name or "Viewer").strip() or "Viewer"
+    token = mint_viewer_token(
+        room_name=m.room_name,
+        identity=identity,
+        display_name=display_name,
+    )
+    return {
+        "livekit_url": settings.livekit_ws_url,
+        "token": token,
+        "room_name": m.room_name,
+        "ice_servers": short_lived_turn_credentials(identity),
+        "display_title": m.display_title,
+        "branding_url": _branding_url_for(m),
     }
 
 

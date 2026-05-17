@@ -57,6 +57,41 @@ def mint_participant_token(
     return tok.to_jwt()
 
 
+def mint_viewer_token(
+    *,
+    room_name: str,
+    identity: str,
+    display_name: str,
+    ttl_hours: int = 6,
+) -> str:
+    """Subscribe-only token for the public-page viewer.
+
+    `hidden=True` keeps the viewer out of the in-meeting participant panel
+    and they don't count against `max_participants`. They can subscribe to
+    audio + video tracks but cannot publish anything (no mic, no camera,
+    no data channel, no screenshare). Used for the unlimited-viewer
+    /public/<slug> page.
+    """
+    grants = api.VideoGrants(
+        room_join=True,
+        room=room_name,
+        can_publish=False,
+        can_publish_data=False,
+        can_subscribe=True,
+        can_update_own_metadata=False,
+        room_admin=False,
+        hidden=True,
+    )
+    return (
+        _token()
+        .with_identity(identity)
+        .with_name(display_name)
+        .with_grants(grants)
+        .with_ttl(timedelta(hours=ttl_hours))
+        .to_jwt()
+    )
+
+
 def livekit_api() -> "api.LiveKitAPI":
     """
     Returns an async LiveKit server-API client. Intended for phase 7+ when

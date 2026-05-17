@@ -24,6 +24,7 @@ from app.routes.ti_cafe import (
     mark_left as ticafe_mark_left,
 )
 from app.livekit_client import livekit_api
+from app.services.playback_mgr import PLAYBACK_IDENTITY
 
 router = APIRouter(prefix="/v1")
 
@@ -166,6 +167,34 @@ def _update_destination_states(db, info, etype: str) -> None:
         db.commit()
 
 
+async def _mute_track_for_playback(room_name: str, identity: str, track_sid: str) -> None:
+    """Server-mute a freshly-published track when video playback is active.
+
+    Without this, a real user who joins AFTER playback started will publish
+    their mic / camera and the LiveKit `single-speaker` egress template
+    will swap the recording / livestream composite away from the playback
+    participant to whoever just joined. Mirrors the bulk mute applied at
+    playback start (`_mute_all_other_participants`) for late joiners.
+    Best-effort: a failure here just risks a brief layout flicker.
+    """
+    lk = livekit_api()
+    try:
+        await lk.room.mute_published_track(
+            api.MuteRoomTrackRequest(
+                room=room_name, identity=identity, track_sid=track_sid, muted=True
+            )
+        )
+    except Exception:
+        log.exception(
+            "playback: failed to mute new track %s on %s in %s",
+            track_sid,
+            identity,
+            room_name,
+        )
+    finally:
+        await lk.aclose()
+
+
 async def _clear_recording_metadata(room_name: str) -> None:
     """Flip the `recording_active` / `streaming_active` flags back to False
     on the LiveKit room metadata when an egress ends outside our normal
@@ -238,6 +267,27 @@ async def livekit_webhook(
                     db.commit()
                 except IntegrityError:
                     db.rollback()
+
+    elif etype == "track_published" and event.participant and event.room and event.track:
+        # If video playback is active in this meeting, immediately
+        # server-mute the freshly-published track so the playback
+        # participant remains the sole speaker. Skip the playback
+        # ingress itself and any non-standard participants (other
+        # ingresses, egress workers, agents) so we never accidentally
+        # silence the playback feed or some future workload.
+        m = db.query(Meeting).filter_by(room_name=event.room.name).first()
+        if (
+            m
+            and m.playback_ingress_id
+            and event.participant.identity != PLAYBACK_IDENTITY
+            and getattr(event.participant, "kind", None) == api.ParticipantInfo.Kind.STANDARD
+        ):
+            background.add_task(
+                _mute_track_for_playback,
+                event.room.name,
+                event.participant.identity,
+                event.track.sid,
+            )
 
     elif etype == "participant_left" and event.participant and event.room:
         if is_ti_cafe_room(event.room.name):

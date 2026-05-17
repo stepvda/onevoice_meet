@@ -48,6 +48,13 @@ class Meeting(Base):
     # public landing page (implies authenticated visibility too).
     list_for_authenticated: Mapped[bool] = mapped_column(Boolean, default=False)
     list_for_anonymous: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Public view-only stream. When `public_enabled` is True, anyone hitting
+    # /public/<public_slug> can subscribe as a hidden LiveKit viewer (no
+    # publish, not in the participant panel, unlimited count). The slug is
+    # unique across all meetings; the owner picks it from the in-meeting
+    # settings panel.
+    public_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    public_slug: Mapped[str | None] = mapped_column(String(80), unique=True, index=True, nullable=True)
     # ── Moderation policy (set at meeting creation from owner's prefs) ───
     # `waiting_room_enabled` and `auto_admit_authenticated` are stored but
     # not yet enforced server-side — the waiting-room workflow is a separate

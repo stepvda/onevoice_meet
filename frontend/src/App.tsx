@@ -7,6 +7,7 @@ import Sidebar, { MainArea } from "./components/Sidebar";
 // the routes the user actually visits get fetched.
 const Lobby = lazy(() => import("./routes/Lobby"));
 const Room = lazy(() => import("./routes/Room"));
+const PublicView = lazy(() => import("./routes/PublicView"));
 const CreateMeeting = lazy(() => import("./routes/CreateMeeting"));
 const Recordings = lazy(() => import("./routes/Recordings"));
 const Settings = lazy(() => import("./routes/Settings"));
@@ -84,6 +85,9 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/sso-callback" element={<SsoCallback />} />
           <Route path="/meetings/:meetingId/chat" element={<MeetingChat />} />
+          {/* Public view-only stream. Anyone can open this URL — no auth,
+              no publish rights, no participant-panel presence. */}
+          <Route path="/public/:publicSlug" element={<PublicView />} />
           {/* Live meeting view */}
           <Route path="/r/:roomName" element={<Room />} />
           {/* Backward-compat: old links in the wild are /j/<slug> */}

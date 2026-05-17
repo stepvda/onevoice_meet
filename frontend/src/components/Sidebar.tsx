@@ -63,9 +63,10 @@ export default function Sidebar() {
   // stale state.
   const signedIn = isAuthenticated();
   const { me } = useMe();
-  // Hide sidebar entirely while the user is in a live meeting (the only
-  // route where the rest of this component shouldn't render).
-  if (pathname.startsWith("/r/")) return null;
+  // Hide sidebar entirely while the user is in a live meeting or watching
+  // a public view-only stream — both are full-viewport surfaces with no
+  // room for the nav rail.
+  if (pathname.startsWith("/r/") || pathname.startsWith("/public/")) return null;
 
   // SSO accounts manage profile + facepic on one.witysk.org and always have
   // admin rights, so /account and /upgrade aren't useful — hide them. Native
@@ -266,8 +267,9 @@ export default function Sidebar() {
 
 export function MainArea({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
-  const inMeeting = pathname.startsWith("/r/");
-  if (inMeeting) {
+  const fullScreen =
+    pathname.startsWith("/r/") || pathname.startsWith("/public/");
+  if (fullScreen) {
     return <main className="h-dvh w-screen">{children}</main>;
   }
   // flex-col so the footer sticks to the bottom even on short pages.

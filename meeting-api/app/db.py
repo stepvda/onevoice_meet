@@ -102,6 +102,8 @@ def lightweight_migrate() -> None:
                 # forced it to "single-speaker". Restored when playback
                 # ends so the host's chosen recording layout sticks.
                 ("layout_before_playback", "ALTER TABLE meetings ADD COLUMN layout_before_playback TEXT"),
+                ("public_enabled", "ALTER TABLE meetings ADD COLUMN public_enabled BOOLEAN DEFAULT 0 NOT NULL"),
+                ("public_slug", "ALTER TABLE meetings ADD COLUMN public_slug TEXT"),
             )),
             ("chat_messages", (
                 ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),
@@ -176,6 +178,10 @@ def lightweight_migrate() -> None:
             # on every LiveKit egress event.
             "CREATE INDEX IF NOT EXISTS ix_meetings_livestream_egress "
             "ON meetings (livestream_egress_id)",
+            # Public-page slug must be globally unique; lookup is hot on
+            # the /public/<slug> endpoints (info + viewer-token).
+            "CREATE UNIQUE INDEX IF NOT EXISTS ux_meetings_public_slug "
+            "ON meetings (public_slug) WHERE public_slug IS NOT NULL",
         ):
             try:
                 conn.exec_driver_sql(ddl)

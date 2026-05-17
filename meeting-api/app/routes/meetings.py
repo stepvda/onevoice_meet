@@ -61,6 +61,33 @@ def _anonymise_email(email: str | None) -> str | None:
         return f"***@{domain}"
     return f"{local[0]}***@{domain}"
 
+
+import re
+
+# Slug for the /public/<slug> page. Lowercase letters, digits and dashes
+# only, must start with a letter or digit, 3–60 chars. Keep the alphabet
+# restrictive so it stays URL-safe without encoding and so we can compare
+# case-insensitively to detect duplicates.
+_PUBLIC_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,58}[a-z0-9]$")
+
+
+def _normalise_public_slug(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+    v = raw.strip().lower()
+    if not v:
+        return None
+    if not _PUBLIC_SLUG_RE.match(v):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "public_slug must be 3–60 characters, lowercase letters / "
+                "digits / dashes, and start and end with a letter or digit"
+            ),
+        )
+    return v
+
+
 router = APIRouter(prefix="/v1")
 
 
@@ -136,6 +163,11 @@ class UpdateMeetingBody(BaseModel):
     livestream_rumble_stream_key: str | None = Field(default=None, max_length=500)
     playback_enabled: bool | None = None
     playback_loop: bool | None = None
+    # Public view-only page. Enabling requires a slug to be set (either in
+    # the same PATCH or previously). Slug is normalised to lowercase and
+    # checked for uniqueness across all meetings.
+    public_enabled: bool | None = None
+    public_slug: str | None = Field(default=None, max_length=80)
 
 
 class MeetingOut(BaseModel):
@@ -197,6 +229,10 @@ class MeetingOut(BaseModel):
     # True while a LiveKit ingress is publishing the current playlist item.
     playback_active: bool = False
     playback_current_item_id: str | None = None
+    # Public view-only stream. `public_url` is computed from the slug.
+    public_enabled: bool = False
+    public_slug: str | None = None
+    public_url: str | None = None
 
 
 def _branding_url(m: Meeting) -> str | None:
@@ -204,6 +240,12 @@ def _branding_url(m: Meeting) -> str | None:
         return None
     # Public, served via the room-name path so the lobby can show it pre-auth.
     return f"{settings.public_url}/api/v1/rooms/{m.room_name}/branding"
+
+
+def _public_url(m: Meeting) -> str | None:
+    if not m.public_slug:
+        return None
+    return f"{settings.public_url}/public/{m.public_slug}"
 
 
 def _to_out(m: Meeting) -> MeetingOut:
@@ -255,13 +297,28 @@ def _to_out(m: Meeting) -> MeetingOut:
         playback_loop=bool(m.playback_loop),
         playback_active=bool(m.playback_ingress_id),
         playback_current_item_id=m.playback_current_item_id,
+        public_enabled=bool(m.public_enabled),
+        public_slug=m.public_slug,
+        public_url=_public_url(m),
     )
 
 
-def _to_public_out(m: Meeting) -> dict:
+def _to_public_out(m: Meeting, *, viewer_is_authenticated: bool) -> dict:
     """Subset of fields safe to expose without auth (the room_name is needed
     to build the join URL; owner_user_id and password hash are NEVER
-    exposed)."""
+    exposed).
+
+    `joinable` is computed per-caller: anonymous callers may join when
+    `list_for_anonymous=True`, authenticated callers may join when either
+    visibility flag is set (anon-listed implies auth-listed). The
+    frontend uses this to decide whether to render a Join button —
+    public-view-only meetings (`public_enabled=True` with no joining
+    permission) get a View button only.
+    """
+    if viewer_is_authenticated:
+        joinable = bool(m.list_for_authenticated or m.list_for_anonymous)
+    else:
+        joinable = bool(m.list_for_anonymous)
     return {
         "room_name": m.room_name,
         "display_title": m.display_title,
@@ -269,6 +326,10 @@ def _to_public_out(m: Meeting) -> dict:
         "require_password": bool(m.require_password),
         "branding_url": _branding_url(m),
         "owner_name": m.owner_name,
+        "public_enabled": bool(m.public_enabled),
+        "public_slug": m.public_slug,
+        "public_url": _public_url(m),
+        "joinable": joinable,
     }
 
 
@@ -665,6 +726,47 @@ async def update_meeting(
     if body.playback_loop is not None:
         m.playback_loop = body.playback_loop
 
+    # Public view-only page. Normalise the slug, reject duplicates, and
+    # auto-flip the anonymous-listing flag so the meeting also surfaces
+    # on the home page Discover list while public is on.
+    new_slug_field_present = "public_slug" in body.model_fields_set
+    new_enabled_field_present = "public_enabled" in body.model_fields_set
+    if new_slug_field_present or new_enabled_field_present:
+        # Compute the slug we'll end up with after applying the patch.
+        target_slug = (
+            _normalise_public_slug(body.public_slug)
+            if new_slug_field_present
+            else m.public_slug
+        )
+        target_enabled = (
+            body.public_enabled if new_enabled_field_present else m.public_enabled
+        )
+        if target_enabled and not target_slug:
+            raise HTTPException(
+                status_code=400,
+                detail="public_slug is required to enable public viewing",
+            )
+        if target_slug:
+            # Uniqueness check — case-insensitively (slug is already lower).
+            clash = (
+                db.query(Meeting)
+                .filter(Meeting.public_slug == target_slug)
+                .filter(Meeting.id != m.id)
+                .first()
+            )
+            if clash:
+                raise HTTPException(
+                    status_code=409,
+                    detail="this public name is already in use; pick another",
+                )
+        m.public_slug = target_slug
+        m.public_enabled = bool(target_enabled)
+        # Note: `public_enabled` is decoupled from `list_for_anonymous` /
+        # `list_for_authenticated`. Public viewing (View button → /public/<slug>)
+        # is a separate capability from anonymous joining (Join button →
+        # /<room_name> lobby). The owner controls each independently via
+        # the visibility cycle (Globe icon) and the in-meeting Public group.
+
     db.commit()
 
     # If a livestream is running and the destination URLs changed, push
@@ -703,8 +805,10 @@ async def update_meeting(
 @router.get("/discoverable")
 def list_discoverable(user: RequireUser, db: Session = Depends(get_db)) -> list[dict]:
     """Active meetings owned by OTHER users that the current user is allowed
-    to discover (either flag set; the user's own meetings appear in
-    /meetings instead). Returns the public projection only."""
+    to discover. A meeting surfaces if any of the visibility flags is on,
+    OR if it has a public view-only page enabled (those are always
+    listed in Discover so viewers without the direct URL can still find
+    them). Returns the public projection only."""
     rows = (
         db.query(Meeting)
         .filter(Meeting.is_active.is_(True))
@@ -713,28 +817,33 @@ def list_discoverable(user: RequireUser, db: Session = Depends(get_db)) -> list[
         .filter(
             (Meeting.list_for_authenticated.is_(True))
             | (Meeting.list_for_anonymous.is_(True))
+            | (Meeting.public_enabled.is_(True))
         )
         .order_by(Meeting.created_at.desc())
         .limit(50)
         .all()
     )
-    return [_to_public_out(m) for m in rows]
+    return [_to_public_out(m, viewer_is_authenticated=True) for m in rows]
 
 
 @router.get("/public-meetings")
 def list_public_meetings(db: Session = Depends(get_db)) -> list[dict]:
-    """Active meetings that opted into anonymous discovery. No auth required —
-    suitable for the unauthenticated landing page."""
+    """Active meetings visible to unauthenticated visitors — either the
+    owner explicitly opted in to anonymous listing, or the meeting has a
+    public view-only page enabled. No auth required."""
     rows = (
         db.query(Meeting)
         .filter(Meeting.is_active.is_(True))
         .filter(Meeting.hidden.is_(False))
-        .filter(Meeting.list_for_anonymous.is_(True))
+        .filter(
+            (Meeting.list_for_anonymous.is_(True))
+            | (Meeting.public_enabled.is_(True))
+        )
         .order_by(Meeting.created_at.desc())
         .limit(50)
         .all()
     )
-    return [_to_public_out(m) for m in rows]
+    return [_to_public_out(m, viewer_is_authenticated=False) for m in rows]
 
 
 @router.get("/rooms/{room_name}/info")

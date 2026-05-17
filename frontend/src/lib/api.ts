@@ -105,6 +105,9 @@ export interface MeetingOut {
   playback_loop?: boolean;
   playback_active?: boolean;
   playback_current_item_id?: string | null;
+  public_enabled?: boolean;
+  public_slug?: string | null;
+  public_url?: string | null;
 }
 
 export interface PlaybackItemOut {
@@ -138,6 +141,30 @@ export interface PublicMeeting {
   require_password: boolean;
   branding_url: string | null;
   owner_name: string | null;
+  public_enabled?: boolean;
+  public_slug?: string | null;
+  public_url?: string | null;
+  // Computed by the API per-caller. True when the viewer (anonymous or
+  // authenticated) is allowed to actually join the meeting; false when
+  // the row is in Discover only because of `public_enabled` (View only).
+  joinable?: boolean;
+}
+
+export interface PublicRoomInfoForViewer {
+  room_name: string;
+  display_title: string;
+  owner_name: string | null;
+  branding_url: string | null;
+  public_slug: string;
+}
+
+export interface PublicViewerTokenResponse {
+  livekit_url: string;
+  token: string;
+  room_name: string;
+  display_title: string;
+  branding_url: string | null;
+  ice_servers: AnonTokenResponse["ice_servers"];
 }
 
 export interface PublicRoomInfo {
@@ -414,6 +441,8 @@ export const api = {
       livestream_rumble_stream_key?: string | null;
       playback_enabled?: boolean;
       playback_loop?: boolean;
+      public_enabled?: boolean;
+      public_slug?: string | null;
     }
   ) =>
     request<MeetingOut>(`/api/v1/meetings/${meetingId}`, {
@@ -1032,6 +1061,21 @@ export const api = {
   /** Public: meeting metadata for the lobby (no auth). */
   publicRoomInfo: (roomName: string) =>
     request<PublicRoomInfo>(`/api/v1/rooms/${roomName}/info`),
+
+  /** Public view-only stream — lookup by public slug. No auth. */
+  publicViewerInfo: (publicSlug: string) =>
+    request<PublicRoomInfoForViewer>(
+      `/api/v1/public-room/${encodeURIComponent(publicSlug)}`,
+    ),
+
+  publicViewerToken: (
+    publicSlug: string,
+    body: { display_name?: string } = {},
+  ) =>
+    request<PublicViewerTokenResponse>(
+      `/api/v1/public-room/${encodeURIComponent(publicSlug)}/viewer-token`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
 
   getMyPreferences: () =>
     request<UserPreferencesOut>("/api/v1/me/preferences"),

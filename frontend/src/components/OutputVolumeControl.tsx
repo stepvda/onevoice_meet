@@ -46,10 +46,17 @@ export default function OutputVolumeControl() {
         /* harmless — fires before any audio track exists */
       }
     };
+    // Two-pronged silence at 0: `el.volume = 0` is what slider feedback
+    // expects, but some browsers (and the LiveKit element factory) don't
+    // honour volume=0 reliably right after element creation — set `muted`
+    // as well so silence is guaranteed regardless. Mirrors the Café's
+    // `el.muted = volumeRef.current === 0` pattern in `lib/tiCafe.tsx`.
+    const applyToAudio = (el: HTMLAudioElement) => {
+      el.volume = v;
+      el.muted = v === 0;
+    };
     const applyAudioElements = () => {
-      document.querySelectorAll<HTMLAudioElement>("audio").forEach((el) => {
-        el.volume = v;
-      });
+      document.querySelectorAll<HTMLAudioElement>("audio").forEach(applyToAudio);
     };
 
     room.remoteParticipants.forEach(applyParticipant);
@@ -63,7 +70,31 @@ export default function OutputVolumeControl() {
     room.on(RoomEvent.ParticipantConnected, onConn);
     room.on(RoomEvent.TrackSubscribed, onSubOrPub);
     room.on(RoomEvent.TrackPublished, onSubOrPub);
+
+    // The TrackSubscribed listener above is necessary but not sufficient:
+    // @livekit/components-react's RoomAudioRenderer creates the <audio>
+    // element in a React render cycle that runs AFTER the event fires,
+    // so `applyAudioElements()` finds nothing and the freshly-created
+    // element keeps the browser default volume (1.0). That's the bug
+    // where joining a new meeting with a remembered 0% slider still
+    // played audio. MutationObserver catches any <audio> element added
+    // to the DOM regardless of when, and applies the current volume +
+    // muted state to it.
+    const observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        m.addedNodes.forEach((n) => {
+          if (n instanceof HTMLAudioElement) {
+            applyToAudio(n);
+          } else if (n instanceof HTMLElement) {
+            n.querySelectorAll<HTMLAudioElement>("audio").forEach(applyToAudio);
+          }
+        });
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
     return () => {
+      observer.disconnect();
       room.off(RoomEvent.ParticipantConnected, onConn);
       room.off(RoomEvent.TrackSubscribed, onSubOrPub);
       room.off(RoomEvent.TrackPublished, onSubOrPub);

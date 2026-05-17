@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Mic,
   Monitor,
@@ -6,6 +7,10 @@ import {
   Wifi,
   Palette,
   Radio,
+  Globe,
+  Copy,
+  Check,
+  Pencil,
   X,
 } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
@@ -16,6 +21,7 @@ import type {
   Theme,
 } from "../lib/preferences";
 import { Toggle } from "./ui";
+import { api, MeetingOut } from "../lib/api";
 
 interface Props {
   open: boolean;
@@ -25,6 +31,13 @@ interface Props {
   onConfigureLivestream?: () => void;
   // Owner-only entry to open the VideoPlaybackPanel. Same gating rules as
   // livestream: hidden for non-owners, hidden when undefined.
+
+  // Owner-only Public stream group. When `meeting` is provided we render
+  // the toggle + slug editor; otherwise the group stays hidden. Mutations
+  // hit PATCH /api/v1/meetings/{id} and lift the updated row via
+  // `onMeetingUpdated` so the toolbar / panels can react.
+  meeting?: MeetingOut | null;
+  onMeetingUpdated?: (m: MeetingOut) => void;
 }
 
 /**
@@ -36,7 +49,13 @@ interface Props {
  * Writes go straight into the same `meet-preferences-v1` zustand store as
  * the full Settings page; persistence is automatic.
  */
-export default function InMeetingSettings({ open, onClose, onConfigureLivestream }: Props) {
+export default function InMeetingSettings({
+  open,
+  onClose,
+  onConfigureLivestream,
+  meeting,
+  onMeetingUpdated,
+}: Props) {
   const { t } = useTranslation();
   const prefs = usePreferences();
 
@@ -63,6 +82,10 @@ export default function InMeetingSettings({ open, onClose, onConfigureLivestream
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 text-sm">
+        {meeting && onMeetingUpdated && (
+          <RenameTitleGroup meeting={meeting} onMeetingUpdated={onMeetingUpdated} />
+        )}
+
         <Group icon={<Mic size={14} />} title={t("inMeetingSettings.groupAv")}>
           <Toggle
             id="im-cam-default"
@@ -240,6 +263,10 @@ export default function InMeetingSettings({ open, onClose, onConfigureLivestream
           />
         </Group>
 
+        {meeting && onMeetingUpdated && (
+          <PublicGroup meeting={meeting} onMeetingUpdated={onMeetingUpdated} />
+        )}
+
         {onConfigureLivestream && (
           <Group icon={<Radio size={14} />} title={t("inMeetingSettings.groupLivestream", { defaultValue: "Live stream" })}>
             <p className="text-xs text-slate-400">
@@ -270,6 +297,265 @@ export default function InMeetingSettings({ open, onClose, onConfigureLivestream
     </aside>
   );
 }
+
+function RenameTitleGroup({
+  meeting,
+  onMeetingUpdated,
+}: {
+  meeting: MeetingOut;
+  onMeetingUpdated: (m: MeetingOut) => void;
+}) {
+  const { t } = useTranslation();
+  const [title, setTitle] = useState(meeting.display_title);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTitle(meeting.display_title);
+  }, [meeting.display_title]);
+
+  const trimmed = title.trim();
+  const dirty = trimmed.length > 0 && trimmed !== meeting.display_title;
+
+  async function save() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const updated = await api.updateMeeting(meeting.id, {
+        display_title: trimmed,
+      });
+      onMeetingUpdated(updated);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section>
+      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+        <span className="text-slate-500">
+          <Pencil size={14} />
+        </span>
+        {t("inMeetingSettings.groupMeeting", { defaultValue: "Meeting" })}
+      </h3>
+      <div className="flex flex-col gap-2">
+        <Field
+          label={t("inMeetingSettings.meetingName", { defaultValue: "Meeting name" })}
+          htmlFor="im-meeting-title"
+        >
+          <input
+            id="im-meeting-title"
+            data-testid="im-meeting-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={200}
+            placeholder={t("inMeetingSettings.meetingNamePlaceholder", {
+              defaultValue: "Meeting name",
+            })}
+            aria-label={t("inMeetingSettings.meetingName", {
+              defaultValue: "Meeting name",
+            })}
+            className="w-full px-2 py-1.5 rounded-lg bg-primary-800 text-slate-100 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+          />
+        </Field>
+        {err && (
+          <p data-testid="im-meeting-title-error" className="text-xs text-red-400">
+            {err}
+          </p>
+        )}
+        <div>
+          <button
+            type="button"
+            onClick={save}
+            disabled={busy || !dirty}
+            data-testid="im-meeting-title-save"
+            className="px-3 py-1.5 rounded-md bg-accent-500 hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium"
+          >
+            {busy
+              ? t("common.saving", { defaultValue: "Saving…" })
+              : t("inMeetingSettings.meetingRename", { defaultValue: "Rename" })}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+function PublicGroup({
+  meeting,
+  onMeetingUpdated,
+}: {
+  meeting: MeetingOut;
+  onMeetingUpdated: (m: MeetingOut) => void;
+}) {
+  const { t } = useTranslation();
+  const [enabled, setEnabled] = useState(!!meeting.public_enabled);
+  const [slug, setSlug] = useState(meeting.public_slug ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Keep local state in sync with the parent — re-renders happen when
+  // toolbar code refreshes the row via onMeetingUpdated.
+  useEffect(() => {
+    setEnabled(!!meeting.public_enabled);
+    setSlug(meeting.public_slug ?? "");
+  }, [meeting.public_enabled, meeting.public_slug]);
+
+  const dirty =
+    enabled !== !!meeting.public_enabled ||
+    slug.trim().toLowerCase() !== (meeting.public_slug ?? "");
+
+  const publicUrl =
+    meeting.public_url ??
+    (meeting.public_slug
+      ? `${window.location.origin}/public/${meeting.public_slug}`
+      : null);
+
+  async function save() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const normalised = slug.trim().toLowerCase();
+      const updated = await api.updateMeeting(meeting.id, {
+        public_enabled: enabled,
+        public_slug: normalised || null,
+      });
+      onMeetingUpdated(updated);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copyLink() {
+    if (!publicUrl) return;
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+    } catch {
+      window.prompt(
+        t("inMeetingSettings.publicCopyPrompt", { defaultValue: "Copy this link" }),
+        publicUrl,
+      );
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <section>
+      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+        <span className="text-slate-500">
+          <Globe size={14} />
+        </span>
+        {t("inMeetingSettings.groupPublic", { defaultValue: "Public" })}
+      </h3>
+      <div className="flex flex-col gap-3">
+        <Toggle
+          id="im-public-enabled"
+          label={t("inMeetingSettings.publicEnable", {
+            defaultValue: "Public view-only stream",
+          })}
+          checked={enabled}
+          onChange={(v) => setEnabled(v)}
+        />
+        <p className="text-xs text-slate-500">
+          {t("inMeetingSettings.publicHint", {
+            defaultValue:
+              "When on, anyone can watch this meeting at meet.witysk.org/public/<name> without joining. Viewers are hidden and unlimited.",
+          })}
+        </p>
+
+        {enabled && (
+          <Field
+            label={t("inMeetingSettings.publicSlug", { defaultValue: "Public name" })}
+            htmlFor="im-public-slug"
+          >
+            <div className="flex items-stretch gap-1">
+              <span className="px-2 py-1.5 rounded-l-lg bg-primary-800 border border-primary-700 border-r-0 text-slate-400 text-xs flex items-center">
+                /public/
+              </span>
+              <input
+                id="im-public-slug"
+                type="text"
+                data-testid="im-public-slug"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder="my-stream"
+                inputMode="url"
+                autoCapitalize="off"
+                spellCheck={false}
+                className="flex-1 min-w-0 px-2 py-1.5 rounded-r-lg bg-primary-800 text-slate-100 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              {t("inMeetingSettings.publicSlugHint", {
+                defaultValue:
+                  "Lowercase letters, digits and dashes only. Must be unique across all public streams.",
+              })}
+            </p>
+          </Field>
+        )}
+
+        {err && (
+          <p data-testid="im-public-error" className="text-xs text-red-400">
+            {err}
+          </p>
+        )}
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={save}
+            disabled={busy || !dirty}
+            data-testid="im-public-save"
+            className="px-3 py-1.5 rounded-md bg-accent-500 hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium"
+          >
+            {busy
+              ? t("common.saving", { defaultValue: "Saving…" })
+              : t("common.save", { defaultValue: "Save" })}
+          </button>
+          {publicUrl && meeting.public_enabled && (
+            <button
+              type="button"
+              onClick={copyLink}
+              data-testid="im-public-copy"
+              title={publicUrl}
+              className={[
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm border border-primary-700",
+                copied
+                  ? "bg-accent-500 text-white"
+                  : "bg-primary-800 hover:bg-primary-700 text-slate-100",
+              ].join(" ")}
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              {copied
+                ? t("inMeetingSettings.publicCopied", { defaultValue: "Copied!" })
+                : t("inMeetingSettings.publicCopyLink", {
+                    defaultValue: "Copy public link",
+                  })}
+            </button>
+          )}
+        </div>
+
+        {publicUrl && meeting.public_enabled && (
+          <p
+            data-testid="im-public-url"
+            className="text-xs text-slate-400 break-all"
+          >
+            {publicUrl}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 
 function Group({
   icon,

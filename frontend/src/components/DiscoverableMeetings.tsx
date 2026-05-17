@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Compass, Globe, LogIn, Lock } from "lucide-react";
+import { Compass, Globe, LogIn, Lock, Tv } from "lucide-react";
 import { api, PublicMeeting } from "../lib/api";
 import { isAuthenticated } from "../lib/auth";
 import { Button, Card } from "./ui";
@@ -101,15 +101,31 @@ export default function DiscoverableMeetings() {
                 )}
               </div>
             </div>
-            <Button
-              type="button"
-              variant="accent"
-              size="sm"
-              onClick={() => navigate(`/${m.room_name}`)}
-              data-testid={`discover-join-${m.room_name}`}
-            >
-              <LogIn size={16} /> {t("discover.join")}
-            </Button>
+            {m.public_enabled && m.public_slug && (
+              <Button
+                type="button"
+                variant={m.joinable ? "ghost" : "accent"}
+                size="sm"
+                onClick={() => navigate(`/public/${m.public_slug}`)}
+                data-testid={`discover-view-${m.room_name}`}
+                title={t("discover.viewTitle", {
+                  defaultValue: "Watch the public view-only stream",
+                })}
+              >
+                <Tv size={16} /> {t("discover.view", { defaultValue: "View" })}
+              </Button>
+            )}
+            {m.joinable && (
+              <Button
+                type="button"
+                variant="accent"
+                size="sm"
+                onClick={() => navigate(`/${m.room_name}`)}
+                data-testid={`discover-join-${m.room_name}`}
+              >
+                <LogIn size={16} /> {t("discover.join")}
+              </Button>
+            )}
           </li>
         ))}
       </ul>

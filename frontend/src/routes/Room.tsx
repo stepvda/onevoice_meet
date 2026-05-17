@@ -424,9 +424,9 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
             <div
               className="font-semibold text-slate-50 truncate"
               data-testid="topbar-title"
-              title={meetingTitle ?? ""}
+              title={livestreamMeeting?.display_title || meetingTitle || ""}
             >
-              {meetingTitle || "meet.witysk.org"}
+              {livestreamMeeting?.display_title || meetingTitle || "meet.witysk.org"}
             </div>
             <div className="text-xs text-slate-400">meet.witysk.org</div>
           </div>
@@ -830,6 +830,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
                   setSettingsOpen(false);
                 }
               : undefined
+          }
+          meeting={isOwner ? livestreamMeeting : null}
+          onMeetingUpdated={
+            isOwner ? (updated) => setLivestreamMeeting(updated) : undefined
           }
         />
         <ParticipantsPanel

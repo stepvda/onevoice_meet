@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Copy, Eye, EyeOff, Globe, LogIn, Lock, Mail, MessageSquare, Radio, RotateCcw, Trash2, Video } from "lucide-react";
+import { Copy, Eye, EyeOff, Globe, LogIn, Lock, Mail, MessageSquare, Radio, RotateCcw, Trash2, Tv, Video } from "lucide-react";
 import { api, MeetingOut } from "../lib/api";
 import { Button, Card } from "./ui";
 import InviteModal from "./InviteModal";
@@ -207,6 +207,20 @@ export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) 
                 >
                   <Radio size={16} className={m.livestream_enabled ? "text-accent-500" : ""} />
                 </Button>
+                {m.public_enabled && m.public_slug && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(`/public/${m.public_slug}`)}
+                    data-testid={`meeting-view-${m.id}`}
+                    title={t("myMeetings.viewTitle", {
+                      defaultValue: "Open the public view-only stream",
+                    })}
+                  >
+                    <Tv size={16} /> {t("myMeetings.view", { defaultValue: "View" })}
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="accent"
