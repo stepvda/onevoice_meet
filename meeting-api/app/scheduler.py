@@ -1,7 +1,9 @@
+import asyncio
 import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 from app.routes.recordings import cleanup_expired_recordings, enforce_disk_cap
 
@@ -27,6 +29,27 @@ def _disk_cap_job() -> None:
     )
 
 
+def _playback_watchdog_job() -> None:
+    # Recovers playlist playback when a LiveKit ingress handler dies
+    # without firing the `ingress_ended` webhook (e.g. GStreamer SIGTRAP
+    # on a malformed video stream). Without this, the playlist stalls
+    # silently on the dead ingress for hours.
+    from app.db import SessionLocal
+    from app.services.playback_mgr import watchdog_check_stale_ingresses
+
+    async def _run() -> int:
+        with SessionLocal() as db:
+            return await watchdog_check_stale_ingresses(db)
+
+    try:
+        recovered = asyncio.run(_run())
+    except Exception:
+        log.exception("playback watchdog job failed")
+        return
+    if recovered:
+        log.info("playback watchdog: recovered %d stalled ingress(es)", recovered)
+
+
 def start() -> None:
     if scheduler.running:
         return
@@ -43,6 +66,16 @@ def start() -> None:
         CronTrigger(minute=15),
         id="disk_cap_enforcement",
         replace_existing=True,
+    )
+    # Every 30s — recover playlist playback if the current LiveKit
+    # ingress has died without firing its `ingress_ended` webhook.
+    scheduler.add_job(
+        _playback_watchdog_job,
+        IntervalTrigger(seconds=30),
+        id="playback_watchdog",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
     )
     scheduler.start()
 

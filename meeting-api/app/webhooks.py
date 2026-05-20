@@ -391,6 +391,12 @@ async def livekit_webhook(
         # the next one (with loop support) or end playback. The whole
         # transition runs in a background task so the webhook ack is fast.
         info = event.ingress_info
+        log.info(
+            "ingress event %s id=%s state=%s",
+            etype,
+            getattr(info, "ingress_id", "?"),
+            getattr(getattr(info, "state", None), "status", None),
+        )
         if etype == "ingress_ended":
             from app.services.playback_mgr import advance_after_ingress_ended
 

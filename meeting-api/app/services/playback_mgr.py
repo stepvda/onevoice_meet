@@ -24,6 +24,7 @@ import hmac
 import json
 import logging
 import time
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import HTTPException
@@ -389,6 +390,99 @@ async def advance_after_ingress_ended(
         return None
 
     return await _start_ingress_for_item(m, next_item, db, initial=False)
+
+
+# LiveKit IngressState.status values: 0=INACTIVE, 1=BUFFERING, 2=PUBLISHING,
+# 3=ERROR, 4=COMPLETE. Anything outside the live (1,2) set means the
+# handler has stopped publishing media.
+_INGRESS_HEALTHY_STATUSES = {1, 2}
+# Don't flag a freshly-started ingress as stale — it takes a few seconds
+# to negotiate with the source and transition into BUFFERING/PUBLISHING.
+_WATCHDOG_GRACE_SECONDS = 25
+
+
+async def watchdog_check_stale_ingresses(db: Session) -> int:
+    """Safety net for ingress handlers that die without firing the
+    `ingress_ended` webhook — e.g. GStreamer asserts (we observed
+    SIGTRAP / core dump on a video file with declared 1366x720 vs
+    coded 1368x720). When that happens the playlist would otherwise
+    stall on the dead ingress indefinitely.
+
+    For every meeting with `playback_ingress_id` set, ask LiveKit
+    whether the ingress is still publishing. If it's gone, errored,
+    or completed, run the same advance path the webhook would have
+    run, so the next item starts. Returns the number of meetings we
+    recovered."""
+    candidates = (
+        db.query(Meeting)
+        .filter(Meeting.playback_ingress_id.is_not(None))
+        .all()
+    )
+    if not candidates:
+        return 0
+
+    lk = livekit_api()
+    recovered = 0
+    try:
+        for m in candidates:
+            if m.playback_started_at:
+                started = m.playback_started_at
+                if started.tzinfo is None:
+                    started = started.replace(tzinfo=timezone.utc)
+                age = (datetime.now(timezone.utc) - started).total_seconds()
+                if age < _WATCHDOG_GRACE_SECONDS:
+                    continue
+
+            ingress_id = m.playback_ingress_id
+            stale_reason: Optional[str] = None
+            try:
+                resp = await lk.ingress.list_ingress(
+                    api.ListIngressRequest(ingress_id=ingress_id)
+                )
+                items = list(getattr(resp, "items", []) or [])
+                if not items:
+                    stale_reason = "not_found"
+                else:
+                    state = getattr(items[0], "state", None)
+                    status = getattr(state, "status", None)
+                    if status not in _INGRESS_HEALTHY_STATUSES:
+                        stale_reason = f"status={status}"
+            except api.TwirpError as e:
+                if getattr(e, "code", None) == "not_found":
+                    stale_reason = "not_found"
+                else:
+                    log.warning(
+                        "playback watchdog: list_ingress refused for %s: %s",
+                        ingress_id, e,
+                    )
+                    continue
+            except Exception:
+                log.exception(
+                    "playback watchdog: list_ingress failed for %s",
+                    ingress_id,
+                )
+                continue
+
+            if not stale_reason:
+                continue
+
+            log.warning(
+                "playback watchdog: ingress %s for meeting %s is stale (%s)"
+                " — advancing playlist",
+                ingress_id, m.id, stale_reason,
+            )
+            try:
+                await advance_after_ingress_ended(ingress_id, db)
+                recovered += 1
+            except Exception:
+                log.exception(
+                    "playback watchdog: advance failed for %s",
+                    ingress_id,
+                )
+    finally:
+        await lk.aclose()
+
+    return recovered
 
 
 async def play_specific_item(
