@@ -7,6 +7,7 @@ import {
   Download,
   Film,
   Link2,
+  ListVideo,
   Pause,
   Play,
   Repeat,
@@ -97,6 +98,7 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
   const [pbState, setPbState] = useState<PlaybackStateOut | null>(null);
   const [enabled, setEnabled] = useState(!!meeting.playback_enabled);
   const [loop, setLoop] = useState(!!meeting.playback_loop);
+  const [whatsUpNext, setWhatsUpNext] = useState(!!meeting.playback_whats_up_next);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
@@ -120,6 +122,7 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
     if (!open) return;
     setEnabled(!!meeting.playback_enabled);
     setLoop(!!meeting.playback_loop);
+    setWhatsUpNext(!!meeting.playback_whats_up_next);
     setErr(null);
     void refresh();
   }, [open, meeting, refresh]);
@@ -180,6 +183,18 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
       onMeetingUpdated(updated);
     } catch (e) {
       setLoop(!v);
+      setErr((e as Error).message);
+    }
+  }
+
+  async function toggleWhatsUpNext(v: boolean) {
+    setWhatsUpNext(v);
+    setErr(null);
+    try {
+      const updated = await api.updateMeeting(meeting.id, { playback_whats_up_next: v });
+      onMeetingUpdated(updated);
+    } catch (e) {
+      setWhatsUpNext(!v);
       setErr((e as Error).message);
     }
   }
@@ -388,6 +403,17 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
           }
           checked={loop}
           onChange={toggleLoop}
+        />
+        <Toggle
+          id="playback-whats-up-next"
+          label={
+            <span className="inline-flex items-center gap-1.5">
+              <ListVideo size={14} />
+              {t("playback.whatsUpNext", { defaultValue: "What's up next" })}
+            </span>
+          }
+          checked={whatsUpNext}
+          onChange={toggleWhatsUpNext}
         />
       </div>
 

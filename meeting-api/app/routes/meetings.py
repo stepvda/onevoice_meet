@@ -163,6 +163,7 @@ class UpdateMeetingBody(BaseModel):
     livestream_rumble_stream_key: str | None = Field(default=None, max_length=500)
     playback_enabled: bool | None = None
     playback_loop: bool | None = None
+    playback_whats_up_next: bool | None = None
     # Public view-only page. Enabling requires a slug to be set (either in
     # the same PATCH or previously). Slug is normalised to lowercase and
     # checked for uniqueness across all meetings.
@@ -226,6 +227,7 @@ class MeetingOut(BaseModel):
     current_egress_layout: str | None = None
     playback_enabled: bool = False
     playback_loop: bool = False
+    playback_whats_up_next: bool = False
     # True while a LiveKit ingress is publishing the current playlist item.
     playback_active: bool = False
     playback_current_item_id: str | None = None
@@ -295,6 +297,7 @@ def _to_out(m: Meeting) -> MeetingOut:
         current_egress_layout=m.current_egress_layout,
         playback_enabled=bool(m.playback_enabled),
         playback_loop=bool(m.playback_loop),
+        playback_whats_up_next=bool(m.playback_whats_up_next),
         playback_active=bool(m.playback_ingress_id),
         playback_current_item_id=m.playback_current_item_id,
         public_enabled=bool(m.public_enabled),
@@ -725,6 +728,17 @@ async def update_meeting(
         m.playback_enabled = body.playback_enabled
     if body.playback_loop is not None:
         m.playback_loop = body.playback_loop
+    if body.playback_whats_up_next is not None:
+        toggle_changed_on = (
+            body.playback_whats_up_next and not bool(m.playback_whats_up_next)
+        )
+        m.playback_whats_up_next = body.playback_whats_up_next
+        if toggle_changed_on:
+            # Pre-encode the next eligible slide so the first eligible
+            # advance / play doesn't pay the encode latency. Runs in the
+            # background — best-effort.
+            from app.services.whats_next_slide import schedule_pre_generation
+            schedule_pre_generation(m.id)
 
     # Public view-only page. Normalise the slug, reject duplicates, and
     # auto-flip the anonymous-listing flag so the meeting also surfaces

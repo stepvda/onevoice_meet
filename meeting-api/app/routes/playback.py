@@ -685,6 +685,31 @@ def fetch_playback_file(
     )
 
 
+@router.get("/internal/whats-next-slide/{slide_key}")
+def fetch_whats_next_slide(
+    slide_key: str,
+    token: Annotated[str, Query()],
+) -> Response:
+    """Internal endpoint the LiveKit ingress fetches the "What's up next"
+    slide from. Gated on the HMAC token issued at ingress-create time."""
+    from app.services.whats_next_slide import verify_slide_url, slide_path_for_key
+
+    if not verify_slide_url(slide_key, token):
+        raise HTTPException(status_code=403, detail="invalid or expired token")
+    path = slide_path_for_key(slide_key)
+    if not path:
+        raise HTTPException(status_code=404, detail="slide not found")
+    return FileResponse(
+        path=str(path),
+        media_type="video/mp4",
+        headers={
+            "Accept-Ranges": "bytes",
+            "Content-Disposition": f'inline; filename="whats-next-{slide_key}.mp4"',
+            "Cache-Control": "private, no-store",
+        },
+    )
+
+
 # Re-exported so other modules (Room.tsx via meeting-out, etc.) can refer
 # to the reserved playback identity without importing the service module.
 __all__ = ["router", "PLAYBACK_IDENTITY"]

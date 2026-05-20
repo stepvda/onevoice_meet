@@ -216,6 +216,7 @@ async def _start_ingress_for_item(
     *,
     initial: bool,
     from_seconds: float = 0.0,
+    skip_slide: bool = False,
 ) -> str:
     """Create a fresh LiveKit ingress for `item`, store its id on the
     meeting, and (only on the very first item of a play session) mute all
@@ -225,8 +226,48 @@ async def _start_ingress_for_item(
     `from_seconds` > 0 starts the source mid-file via ffmpeg-seek (used
     by `seek_playback` for drag-on-slider). The `playback_started_at`
     stamp is adjusted to `now - from_seconds` so the SPA's elapsed
-    calculation lands at the seek position without an extra field."""
-    url = _build_signed_url(item, t_seconds=from_seconds)
+    calculation lands at the seek position without an extra field.
+
+    When the meeting's `playback_whats_up_next` toggle is on, the item's
+    duration > 5 min, and we're not seeking mid-file, this function
+    instead points the ingress at a 20-s rundown slide. The real item
+    is remembered in `playback_pending_item_id` and gets started by
+    `advance_after_ingress_ended` once the slide ends. Set
+    `skip_slide=True` from inside that detour to break the recursion."""
+    slide_url: Optional[str] = None
+    if (
+        not skip_slide
+        and from_seconds == 0
+        and m.playback_whats_up_next
+        and (item.duration_seconds or 0) > 300
+    ):
+        from app.services.whats_next_slide import (
+            build_slide_data,
+            render_slide,
+            build_signed_slide_url,
+            slide_key_from_path,
+        )
+
+        data = build_slide_data(db, m.id, real_item_id=item.id)
+        if data is not None:
+            try:
+                slide_path = await render_slide(data)
+                slide_url = build_signed_slide_url(slide_key_from_path(slide_path))
+            except Exception:
+                log.exception(
+                    "whats_next: render failed for meeting %s — falling back to direct play",
+                    m.id,
+                )
+                slide_url = None
+
+    url = slide_url if slide_url else _build_signed_url(item, t_seconds=from_seconds)
+    ingress_name = (
+        f"whatsnext-{item.id}" if slide_url else f"playback-{item.id}"
+    )
+    participant_name = (
+        "What's up next…" if slide_url else item.filename
+    )
+
     if initial:
         # Switch the egress layout BEFORE creating the ingress so the
         # new (single-speaker) egress is already running by the time the
@@ -238,10 +279,10 @@ async def _start_ingress_for_item(
         ingress = await lk.ingress.create_ingress(
             api.CreateIngressRequest(
                 input_type=api.IngressInput.URL_INPUT,
-                name=f"playback-{item.id}",
+                name=ingress_name,
                 room_name=m.room_name,
                 participant_identity=PLAYBACK_IDENTITY,
-                participant_name=item.filename,
+                participant_name=participant_name,
                 url=url,
             )
         )
@@ -252,6 +293,9 @@ async def _start_ingress_for_item(
 
     from datetime import datetime, timedelta, timezone
     m.playback_ingress_id = ingress.ingress_id
+    # Always set `playback_current_item_id` to the real item — the SPA
+    # surfaces this in the playlist UI, and we want the "What's up next"
+    # bumper to look like part of the same upcoming item, not a phantom.
     m.playback_current_item_id = item.id
     # Stamp the start time so the SPA can compute elapsed playback for
     # the progress bar (`elapsed = now - playback_started_at`). When
@@ -259,12 +303,20 @@ async def _start_ingress_for_item(
     # stamp `from_seconds` back so the bar's elapsed value matches the
     # actual playhead.
     m.playback_started_at = datetime.now(timezone.utc) - timedelta(seconds=from_seconds)
+    if slide_url:
+        m.playback_pending_item_id = item.id
+    else:
+        m.playback_pending_item_id = None
     db.commit()
 
     await _broadcast(
         m.room_name,
         "playback-start" if initial else "playback-next",
-        {"item_id": item.id, "filename": item.filename},
+        {
+            "item_id": item.id,
+            "filename": item.filename,
+            "slide": bool(slide_url),
+        },
     )
     return ingress.ingress_id
 
@@ -325,6 +377,7 @@ async def stop_playback(m: Meeting, user_sub: str, db: Session) -> dict:
     m.playback_ingress_id = None
     m.playback_current_item_id = None
     m.playback_started_at = None
+    m.playback_pending_item_id = None
     db.commit()
 
     # Flip the egress back to the host's pre-playback layout before
@@ -352,8 +405,34 @@ async def advance_after_ingress_ended(
     """Webhook hook: the ingress just ended on its own. Look up the meeting
     that owns this ingress, pick the next playlist item (or loop back),
     start a fresh ingress for it. Return the new ingress_id or None if we
-    actually ended playback."""
+    actually ended playback.
+
+    Special case: if the ingress that just ended was a "What's up next"
+    slide, start the real item it was announcing (stored in
+    `playback_pending_item_id`) — DON'T insert another slide before it.
+    Pre-gen for the NEXT eligible slide kicks off in the background."""
     m = db.query(Meeting).filter_by(playback_ingress_id=ingress_id).first()
+    if m is not None and m.playback_pending_item_id:
+        pending_id = m.playback_pending_item_id
+        m.playback_pending_item_id = None
+        # Don't commit yet — the next call commits its own state.
+        pending = db.query(PlaybackItem).filter_by(id=pending_id).first()
+        if pending is not None:
+            try:
+                new_ingress = await _start_ingress_for_item(
+                    m, pending, db, initial=False, skip_slide=True,
+                )
+            except Exception:
+                log.exception(
+                    "whats_next: failed to start real item %s after slide",
+                    pending_id,
+                )
+            else:
+                from app.services.whats_next_slide import schedule_pre_generation
+                schedule_pre_generation(m.id)
+                return new_ingress
+        # Pending item gone (host removed it during the slide?) — fall
+        # through to the standard next-by-position logic below.
     if not m:
         return None  # not a playback ingress, or already cleaned up
 
@@ -389,7 +468,15 @@ async def advance_after_ingress_ended(
         await _broadcast(m.room_name, "playback-end", {})
         return None
 
-    return await _start_ingress_for_item(m, next_item, db, initial=False)
+    new_ingress = await _start_ingress_for_item(m, next_item, db, initial=False)
+    # Warm the next slide while the current item plays — so when this
+    # item ends, the slide is already encoded and ready.
+    try:
+        from app.services.whats_next_slide import schedule_pre_generation
+        schedule_pre_generation(m.id)
+    except Exception:
+        log.exception("whats_next: schedule_pre_generation failed")
+    return new_ingress
 
 
 # LiveKit IngressState.status values: 0=INACTIVE, 1=BUFFERING, 2=PUBLISHING,
@@ -521,6 +608,7 @@ async def play_specific_item(
         m.playback_ingress_id = None
         m.playback_current_item_id = None
         m.playback_started_at = None
+        m.playback_pending_item_id = None
         db.commit()
 
     ingress_id = await _start_ingress_for_item(m, item, db, initial=not was_playing)
@@ -569,7 +657,7 @@ async def seek_playback(
     db.commit()
 
     ingress_id = await _start_ingress_for_item(
-        m, cur, db, initial=False, from_seconds=position_seconds
+        m, cur, db, initial=False, from_seconds=position_seconds, skip_slide=True,
     )
     db.add(
         ModerationAudit(

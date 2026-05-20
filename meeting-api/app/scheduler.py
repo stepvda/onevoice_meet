@@ -27,6 +27,14 @@ def _disk_cap_job() -> None:
         result.get("after_ratio", 0),
         result.get("cap", 0),
     )
+    # Piggyback on the disk-cap job to evict stale "What's up next" slides.
+    try:
+        from app.services.whats_next_slide import evict_stale_slides
+        removed = evict_stale_slides()
+        if removed:
+            log.info("whats_next: evicted %d stale slide(s)", removed)
+    except Exception:
+        log.exception("whats_next: evict_stale_slides failed")
 
 
 def _playback_watchdog_job() -> None:

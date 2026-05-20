@@ -93,6 +93,8 @@ def lightweight_migrate() -> None:
                 ("livestream_rumble_stream_key", "ALTER TABLE meetings ADD COLUMN livestream_rumble_stream_key TEXT"),
                 ("playback_enabled", "ALTER TABLE meetings ADD COLUMN playback_enabled BOOLEAN DEFAULT 0 NOT NULL"),
                 ("playback_loop", "ALTER TABLE meetings ADD COLUMN playback_loop BOOLEAN DEFAULT 0 NOT NULL"),
+                ("playback_whats_up_next", "ALTER TABLE meetings ADD COLUMN playback_whats_up_next BOOLEAN DEFAULT 0 NOT NULL"),
+                ("playback_pending_item_id", "ALTER TABLE meetings ADD COLUMN playback_pending_item_id TEXT"),
                 ("playback_ingress_id", "ALTER TABLE meetings ADD COLUMN playback_ingress_id TEXT"),
                 ("playback_current_item_id", "ALTER TABLE meetings ADD COLUMN playback_current_item_id TEXT"),
                 # Tracks when the active ingress started so the SPA can

@@ -134,6 +134,17 @@ class Meeting(Base):
     # When True, the last playlist item wraps back to position 0 instead of
     # ending playback. Toggleable from the same Video-playback panel.
     playback_loop: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # When True, a 20-second "What's up next" rundown slide auto-plays right
+    # before any playlist item whose duration > 5 minutes (auto-advance,
+    # manual click, or loop-wrap — all eligible). The slide is a transient
+    # MP4 generated on the fly; `playback_pending_item_id` below tracks the
+    # real item that should follow the slide.
+    playback_whats_up_next: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # When a "What's up next" slide is the current ingress, this holds the
+    # ID of the real PlaybackItem that should start once the slide ends —
+    # so `advance_after_ingress_ended` plays that item instead of the
+    # next-by-position. NULL whenever no slide is in flight.
+    playback_pending_item_id: Mapped[str | None] = mapped_column(String, nullable=True)
     playback_ingress_id: Mapped[str | None] = mapped_column(String, nullable=True)
     playback_current_item_id: Mapped[str | None] = mapped_column(String, nullable=True)
     # When the current ingress was started — frontend computes elapsed

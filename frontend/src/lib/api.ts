@@ -103,6 +103,7 @@ export interface MeetingOut {
   current_egress_layout?: string | null;
   playback_enabled?: boolean;
   playback_loop?: boolean;
+  playback_whats_up_next?: boolean;
   playback_active?: boolean;
   playback_current_item_id?: string | null;
   public_enabled?: boolean;
@@ -441,6 +442,7 @@ export const api = {
       livestream_rumble_stream_key?: string | null;
       playback_enabled?: boolean;
       playback_loop?: boolean;
+      playback_whats_up_next?: boolean;
       public_enabled?: boolean;
       public_slug?: string | null;
     }
