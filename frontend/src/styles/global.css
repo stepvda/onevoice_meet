@@ -63,16 +63,25 @@ body {
 .meet-stage.compact .lk-grid-layout { gap: 4px !important; }
 .meet-stage.compact .lk-participant-tile { padding: 0 !important; }
 
-/* Lock webcam / screen-share aspect ratio. LiveKit's default video CSS
- * uses `object-fit: cover` so the video crops to fill its tile, which
- * distorts the way the streamer expects to be framed (especially for
- * 16:9 webcams shown in a tall portrait tile). `contain` letterboxes
- * the video inside the tile — the tile can still be any size, but the
- * webcam pixels keep their native aspect ratio. The black background
- * fills the letterbox bars so the gap doesn't read as a UI glitch. */
-.meet-stage .lk-participant-tile video,
-.meet-stage .lk-participant-tile .lk-participant-placeholder + video,
-.meet-stage .lk-focus-layout video {
+/* Lock webcam / screen-share / playback aspect ratio. LiveKit's default
+ * video CSS uses `object-fit: cover` so the video crops to fill its tile,
+ * which distorts the way the streamer expects to be framed (especially
+ * for portrait phone capture or playback-via-Ingress shown inside a
+ * landscape tile). `contain` letterboxes the video — the tile can still
+ * be any size, but the source pixels keep their native aspect ratio.
+ * The black background fills the letterbox bars so the gap doesn't read
+ * as a UI glitch.
+ *
+ * Selector is intentionally broad (not scoped to `.meet-stage`) so the
+ * playback hijack path in PresenterSpotlight — which renders a tile
+ * outside any other layout wrapper — is also covered. FlippableTile
+ * additionally sets `style.objectFit` inline as a belt-and-braces in
+ * case a future LiveKit release ships an inline style on the element
+ * that beats this rule. */
+.lk-participant-tile video,
+.lk-participant-tile .lk-participant-placeholder + video,
+.lk-focus-layout video,
+.lk-grid-layout video {
   object-fit: contain !important;
   background: #000;
 }

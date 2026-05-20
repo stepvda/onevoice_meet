@@ -88,6 +88,19 @@ def _build_signed_url(item: PlaybackItem, t_seconds: float = 0.0) -> str:
     return base
 
 
+def _build_signed_freeze_url(item: PlaybackItem, t_seconds: float) -> str:
+    """Build the URL ingress fetches for a "paused" item — an endless
+    MPEG-TS stream holding the single frame at offset T. Reuses the
+    same signed token as the regular playback URL; the `&freeze=1` flag
+    on the internal endpoint flips it from the seek path to the
+    single-frame-loop path."""
+    token = _sign_playback_url(item.id)
+    return (
+        f"{_INGRESS_INTERNAL_BASE}/api/v1/internal/playback/{item.id}"
+        f"?token={token}&t={max(0.0, float(t_seconds)):.3f}&freeze=1"
+    )
+
+
 async def _mute_all_other_participants(lk: "api.LiveKitAPI", room_name: str) -> None:
     """Server-side mute the published mic + camera tracks of every
     participant in the room EXCEPT the playback identity. We use the
@@ -230,7 +243,7 @@ async def _start_ingress_for_item(
 
     When the meeting's `playback_whats_up_next` toggle is on, the item's
     duration > 5 min, and we're not seeking mid-file, this function
-    instead points the ingress at a 20-s rundown slide. The real item
+    instead points the ingress at a ~35-s rundown slide. The real item
     is remembered in `playback_pending_item_id` and gets started by
     `advance_after_ingress_ended` once the slide ends. Set
     `skip_slide=True` from inside that detour to break the recursion."""
@@ -378,6 +391,7 @@ async def stop_playback(m: Meeting, user_sub: str, db: Session) -> dict:
     m.playback_current_item_id = None
     m.playback_started_at = None
     m.playback_pending_item_id = None
+    m.playback_paused_offset_seconds = None
     db.commit()
 
     # Flip the egress back to the host's pre-playback layout before
@@ -398,6 +412,152 @@ async def stop_playback(m: Meeting, user_sub: str, db: Session) -> dict:
     return {"ok": True}
 
 
+async def pause_playback(m: Meeting, user_sub: str, db: Session) -> dict:
+    """Public entrypoint called by POST /playback:pause.
+
+    Replaces the running ingress with one that publishes an endless
+    single-frame loop at the current playback offset, so every viewer
+    sees the frame that was on screen the moment pause was clicked. The
+    Meeting's `playback_paused_offset_seconds` is set to that offset and
+    `playback_started_at` is cleared so the SPA's progress bar stops
+    advancing. Idempotent — calling pause while already paused is a
+    no-op.
+
+    Implementation notes:
+      - The freeze-frame ingress runs under the same `playback` identity
+        and `playback_current_item_id` row as the real item, so the
+        playlist UI keeps the correct row highlighted.
+      - There IS a brief gap (~1-2s) between deleting the old ingress
+        and the new freeze-frame ingress publishing — LiveKit Ingress's
+        URL_INPUT pipeline needs to negotiate with GStreamer first. We
+        can't avoid that without a custom ingest path, which we're not
+        going to build.
+      - We do NOT restore the egress layout while paused (the playback
+        composition stays single-speaker)."""
+    if not m.playback_ingress_id:
+        raise HTTPException(status_code=409, detail="nothing is playing")
+    if m.playback_paused_offset_seconds is not None:
+        # Idempotent — already paused.
+        return {"ok": True, "already_paused": True}
+    if not m.playback_current_item_id:
+        raise HTTPException(status_code=409, detail="no current item")
+    item = db.query(PlaybackItem).filter_by(id=m.playback_current_item_id).first()
+    if not item:
+        raise HTTPException(status_code=409, detail="current item missing")
+
+    # Compute the offset to freeze at — same formula the SPA uses for
+    # its progress bar. `playback_started_at` may be NULL while a
+    # "What's up next" slide is in flight; refuse to pause then (we'd
+    # freeze the slide, not the real content).
+    if not m.playback_started_at:
+        raise HTTPException(status_code=409, detail="can't pause during the rundown slide")
+    started = m.playback_started_at
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    offset = max(0.0, (datetime.now(timezone.utc) - started).total_seconds())
+
+    # Tear down the running (real-content) ingress.
+    old_ingress_id = m.playback_ingress_id
+    lk = livekit_api()
+    try:
+        try:
+            await lk.ingress.delete_ingress(api.DeleteIngressRequest(ingress_id=old_ingress_id))
+        except Exception:
+            log.exception("playback: delete_ingress failed for %s on pause", old_ingress_id)
+    finally:
+        await lk.aclose()
+
+    # Resolve aliases to the file-owning row — same as the regular play path.
+    src_item = item
+    if item.source_item_id:
+        resolved = db.query(PlaybackItem).filter_by(id=item.source_item_id).first()
+        if resolved is not None:
+            src_item = resolved
+
+    freeze_url = _build_signed_freeze_url(src_item, offset)
+    lk = livekit_api()
+    try:
+        ingress = await lk.ingress.create_ingress(
+            api.CreateIngressRequest(
+                input_type=api.IngressInput.URL_INPUT,
+                name=f"playback-paused-{item.id}",
+                room_name=m.room_name,
+                participant_identity=PLAYBACK_IDENTITY,
+                participant_name=item.filename,
+                url=freeze_url,
+            )
+        )
+    finally:
+        await lk.aclose()
+
+    m.playback_ingress_id = ingress.ingress_id
+    m.playback_paused_offset_seconds = offset
+    # NULL'ing started_at freezes the SPA's elapsed-time calc — the bar
+    # holds at `offset` (surfaced via the state endpoint).
+    m.playback_started_at = None
+    db.add(
+        ModerationAudit(
+            meeting_id=m.id,
+            actor_user_id=user_sub,
+            action="playback_pause",
+            details=f"{item.id}:{offset:.3f}",
+        )
+    )
+    db.commit()
+    await _broadcast(m.room_name, "playback-paused", {"offset_seconds": offset})
+    return {"ok": True, "ingress_id": ingress.ingress_id, "offset_seconds": offset}
+
+
+async def resume_playback(m: Meeting, user_sub: str, db: Session) -> dict:
+    """Public entrypoint called by POST /playback:resume. Inverse of
+    `pause_playback`: tear down the freeze-frame ingress and restart
+    the real ingress at the saved offset. Idempotent — calling resume
+    when not paused is a 409."""
+    if m.playback_paused_offset_seconds is None:
+        raise HTTPException(status_code=409, detail="playback is not paused")
+    if not m.playback_current_item_id:
+        raise HTTPException(status_code=409, detail="no current item")
+    item = db.query(PlaybackItem).filter_by(id=m.playback_current_item_id).first()
+    if not item:
+        raise HTTPException(status_code=409, detail="current item missing")
+
+    offset = float(m.playback_paused_offset_seconds)
+
+    # Tear down the freeze-frame ingress before starting the real one,
+    # otherwise the new ingress competes for the same `playback`
+    # identity and LiveKit rejects with already-published.
+    if m.playback_ingress_id:
+        old_ingress_id = m.playback_ingress_id
+        lk = livekit_api()
+        try:
+            try:
+                await lk.ingress.delete_ingress(api.DeleteIngressRequest(ingress_id=old_ingress_id))
+            except Exception:
+                log.exception("playback: delete_ingress failed for %s on resume", old_ingress_id)
+        finally:
+            await lk.aclose()
+        m.playback_ingress_id = None
+    # Clear paused state BEFORE starting the new ingress so a webhook
+    # that fires mid-restart doesn't think we're still paused.
+    m.playback_paused_offset_seconds = None
+    db.commit()
+
+    ingress_id = await _start_ingress_for_item(
+        m, item, db, initial=False, from_seconds=offset, skip_slide=True,
+    )
+    db.add(
+        ModerationAudit(
+            meeting_id=m.id,
+            actor_user_id=user_sub,
+            action="playback_resume",
+            details=f"{item.id}:{offset:.3f}",
+        )
+    )
+    db.commit()
+    await _broadcast(m.room_name, "playback-resumed", {"offset_seconds": offset})
+    return {"ok": True, "ingress_id": ingress_id, "offset_seconds": offset}
+
+
 async def advance_after_ingress_ended(
     ingress_id: str,
     db: Session,
@@ -412,6 +572,48 @@ async def advance_after_ingress_ended(
     `playback_pending_item_id`) — DON'T insert another slide before it.
     Pre-gen for the NEXT eligible slide kicks off in the background."""
     m = db.query(Meeting).filter_by(playback_ingress_id=ingress_id).first()
+    # Don't auto-advance while paused. If the freeze-frame ingress
+    # naturally ends (its long-but-finite ffmpeg loop wound down because
+    # the user has been paused for hours), restart the same freeze ingress
+    # at the saved offset so the room stays on the frozen frame.
+    if m is not None and m.playback_paused_offset_seconds is not None:
+        offset = float(m.playback_paused_offset_seconds)
+        m.playback_ingress_id = None
+        db.commit()
+        cur_item = (
+            db.query(PlaybackItem).filter_by(id=m.playback_current_item_id).first()
+            if m.playback_current_item_id else None
+        )
+        if cur_item is None:
+            # No item to freeze on — fall back to ending playback.
+            m.playback_paused_offset_seconds = None
+            m.playback_current_item_id = None
+            db.commit()
+            return None
+        src_item = cur_item
+        if cur_item.source_item_id:
+            resolved = db.query(PlaybackItem).filter_by(id=cur_item.source_item_id).first()
+            if resolved is not None:
+                src_item = resolved
+        freeze_url = _build_signed_freeze_url(src_item, offset)
+        lk = livekit_api()
+        try:
+            ingress = await lk.ingress.create_ingress(
+                api.CreateIngressRequest(
+                    input_type=api.IngressInput.URL_INPUT,
+                    name=f"playback-paused-{cur_item.id}",
+                    room_name=m.room_name,
+                    participant_identity=PLAYBACK_IDENTITY,
+                    participant_name=cur_item.filename,
+                    url=freeze_url,
+                )
+            )
+        finally:
+            await lk.aclose()
+        m.playback_ingress_id = ingress.ingress_id
+        db.commit()
+        return ingress.ingress_id
+
     if m is not None and m.playback_pending_item_id:
         pending_id = m.playback_pending_item_id
         m.playback_pending_item_id = None
@@ -463,6 +665,7 @@ async def advance_after_ingress_ended(
         m.playback_ingress_id = None
         m.playback_current_item_id = None
         m.playback_started_at = None
+        m.playback_paused_offset_seconds = None
         db.commit()
         await _restore_layout_after_playback(m, db)
         await _broadcast(m.room_name, "playback-end", {})
@@ -609,6 +812,7 @@ async def play_specific_item(
         m.playback_current_item_id = None
         m.playback_started_at = None
         m.playback_pending_item_id = None
+        m.playback_paused_offset_seconds = None
         db.commit()
 
     ingress_id = await _start_ingress_for_item(m, item, db, initial=not was_playing)

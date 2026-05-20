@@ -110,6 +110,67 @@ def _ffmpeg_seek_stream(file_path: str, t_seconds: float):
                     pass
 
 
+def _ffmpeg_freeze_stream(file_path: str, t_seconds: float):
+    """Generator that yields an endless MPEG-TS stream holding the single
+    frame at time T in `file_path`. Used by the server-side pause path:
+    we replace the running ingress with one that points at this stream so
+    every viewer keeps seeing the frame that was on screen when pause was
+    clicked.
+
+    Implementation: a two-stage ffmpeg pipeline in a single process.
+       1. `-ss T -i src.mp4 -frames:v 1 ... ` extracts the frame near T.
+       2. `loop` filter repeats it indefinitely; we encode the looped
+          frames to H.264 + MPEG-TS at a low frame rate (5fps is fine —
+          the frame doesn't change) and pipe to stdout.
+
+    The encoder is `libx264 -tune stillimage -preset ultrafast` so it's
+    cheap on CPU. We also generate a continuous silent AAC track so the
+    receiving track has both audio and video — without audio LiveKit's
+    pipeline can stutter when a no-audio stream is offered after an
+    audio one. Ingress's GStreamer pipeline reads stdin / souphttpsrc the
+    same way for both seek and freeze paths."""
+    import subprocess
+    # `-loop 1` doesn't work directly with MP4 input + seek; we use the
+    # `loop` video filter instead. `loop=loop=-1:size=1` says "repeat the
+    # first frame forever, in chunks of 1 frame". `trim` caps the output
+    # duration; one hour is well beyond any realistic pause length.
+    cmd = [
+        "ffmpeg",
+        "-hide_banner", "-loglevel", "error",
+        # Decoder: seek and read one frame.
+        "-ss", f"{max(0.0, float(t_seconds)):.3f}",
+        "-i", file_path,
+        # Silent audio source so the output stream has an audio track too.
+        "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+        "-vf", "loop=loop=-1:size=1,trim=duration=14400,setpts=N/FRAME_RATE/TB",
+        "-r", "5",
+        "-c:v", "libx264", "-preset", "ultrafast", "-tune", "stillimage",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "64k", "-ar", "48000", "-ac", "2",
+        "-shortest",  # bounded by the trim'd video
+        "-f", "mpegts",
+        "pipe:1",
+    ]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    try:
+        assert proc.stdout is not None
+        while True:
+            chunk = proc.stdout.read(64 * 1024)
+            if not chunk:
+                break
+            yield chunk
+    finally:
+        if proc.poll() is None:
+            try:
+                proc.terminate()
+                proc.wait(timeout=2)
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+
+
 def _backfill_duration(item_id: str) -> None:
     """Background task: probe and persist duration for a single item.
     Idempotent — re-runs are safe (file unchanged → same duration). On
@@ -337,6 +398,36 @@ def duplicate_playback_item(
     return _to_out(alias)
 
 
+class RenameBody(BaseModel):
+    # 200 mirrors the DB column cap on PlaybackItem.filename.
+    filename: str = Field(min_length=1, max_length=200)
+
+
+@router.patch("/meetings/{meeting_id}/playback/items/{item_id}")
+def rename_playback_item(
+    meeting_id: str,
+    item_id: str,
+    body: RenameBody,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Rename a playlist item's display label. The on-disk file is
+    untouched — only the DB row's `filename` column changes, which is
+    what every UI surface (playlist panel, "Now playing", "What's up
+    next" slide) reads from."""
+    m = _require_moderator(meeting_id, user.sub, db)
+    item = db.query(PlaybackItem).filter_by(id=item_id, meeting_id=m.id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="item not found")
+    new_name = body.filename.strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="filename must not be blank")
+    item.filename = new_name[:200]
+    db.commit()
+    db.refresh(item)
+    return _to_out(item)
+
+
 @router.delete("/meetings/{meeting_id}/playback/items/{item_id}")
 def delete_playback_item(
     meeting_id: str,
@@ -506,6 +597,15 @@ def get_playback_state(
         "current_item_filename": cur_item.filename if cur_item else None,
         "current_item_duration_seconds": cur_item.duration_seconds if cur_item else None,
         "started_at": started_at_iso,
+        # True while a freeze-frame ingress is holding on a single
+        # frame; the SPA toggles Pause/Resume button state and freezes
+        # its progress bar at `paused_offset_seconds`.
+        "paused": m.playback_paused_offset_seconds is not None,
+        "paused_offset_seconds": (
+            float(m.playback_paused_offset_seconds)
+            if m.playback_paused_offset_seconds is not None
+            else None
+        ),
     }
 
 
@@ -527,6 +627,33 @@ async def playback_stop(
 ) -> dict:
     m = _require_moderator(meeting_id, user.sub, db)
     return await stop_playback(m, user.sub, db)
+
+
+@router.post("/meetings/{meeting_id}/playback:pause")
+async def playback_pause(
+    meeting_id: str,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Pause without ending: swap the running ingress for a frozen-frame
+    one at the current offset so every viewer sees the same still image.
+    Resume picks up at the same offset."""
+    from app.services.playback_mgr import pause_playback
+    m = _require_moderator(meeting_id, user.sub, db)
+    return await pause_playback(m, user.sub, db)
+
+
+@router.post("/meetings/{meeting_id}/playback:resume")
+async def playback_resume(
+    meeting_id: str,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Inverse of `:pause` — tear down the freeze ingress, restart the
+    real ingress at the saved offset."""
+    from app.services.playback_mgr import resume_playback
+    m = _require_moderator(meeting_id, user.sub, db)
+    return await resume_playback(m, user.sub, db)
 
 
 class SeekBody(BaseModel):
@@ -605,6 +732,7 @@ def fetch_playback_file(
     request: Request,
     range_header: Annotated[str | None, Header(alias="Range")] = None,
     t: Annotated[float | None, Query()] = None,
+    freeze: Annotated[int, Query()] = 0,
     db: Session = Depends(get_db),
 ) -> Response:
     """Open endpoint — gated on the HMAC token issued by playback_mgr at
@@ -632,6 +760,20 @@ def fetch_playback_file(
     path = Path(source.file_path)
     if not path.exists():
         raise HTTPException(status_code=410, detail="file missing on disk")
+
+    # Pause path — endless single-frame loop at offset T. Takes precedence
+    # over the regular seek path so the pause endpoint can hand out a URL
+    # like `…?token=…&t=12.345&freeze=1` and the ingress will stream the
+    # frozen frame instead of resuming playback at that offset.
+    if freeze and t is not None and t >= 0:
+        return StreamingResponse(
+            _ffmpeg_freeze_stream(str(path), t),
+            media_type="video/mp2t",
+            headers={
+                "Content-Disposition": f'inline; filename="{item.filename}"',
+                "Cache-Control": "private, no-store",
+            },
+        )
 
     # Seek path — bypass Range/FileResponse and stream from ffmpeg.
     if t is not None and t > 0:

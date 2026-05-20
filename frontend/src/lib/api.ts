@@ -133,6 +133,11 @@ export interface PlaybackStateOut {
   current_item_filename: string | null;
   current_item_duration_seconds: number | null;
   started_at: string | null;
+  // True while a freeze-frame ingress is holding on a single frame.
+  paused: boolean;
+  // Offset (seconds into the current item) the freeze-frame is showing;
+  // the SPA pins the progress bar here while paused.
+  paused_offset_seconds: number | null;
 }
 
 export interface PublicMeeting {
@@ -1257,6 +1262,15 @@ export const api = {
   deletePlaybackItem: (meetingId: string, itemId: string) =>
     request<{ ok: boolean }>(`/api/v1/meetings/${meetingId}/playback/items/${itemId}`, { method: "DELETE" }),
 
+  /** Rename a playlist item's display label. Server caps at 200 chars
+   *  and rejects blank names; on success the updated item is returned
+   *  so callers can refresh in-place without a full list refetch. */
+  renamePlaybackItem: (meetingId: string, itemId: string, filename: string) =>
+    request<PlaybackItemOut>(
+      `/api/v1/meetings/${meetingId}/playback/items/${itemId}`,
+      { method: "PATCH", body: JSON.stringify({ filename }) },
+    ),
+
   /** Create an ALIAS to an existing playlist item. Appears at the end
    *  of the playlist; reorder normally. Plays the same file as the
    *  source without duplicating it on disk. */
@@ -1333,6 +1347,23 @@ export const api = {
   stopPlayback: (meetingId: string) =>
     request<{ ok: boolean; already_stopped?: boolean }>(
       `/api/v1/meetings/${meetingId}/playback:stop`,
+      { method: "POST" },
+    ),
+
+  /** Pause without ending: server swaps the running ingress for a
+   *  frozen-frame loop at the current offset so every viewer keeps
+   *  seeing the same still image. Resume picks up at the same offset. */
+  pausePlayback: (meetingId: string) =>
+    request<{ ok: boolean; already_paused?: boolean; offset_seconds?: number }>(
+      `/api/v1/meetings/${meetingId}/playback:pause`,
+      { method: "POST" },
+    ),
+
+  /** Inverse of pausePlayback — restart the real ingress at the saved
+   *  paused offset. */
+  resumePlayback: (meetingId: string) =>
+    request<{ ok: boolean; offset_seconds?: number }>(
+      `/api/v1/meetings/${meetingId}/playback:resume`,
       { method: "POST" },
     ),
 

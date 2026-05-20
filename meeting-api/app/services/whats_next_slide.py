@@ -1,4 +1,4 @@
-"""Generate the 20-second "What's up next" rundown slide.
+"""Generate the 35-second "What's up next" rundown slide.
 
 Shown right before any playlist item whose duration > 5 minutes when the
 host has enabled the toggle on the Video-playback panel.
@@ -19,7 +19,7 @@ turned into spaces and any leading `NN_` numeric prefix is stripped
 before display (so `03_TI_OneVoice_Video_20260220.mp4` reads as
 `TI OneVoice Video 20260220`).
 
-The slide MP4 carries a 20s upbeat waiting-music bed so the room
+The slide MP4 carries a 35s upbeat waiting-music bed so the room
 isn't silent while the rundown shows.
 
 Caching: rendered MP4s land in `/var/lib/meet/whats_next_cache/` keyed
@@ -56,7 +56,7 @@ from app.models import Meeting, PlaybackItem
 log = logging.getLogger(__name__)
 
 CACHE_DIR = Path("/var/lib/meet/whats_next_cache")
-SLIDE_DURATION_S = 20.0
+SLIDE_DURATION_S = 35.0
 SLIDE_W, SLIDE_H = 1920, 1080
 FPS = 30
 ELIGIBLE_MIN_DURATION_S = 300.0  # 5 minutes
@@ -506,7 +506,7 @@ def _truncate_to_width(draw, text: str, font, max_w: float) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Waiting-music bed (20 s, broadcast-bright, with numpy)
+# Waiting-music bed (broadcast-bright, with numpy) — length = SLIDE_DURATION_S
 # ---------------------------------------------------------------------------
 
 def _render_music_wav(out_path: Path) -> None:
@@ -590,7 +590,7 @@ def _render_music_wav(out_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 def _encode_mp4(png_path: Path, wav_path: Path, out_path: Path) -> None:
-    # `-loop 1 -t 20` turns the single PNG into a 20-s video. We add a
+    # `-loop 1 -t <SLIDE_DURATION_S>` turns the single PNG into a video. We add a
     # fade-in/out so the slide doesn't pop on/off, and re-encode the
     # audio to AAC. The size baselines around ~3 MB at CRF 22.
     # `scale=...iw*sar` + `setsar=1` flattens any non-square PAR the source

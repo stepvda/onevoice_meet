@@ -6,6 +6,18 @@
 meet.witysk.org {
     encode zstd gzip
 
+    # Path-independent security headers. Per-path framing rules
+    # (X-Frame-Options + CSP) live inside the relevant handle blocks
+    # below because mixing path-matched and unmatched `header` directives
+    # at the site-block level causes Caddy to merge them — only one set
+    # of values wins, which silently breaks the path-specific override.
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(self), microphone=(self), display-capture=(self)"
+    }
+
     # LiveKit WebSocket signaling. Clients connect to wss://meet.witysk.org/rtc
     # LiveKit runs with network_mode: host, so Caddy (bridge network) reaches
     # it via host.docker.internal:7880, not via Docker DNS. The livekit-client
@@ -30,39 +42,35 @@ meet.witysk.org {
         reverse_proxy meeting-api:8080
     }
 
-    # Frontend SPA fallback.
-    handle {
+    # /public/<slug> is the view-only stream page and must be embeddable
+    # from arbitrary third-party sites. X-Frame-Options is intentionally
+    # omitted; CSP uses frame-ancestors * to allow cross-origin embedding.
+    handle /public/* {
+        header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://www.paypalobjects.com; img-src 'self' data: blob: https://storage.googleapis.com https://www.paypal.com https://www.paypalobjects.com https://t.paypal.com; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org https://cdn.jsdelivr.net https://storage.googleapis.com https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.sandbox.paypal.com https://t.paypal.com; frame-src https://one.witysk.org https://www.paypal.com https://www.sandbox.paypal.com; worker-src 'self' blob:; frame-ancestors *; base-uri 'self'; form-action 'self'"
         root * /srv/frontend
         try_files {path} /index.html
         file_server
     }
 
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
-        Referrer-Policy "strict-origin-when-cross-origin"
-        Permissions-Policy "camera=(self), microphone=(self), display-capture=(self)"
-        # CSP (Phase 12):
-        # - self for scripts/styles bundled by Vite
-        # - wss://meet.witysk.org for LiveKit signaling
-        # - blob: for the MediaPipe/track-processors worker and video blobs
-        # - https://one.witysk.org for any future SSO bootstrap iframe
-        # 'unsafe-inline' in style-src is required by @livekit/components-styles.
-        # 'wasm-unsafe-eval' is required by @livekit/track-processors (MediaPipe).
-        # frame-src https://one.witysk.org is required for the SSO bootstrap
-        # iframe that reads one.witysk.org's localStorage and postMessages the
-        # access_token back. See one-witysk-integration/README.md.
-        # @livekit/track-processors loads MediaPipe wasm + tflite models from
-        # cdn.jsdelivr.net at runtime; without this allowance, virtual
-        # backgrounds silently fail with a CSP violation.
-        # Origins explained:
-        #   cdn.jsdelivr.net           — @livekit/track-processors loads MediaPipe wasm
-        #   storage.googleapis.com     — MediaPipe selfie_segmenter .tflite model
-        #   one.witysk.org             — SSO bootstrap iframe + connect for postMessage origin
-        #   www.paypal.com / www.paypalobjects.com — PayPal Buttons SDK (script,
-        #     style, image, iframe, connect). Sandbox + live API hosts allowed
-        #     in connect-src so the SDK can talk to its backends from the page.
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://www.paypalobjects.com; img-src 'self' data: blob: https://storage.googleapis.com https://www.paypal.com https://www.paypalobjects.com https://t.paypal.com; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org https://cdn.jsdelivr.net https://storage.googleapis.com https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.sandbox.paypal.com https://t.paypal.com; frame-src https://one.witysk.org https://www.paypal.com https://www.sandbox.paypal.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    # Frontend SPA fallback — locked-down framing for all other paths.
+    # CSP rationale (Phase 12):
+    #   - self for scripts/styles bundled by Vite
+    #   - wss://meet.witysk.org for LiveKit signaling
+    #   - blob: for the MediaPipe/track-processors worker and video blobs
+    #   - https://one.witysk.org for any future SSO bootstrap iframe
+    #   'unsafe-inline' in style-src is required by @livekit/components-styles.
+    #   'wasm-unsafe-eval' is required by @livekit/track-processors (MediaPipe).
+    #   frame-src https://one.witysk.org is required for the SSO bootstrap
+    #   iframe that reads one.witysk.org's localStorage and postMessages the
+    #   access_token back. See one-witysk-integration/README.md.
+    #   @livekit/track-processors loads MediaPipe wasm + tflite models from
+    #   cdn.jsdelivr.net at runtime; without this allowance, virtual
+    #   backgrounds silently fail with a CSP violation.
+    handle {
+        header X-Frame-Options "DENY"
+        header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://www.paypalobjects.com; img-src 'self' data: blob: https://storage.googleapis.com https://www.paypal.com https://www.paypalobjects.com https://t.paypal.com; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org https://cdn.jsdelivr.net https://storage.googleapis.com https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.sandbox.paypal.com https://t.paypal.com; frame-src https://one.witysk.org https://www.paypal.com https://www.sandbox.paypal.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        root * /srv/frontend
+        try_files {path} /index.html
+        file_server
     }
 }

@@ -9,6 +9,7 @@ import {
   Link2,
   ListVideo,
   Pause,
+  Pencil,
   Play,
   Repeat,
   Trash2,
@@ -16,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { api, MeetingOut, PlaybackItemOut, PlaybackStateOut } from "../lib/api";
-import { Button, Toggle } from "./ui";
+import { Button, Card, Toggle } from "./ui";
 
 interface Props {
   meeting: MeetingOut;
@@ -115,6 +116,12 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
   const [whatsUpNext, setWhatsUpNext] = useState(!!meeting.playback_whats_up_next);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  // Inline rename — `editingId` is the row currently in edit mode;
+  // `editingValue` is the current input contents. We keep these out of
+  // the per-row state so polling refreshes (every 1.5 s) don't clobber
+  // the user's in-progress typing on the row they're editing.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   const refresh = useCallback(async () => {
@@ -165,6 +172,11 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
     return () => window.clearInterval(id);
   }, [open, pbState?.active, pbState?.started_at]);
   const elapsedSeconds = (() => {
+    // Paused: server clears `started_at` and parks the offset on
+    // `paused_offset_seconds`. Render the bar at that frozen value.
+    if (pbState?.paused && pbState.paused_offset_seconds != null) {
+      return Math.max(0, pbState.paused_offset_seconds);
+    }
     if (!pbState?.started_at) return 0;
     const t0 = new Date(pbState.started_at).getTime();
     return Math.max(0, (tickNow - t0) / 1000);
@@ -268,6 +280,37 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
     }
   }
 
+  function startRename(item: PlaybackItemOut) {
+    setEditingId(item.id);
+    setEditingValue(item.filename);
+  }
+
+  function cancelRename() {
+    setEditingId(null);
+    setEditingValue("");
+  }
+
+  async function commitRename(item: PlaybackItemOut) {
+    const next = editingValue.trim();
+    if (!next || next === item.filename) {
+      cancelRename();
+      return;
+    }
+    setBusy(`rename:${item.id}`);
+    setErr(null);
+    try {
+      const updated = await api.renamePlaybackItem(meeting.id, item.id, next);
+      setItems((prev) =>
+        prev ? prev.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)) : prev,
+      );
+      cancelRename();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function duplicateItem(item: PlaybackItemOut) {
     setBusy(`duplicate:${item.id}`);
     setErr(null);
@@ -336,6 +379,32 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
     }
   }
 
+  async function pause() {
+    setBusy("play-pause");
+    setErr(null);
+    try {
+      await api.pausePlayback(meeting.id);
+      await refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function resume() {
+    setBusy("play-resume");
+    setErr(null);
+    try {
+      await api.resumePlayback(meeting.id);
+      await refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function seekTo(positionSeconds: number) {
     if (!pbState?.active || !durationSeconds) return;
     const clamped = Math.max(0, Math.min(durationSeconds - 0.5, positionSeconds));
@@ -360,6 +429,11 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
   }
 
   const playing = !!pbState?.active;
+  // While paused, `active` stays true (the freeze-frame ingress is
+  // alive) — `paused` is the discriminator the SPA uses to swap the
+  // Pause button for Resume and to disable the click-to-seek bar (the
+  // seek endpoint would clobber the saved pause offset).
+  const isPaused = !!pbState?.paused;
   const currentId = pbState?.current_item_id ?? null;
   const hasItems = !!items && items.length > 0;
   // Sum every item's duration — including aliases, since the server
@@ -371,7 +445,13 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
     : 0;
   const hasUnknownDuration = !!items && items.some((it) => it.duration_seconds == null);
 
+  // Item currently being renamed (if any) — drives the rename dialog.
+  // We look up by id rather than caching the row so a polling refresh
+  // can't show a stale name for the item under edit.
+  const editingItem = editingId && items ? items.find((x) => x.id === editingId) ?? null : null;
+
   return (
+    <>
     <aside
       data-testid="playback-panel"
       className={[
@@ -453,18 +533,21 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
           <div
             className={[
               "h-2 w-full rounded-full bg-primary-800 overflow-hidden",
-              playing && durationSeconds ? "cursor-pointer" : "cursor-default",
+              playing && !isPaused && durationSeconds ? "cursor-pointer" : "cursor-default",
             ].join(" ")}
             role="slider"
-            tabIndex={playing && durationSeconds ? 0 : -1}
+            tabIndex={playing && !isPaused && durationSeconds ? 0 : -1}
             aria-valuenow={Math.round(playing ? elapsedSeconds : 0)}
             aria-valuemin={0}
             aria-valuemax={Math.round(durationSeconds ?? 0)}
             aria-label={t("playback.progress", { defaultValue: "Playback progress" })}
-            aria-disabled={!playing || !durationSeconds}
-            onClick={onProgressClick}
+            aria-disabled={!playing || isPaused || !durationSeconds}
+            onClick={(e) => {
+              if (isPaused) return;
+              onProgressClick(e);
+            }}
             onKeyDown={(e) => {
-              if (!playing || !durationSeconds) return;
+              if (!playing || isPaused || !durationSeconds) return;
               if (e.key === "ArrowLeft") {
                 e.preventDefault();
                 void seekTo(elapsedSeconds - 5);
@@ -487,19 +570,32 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
         </div>
 
         <div className="flex items-center gap-2 pt-1">
-          {playing ? (
-            // Server-side this calls stopPlayback. Labelled "Pause"
-            // because the UX is "stop the stream, want to resume" —
-            // restoring with seek is a follow-up.
+          {playing && !isPaused ? (
+            // Live playback → "Pause" swaps the ingress for a freeze
+            // frame; the same row keeps highlighting and elapsed time
+            // freezes at the current offset (see :pause server route).
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={stop}
+              onClick={pause}
               disabled={!!busy}
               data-testid="playback-pause"
             >
               <Pause size={14} /> {t("playback.pause", { defaultValue: "Pause" })}
+            </Button>
+          ) : playing && isPaused ? (
+            // Frozen frame on stage → "Resume" tears down the freeze
+            // ingress and restarts the real one at the saved offset.
+            <Button
+              type="button"
+              variant="accent"
+              size="sm"
+              onClick={resume}
+              disabled={!!busy}
+              data-testid="playback-resume"
+            >
+              <Play size={14} /> {t("playback.resume", { defaultValue: "Resume" })}
             </Button>
           ) : (
             <Button
@@ -573,11 +669,16 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
             {items.map((it, i) => {
               const isAlias = it.source_item_id !== null;
               const isCurrent = currentId === it.id;
+              // Hover-tooltip target: the rendered (clean) name is what
+              // users perceive as the item's name, and `truncate` can hide
+              // its tail — show the full untruncated form on hover.
+              const fullName = cleanTitle(it.filename);
               return (
                 <li
                   key={it.id}
                   data-testid={`playback-item-${it.id}`}
                   data-current={isCurrent ? "true" : "false"}
+                  title={fullName}
                   className={[
                     "py-2 px-2 flex items-center gap-2 first:pt-1 last:pb-1",
                     // Bright accent highlight on the currently-playing
@@ -593,7 +694,8 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                   {/* Click-to-play: pressing the title area starts (or
                       switches to) this item. We don't make the whole
                       <li> clickable so the per-row buttons keep their
-                      individual click targets. */}
+                      individual click targets. Renaming is a modal —
+                      see the rename dialog rendered below the aside. */}
                   <button
                     type="button"
                     onClick={() => playItem(it)}
@@ -603,7 +705,7 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                         ? t("playback.disabledHint", { defaultValue: "Enable video playback first" })
                         : isCurrent
                         ? t("playback.alreadyPlaying", { defaultValue: "Already playing" })
-                        : t("playback.playThisItem", { defaultValue: "Play this item" })
+                        : fullName
                     }
                     data-testid={`playback-play-item-${it.id}`}
                     className="flex-1 min-w-0 text-left disabled:cursor-default disabled:opacity-70"
@@ -619,13 +721,24 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                       {isCurrent && (
                         <Play size={12} className="text-accent-500 flex-shrink-0 animate-pulse" aria-hidden />
                       )}
-                      <span className="truncate" title={it.filename}>{cleanTitle(it.filename)}</span>
+                      <span className="truncate">{fullName}</span>
                     </div>
                     <div className="text-xs text-slate-500">
                       {isAlias
                         ? t("playback.aliasLabel", { defaultValue: "Link" })
                         : `${fmtTime(it.duration_seconds)} · ${fmtSize(it.file_size_bytes)}`}
                     </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startRename(it)}
+                    disabled={!!busy}
+                    aria-label={t("playback.rename", { defaultValue: "Rename" })}
+                    title={t("playback.rename", { defaultValue: "Rename" })}
+                    data-testid={`playback-rename-${it.id}`}
+                    className="p-1 rounded hover:bg-primary-700 disabled:opacity-30 text-slate-300"
+                  >
+                    <Pencil size={14} />
                   </button>
                   <button
                     type="button"
@@ -720,5 +833,84 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
         <div className="px-3 py-2 text-xs text-red-400 border-t border-primary-700">{err}</div>
       )}
     </aside>
+
+    {editingItem && (
+      <div
+        data-testid="playback-rename-modal"
+        className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm pt-24 px-4"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("playback.renameTitle", { defaultValue: "Rename playlist item" })}
+        // Click on the backdrop (but not the card) cancels the edit.
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) cancelRename();
+        }}
+      >
+        <Card className="w-full max-w-lg relative">
+          <button
+            type="button"
+            onClick={cancelRename}
+            aria-label={t("common.close", { defaultValue: "Close" })}
+            data-testid="playback-rename-close"
+            className="absolute top-3 right-3 p-1 rounded-md text-slate-300 hover:bg-primary-700"
+          >
+            <X size={18} />
+          </button>
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-50">
+            <Pencil size={18} className="text-accent-500" />
+            {t("playback.renameTitle", { defaultValue: "Rename playlist item" })}
+          </h2>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void commitRename(editingItem);
+            }}
+            className="flex flex-col gap-4"
+          >
+            <label className="flex flex-col gap-1">
+              <span className="text-sm text-slate-300">
+                {t("playback.renameLabel", { defaultValue: "Display name" })}
+              </span>
+              <input
+                type="text"
+                autoFocus
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    cancelRename();
+                  }
+                }}
+                maxLength={200}
+                data-testid="playback-rename-input"
+                className="w-full px-3 py-2 rounded-lg bg-primary-900/60 text-slate-100 placeholder:text-slate-500 border border-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
+              />
+              <span className="text-xs text-slate-500">
+                {editingValue.length}/200
+              </span>
+            </label>
+            <div className="flex items-center gap-3">
+              <Button
+                type="submit"
+                disabled={!!busy || !editingValue.trim()}
+                data-testid="playback-rename-submit"
+              >
+                {t("playback.renameSave", { defaultValue: "Save" })}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={cancelRename}
+                disabled={!!busy}
+              >
+                {t("common.cancel", { defaultValue: "Cancel" })}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    )}
+    </>
   );
 }

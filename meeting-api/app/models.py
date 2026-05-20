@@ -134,7 +134,7 @@ class Meeting(Base):
     # When True, the last playlist item wraps back to position 0 instead of
     # ending playback. Toggleable from the same Video-playback panel.
     playback_loop: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    # When True, a 20-second "What's up next" rundown slide auto-plays right
+    # When True, a 35-second "What's up next" rundown slide auto-plays right
     # before any playlist item whose duration > 5 minutes (auto-advance,
     # manual click, or loop-wrap — all eligible). The slide is a transient
     # MP4 generated on the fly; `playback_pending_item_id` below tracks the
@@ -155,6 +155,14 @@ class Meeting(Base):
     # forced the egress to "single-speaker" so the playback participant
     # owns the composite. Restored when playback ends; NULL otherwise.
     layout_before_playback: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # When non-NULL, playback is paused at this offset into the current
+    # item. The active ingress is a "freeze-frame" stream (a single frame
+    # at this offset, looped) rather than the real item, so every viewer
+    # sees the same frozen image. `playback_started_at` is NULL while
+    # paused so the SPA's elapsed-time progress bar doesn't advance.
+    # Resume rebuilds the original ingress at this offset and clears the
+    # column.
+    playback_paused_offset_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")

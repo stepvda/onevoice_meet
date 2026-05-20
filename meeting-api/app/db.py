@@ -104,6 +104,10 @@ def lightweight_migrate() -> None:
                 # forced it to "single-speaker". Restored when playback
                 # ends so the host's chosen recording layout sticks.
                 ("layout_before_playback", "ALTER TABLE meetings ADD COLUMN layout_before_playback TEXT"),
+                # Non-NULL while playback is paused. Stores the offset into
+                # the current item where the freeze-frame ingress is
+                # holding; resume rebuilds the real ingress at this offset.
+                ("playback_paused_offset_seconds", "ALTER TABLE meetings ADD COLUMN playback_paused_offset_seconds REAL"),
                 ("public_enabled", "ALTER TABLE meetings ADD COLUMN public_enabled BOOLEAN DEFAULT 0 NOT NULL"),
                 ("public_slug", "ALTER TABLE meetings ADD COLUMN public_slug TEXT"),
             )),
