@@ -212,7 +212,7 @@ def build_slide_data(
     if not rundown:
         return None
 
-    name = (m.name or "").strip() or "Meeting"
+    name = (m.display_title or "").strip() or "Meeting"
     return {
         "meeting_name": name,
         "anchor_item_id": anchor.id,
@@ -591,13 +591,19 @@ def _render_music_wav(out_path: Path) -> None:
 
 def _encode_mp4(png_path: Path, wav_path: Path, out_path: Path) -> None:
     # `-loop 1 -t 20` turns the single PNG into a 20-s video. We add a
-    # 1-s fade-in/out so the slide doesn't pop on/off, and re-encode the
+    # fade-in/out so the slide doesn't pop on/off, and re-encode the
     # audio to AAC. The size baselines around ~3 MB at CRF 22.
+    # `scale=...iw*sar` + `setsar=1` flattens any non-square PAR the source
+    # PNG might carry (PIL writes square pixels but some loaders
+    # interpret the header strictly enough that libx264 complains about
+    # odd dimensions otherwise). We also force the dimensions to even
+    # values via `scale=trunc(iw/2)*2:trunc(ih/2)*2`.
     cmd = [
         "ffmpeg", "-y",
         "-loop", "1", "-framerate", str(FPS), "-t", str(SLIDE_DURATION_S), "-i", str(png_path),
         "-i", str(wav_path),
         "-vf", (
+            "scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1,"
             f"fade=t=in:st=0:d=0.6,"
             f"fade=t=out:st={SLIDE_DURATION_S - 0.8}:d=0.8,"
             f"format=yuv420p"
@@ -606,9 +612,19 @@ def _encode_mp4(png_path: Path, wav_path: Path, out_path: Path) -> None:
         "-pix_fmt", "yuv420p", "-movflags", "+faststart",
         "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
         "-shortest",
+        # Force mp4 mux explicitly — we write to a `.mp4.partial`
+        # temp path (atomic rename into the cache) and ffmpeg can't
+        # infer the format from that extension.
+        "-f", "mp4",
         str(out_path),
     ]
-    subprocess.run(cmd, check=True, capture_output=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        log.error(
+            "whats_next: ffmpeg encode failed (rc=%s)\nCMD: %s\nSTDERR:\n%s",
+            result.returncode, " ".join(cmd), result.stderr[-2000:],
+        )
+        raise RuntimeError(f"ffmpeg failed: rc={result.returncode}")
 
 
 # ---------------------------------------------------------------------------

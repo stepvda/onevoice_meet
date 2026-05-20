@@ -35,6 +35,20 @@ function fmtSize(b: number): string {
   return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
+// Mirrors `whats_next_slide.clean_title` (Python) — strip a leading
+// `NN_` numeric prefix (possibly repeated), replace underscores with
+// spaces, drop a trailing extension. Used for any UI surface showing
+// a PlaybackItem filename so the rendered name matches what the
+// "What's up next" slide shows.
+function cleanTitle(filename: string): string {
+  let name = filename.replace(/\.[^./\\]+$/, "");
+  while (/^\d+_/.test(name)) {
+    name = name.replace(/^\d+_/, "");
+  }
+  const cleaned = name.replace(/_/g, " ").trim();
+  return cleaned || filename;
+}
+
 function fmtTime(seconds: number | null | undefined): string {
   if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return "—:—";
   const total = Math.floor(seconds);
@@ -425,7 +439,9 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
           {t("playback.nowPlaying", { defaultValue: "Now playing" })}
         </div>
         <div className="text-sm text-slate-200 truncate" title={pbState?.current_item_filename ?? undefined}>
-          {pbState?.current_item_filename ?? <span className="text-slate-500">{t("playback.idle", { defaultValue: "Idle" })}</span>}
+          {pbState?.current_item_filename
+            ? cleanTitle(pbState.current_item_filename)
+            : <span className="text-slate-500">{t("playback.idle", { defaultValue: "Idle" })}</span>}
         </div>
 
         {/* Click-to-seek bar — only active while something is playing
@@ -603,7 +619,7 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
                       {isCurrent && (
                         <Play size={12} className="text-accent-500 flex-shrink-0 animate-pulse" aria-hidden />
                       )}
-                      <span className="truncate">{it.filename}</span>
+                      <span className="truncate" title={it.filename}>{cleanTitle(it.filename)}</span>
                     </div>
                     <div className="text-xs text-slate-500">
                       {isAlias
