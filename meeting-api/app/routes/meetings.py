@@ -164,6 +164,11 @@ class UpdateMeetingBody(BaseModel):
     playback_enabled: bool | None = None
     playback_loop: bool | None = None
     playback_whats_up_next: bool | None = None
+    # Picture-in-Picture egress layout. When the toggle changes (or the
+    # overlay identity changes) and an egress is currently running, the
+    # handler restarts it so the new composition takes effect immediately.
+    pip_enabled: bool | None = None
+    pip_overlay_identity: str | None = Field(default=None, max_length=80)
     # Public view-only page. Enabling requires a slug to be set (either in
     # the same PATCH or previously). Slug is normalised to lowercase and
     # checked for uniqueness across all meetings.
@@ -231,6 +236,9 @@ class MeetingOut(BaseModel):
     # True while a LiveKit ingress is publishing the current playlist item.
     playback_active: bool = False
     playback_current_item_id: str | None = None
+    # Picture-in-Picture egress layout (recording + livestream output).
+    pip_enabled: bool = False
+    pip_overlay_identity: str | None = None
     # Public view-only stream. `public_url` is computed from the slug.
     public_enabled: bool = False
     public_slug: str | None = None
@@ -300,6 +308,8 @@ def _to_out(m: Meeting) -> MeetingOut:
         playback_whats_up_next=bool(m.playback_whats_up_next),
         playback_active=bool(m.playback_ingress_id),
         playback_current_item_id=m.playback_current_item_id,
+        pip_enabled=bool(m.pip_enabled),
+        pip_overlay_identity=m.pip_overlay_identity,
         public_enabled=bool(m.public_enabled),
         public_slug=m.public_slug,
         public_url=_public_url(m),
@@ -740,6 +750,21 @@ async def update_meeting(
             from app.services.whats_next_slide import schedule_pre_generation
             schedule_pre_generation(m.id)
 
+    # Picture-in-Picture egress layout. Snapshot the before-values so we
+    # can detect a meaningful change after applying the body — if a change
+    # lands while a recording / livestream is running, we restart the
+    # egress so the new layout takes effect immediately.
+    pip_changed = False
+    if body.pip_enabled is not None:
+        if bool(m.pip_enabled) != bool(body.pip_enabled):
+            pip_changed = True
+        m.pip_enabled = body.pip_enabled
+    if body.pip_overlay_identity is not None:
+        new_overlay = body.pip_overlay_identity.strip() or None
+        if (m.pip_overlay_identity or None) != new_overlay:
+            pip_changed = True
+        m.pip_overlay_identity = new_overlay
+
     # Public view-only page. Normalise the slug, reject duplicates, and
     # auto-flip the anonymous-listing flag so the meeting also surfaces
     # on the home page Discover list while public is on.
@@ -813,7 +838,128 @@ async def update_meeting(
             finally:
                 await lk.aclose()
 
+    # PiP toggle / overlay identity changed — push the new values into
+    # LiveKit room metadata so every connected client gets the change
+    # live. Both the in-meeting `PresenterSpotlight` and the egress
+    # custom layout at `/egress-layout/pip` subscribe to
+    # `RoomEvent.RoomMetadataChanged` and re-render on the fly:
+    #
+    #   - Live viewers: `PresenterSpotlight` renders main + overlay
+    #     from raw room tracks (client-side composition).
+    #   - Recording / RTMP livestream: LiveKit Egress's headless Chrome
+    #     loads `/egress-layout/pip` which renders the same layout and
+    #     the egress encodes the page render — server-side composition
+    #     for output, identical visual layout as the live view.
+    #
+    # The compositor Puppeteer service that was meant to publish a
+    # `composite-*` track back to the SFU is intentionally NOT called
+    # — it's been shelved (see lengthy history of headless-Chrome
+    # `getDisplayMedia` / `canvas.captureStream` quirks). The two
+    # paths above already deliver PiP everywhere it needs to appear.
+    if pip_changed:
+        from app.services.egress_mgr import push_pip_metadata
+        try:
+            await push_pip_metadata(m)
+        except Exception:
+            import logging as _log
+            _log.getLogger(__name__).exception(
+                "push_pip_metadata failed for meeting %s", m.id
+            )
+
     return _to_out(m).model_dump()
+
+
+@router.post("/meetings/{meeting_id}/composite-token")
+def composite_token(
+    meeting_id: str,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Mint a publish-capable token for the compositor session of this
+    meeting. Returns the LiveKit URL, the room name, the chosen overlay
+    identity, and the JWT. Owner / co-host only.
+
+    Until the compositor Docker service is in place (Pass 2 of the PiP
+    rebuild), this endpoint also lets the host paste the resulting
+    `/egress-layout/composite?...` URL into a browser tab to verify
+    end-to-end that the composite track lands in the room.
+    """
+    from app.livekit_client import mint_composite_token
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
+    if not m or not is_moderator(m, user.sub):
+        raise HTTPException(status_code=404, detail="meeting not found")
+    token = mint_composite_token(room_name=m.room_name)
+    base = f"{settings.public_url}/egress-layout/composite"
+    # Pre-build the URL the way LiveKit Egress would (room, token, url)
+    # plus our `overlay` hint. Quote everything so a stray + or = doesn't
+    # silently mangle the WebSocket URL.
+    from urllib.parse import urlencode
+    qs = urlencode({
+        "room": m.room_name,
+        "token": token,
+        "url": settings.livekit_ws_url,
+        "overlay": m.pip_overlay_identity or "",
+    })
+    return {
+        "livekit_url": settings.livekit_ws_url,
+        "token": token,
+        "room_name": m.room_name,
+        "overlay_identity": m.pip_overlay_identity,
+        "composite_url": f"{base}?{qs}",
+    }
+
+
+@router.get("/meetings/{meeting_id}/camera-publishers")
+async def list_camera_publishers(
+    meeting_id: str,
+    user: RequireUser,
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    """Live list of participants currently publishing a camera in the
+    meeting's LiveKit room. Powers the Picture-in-Picture overlay
+    dropdown in the in-meeting settings panel. Owner / co-host only —
+    same gating as the rest of `update_meeting`. Returns identity +
+    display name; the chosen identity is persisted on the meeting via
+    `PATCH /meetings/{id}` `pip_overlay_identity`."""
+    from livekit import api as lkapi
+    m = db.query(Meeting).filter_by(id=meeting_id).first()
+    if not m or not is_moderator(m, user.sub):
+        raise HTTPException(status_code=404, detail="meeting not found")
+    lk = livekit_api()
+    try:
+        pr = await lk.room.list_participants(
+            lkapi.ListParticipantsRequest(room=m.room_name)
+        )
+    except Exception:
+        # Room not in LiveKit yet (no one joined since startup): nothing
+        # to list. Return empty rather than erroring so the UI can still
+        # surface "no cameras live" instead of a red banner.
+        return []
+    finally:
+        await lk.aclose()
+
+    out: list[dict] = []
+    for p in pr.participants:
+        # Skip the reserved playback ingress identity — it publishes a
+        # video track but it's never a "real" webcam pick.
+        if p.identity == "playback":
+            continue
+        # Only standard human participants; bots / SIP / agent / egress
+        # workers have their own Kind values.
+        if p.kind != lkapi.ParticipantInfo.Kind.STANDARD:
+            continue
+        has_cam = any(
+            t.type == lkapi.TrackType.VIDEO
+            and getattr(t, "source", None) == lkapi.TrackSource.CAMERA
+            for t in p.tracks
+        )
+        if not has_cam:
+            continue
+        out.append({
+            "identity": p.identity,
+            "name": p.name or p.identity,
+        })
+    return out
 
 
 @router.get("/discoverable")

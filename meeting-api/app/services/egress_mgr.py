@@ -19,6 +19,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import quote
 
 from fastapi import HTTPException
 from livekit import api
@@ -31,6 +32,24 @@ from app.models import Meeting, ModerationAudit, Recording
 
 if TYPE_CHECKING:
     from app.routes.recordings import RecordingLayout
+
+
+# Every egress (recording + livestream) renders through our custom Web
+# template, so PiP toggle / overlay-identity changes propagate live via
+# room metadata without restarting the egress. The page reads its
+# composition state from `RoomEvent.RoomMetadataChanged` (see
+# EgressLayoutPiP.tsx) — `?overlay=` is an initial-state hint only.
+_EGRESS_TEMPLATE_PATH = "/egress-layout/pip"
+
+
+def _egress_custom_base_url(m: Meeting) -> str:
+    """URL the egress headless Chrome fetches. LiveKit appends its own
+    `url`/`token`/`room`/`layout` query params. We pass `overlay` as a
+    bootstrapping hint — the page subsequently re-reads it from room
+    metadata so changes during the egress don't require a restart."""
+    base = f"{settings.public_url}{_EGRESS_TEMPLATE_PATH}"
+    overlay = m.pip_overlay_identity or ""
+    return f"{base}?overlay={quote(overlay)}" if overlay else base
 
 
 def _build_stream_url(rtmps_url: str, stream_key: str) -> str:
@@ -150,11 +169,20 @@ async def reconcile_egress(
     if layout is None:
         layout = m.current_egress_layout or "speaker"  # type: ignore[assignment]
 
+    # Every egress now goes through our custom React template via
+    # `custom_base_url`. The `layout` arg is passed to that page as a
+    # default-rendering hint (LiveKit appends it to the URL as
+    # `?layout=…`) but PiP state lives in room metadata, not the layout
+    # name. This means toggling `pip_enabled` or changing the overlay
+    # identity never requires an egress restart — the page just
+    # re-renders when room metadata changes.
+    effective_layout = layout
+
     # Idempotent: if the current state already matches what's wanted AND
     # the layout is the same, leave the egress alone. A layout change
     # always requires a restart — LiveKit egress can't swap room
     # composite templates mid-stream.
-    layout_changed = bool(cur_egress_id) and m.current_egress_layout != layout
+    layout_changed = bool(cur_egress_id) and m.current_egress_layout != effective_layout
     if cur_has_file == want_file and cur_has_stream == want_stream and not layout_changed:
         return {"egress_id": cur_egress_id, "recording_id": None, "no_change": True}
 
@@ -186,6 +214,7 @@ async def reconcile_egress(
                     m.room_name,
                     recording_active=want_file,
                     streaming_active=want_stream,
+                    meeting=m,
                 )
             except Exception:  # noqa: BLE001
                 pass
@@ -244,8 +273,12 @@ async def reconcile_egress(
 
     req_kwargs: dict = {
         "room_name": m.room_name,
-        "layout": layout,
+        "layout": effective_layout,
         "advanced": _encoding_options(),
+        # Always route through our custom Web template — see comment on
+        # `_egress_custom_base_url`. Egress page reads PiP state from
+        # room metadata, so toggling PiP after start needs no restart.
+        "custom_base_url": _egress_custom_base_url(m),
     }
     if file_outputs:
         req_kwargs["file_outputs"] = file_outputs
@@ -267,6 +300,7 @@ async def reconcile_egress(
                 m.room_name,
                 recording_active=want_file,
                 streaming_active=want_stream,
+                meeting=m,
             )
         except Exception:  # noqa: BLE001
             pass
@@ -293,7 +327,7 @@ async def reconcile_egress(
     if want_stream:
         m.livestream_egress_id = new_egress_id
 
-    m.current_egress_layout = layout
+    m.current_egress_layout = effective_layout
 
     db.add(
         ModerationAudit(
@@ -312,13 +346,18 @@ async def _set_recording_metadata(
     room_name: str,
     recording_active: bool,
     streaming_active: bool | None = None,
+    meeting: Meeting | None = None,
 ) -> None:
     """Update the room-metadata flags that drive the in-meeting indicator
     badges. `recording_active` flips the red Recording pill for every
     viewer; `streaming_active` (when not None) flips a similarly-styled
     Streaming pill. Passing None for streaming preserves whatever value
     is already on the room metadata, which lets the recording-only stop
-    path avoid clobbering a livestream that's still running."""
+    path avoid clobbering a livestream that's still running.
+
+    When `meeting` is provided, also writes `pip_enabled` and
+    `pip_overlay_identity` so a fresh egress lands on the right
+    composition without a second LiveKit roundtrip."""
     import json
 
     rooms = await lk.room.list_rooms(api.ListRoomsRequest(names=[room_name]))
@@ -331,6 +370,86 @@ async def _set_recording_metadata(
     current["recording_active"] = recording_active
     if streaming_active is not None:
         current["streaming_active"] = streaming_active
+    if meeting is not None:
+        current["pip_enabled"] = bool(meeting.pip_enabled)
+        current["pip_overlay_identity"] = meeting.pip_overlay_identity or None
     await lk.room.update_room_metadata(
         api.UpdateRoomMetadataRequest(room=room_name, metadata=json.dumps(current))
     )
+
+
+async def sync_compositor_session(m: Meeting) -> None:
+    """Tell the compositor service to start or stop a Puppeteer session
+    for this meeting based on `pip_enabled`. Mints a fresh
+    publish-capable token each call so the compositor never has to
+    refresh a stale one. Best-effort: a transient compositor outage
+    won't fail the API call that triggered it (the host just loses the
+    composite track until the next toggle).
+
+    Idempotent on both sides: POSTing /sessions for a room that already
+    has a session replaces it; DELETEing one that doesn't exist is a
+    no-op."""
+    import logging
+    from app.livekit_client import mint_composite_token
+
+    log = logging.getLogger(__name__)
+    base = settings.compositor_url.rstrip("/")
+
+    try:
+        import httpx  # type: ignore
+    except ImportError:
+        log.warning(
+            "sync_compositor_session: httpx not installed — compositor "
+            "sessions will not be controlled. Add httpx to requirements.",
+        )
+        return
+
+    try:
+        if m.pip_enabled:
+            token = mint_composite_token(room_name=m.room_name)
+            payload = {
+                "token": token,
+                "livekit_url": settings.livekit_ws_url,
+                "overlay_identity": m.pip_overlay_identity or "",
+            }
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                r = await client.post(
+                    f"{base}/sessions/{m.room_name}", json=payload
+                )
+                r.raise_for_status()
+        else:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                r = await client.delete(f"{base}/sessions/{m.room_name}")
+                r.raise_for_status()
+    except Exception:
+        log.exception("sync_compositor_session failed for %s", m.id)
+
+
+async def push_pip_metadata(m: Meeting) -> None:
+    """Mirror `pip_enabled` + `pip_overlay_identity` into the LiveKit
+    room metadata so every connected client (and the egress headless
+    Chrome) gets the change live via `RoomEvent.RoomMetadataChanged`.
+    No-op if the room isn't running on the SFU yet — the SPA will read
+    the values from the meeting row on join."""
+    import json
+
+    lk = livekit_api()
+    try:
+        rooms = await lk.room.list_rooms(
+            api.ListRoomsRequest(names=[m.room_name])
+        )
+        if not rooms.rooms:
+            return
+        try:
+            current = json.loads(rooms.rooms[0].metadata or "{}")
+        except ValueError:
+            current = {}
+        current["pip_enabled"] = bool(m.pip_enabled)
+        current["pip_overlay_identity"] = m.pip_overlay_identity or None
+        await lk.room.update_room_metadata(
+            api.UpdateRoomMetadataRequest(
+                room=m.room_name, metadata=json.dumps(current)
+            )
+        )
+    finally:
+        await lk.aclose()

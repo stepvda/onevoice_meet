@@ -65,7 +65,11 @@ export default function ParticipantsPanel({ open, onClose, meetingId, isOwner }:
     return !!pub && !pub.isMuted;
   }
 
-  const all = [localParticipant, ...remotes].filter(Boolean) as Participant[];
+  // Filter out reserved bot identities — `composite-<room>` is the
+  // server-side PiP compositor's publishing identity, never a real
+  // human, so it shouldn't appear in the participants list.
+  const all = ([localParticipant, ...remotes].filter(Boolean) as Participant[])
+    .filter((p) => !p.identity.startsWith("composite-"));
 
   return (
     <aside

@@ -110,6 +110,11 @@ def lightweight_migrate() -> None:
                 ("playback_paused_offset_seconds", "ALTER TABLE meetings ADD COLUMN playback_paused_offset_seconds REAL"),
                 ("public_enabled", "ALTER TABLE meetings ADD COLUMN public_enabled BOOLEAN DEFAULT 0 NOT NULL"),
                 ("public_slug", "ALTER TABLE meetings ADD COLUMN public_slug TEXT"),
+                # Picture-in-Picture egress layout (recordings + livestream).
+                # Off by default; the host picks an overlay identity via
+                # the in-meeting settings panel.
+                ("pip_enabled", "ALTER TABLE meetings ADD COLUMN pip_enabled BOOLEAN DEFAULT 0 NOT NULL"),
+                ("pip_overlay_identity", "ALTER TABLE meetings ADD COLUMN pip_overlay_identity TEXT"),
             )),
             ("chat_messages", (
                 ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),

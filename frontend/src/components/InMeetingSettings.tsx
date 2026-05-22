@@ -11,6 +11,7 @@ import {
   Copy,
   Check,
   Pencil,
+  PictureInPicture2,
   X,
 } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
@@ -21,7 +22,7 @@ import type {
   Theme,
 } from "../lib/preferences";
 import { Toggle } from "./ui";
-import { api, MeetingOut } from "../lib/api";
+import { api, MeetingOut, CameraPublisher } from "../lib/api";
 
 interface Props {
   open: boolean;
@@ -284,6 +285,10 @@ export default function InMeetingSettings({
               {t("inMeetingSettings.livestreamConfigure", { defaultValue: "Configure live stream…" })}
             </button>
           </Group>
+        )}
+
+        {meeting && onMeetingUpdated && (
+          <PiPGroup meeting={meeting} onMeetingUpdated={onMeetingUpdated} />
         )}
 
 
@@ -551,6 +556,173 @@ function PublicGroup({
             {publicUrl}
           </p>
         )}
+      </div>
+    </section>
+  );
+}
+
+
+function PiPGroup({
+  meeting,
+  onMeetingUpdated,
+}: {
+  meeting: MeetingOut;
+  onMeetingUpdated: (m: MeetingOut) => void;
+}) {
+  const { t } = useTranslation();
+  const [enabled, setEnabled] = useState(!!meeting.pip_enabled);
+  const [overlayIdentity, setOverlayIdentity] = useState(
+    meeting.pip_overlay_identity ?? "",
+  );
+  const [publishers, setPublishers] = useState<CameraPublisher[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  // Keep local state synced with parent — the host can flip these from
+  // another tab and we want the panel to pick up the new value.
+  useEffect(() => {
+    setEnabled(!!meeting.pip_enabled);
+    setOverlayIdentity(meeting.pip_overlay_identity ?? "");
+  }, [meeting.pip_enabled, meeting.pip_overlay_identity]);
+
+  // Poll the live camera-publisher list while the panel is open so
+  // the dropdown reflects who's actually streaming a camera right now.
+  // 5 s cadence is cheap (one LiveKit `list_participants` call) and
+  // keeps the UI fresh enough that the host can pick a participant
+  // immediately after they turn their camera on.
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const list = await api.listCameraPublishers(meeting.id);
+        if (!cancelled) setPublishers(list);
+      } catch {
+        // best-effort; empty list is fine
+      }
+    }
+    void load();
+    const timer = window.setInterval(load, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [meeting.id]);
+
+  // If the currently-saved identity isn't in the live list (camera off,
+  // participant disconnected), surface them as a disabled-looking entry
+  // so the dropdown isn't confusingly blank.
+  const options: [string, string][] = [
+    [
+      "",
+      t("inMeetingSettings.pipOverlayNone", {
+        defaultValue: "— Pick a participant —",
+      }),
+    ],
+    ...publishers.map((p) => [p.identity, p.name] as [string, string]),
+  ];
+  if (
+    overlayIdentity &&
+    !publishers.some((p) => p.identity === overlayIdentity)
+  ) {
+    options.push([
+      overlayIdentity,
+      t("inMeetingSettings.pipOverlayOffline", {
+        defaultValue: "{{name}} (camera off)",
+        name: overlayIdentity,
+      }),
+    ]);
+  }
+
+  const dirty =
+    enabled !== !!meeting.pip_enabled ||
+    (overlayIdentity || null) !== (meeting.pip_overlay_identity || null);
+
+  async function save() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const updated = await api.updateMeeting(meeting.id, {
+        pip_enabled: enabled,
+        pip_overlay_identity: overlayIdentity || null,
+      });
+      onMeetingUpdated(updated);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section>
+      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+        <span className="text-slate-500">
+          <PictureInPicture2 size={14} />
+        </span>
+        {t("inMeetingSettings.groupPip", {
+          defaultValue: "Picture-in-Picture",
+        })}
+      </h3>
+      <div className="flex flex-col gap-3">
+        <Toggle
+          id="im-pip-enabled"
+          label={t("inMeetingSettings.pipEnable", {
+            defaultValue: "Picture-in-Picture for recording / live stream",
+          })}
+          checked={enabled}
+          onChange={(v) => setEnabled(v)}
+        />
+        <p className="text-xs text-slate-500">
+          {t("inMeetingSettings.pipHint", {
+            defaultValue:
+              "When on, recordings and the live stream show the screenshare or playback video full-bleed with a small camera overlay in the bottom-right corner. Falls back to active speaker when neither a screenshare nor a playback video is live.",
+          })}
+        </p>
+
+        {enabled && (
+          <Field
+            label={t("inMeetingSettings.pipOverlay", {
+              defaultValue: "Overlay camera",
+            })}
+            htmlFor="im-pip-overlay"
+          >
+            <SelectInline
+              id="im-pip-overlay"
+              ariaLabel={t("inMeetingSettings.pipOverlay", {
+                defaultValue: "Overlay camera",
+              })}
+              value={overlayIdentity}
+              onChange={(v) => setOverlayIdentity(v)}
+              options={options}
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              {t("inMeetingSettings.pipOverlayHint", {
+                defaultValue:
+                  "Lists participants whose camera is currently on. If the chosen participant turns their camera off, the overlay hides automatically.",
+              })}
+            </p>
+          </Field>
+        )}
+
+        {err && (
+          <p data-testid="im-pip-error" className="text-xs text-red-400">
+            {err}
+          </p>
+        )}
+
+        <div>
+          <button
+            type="button"
+            onClick={save}
+            disabled={busy || !dirty}
+            data-testid="im-pip-save"
+            className="px-3 py-1.5 rounded-md bg-accent-500 hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium"
+          >
+            {busy
+              ? t("common.saving", { defaultValue: "Saving…" })
+              : t("common.save", { defaultValue: "Save" })}
+          </button>
+        </div>
       </div>
     </section>
   );

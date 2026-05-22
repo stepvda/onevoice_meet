@@ -1,0 +1,14 @@
+{
+  "name": "meet-compositor",
+  "version": "1.0.0",
+  "description": "Headless-Chrome PiP compositor for meet.witysk.org. Subscribes to a LiveKit room, draws a Picture-in-Picture composition onto a canvas, and publishes the canvas back to the room as a new participant track.",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "puppeteer-core": "^23.0.0"
+  }
+}

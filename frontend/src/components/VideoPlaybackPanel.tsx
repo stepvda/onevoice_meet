@@ -27,7 +27,7 @@ interface Props {
 }
 
 const ACCEPT = "video/mp4,video/quicktime,video/x-m4v";
-const MAX_BYTES = 500 * 1024 * 1024;
+const MAX_BYTES = 1024 * 1024 * 1024;
 
 function fmtSize(b: number): string {
   if (b < 1024) return `${b} B`;
@@ -232,7 +232,7 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
       if (file.size > MAX_BYTES) {
         setErr(
           t("playback.tooLarge", {
-            defaultValue: "{{name}} is over the 500 MB cap.",
+            defaultValue: "{{name}} is over the 1 GB cap.",
             name: file.name,
           }),
         );

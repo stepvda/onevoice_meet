@@ -57,6 +57,55 @@ def mint_participant_token(
     return tok.to_jwt()
 
 
+COMPOSITE_IDENTITY_PREFIX = "composite-"
+
+
+def mint_composite_token(
+    *,
+    room_name: str,
+    ttl_hours: int = 12,
+) -> str:
+    """Token for the compositor service. It connects as
+    `composite-<room_name>` (one per room, by construction), subscribes
+    to every track, draws a PiP composition onto a canvas, and publishes
+    the canvas back to the room as a new participant track via the
+    LiveKit JS SDK.
+
+    `hidden=False` because we WANT every other client to be able to
+    subscribe to the composite's published tracks. The compositor is
+    filtered out of the in-meeting participants panel by the SPA on
+    identity-prefix match, not by LiveKit-level hiding (hidden
+    participants' published tracks aren't distributed).
+
+    `can_publish_sources` restricts the compositor to publishing screen
+    + microphone — a safety rail in case the page is ever loaded by
+    something other than our trusted Puppeteer.
+    """
+    identity = f"{COMPOSITE_IDENTITY_PREFIX}{room_name}"
+    grants = api.VideoGrants(
+        room_join=True,
+        room=room_name,
+        can_publish=True,
+        can_publish_data=False,
+        can_subscribe=True,
+        can_update_own_metadata=False,
+        room_admin=False,
+        hidden=False,
+    )
+    # Restrict to screen + microphone sources. The composite is published
+    # under Track.Source.ScreenShare so clients can treat it like a
+    # screenshare (same priority in the spotlight ladder).
+    grants.can_publish_sources = ["screen_share", "screen_share_audio"]
+    return (
+        _token()
+        .with_identity(identity)
+        .with_name("Composite")
+        .with_grants(grants)
+        .with_ttl(timedelta(hours=ttl_hours))
+        .to_jwt()
+    )
+
+
 def mint_viewer_token(
     *,
     room_name: str,

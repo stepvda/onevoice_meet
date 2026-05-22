@@ -106,9 +106,16 @@ export interface MeetingOut {
   playback_whats_up_next?: boolean;
   playback_active?: boolean;
   playback_current_item_id?: string | null;
+  pip_enabled?: boolean;
+  pip_overlay_identity?: string | null;
   public_enabled?: boolean;
   public_slug?: string | null;
   public_url?: string | null;
+}
+
+export interface CameraPublisher {
+  identity: string;
+  name: string;
 }
 
 export interface PlaybackItemOut {
@@ -448,6 +455,8 @@ export const api = {
       playback_enabled?: boolean;
       playback_loop?: boolean;
       playback_whats_up_next?: boolean;
+      pip_enabled?: boolean;
+      pip_overlay_identity?: string | null;
       public_enabled?: boolean;
       public_slug?: string | null;
     }
@@ -456,6 +465,11 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
+
+  listCameraPublishers: (meetingId: string) =>
+    request<CameraPublisher[]>(
+      `/api/v1/meetings/${meetingId}/camera-publishers`,
+    ),
 
   listMeetings: () => request<MeetingOut[]>("/api/v1/meetings"),
 

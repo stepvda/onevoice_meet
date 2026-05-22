@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     # With network_mode: host, LiveKit listens on the host at 7880.
     livekit_server_url: str = "http://host.docker.internal:7880"
 
+    # PiP compositor service (a separate Docker container running
+    # Puppeteer + Chromium). meeting-api POSTs to it whenever a meeting
+    # toggles `pip_enabled`. Reachable via Docker DNS within the
+    # internal bridge network.
+    compositor_url: str = "http://compositor:8090"
+
     # meeting-api
     meeting_api_port: int = 8080
     database_url: str = "sqlite:////var/lib/meet/meet.db"
@@ -79,7 +85,7 @@ class Settings(BaseSettings):
     recording_retention_days: int = 30
     # When the filesystem holding `recordings_dir` reaches this fraction of
     # capacity, the oldest completed recordings are deleted to make room.
-    recording_disk_cap_ratio: float = 0.75
+    recording_disk_cap_ratio: float = 0.90
     # Override default 720p30 H.264 Main encoding with 1080p30. Enable only if
     # the egress container has the CPU headroom (≈1 extra core).
     recording_preset_1080p: bool = False

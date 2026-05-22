@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import Sidebar, { MainArea } from "./components/Sidebar";
 // Route components are code-split so the initial bundle stays small. Without
 // this, every visitor downloads the PayPal SDK, the LiveKit client, the emoji
@@ -8,6 +8,8 @@ import Sidebar, { MainArea } from "./components/Sidebar";
 const Lobby = lazy(() => import("./routes/Lobby"));
 const Room = lazy(() => import("./routes/Room"));
 const PublicView = lazy(() => import("./routes/PublicView"));
+const EgressLayoutPiP = lazy(() => import("./routes/EgressLayoutPiP"));
+const EgressLayoutComposite = lazy(() => import("./routes/EgressLayoutComposite"));
 const CreateMeeting = lazy(() => import("./routes/CreateMeeting"));
 const Recordings = lazy(() => import("./routes/Recordings"));
 const Settings = lazy(() => import("./routes/Settings"));
@@ -54,6 +56,24 @@ export default function App() {
     };
   }, []);
 
+  // Egress-only routes render without the global Sidebar / MainArea
+  // chrome — LiveKit's headless Chrome captures the page as-is, so any
+  // app chrome (left-hand nav, top bar, etc.) would end up in the
+  // recording / livestream output. Detected by path prefix so we don't
+  // have to thread an `isEgress` prop through every layout component.
+  const location = useLocation();
+  const isEgressRoute = location.pathname.startsWith("/egress-layout/");
+  if (isEgressRoute) {
+    return (
+      <Suspense fallback={<div style={{ background: "#000", position: "fixed", inset: 0 }} />}>
+        <Routes>
+          <Route path="/egress-layout/pip" element={<EgressLayoutPiP />} />
+          <Route path="/egress-layout/composite" element={<EgressLayoutComposite />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
   // TICafeProvider wraps the entire app so the audio session survives route
   // changes — the only triggers that disconnect are an explicit click on the
   // bar's main toggle, or `window.dispatchEvent(new Event("ti-cafe-logout"))`
@@ -88,6 +108,12 @@ export default function App() {
           {/* Public view-only stream. Anyone can open this URL — no auth,
               no publish rights, no participant-panel presence. */}
           <Route path="/public/:publicSlug" element={<PublicView />} />
+          {/* Custom egress layout template — only loaded by LiveKit's
+              headless Chrome when the meeting's `pip_enabled` flag is on.
+              Reads url/token/room/layout query params (from LiveKit) plus
+              our `overlay` param, connects to the room, and renders the
+              PiP composition. */}
+          <Route path="/egress-layout/pip" element={<EgressLayoutPiP />} />
           {/* Live meeting view */}
           <Route path="/r/:roomName" element={<Room />} />
           {/* Backward-compat: old links in the wild are /j/<slug> */}

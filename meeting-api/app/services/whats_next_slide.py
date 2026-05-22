@@ -157,6 +157,19 @@ def build_slide_data(
     sorted_items = items  # already ordered
     n = len(sorted_items)
 
+    # Effective duration: aliases (rows with `source_item_id`) inherit
+    # from the source row's value. Historical aliases born while the
+    # source's duration was still NULL never got it propagated, so they'd
+    # otherwise be silently skipped over.
+    def _eff_dur(it: PlaybackItem) -> float:
+        if it.duration_seconds is not None:
+            return float(it.duration_seconds)
+        if it.source_item_id:
+            src = by_id.get(it.source_item_id)
+            if src is not None and src.duration_seconds is not None:
+                return float(src.duration_seconds)
+        return 0.0
+
     # Resolve which item is the "first row of the rundown".
     anchor = None
     if real_item_id:
@@ -168,18 +181,18 @@ def build_slide_data(
         if cur is not None:
             after = [it for it in sorted_items if it.position > cur.position]
             anchor = next(
-                (it for it in after if (it.duration_seconds or 0) > ELIGIBLE_MIN_DURATION_S),
+                (it for it in after if _eff_dur(it) > ELIGIBLE_MIN_DURATION_S),
                 None,
             )
             if anchor is None and m.playback_loop:
                 anchor = next(
-                    (it for it in sorted_items if (it.duration_seconds or 0) > ELIGIBLE_MIN_DURATION_S),
+                    (it for it in sorted_items if _eff_dur(it) > ELIGIBLE_MIN_DURATION_S),
                     None,
                 )
     if anchor is None:
         # Cold-start pre-gen: the very first eligible item in the list.
         anchor = next(
-            (it for it in sorted_items if (it.duration_seconds or 0) > ELIGIBLE_MIN_DURATION_S),
+            (it for it in sorted_items if _eff_dur(it) > ELIGIBLE_MIN_DURATION_S),
             None,
         )
     if anchor is None:
@@ -198,7 +211,7 @@ def build_slide_data(
     elapsed = 0.0
     for idx in walk:
         it = sorted_items[idx]
-        dur = float(it.duration_seconds or 0)
+        dur = _eff_dur(it)
         if dur > ELIGIBLE_MIN_DURATION_S:
             rundown.append({
                 "id": it.id,
@@ -647,12 +660,59 @@ def render_slide_sync(data: dict) -> Path:
         wav = td_path / "music.wav"
         _render_slide_png(data, png)
         _render_music_wav(wav)
-        # Encode to a temp file then atomically move into the cache so
-        # concurrent readers never see a half-written file.
-        partial = out.with_suffix(".mp4.partial")
-        _encode_mp4(png, wav, partial)
-        partial.replace(out)
+        # Encode to a UNIQUE temp file then atomically move into the
+        # cache. Two concurrent renders of the same slide (e.g.
+        # pre-gen task + on-demand render from `_start_ingress_for_item`)
+        # used to share a single `<key>.mp4.partial` path — when one
+        # finished and renamed it to `<key>.mp4`, the other ffmpeg's
+        # `+faststart` second pass would fail mid-encode with
+        # "Unable to re-open … No such file or directory", and the
+        # caller fell back to playing the real item without the slide.
+        fd, tmp_path = tempfile.mkstemp(dir=CACHE_DIR, prefix=f"{out.stem}-", suffix=".mp4")
+        os.close(fd)
+        partial = Path(tmp_path)
+        try:
+            _encode_mp4(png, wav, partial)
+            # Sanity-probe before publishing: an ffmpeg that returns rc=0
+            # but writes a corrupt file (e.g. with `mvhd time scale=N/A`)
+            # would otherwise enter the cache and silently fail every
+            # LiveKit ingress that tries to fetch it (state=3 ERROR), and
+            # the caller falls back to direct play — i.e. the slide gets
+            # skipped. Cheap insurance: ~50 ms per render.
+            if not _validate_mp4(partial):
+                raise RuntimeError(f"slide encode produced an unreadable file: {partial}")
+            # Atomic; if a peer already wrote `out`, last writer wins —
+            # the content is content-addressed by hash so any of the
+            # concurrent encodes is equally valid.
+            partial.replace(out)
+        finally:
+            try:
+                partial.unlink()
+            except FileNotFoundError:
+                pass
     return out
+
+
+def _validate_mp4(path: Path) -> bool:
+    """ffprobe duration sanity-check. Returns True iff the file reports
+    a positive duration — i.e. it's a complete, parseable MP4."""
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", str(path)],
+            capture_output=True, text=True, timeout=5,
+        )
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+        return False
+    if out.returncode != 0:
+        return False
+    raw = out.stdout.strip()
+    if not raw or raw == "N/A":
+        return False
+    try:
+        return float(raw) > 0
+    except ValueError:
+        return False
 
 
 async def render_slide(data: dict) -> Path:

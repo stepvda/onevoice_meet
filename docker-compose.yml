@@ -166,6 +166,27 @@ services:
     depends_on:
       - redis
 
+  # Headless-Chrome PiP compositor. Listens on internal port 8090;
+  # meeting-api calls POST /sessions/<room> when a meeting flips
+  # `pip_enabled` on and DELETE /sessions/<room> when it flips off.
+  # The page it launches loads the SPA over the public URL and
+  # connects to LiveKit via wss://meet.witysk.org/rtc (so the same
+  # path participants use). One Chromium per service instance, one
+  # page per active room.
+  compositor:
+    build: ./compositor
+    restart: unless-stopped
+    environment:
+      PUBLIC_URL: "https://meet.witysk.org"
+    # Internal-only; meeting-api reaches it via Docker DNS as
+    # "compositor:8090". Never exposed to the host.
+    expose:
+      - "8090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - livekit
+
   # whisper.cpp running locally so completed recordings get transcribed
   # without an external API. Started lazily — meeting-api will keep
   # retrying if this container is still booting when a recording ends.

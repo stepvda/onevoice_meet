@@ -52,6 +52,23 @@ meet.witysk.org {
         file_server
     }
 
+    # /egress-layout/* is the custom Web template used by LiveKit Egress.
+    # LiveKit's headless Chrome fetches this page with no cookies and
+    # passes the LiveKit WS URL as a query param. In this deployment
+    # that URL is `ws://host.docker.internal:7880` (LiveKit runs on the
+    # host network, egress on the bridge network reaches it via the
+    # docker host gateway). The page subsequently connects to that URL
+    # via WebSocket, so `connect-src` must allow it — and since the URL
+    # is server-controlled and the page is only ever loaded by trusted
+    # egress chrome, we relax `connect-src` to `*` here. X-Frame-Options
+    # is omitted, consistent with `/public/*`.
+    handle /egress-layout/* {
+        header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src *; worker-src 'self' blob:; frame-ancestors *; base-uri 'self'; form-action 'self'"
+        root * /srv/frontend
+        try_files {path} /index.html
+        file_server
+    }
+
     # Frontend SPA fallback — locked-down framing for all other paths.
     # CSP rationale (Phase 12):
     #   - self for scripts/styles bundled by Vite

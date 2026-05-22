@@ -247,12 +247,22 @@ async def _start_ingress_for_item(
     is remembered in `playback_pending_item_id` and gets started by
     `advance_after_ingress_ended` once the slide ends. Set
     `skip_slide=True` from inside that detour to break the recursion."""
+    # Aliases (playlist links) inherit duration from their source row, but
+    # historical aliases born while the source's duration was still NULL
+    # never got it propagated — read through to the source so those rows
+    # still pass the slide eligibility check.
+    effective_duration: Optional[float] = item.duration_seconds
+    if effective_duration is None and item.source_item_id:
+        src_row = db.query(PlaybackItem).filter_by(id=item.source_item_id).first()
+        if src_row is not None:
+            effective_duration = src_row.duration_seconds
+
     slide_url: Optional[str] = None
     if (
         not skip_slide
         and from_seconds == 0
         and m.playback_whats_up_next
-        and (item.duration_seconds or 0) > 300
+        and (effective_duration or 0) > 300
     ):
         from app.services.whats_next_slide import (
             build_slide_data,

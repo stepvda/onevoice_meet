@@ -125,6 +125,15 @@ class Meeting(Base):
     # the egress with the same layout the user originally picked instead of
     # silently switching to "speaker".
     current_egress_layout: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Picture-in-Picture egress layout. When enabled, recordings and
+    # livestream output use a custom Web template that renders the main
+    # source (active screenshare or playback participant, falling back to
+    # the active speaker) full-bleed with a small corner overlay of the
+    # chosen participant's camera. `pip_overlay_identity` is the LiveKit
+    # participant identity whose camera goes in the corner; NULL means
+    # the host hasn't picked one yet (overlay is hidden in that case).
+    pip_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    pip_overlay_identity: Mapped[str | None] = mapped_column(String(80), nullable=True)
     # Video playback: host uploads MP4s into a playlist (PlaybackItem rows
     # below) and clicks Play to ingest them as a participant track via
     # LiveKit Ingress (URL_INPUT). `playback_enabled` is the per-meeting

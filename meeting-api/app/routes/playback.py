@@ -175,8 +175,14 @@ def _backfill_duration(item_id: str) -> None:
     """Background task: probe and persist duration for a single item.
     Idempotent — re-runs are safe (file unchanged → same duration). On
     failure (no file, ffprobe error) we set the duration to NULL so the
-    next list-call doesn't reschedule this item every poll."""
+    next list-call doesn't reschedule this item every poll.
+
+    Also propagates the new duration onto any alias rows pointing at
+    this source — without that, aliases born while the source's duration
+    was still NULL stay NULL forever, which makes them invisible to the
+    "What's up next" slide eligibility check."""
     from app.db import SessionLocal
+    from sqlalchemy import update
     with SessionLocal() as db:
         item = db.query(PlaybackItem).filter_by(id=item_id).first()
         if not item or not item.file_path or item.source_item_id is not None:
@@ -186,6 +192,14 @@ def _backfill_duration(item_id: str) -> None:
         dur = _ffprobe_duration(item.file_path)
         if dur is not None:
             item.duration_seconds = dur
+            db.execute(
+                update(PlaybackItem)
+                .where(
+                    PlaybackItem.source_item_id == item.id,
+                    PlaybackItem.duration_seconds.is_(None),
+                )
+                .values(duration_seconds=dur)
+            )
             db.commit()
 
 # Per-file size cap stays — protects the upload round-trip and the host
@@ -193,7 +207,7 @@ def _backfill_duration(item_id: str) -> None:
 # There is intentionally no per-playlist item count cap: the host
 # decides; reasonable wall-clock total runtime constrains itself
 # naturally via the disk-cap retention job.
-_MAX_FILE_BYTES = 500 * 1024 * 1024
+_MAX_FILE_BYTES = 1024 * 1024 * 1024
 # Reorder requests are size-bounded to a value comfortably above any
 # realistic playlist length so a malformed request can't exhaust the
 # server. Not user-visible.
@@ -375,6 +389,18 @@ def duplicate_playback_item(
     # is always enough at playback time and `delete` only has to walk
     # one set of dependants.
     root = _resolve_source(src, db)
+    # If the source's duration hasn't been backfilled yet, probe now so
+    # the alias is born with a real value. Aliases never get probed
+    # (they have no file of their own) and the lazy-backfill task only
+    # touches source rows — without this eager probe, a duplicate created
+    # right after upload can be stuck with NULL duration indefinitely,
+    # which would silently disqualify it from the "What's up next"
+    # slide eligibility check.
+    if root.duration_seconds is None and root.file_path:
+        probed = _ffprobe_duration(root.file_path)
+        if probed is not None:
+            root.duration_seconds = probed
+            db.commit()
     alias = PlaybackItem(
         id=str(ULID()),
         meeting_id=m.id,
@@ -387,9 +413,7 @@ def duplicate_playback_item(
         file_size_bytes=0,
         mime_type=root.mime_type,
         # Mirror the source's duration so the alias shows the same
-        # time in the playlist UI. If the source is still pending a
-        # lazy backfill, the alias gets a follow-up update path via
-        # `_to_out` (which resolves alias→source on read).
+        # time in the playlist UI.
         duration_seconds=root.duration_seconds,
     )
     db.add(alias)
@@ -713,7 +737,7 @@ _RANGE_CHUNK = 1024 * 1024  # 1 MiB reads
 
 def _iter_file_range(path: Path, start: int, end: int):
     """Yield bytes [start, end_inclusive] from `path` in 1 MiB chunks. Used
-    as the StreamingResponse body so we don't load 500 MB into RAM."""
+    as the StreamingResponse body so we don't load 1 GB into RAM."""
     remaining = end - start + 1
     with path.open("rb") as fh:
         fh.seek(start)
