@@ -115,7 +115,7 @@ export default function Vouchers() {
 
   if (needsSignIn) {
     return (
-      <div className="p-4 lg:p-8 max-w-2xl mx-auto">
+      <div className="p-4 lg:p-8 max-w-4xl mx-auto">
         <SignInPrompt
           icon={Ticket}
           title={t("vouchers.signInTitle", { defaultValue: "Sign in to manage vouchers" })}
@@ -128,7 +128,7 @@ export default function Vouchers() {
 
   if (forbidden) {
     return (
-      <div className="p-4 lg:p-8 max-w-2xl mx-auto" data-testid="vouchers-forbidden">
+      <div className="p-4 lg:p-8 max-w-4xl mx-auto" data-testid="vouchers-forbidden">
         <Card>
           <h1 className="text-xl font-bold text-slate-50 mb-2 flex items-center gap-2">
             <Ticket size={20} className="text-accent-500" />

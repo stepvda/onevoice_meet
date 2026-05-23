@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api, AnonTokenResponse, PublicRoomInfo } from "../lib/api";
-import { bootstrapFromOneWitysk, fetchOneWityskName, getAccessToken, isAuthenticated } from "../lib/auth";
+import {
+  bootstrapFromOneWitysk,
+  fetchOneWityskMe,
+  fetchOneWityskName,
+  getAccessToken,
+  isAuthenticated,
+} from "../lib/auth";
+import { getCachedMe, useMe } from "../lib/me";
+import { prewarmMedia } from "../lib/livekit";
 import { Button, Card, Field, Input } from "../components/ui";
 
 const CACHE_KEY = "meet:pending-token";
@@ -41,8 +49,16 @@ export default function Lobby() {
   const { t } = useTranslation();
   const { roomName = "" } = useParams();
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  // Synchronous initial-state from the cached `MeOut`. When a logged-in
+  // user lands on the Lobby from anywhere else in the SPA (Discover
+  // list, /my-meetings, …) `useMe()` has already populated the
+  // module-level cache, so first render shows the form pre-filled
+  // with no async wait. The effect below covers cold-cache paths.
+  const initialMe = getCachedMe();
+  const [name, setName] = useState(
+    initialMe?.name || initialMe?.username || "",
+  );
+  const [email, setEmail] = useState(initialMe?.email || "");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -60,6 +76,14 @@ export default function Lobby() {
     sessionStorage.getItem(`owner:${roomName}`)
   );
   const isOwner = !!ownerMeetingId && isAuthenticated();
+
+  // Cached current-user record. `useMe()` is a shared subscription that
+  // returns whatever the SPA already has in memory (no extra
+  // request) and updates reactively when the cache fills. Used to
+  // pre-fill the join form so an authenticated joiner — including SSO
+  // users who land here from the Discover list — doesn't have to
+  // retype name + email.
+  const { me } = useMe();
 
   // Public room metadata (title + branding) — works for both owner and anon.
   useEffect(() => {
@@ -87,34 +111,50 @@ export default function Lobby() {
     };
   }, [roomName]);
 
-  // Pre-fill name + email from the signed-in user's profile so a logged-in
-  // joiner doesn't have to retype them. Primary source is meet's own /me
-  // endpoint (covers both native and SSO meet accounts); falls back to
-  // one.witysk.org's /api/auth/me if we only have an SSO token. Only fills
-  // empty fields so we never clobber what the user typed.
+  // Pre-fill name + email from the cached current-user record so a
+  // logged-in joiner doesn't have to retype them. `useMe()` is shared
+  // across the SPA; when this effect runs `me` is either already
+  // populated (re-render after the shared fetch resolved) or null
+  // (cache still warming) in which case the effect re-runs on the
+  // next render. Only fills empty fields so we never clobber typed
+  // input.
+  //
+  // When `useMe()` ultimately settles `me=null` and the user is
+  // nevertheless signed in via SSO, fall back to one.witysk.org's
+  // `/api/auth/me` for the display name (cover for the rare case
+  // where the meet /v1/me request fails before account
+  // auto-provisioning completes).
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const tok = getAccessToken() ?? (await bootstrapFromOneWitysk());
-      if (!tok || cancelled) return;
-      try {
-        const me = await api.me();
-        if (cancelled) return;
-        const fetchedName = me.name || me.username || null;
-        if (fetchedName) setName((cur) => (cur === "" ? fetchedName : cur));
-        if (me.email) setEmail((cur) => (cur === "" ? me.email! : cur));
-        return;
-      } catch {
-        /* fall through to one.witysk.org name fetch */
+    // Step 1: whatever meet's own /v1/me knows. For an SSO user this
+    // is often a "shell" record (auto-provisioned with only
+    // external_id; name and email are null until the backend learns
+    // them) — the fallback below handles that.
+    let fetchedName: string | null = me?.name || me?.username || null;
+    let fetchedEmail: string | null = me?.email || null;
+    if (fetchedName) setName((cur) => (cur === "" ? fetchedName! : cur));
+    if (fetchedEmail) setEmail((cur) => (cur === "" ? fetchedEmail! : cur));
+
+    // Step 2: if the user is signed in via SSO but the meet user row
+    // is a shell (auto-provisioned with only external_id, no
+    // name/email yet), fall back to one.witysk.org's /api/auth/me
+    // which always carries the human-readable fields. Skip when both
+    // are already populated, and skip when we have no token at all.
+    if (!isAuthenticated()) return;
+    if (fetchedName && fetchedEmail) return;
+    void (async () => {
+      const w = await fetchOneWityskMe();
+      if (cancelled || !w) return;
+      const wName = w.name || w.username || null;
+      if (!fetchedName && wName) setName((cur) => (cur === "" ? wName : cur));
+      if (!fetchedEmail && w.email) {
+        setEmail((cur) => (cur === "" ? w.email! : cur));
       }
-      const fetched = await fetchOneWityskName();
-      if (cancelled || !fetched) return;
-      setName((cur) => (cur === "" ? fetched : cur));
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [me]);
 
   // If we're authenticated but the sessionStorage flag isn't set, ask the API
   // whether this user owns the meeting and re-establish the flag.
@@ -164,6 +204,11 @@ export default function Lobby() {
     e.preventDefault();
     setBusy(true);
     setErr(null);
+    // Kick off camera/mic hardware init NOW so it overlaps with the token
+    // fetch + route transition + LiveKit WS handshake. Cuts ~1-3 s off the
+    // perceived "Join → camera publishing" delay because LiveKit's
+    // post-connect getUserMedia call lands on an already-warm device.
+    prewarmMedia();
     try {
       if (isOwner) {
         try {

@@ -117,7 +117,7 @@ export default function CreateMeeting() {
 
   if (authState === "bootstrapping") {
     return (
-      <div className="p-4 lg:p-8 max-w-2xl mx-auto flex flex-col gap-6">
+      <div className="p-4 lg:p-8 max-w-4xl mx-auto flex flex-col gap-6">
         <HomeDescription />
         <Card>
           <p className="text-slate-300">{t("createMeeting.checkingSession")}</p>
@@ -128,7 +128,7 @@ export default function CreateMeeting() {
 
   if (authState === "anonymous") {
     return (
-      <div className="p-4 lg:p-8 max-w-2xl mx-auto flex flex-col gap-6">
+      <div className="p-4 lg:p-8 max-w-4xl mx-auto flex flex-col gap-6">
         <HomeDescription />
         <Card>
           <p className="text-slate-200">{t("createMeeting.needSignIn")}</p>
@@ -207,7 +207,7 @@ export default function CreateMeeting() {
   const canCreate = me?.is_admin === true;
 
   return (
-    <div className="p-4 lg:p-8 max-w-2xl mx-auto flex flex-col gap-6">
+    <div className="p-4 lg:p-8 max-w-4xl mx-auto flex flex-col gap-6">
       <HomeDescription />
       <MyMeetings refreshKey={busy ? 0 : 1} />
       <DiscoverableMeetings />

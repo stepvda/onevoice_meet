@@ -31,7 +31,7 @@ import { api, MeetingOut } from "../lib/api";
 import { LIVESTREAM_DESTINATIONS } from "../lib/livestreamDestinations";
 import { usePreferences } from "../lib/preferences";
 import PresenterSpotlight from "../components/PresenterSpotlight";
-import BackgroundPicker from "../components/BackgroundPicker";
+import BackgroundPicker, { processorsSupported } from "../components/BackgroundPicker";
 import RecordingIndicator from "../components/RecordingIndicator";
 import StreamingIndicator from "../components/StreamingIndicator";
 import ChatPanel from "../components/ChatPanel";
@@ -437,7 +437,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
 
         <div className="flex-1" />
 
-        <BackgroundPicker />
+        {processorsSupported() && <BackgroundPicker />}
 
         {isOwner && meetingId && (
           <button

@@ -179,7 +179,7 @@ export default function Account() {
   }
 
   return (
-    <div className="p-4 lg:p-8 max-w-2xl mx-auto" data-testid="account-page">
+    <div className="p-4 lg:p-8 max-w-4xl mx-auto" data-testid="account-page">
       <h1 className="text-2xl font-bold text-slate-50 mb-4 flex items-center gap-2">
         <UserIcon size={22} className="text-accent-500" />
         {t("account.title", { defaultValue: "Your account" })}

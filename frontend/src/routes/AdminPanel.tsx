@@ -56,7 +56,7 @@ export default function AdminPanel() {
 
   if (needsSignIn) {
     return (
-      <div className="p-4 lg:p-8 max-w-2xl mx-auto">
+      <div className="p-4 lg:p-8 max-w-4xl mx-auto">
         <SignInPrompt
           icon={Shield}
           title={t("admin.signInTitle", { defaultValue: "Sign in to access the admin panel" })}
@@ -79,7 +79,7 @@ export default function AdminPanel() {
 
   if (!me?.is_platform_admin) {
     return (
-      <div className="p-4 lg:p-8 max-w-2xl mx-auto" data-testid="admin-forbidden">
+      <div className="p-4 lg:p-8 max-w-4xl mx-auto" data-testid="admin-forbidden">
         <Card>
           <h1 className="text-xl font-bold text-slate-50 mb-2 flex items-center gap-2">
             <ShieldAlert size={20} className="text-red-400" />

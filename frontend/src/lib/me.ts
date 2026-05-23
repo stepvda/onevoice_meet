@@ -59,6 +59,16 @@ export function clearMe(): void {
   notify();
 }
 
+/** Synchronous read of whatever's currently in the cache. `null` when
+ *  the cache is cold OR a fetch hasn't been started yet. Use this for
+ *  component initial-state (e.g. pre-filling a form field) where you
+ *  want the value available on the first render without waiting for
+ *  an effect to fire. Pair with `useMe()` to also react when the
+ *  cache fills later. */
+export function getCachedMe(): MeOut | null {
+  return cached;
+}
+
 /** Hook: returns the cached user (or null) and a `loading` flag. Triggers
  *  a fetch on first mount if there's nothing cached yet. */
 export function useMe(): { me: MeOut | null; loading: boolean } {

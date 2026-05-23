@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useLocalParticipant } from "@livekit/components-react";
-import { BackgroundBlur, VirtualBackground } from "@livekit/track-processors";
+import { TighterBackgroundBlur, TighterVirtualBackground } from "../lib/tighterBackground";
 import { LocalVideoTrack, Track } from "livekit-client";
 import { Check, ImageOff, Sparkles, Upload, Wand2 } from "lucide-react";
 import {
@@ -25,7 +25,22 @@ import {
  *
  * The dropdown is a portal-rendered popover so it isn't clipped by the
  * meeting stage's stacking context.
+ *
+ * `@livekit/track-processors` uses the Insertable Streams for
+ * MediaStreamTrack API (`MediaStreamTrackProcessor` +
+ * `MediaStreamTrackGenerator`) to intercept camera frames before LiveKit
+ * publishes them. Firefox doesn't ship those constructors as of early
+ * 2026 (mozilla bug 1631263). Without them, `track.setProcessor()` throws.
+ * `processorsSupported()` feature-detects both and we render nothing if
+ * unsupported — matches what Meet / Zoom Web do.
  */
+export function processorsSupported(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    "MediaStreamTrackProcessor" in window &&
+    "MediaStreamTrackGenerator" in window
+  );
+}
 
 const STATIC_PRESETS = [
   { key: "/backgrounds/office.jpg", i18nKey: "background.office" },
@@ -151,7 +166,7 @@ export default function BackgroundPicker() {
       return;
     }
     if (key === "blur") {
-      await track.setProcessor(BackgroundBlur(10));
+      await track.setProcessor(TighterBackgroundBlur(10));
       return;
     }
     if (key.startsWith("anim:")) {
@@ -160,7 +175,7 @@ export default function BackgroundPicker() {
       // Use a placeholder image while the processor initialises; the rAF
       // loop will start swapping in real frames as soon as the processor is
       // attached.
-      const processor = VirtualBackground(PLACEHOLDER_BG);
+      const processor = TighterVirtualBackground(PLACEHOLDER_BG);
       await track.setProcessor(processor);
       animHandleRef.current = driveAnimatedBackground(
         processor as unknown as { transformer: { backgroundImage: ImageBitmap | null } },
@@ -168,7 +183,7 @@ export default function BackgroundPicker() {
       );
       return;
     }
-    await track.setProcessor(VirtualBackground(key));
+    await track.setProcessor(TighterVirtualBackground(key));
   }
 
   async function apply(key: string) {

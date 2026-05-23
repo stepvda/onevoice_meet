@@ -214,6 +214,26 @@ export async function fetchOneWityskUser(userId: number | string): Promise<OneWi
  * Requires `https://meet.witysk.org` in one.witysk.org's CORS allow_origins.
  */
 export async function fetchOneWityskName(): Promise<string | null> {
+  const me = await fetchOneWityskMe();
+  if (!me) return null;
+  return me.name || me.username || me.email || null;
+}
+
+/** What `https://one.witysk.org/api/auth/me` returns. Subset of fields
+ *  the meet SPA actually needs for pre-filling forms. */
+export interface OneWityskMe {
+  name: string | null;
+  username: string | null;
+  email: string | null;
+}
+
+/** Fetch both the display name AND email from one.witysk.org. Used when
+ *  meet's own `/v1/me` returns null fields for an SSO user (the meet
+ *  account row is auto-provisioned with only the external_id; the
+ *  human-readable fields live on one.witysk.org).
+ *
+ *  Returns `null` on any failure — callers can render placeholders. */
+export async function fetchOneWityskMe(): Promise<OneWityskMe | null> {
   const tok = getAccessToken();
   if (!tok) return null;
   try {
@@ -222,8 +242,16 @@ export async function fetchOneWityskName(): Promise<string | null> {
       credentials: "omit",
     });
     if (!res.ok) return null;
-    const me = (await res.json()) as { name?: string | null; username?: string | null; email?: string | null };
-    return me.name || me.username || me.email || null;
+    const j = (await res.json()) as {
+      name?: string | null;
+      username?: string | null;
+      email?: string | null;
+    };
+    return {
+      name: j.name ?? null,
+      username: j.username ?? null,
+      email: j.email ?? null,
+    };
   } catch {
     return null;
   }
