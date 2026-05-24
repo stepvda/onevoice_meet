@@ -13,7 +13,7 @@ from app.auth import AuthUser, RequireAdmin, RequireUser
 from app.config import settings
 from app.db import get_db
 from app.livekit_client import livekit_api, mint_participant_token, short_lived_turn_credentials
-from app.models import Meeting, MeetingParticipant, UserPreferences
+from app.models import Meeting, MeetingParticipant, User, UserPreferences
 from app.services.slug_words import generate_unique_slug
 
 
@@ -988,17 +988,20 @@ def list_discoverable(user: RequireUser, db: Session = Depends(get_db)) -> list[
 
 @router.get("/public-meetings")
 def list_public_meetings(db: Session = Depends(get_db)) -> list[dict]:
-    """Active meetings visible to unauthenticated visitors — either the
-    owner explicitly opted in to anonymous listing, or the meeting has a
-    public view-only page enabled. No auth required."""
+    """Active meetings visible to unauthenticated visitors.
+    Listing is opt-in: the owner must explicitly set
+    `list_for_anonymous=True`.
+    Having a public view-only page (`public_enabled=True`) does NOT
+    automatically list the meeting here — those two are different
+    concerns. A host may want a shareable `/public/<slug>` URL for
+    their audience without their meeting appearing in the anonymous
+    Discover panel of the home page. Authenticated Discover
+    (`/discoverable`) still surfaces public-enabled meetings."""
     rows = (
         db.query(Meeting)
         .filter(Meeting.is_active.is_(True))
         .filter(Meeting.hidden.is_(False))
-        .filter(
-            (Meeting.list_for_anonymous.is_(True))
-            | (Meeting.public_enabled.is_(True))
-        )
+        .filter(Meeting.list_for_anonymous.is_(True))
         .order_by(Meeting.created_at.desc())
         .limit(50)
         .all()
@@ -1101,9 +1104,24 @@ def mint_owner_token(
         m.owner_name = body.display_name
         db.commit()
     identity = f"user-{user.sub}"
+    # **NEVER** fall back to `user.email` here. This value is passed
+    # to LiveKit `participant.name`, which is rendered on every
+    # viewer's tile + the participants panel + chat — leaking the
+    # host's email address to everyone in the room (including
+    # anonymous joiners and public viewers).
+    #
+    # Priority instead:
+    #   1. The owner-specified display name stored on the meeting
+    #      (owners only; cohosts don't write to `owner_name`).
+    #   2. The User row's own `name` / `username` field (covers SSO
+    #      users who set a name on one.witysk.org as well as native
+    #      meet accounts).
+    #   3. A generic `User <sub>` placeholder.
+    db_user = db.get(User, user.user_id)
+    fallback_name = (db_user.name or db_user.username) if db_user else None
     display_name = (
         (m.owner_name if is_real_owner else None)
-        or user.email
+        or fallback_name
         or f"User {user.sub}"
     )
     token = mint_participant_token(

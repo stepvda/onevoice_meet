@@ -216,7 +216,13 @@ export async function fetchOneWityskUser(userId: number | string): Promise<OneWi
 export async function fetchOneWityskName(): Promise<string | null> {
   const me = await fetchOneWityskMe();
   if (!me) return null;
-  return me.name || me.username || me.email || null;
+  // **Never** fall back to the email address — this value gets passed
+  // into LiveKit `participant.name` (via `api.ownerToken` and friends)
+  // and shows up on every viewer's screen + the participants panel.
+  // If we have no display name, return null and let the backend pick
+  // a safe placeholder (`User <sub>`) instead of leaking the email
+  // address of the meeting host.
+  return me.name || me.username || null;
 }
 
 /** What `https://one.witysk.org/api/auth/me` returns. Subset of fields
