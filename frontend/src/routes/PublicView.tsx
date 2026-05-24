@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   LiveKitRoom,
@@ -27,6 +27,11 @@ export default function PublicView() {
   const { t } = useTranslation();
   const { publicSlug = "" } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // `?embed=1` strips the header band and the participant-name overlay so
+  // the page renders as a clean video frame suitable for iframing inside
+  // the OneVoice mini player. Direct visitors keep the full chrome.
+  const embedMode = searchParams.get("embed") === "1";
   const [tokenResp, setTokenResp] = useState<PublicViewerTokenResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -95,6 +100,7 @@ export default function PublicView() {
       <PublicViewerInner
         title={tokenResp.display_title}
         brandingUrl={tokenResp.branding_url}
+        embedMode={embedMode}
       />
     </LiveKitRoom>
   );
@@ -103,9 +109,11 @@ export default function PublicView() {
 function PublicViewerInner({
   title,
   brandingUrl,
+  embedMode,
 }: {
   title: string;
   brandingUrl: string | null;
+  embedMode: boolean;
 }) {
   const { t } = useTranslation();
   const room = useRoomContext();
@@ -142,31 +150,48 @@ function PublicViewerInner({
 
   return (
     <div className="flex flex-col h-dvh w-screen bg-witysk-page overflow-hidden">
-      <header
-        data-testid="public-view-topbar"
-        className="flex items-center gap-3 px-3 py-2 bg-primary-900/90 backdrop-blur border-b border-primary-700 flex-shrink-0"
-      >
-        {brandingUrl && (
-          <img
-            src={brandingUrl}
-            alt=""
-            className="h-8 w-8 object-cover rounded-md border border-primary-700 flex-shrink-0"
-          />
-        )}
-        <div className="min-w-0 leading-tight flex-1">
-          <div className="font-semibold text-slate-50 truncate" title={title}>
-            {title}
+      {!embedMode && (
+        <header
+          data-testid="public-view-topbar"
+          className="flex items-center gap-3 px-3 py-2 bg-primary-900/90 backdrop-blur border-b border-primary-700 flex-shrink-0"
+        >
+          {brandingUrl && (
+            <img
+              src={brandingUrl}
+              alt=""
+              className="h-8 w-8 object-cover rounded-md border border-primary-700 flex-shrink-0"
+            />
+          )}
+          <div className="min-w-0 leading-tight flex-1">
+            <div className="font-semibold text-slate-50 truncate" title={title}>
+              {title}
+            </div>
+            <div className="text-xs text-slate-400">
+              {t("publicView.subtitle", { defaultValue: "Live stream · view only" })}
+            </div>
           </div>
-          <div className="text-xs text-slate-400">
-            {t("publicView.subtitle", { defaultValue: "Live stream · view only" })}
-          </div>
-        </div>
-        <OutputVolumeControl />
-      </header>
+          <OutputVolumeControl />
+        </header>
+      )}
 
-      <div className="flex-1 min-h-0 relative">
+      <div
+        className={
+          "flex-1 min-h-0 relative meet-stage" +
+          (embedMode ? " no-participant-names" : "")
+        }
+      >
         <PresenterSpotlight />
         <RoomAudioRenderer />
+        {embedMode && (
+          /* Header is hidden in embed mode but the volume button still
+             needs to be reachable — render it as a floating control over
+             the bottom-left corner of the video. Bottom-left so it stays
+             clear of the OneVoice mini-player's own Maximize/X icons,
+             which live in the top-right of the iframe. */
+          <div className="absolute bottom-2 left-2 z-10">
+            <OutputVolumeControl />
+          </div>
+        )}
       </div>
     </div>
   );

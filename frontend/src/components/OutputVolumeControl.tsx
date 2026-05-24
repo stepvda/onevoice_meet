@@ -111,10 +111,18 @@ export default function OutputVolumeControl() {
       if (!btn) return;
       const rect = btn.getBoundingClientRect();
       const popW = pop?.offsetWidth ?? 56;
-      // Anchor: horizontally centred under the button, vertically 8 px
-      // below the button's bottom edge.
+      // Slider + ~30px of chrome (padding + percentage label); used before
+      // the popover is measured to avoid a single off-screen first paint.
+      const popH = pop?.offsetHeight ?? (SLIDER_HEIGHT + 30);
+      // Horizontally: centred under the button, clamped to the viewport.
       const left = Math.max(8, Math.min(window.innerWidth - popW - 8, rect.left + rect.width / 2 - popW / 2));
-      const top = rect.bottom + 8;
+      // Vertically: prefer below the button. If that would render outside
+      // the viewport (e.g. button sits near the bottom of a small iframe
+      // viewport in PublicView's embed mode), flip and render above.
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow >= popH + 8
+        ? rect.bottom + 8
+        : Math.max(8, rect.top - popH - 8);
       setPopoverPos({ left, top });
     };
     reposition();
