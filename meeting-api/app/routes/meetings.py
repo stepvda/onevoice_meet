@@ -831,6 +831,23 @@ async def update_meeting(
 
     db.commit()
 
+    # If YouTube was just enabled (or its mode just flipped to API)
+    # mid-stream, the YouTube API ingest URL/key won't exist yet — so
+    # the post_urls diff below would have nothing to add for YouTube.
+    # Provision the persistent liveStream + a fresh liveBroadcast here
+    # so the UpdateStream call picks up the YouTube ingest endpoint
+    # the same tick the host clicks Save. Idempotent: if we've already
+    # provisioned (ingest_url + ingest_key both set) we skip.
+    if (
+        pre_urls is not None
+        and bool(m.livestream_youtube_enabled)
+        and (m.livestream_youtube_mode or "rtmp") == "api"
+        and m.livestream_youtube_refresh_token
+        and not (m.livestream_youtube_api_ingest_url and m.livestream_youtube_api_ingest_key)
+    ):
+        from app.services.egress_mgr import _ensure_youtube_api_ready
+        await _ensure_youtube_api_ready(m, db)
+
     # If a livestream is running and the destination URLs changed, push
     # the diff to LiveKit so the existing egress fans out to the new set
     # immediately — no stop/restart needed.
