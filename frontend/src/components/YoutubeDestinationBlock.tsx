@@ -210,6 +210,15 @@ export default function YoutubeDestinationBlock({
         </div>
       )}
 
+      {enabled && apiActive && !oauthConnected && (
+        <div className="text-xs text-amber-300 bg-amber-900/30 border border-amber-900 rounded-md px-2 py-1">
+          {t("livestream.youtubeApiNeedsConnect", {
+            defaultValue:
+              "Click \"Connect with Google\" on the right to finish setting up managed mode — saving will fail until a channel is connected.",
+          })}
+        </div>
+      )}
+
       {enabled && (
         <>
           {/* Mode selector */}
@@ -239,17 +248,13 @@ export default function YoutubeDestinationBlock({
                 </span>
               </span>
             </label>
-            <label
-              className={`flex items-start gap-2 flex-1 ${oauthConnected ? "cursor-pointer" : "cursor-not-allowed opacity-70"}`}
-              title={oauthConnected ? undefined : t("livestream.youtubeModeApiNeedsConnect", { defaultValue: "Connect your YouTube channel first to enable API mode." })}
-            >
+            <label className="flex items-start gap-2 cursor-pointer flex-1">
               <input
                 type="radio"
                 name={`ls-${dest.id}-mode`}
                 value="api"
                 checked={apiActive}
-                onChange={() => oauthConnected && onModeChange("api")}
-                disabled={!oauthConnected}
+                onChange={() => onModeChange("api")}
                 data-testid="ls-youtube-mode-api"
                 className="mt-0.5 accent-accent-500"
               />
@@ -277,7 +282,6 @@ export default function YoutubeDestinationBlock({
             {/* Left: RTMP key flow */}
             <div
               className={`space-y-3 ${rtmpActive ? "" : "opacity-50 pointer-events-none select-none"}`}
-              aria-hidden={rtmpActive ? undefined : true}
             >
               <Field
                 id={`ls-${dest.id}-url`}
@@ -334,7 +338,6 @@ export default function YoutubeDestinationBlock({
             {/* Right: OAuth + API flow */}
             <div
               className={`space-y-3 ${apiActive ? "" : "opacity-50 pointer-events-none select-none"}`}
-              aria-hidden={apiActive ? undefined : true}
             >
               <div className="rounded-md border border-primary-700 bg-primary-900/60 p-3 space-y-3">
                 <div className="flex items-center gap-2">
