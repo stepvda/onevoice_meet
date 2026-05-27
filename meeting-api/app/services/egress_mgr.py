@@ -365,6 +365,30 @@ async def reconcile_egress(
     return {"egress_id": new_egress_id, "recording_id": new_recording_id, "no_change": False}
 
 
+def _mark_youtube_destination(db: Session, meeting_id: str, *, status: str, error: str | None) -> None:
+    """Upsert the LivestreamDestinationState row for YouTube so the
+    SPA's coloured dot + error tooltip reflects API-mode provisioning
+    outcomes (which never go through the LiveKit egress webhook).
+
+    Trims the error string to fit the column. Keeps the existing
+    viewer_count untouched."""
+    from app.models import LivestreamDestinationState
+    row = (
+        db.query(LivestreamDestinationState)
+        .filter_by(meeting_id=meeting_id, platform_id="youtube")
+        .first()
+    )
+    trimmed = error[:500] if error else None
+    if row is None:
+        row = LivestreamDestinationState(
+            meeting_id=meeting_id, platform_id="youtube", status=status, error=trimmed,
+        )
+        db.add(row)
+    else:
+        row.status = status
+        row.error = trimmed
+
+
 async def _ensure_youtube_api_ready(m: Meeting, db: Session) -> None:
     """Provision the persistent liveStream and a fresh liveBroadcast for
     a YouTube-API-mode meeting that's about to start streaming.
@@ -375,17 +399,27 @@ async def _ensure_youtube_api_ready(m: Meeting, db: Session) -> None:
     already exists we reuse it; if a broadcast is already live we leave
     it alone.
 
-    Best-effort: any YouTubeLiveError is logged but does NOT raise — the
-    caller's `_enabled_stream_urls` will simply skip YouTube if the
-    columns remained empty, so other destinations keep streaming."""
+    Best-effort with visible failure: any YouTubeLiveError is logged AND
+    surfaced to the SPA via a LivestreamDestinationState(status="failed",
+    error=...) row, so the YouTube dot in the modal turns red with a
+    readable message. The egress still proceeds for other destinations —
+    `_enabled_stream_urls` simply skips YouTube when the API columns
+    stayed empty."""
     from datetime import datetime, timezone
+    import logging
     from app.services import youtube_live
+
+    log = logging.getLogger(__name__)
 
     try:
         prov = await youtube_live.ensure_provisioned_stream(m)
-    except youtube_live.YouTubeLiveError:
-        import logging
-        logging.getLogger(__name__).exception("youtube provision skipped")
+    except youtube_live.YouTubeLiveError as e:
+        log.exception("youtube provision skipped")
+        _mark_youtube_destination(
+            db, m.id, status="failed",
+            error=f"YouTube setup failed: {e}",
+        )
+        db.commit()
         return
     m.livestream_youtube_stream_id = prov.stream_id
     m.livestream_youtube_api_ingest_url = prov.ingest_url
@@ -401,9 +435,18 @@ async def _ensure_youtube_api_ready(m: Meeting, db: Session) -> None:
             m.livestream_youtube_broadcast_id = bc.broadcast_id
             m.livestream_youtube_watch_url = bc.watch_url
             m.livestream_youtube_broadcast_started_at = datetime.now(timezone.utc)
-        except youtube_live.YouTubeLiveError:
-            import logging
-            logging.getLogger(__name__).exception("youtube broadcast create skipped")
+        except youtube_live.YouTubeLiveError as e:
+            log.exception("youtube broadcast create skipped")
+            _mark_youtube_destination(
+                db, m.id, status="failed",
+                error=f"YouTube broadcast create failed: {e}",
+            )
+            db.commit()
+            return
+
+    # Provisioning + broadcast both succeeded — clear any prior failure
+    # so the SPA's red dot flips back to idle/streaming on this start.
+    _mark_youtube_destination(db, m.id, status="idle", error=None)
     db.commit()
 
 
