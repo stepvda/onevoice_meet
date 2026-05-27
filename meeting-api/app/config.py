@@ -123,6 +123,25 @@ class Settings(BaseSettings):
     youtube_refresh_token: str = ""
     youtube_default_privacy: str = "unlisted"  # public | unlisted | private
 
+    # YouTube Live (per-meeting OAuth + Data API automation). Reuses
+    # `youtube_client_id` / `youtube_client_secret` above as the OAuth
+    # client; each meeting owner connects their own channel through the
+    # browser. Redirect URI must match what's registered in Google Cloud
+    # Console for the same client. Default works for the production host;
+    # override in `.env` for dev (e.g. http://localhost:5173/api/v1/...).
+    youtube_oauth_redirect_uri: str = ""
+    # Default broadcast settings used when Meet provisions broadcasts on
+    # the owner's behalf. Privacy mirrors `youtube_default_privacy` unless
+    # overridden here. Title/description templates can include
+    # `{meeting_title}` which is substituted at provision time.
+    youtube_live_default_title: str = "{meeting_title} — Live"
+    youtube_live_default_description: str = ""
+    youtube_live_default_privacy: str = ""  # blank → fall back to youtube_default_privacy
+    # Hard rotation point. YouTube cuts broadcasts at 12h; we rotate
+    # earlier so the next broadcast is bound and live before the old
+    # one is forced complete. 11h30m is a safe margin.
+    youtube_broadcast_rotate_after_seconds: int = 11 * 3600 + 30 * 60
+
     # whisper.cpp server — self-hosted free transcription of completed
     # recordings. Set to empty to disable the transcript pipeline entirely.
     # The default points to the sidecar container defined in docker-compose.

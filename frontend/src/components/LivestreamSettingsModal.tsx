@@ -4,6 +4,7 @@ import { Radio, X } from "lucide-react";
 import { api, MeetingOut } from "../lib/api";
 import { Button, Card } from "./ui";
 import LivestreamDestinationBlock from "./LivestreamDestinationBlock";
+import YoutubeDestinationBlock from "./YoutubeDestinationBlock";
 import { LIVESTREAM_DESTINATIONS } from "../lib/livestreamDestinations";
 
 interface Props {
@@ -39,11 +40,15 @@ function seedFromMeeting(meeting: MeetingOut): Record<string, DestState> {
 type DestStatus = {
   status: "idle" | "streaming" | "failed" | "complete";
   error: string | null;
+  viewer_count?: number | null;
 };
 
 export default function LivestreamSettingsModal({ meeting, open, onClose, onSaved }: Props) {
   const { t } = useTranslation();
   const [state, setState] = useState<Record<string, DestState>>(() => seedFromMeeting(meeting));
+  const [youtubeMode, setYoutubeMode] = useState<"rtmp" | "api">(
+    (meeting.livestream_youtube_mode as "rtmp" | "api") ?? "rtmp",
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   // Live publish status per destination, updated by polling
@@ -56,6 +61,7 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
   useEffect(() => {
     if (!open) return;
     setState(seedFromMeeting(meeting));
+    setYoutubeMode((meeting.livestream_youtube_mode as "rtmp" | "api") ?? "rtmp");
     setErr(null);
   }, [open, meeting]);
 
@@ -71,7 +77,12 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
         const rows = await api.streamDestinations(meeting.id);
         if (cancelled) return;
         setStatuses(
-          Object.fromEntries(rows.map((r) => [r.platform_id, { status: r.status, error: r.error }])),
+          Object.fromEntries(
+            rows.map((r) => [
+              r.platform_id,
+              { status: r.status, error: r.error, viewer_count: r.viewer_count ?? null },
+            ]),
+          ),
         );
       } catch {
         /* not fatal — the dots just won't update this tick */
@@ -96,7 +107,7 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
     setErr(null);
     setBusy(true);
     try {
-      const body = Object.fromEntries(
+      const body: Record<string, unknown> = Object.fromEntries(
         LIVESTREAM_DESTINATIONS.flatMap((d) => {
           const s = state[d.id];
           return [
@@ -106,6 +117,10 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
           ];
         }),
       );
+      // Persist the YouTube mode selection alongside the credentials.
+      // Backend rejects mode="api" if the channel isn't OAuth-connected,
+      // so the modal won't silently end up in an unusable state.
+      body.livestream_youtube_mode = youtubeMode;
       const updated = await api.updateMeeting(meeting.id, body);
       onSaved(updated);
       onClose();
@@ -124,7 +139,7 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
       aria-modal="true"
       aria-label={t("livestream.modalTitle", { defaultValue: "Configure live stream" })}
     >
-      <Card className="w-full max-w-lg relative max-h-[85vh] overflow-y-auto">
+      <Card className="w-full max-w-5xl relative max-h-[85vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
@@ -151,19 +166,43 @@ export default function LivestreamSettingsModal({ meeting, open, onClose, onSave
             })}
           </p>
 
-          {LIVESTREAM_DESTINATIONS.map((d, i) => (
-            <LivestreamDestinationBlock
-              key={d.id}
-              dest={d}
-              enabled={state[d.id].enabled}
-              url={state[d.id].url}
-              streamKey={state[d.id].streamKey}
-              onChange={(next) => setDestState(d.id, next)}
-              isFirst={i === 0}
-              status={statuses[d.id]?.status}
-              statusError={statuses[d.id]?.error ?? null}
-            />
-          ))}
+          {LIVESTREAM_DESTINATIONS.map((d, i) => {
+            if (d.id === "youtube") {
+              return (
+                <YoutubeDestinationBlock
+                  key={d.id}
+                  dest={d}
+                  enabled={state[d.id].enabled}
+                  url={state[d.id].url}
+                  streamKey={state[d.id].streamKey}
+                  onChange={(next) => setDestState(d.id, next)}
+                  isFirst={i === 0}
+                  status={statuses[d.id]?.status}
+                  statusError={statuses[d.id]?.error ?? null}
+                  viewerCount={statuses[d.id]?.viewer_count ?? null}
+                  meetingId={meeting.id}
+                  mode={youtubeMode}
+                  onModeChange={setYoutubeMode}
+                  initialOauthConnected={!!meeting.livestream_youtube_oauth_connected}
+                  initialChannelTitle={meeting.livestream_youtube_channel_title ?? null}
+                  initialWatchUrl={meeting.livestream_youtube_watch_url ?? null}
+                />
+              );
+            }
+            return (
+              <LivestreamDestinationBlock
+                key={d.id}
+                dest={d}
+                enabled={state[d.id].enabled}
+                url={state[d.id].url}
+                streamKey={state[d.id].streamKey}
+                onChange={(next) => setDestState(d.id, next)}
+                isFirst={i === 0}
+                status={statuses[d.id]?.status}
+                statusError={statuses[d.id]?.error ?? null}
+              />
+            );
+          })}
 
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={busy} data-testid="ls-save">

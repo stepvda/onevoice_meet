@@ -155,6 +155,10 @@ class UpdateMeetingBody(BaseModel):
     livestream_youtube_enabled: bool | None = None
     livestream_youtube_rtmps_url: str | None = Field(default=None, max_length=500)
     livestream_youtube_stream_key: str | None = Field(default=None, max_length=500)
+    # "rtmp" = legacy stream-key paste; "api" = OAuth + Data API managed
+    # broadcasts. Switching to "api" requires the owner to have completed
+    # the OAuth flow (refresh_token column populated).
+    livestream_youtube_mode: str | None = Field(default=None, pattern="^(rtmp|api)$")
     livestream_facebook_enabled: bool | None = None
     livestream_facebook_rtmps_url: str | None = Field(default=None, max_length=500)
     livestream_facebook_stream_key: str | None = Field(default=None, max_length=500)
@@ -215,6 +219,13 @@ class MeetingOut(BaseModel):
     livestream_youtube_enabled: bool = False
     livestream_youtube_rtmps_url: str | None = None
     livestream_youtube_stream_key: str | None = None
+    # YouTube managed-mode read state. The refresh token is NEVER exposed
+    # — the SPA only needs to know whether a channel is connected and the
+    # current public watch URL.
+    livestream_youtube_mode: str = "rtmp"
+    livestream_youtube_oauth_connected: bool = False
+    livestream_youtube_channel_title: str | None = None
+    livestream_youtube_watch_url: str | None = None
     livestream_facebook_enabled: bool = False
     livestream_facebook_rtmps_url: str | None = None
     livestream_facebook_stream_key: str | None = None
@@ -295,6 +306,10 @@ def _to_out(m: Meeting) -> MeetingOut:
         livestream_youtube_enabled=bool(m.livestream_youtube_enabled),
         livestream_youtube_rtmps_url=m.livestream_youtube_rtmps_url,
         livestream_youtube_stream_key=m.livestream_youtube_stream_key,
+        livestream_youtube_mode=m.livestream_youtube_mode or "rtmp",
+        livestream_youtube_oauth_connected=bool(m.livestream_youtube_refresh_token),
+        livestream_youtube_channel_title=m.livestream_youtube_channel_title,
+        livestream_youtube_watch_url=m.livestream_youtube_watch_url,
         livestream_facebook_enabled=bool(m.livestream_facebook_enabled),
         livestream_facebook_rtmps_url=m.livestream_facebook_rtmps_url,
         livestream_facebook_stream_key=m.livestream_facebook_stream_key,
@@ -722,6 +737,14 @@ async def update_meeting(
         m.livestream_youtube_rtmps_url = body.livestream_youtube_rtmps_url.strip() or None
     if body.livestream_youtube_stream_key is not None:
         m.livestream_youtube_stream_key = body.livestream_youtube_stream_key.strip() or None
+    if body.livestream_youtube_mode is not None:
+        new_mode = body.livestream_youtube_mode
+        if new_mode == "api" and not m.livestream_youtube_refresh_token:
+            raise HTTPException(
+                status_code=400,
+                detail="connect a YouTube channel before switching to API mode",
+            )
+        m.livestream_youtube_mode = new_mode
     if body.livestream_facebook_enabled is not None:
         m.livestream_facebook_enabled = body.livestream_facebook_enabled
     if body.livestream_facebook_rtmps_url is not None:

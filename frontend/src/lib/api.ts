@@ -93,6 +93,10 @@ export interface MeetingOut {
   livestream_youtube_enabled?: boolean;
   livestream_youtube_rtmps_url?: string | null;
   livestream_youtube_stream_key?: string | null;
+  livestream_youtube_mode?: "rtmp" | "api";
+  livestream_youtube_oauth_connected?: boolean;
+  livestream_youtube_channel_title?: string | null;
+  livestream_youtube_watch_url?: string | null;
   livestream_facebook_enabled?: boolean;
   livestream_facebook_rtmps_url?: string | null;
   livestream_facebook_stream_key?: string | null;
@@ -446,6 +450,7 @@ export const api = {
       livestream_youtube_enabled?: boolean;
       livestream_youtube_rtmps_url?: string | null;
       livestream_youtube_stream_key?: string | null;
+      livestream_youtube_mode?: "rtmp" | "api";
       livestream_facebook_enabled?: boolean;
       livestream_facebook_rtmps_url?: string | null;
       livestream_facebook_stream_key?: string | null;
@@ -979,8 +984,36 @@ export const api = {
         status: "idle" | "streaming" | "failed" | "complete";
         error: string | null;
         updated_at: string | null;
+        // YouTube API-mode only — supervisor polls this every ~30s. Null
+        // for all other platforms (no stream-key viewer-count API).
+        viewer_count?: number | null;
+        viewer_count_at?: string | null;
       }>
     >(`/api/v1/meetings/${meetingId}/stream/destinations`),
+
+  // YouTube OAuth — managed-mode connect/disconnect/status. Start
+  // returns the authorize URL as JSON so the SPA can carry the bearer
+  // token; the SPA then `window.open()`s the URL in a popup and waits
+  // for the callback page to `postMessage` back.
+  youtubeOauthStart: (meetingId: string) =>
+    request<{ authorize_url: string }>(
+      `/api/v1/meetings/${meetingId}/youtube/oauth/start`,
+      { method: "POST" },
+    ),
+  youtubeOauthStatus: (meetingId: string) =>
+    request<{
+      connected: boolean;
+      channel_title: string | null;
+      channel_id: string | null;
+      mode: "rtmp" | "api";
+      watch_url: string | null;
+      broadcast_id: string | null;
+    }>(`/api/v1/meetings/${meetingId}/youtube/oauth/status`),
+  youtubeOauthDisconnect: (meetingId: string) =>
+    request<{ ok: boolean }>(
+      `/api/v1/meetings/${meetingId}/youtube/oauth/disconnect`,
+      { method: "POST" },
+    ),
 
   listRecordings: () => request<unknown[]>("/api/v1/recordings"),
 

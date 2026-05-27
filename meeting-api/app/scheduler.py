@@ -37,6 +37,26 @@ def _disk_cap_job() -> None:
         log.exception("whats_next: evict_stale_slides failed")
 
 
+def _youtube_supervisor_job() -> None:
+    """Tick the YouTube Live supervisor: provision broadcasts, rotate at
+    the 12h cap, transition `ready→live` once bytes arrive, poll viewer
+    counts. See app/services/youtube_live.py:supervise_all for details."""
+    from app.db import SessionLocal
+    from app.services.youtube_live import supervise_all
+
+    async def _run() -> int:
+        with SessionLocal() as db:
+            return await supervise_all(db)
+
+    try:
+        changes = asyncio.run(_run())
+    except Exception:
+        log.exception("youtube supervisor job failed")
+        return
+    if changes:
+        log.info("youtube supervisor: %d change(s)", changes)
+
+
 def _playback_watchdog_job() -> None:
     # Recovers playlist playback when a LiveKit ingress handler dies
     # without firing the `ingress_ended` webhook (e.g. GStreamer SIGTRAP
@@ -81,6 +101,17 @@ def start() -> None:
         _playback_watchdog_job,
         IntervalTrigger(seconds=30),
         id="playback_watchdog",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+    # YouTube Live supervisor — runs at the same cadence as the playback
+    # watchdog. Provisioning is no-op when no meetings are in API mode,
+    # so the cost when unused is one cheap SELECT per minute.
+    scheduler.add_job(
+        _youtube_supervisor_job,
+        IntervalTrigger(seconds=30),
+        id="youtube_supervisor",
         replace_existing=True,
         max_instances=1,
         coalesce=True,

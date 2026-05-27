@@ -115,6 +115,22 @@ def lightweight_migrate() -> None:
                 # the in-meeting settings panel.
                 ("pip_enabled", "ALTER TABLE meetings ADD COLUMN pip_enabled BOOLEAN DEFAULT 0 NOT NULL"),
                 ("pip_overlay_identity", "ALTER TABLE meetings ADD COLUMN pip_overlay_identity TEXT"),
+                # YouTube Live OAuth + Data API mode. See models.py for
+                # the meaning of each column.
+                ("livestream_youtube_mode", "ALTER TABLE meetings ADD COLUMN livestream_youtube_mode TEXT DEFAULT 'rtmp' NOT NULL"),
+                ("livestream_youtube_refresh_token", "ALTER TABLE meetings ADD COLUMN livestream_youtube_refresh_token TEXT"),
+                ("livestream_youtube_channel_title", "ALTER TABLE meetings ADD COLUMN livestream_youtube_channel_title TEXT"),
+                ("livestream_youtube_channel_id", "ALTER TABLE meetings ADD COLUMN livestream_youtube_channel_id TEXT"),
+                ("livestream_youtube_stream_id", "ALTER TABLE meetings ADD COLUMN livestream_youtube_stream_id TEXT"),
+                ("livestream_youtube_api_ingest_url", "ALTER TABLE meetings ADD COLUMN livestream_youtube_api_ingest_url TEXT"),
+                ("livestream_youtube_api_ingest_key", "ALTER TABLE meetings ADD COLUMN livestream_youtube_api_ingest_key TEXT"),
+                ("livestream_youtube_broadcast_id", "ALTER TABLE meetings ADD COLUMN livestream_youtube_broadcast_id TEXT"),
+                ("livestream_youtube_broadcast_started_at", "ALTER TABLE meetings ADD COLUMN livestream_youtube_broadcast_started_at TIMESTAMP"),
+                ("livestream_youtube_watch_url", "ALTER TABLE meetings ADD COLUMN livestream_youtube_watch_url TEXT"),
+            )),
+            ("livestream_destination_states", (
+                ("viewer_count", "ALTER TABLE livestream_destination_states ADD COLUMN viewer_count INTEGER"),
+                ("viewer_count_at", "ALTER TABLE livestream_destination_states ADD COLUMN viewer_count_at TIMESTAMP"),
             )),
             ("chat_messages", (
                 ("reply_to_id", "ALTER TABLE chat_messages ADD COLUMN reply_to_id INTEGER REFERENCES chat_messages(id)"),

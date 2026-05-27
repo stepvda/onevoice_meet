@@ -122,6 +122,25 @@ async def stop_stream(meeting_id: str, user: RequireUser, db: Session = Depends(
         user_sub=user.sub,
         db=db,
     )
+    # Best-effort: politely complete the YouTube broadcast so the public
+    # video page shows "stream ended" instead of "the broadcaster has
+    # not pushed any data" for the next hour. We clear the meeting-row
+    # pointers regardless of API success so the next Start call creates
+    # a fresh broadcast.
+    if (
+        bool(m.livestream_youtube_enabled)
+        and (m.livestream_youtube_mode or "rtmp") == "api"
+        and m.livestream_youtube_broadcast_id
+    ):
+        from app.services import youtube_live
+        try:
+            await youtube_live.complete_broadcast(m)
+        except Exception:  # noqa: BLE001
+            log.exception("youtube complete broadcast on stop failed")
+        m.livestream_youtube_broadcast_id = None
+        m.livestream_youtube_broadcast_started_at = None
+        m.livestream_youtube_watch_url = None
+        db.commit()
     return {"ok": True}
 
 
@@ -227,14 +246,29 @@ async def get_stream_destinations(meeting_id: str, user: RequireUser, db: Sessio
     }
     out: list[dict] = []
     for platform, _en_attr in enabled_platforms:
+        cached = states_by_platform.get(platform)
+        # Viewer count is only ever populated for YouTube API-mode rows
+        # (no other platform exposes a count via a stream-key API). It
+        # comes from the supervisor's last poll, regardless of whether
+        # we have live egress data this tick.
+        viewer_count = cached.viewer_count if cached else None
+        viewer_count_at = (
+            cached.viewer_count_at.isoformat() if cached and cached.viewer_count_at else None
+        )
         if platform in live:
-            out.append({"platform_id": platform, **live[platform]})
+            out.append({
+                "platform_id": platform,
+                **live[platform],
+                "viewer_count": viewer_count,
+                "viewer_count_at": viewer_count_at,
+            })
             continue
-        st = states_by_platform.get(platform)
         out.append({
             "platform_id": platform,
-            "status": st.status if st else "idle",
-            "error": st.error if st else None,
-            "updated_at": st.updated_at.isoformat() if st and st.updated_at else None,
+            "status": cached.status if cached else "idle",
+            "error": cached.error if cached else None,
+            "updated_at": cached.updated_at.isoformat() if cached and cached.updated_at else None,
+            "viewer_count": viewer_count,
+            "viewer_count_at": viewer_count_at,
         })
     return out

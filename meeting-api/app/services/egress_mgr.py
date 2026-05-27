@@ -74,15 +74,27 @@ LIVESTREAM_DESTINATIONS: list[tuple[str, str, str, str]] = [
 ]
 
 
+def _resolve_destination_creds(m: Meeting, platform: str, url_attr: str, key_attr: str) -> tuple[str | None, str | None]:
+    """Return (url, key) for a destination. For YouTube in API mode we
+    use the API-provisioned ingest URL/key (set by the supervisor when
+    it creates the persistent liveStream); for everything else we read
+    the meeting's manual columns."""
+    if platform == "youtube" and (m.livestream_youtube_mode or "rtmp") == "api":
+        return (
+            m.livestream_youtube_api_ingest_url,
+            m.livestream_youtube_api_ingest_key,
+        )
+    return (getattr(m, url_attr, None), getattr(m, key_attr, None))
+
+
 def _enabled_stream_urls(m: Meeting) -> list[str]:
     """Return every destination URL the meeting wants to stream to. Empty
     list means "no streaming destinations configured" — the caller treats
     this the same as `want_stream=False`."""
     urls: list[str] = []
-    for _platform, en_attr, url_attr, key_attr in LIVESTREAM_DESTINATIONS:
+    for platform, en_attr, url_attr, key_attr in LIVESTREAM_DESTINATIONS:
         en = bool(getattr(m, en_attr, False))
-        url = getattr(m, url_attr, None)
-        key = getattr(m, key_attr, None)
+        url, key = _resolve_destination_creds(m, platform, url_attr, key_attr)
         if en and url and key:
             urls.append(_build_stream_url(url, key))
     return urls
@@ -95,8 +107,7 @@ def enabled_url_by_platform(m: Meeting) -> dict[str, str]:
     out: dict[str, str] = {}
     for platform, en_attr, url_attr, key_attr in LIVESTREAM_DESTINATIONS:
         en = bool(getattr(m, en_attr, False))
-        url = getattr(m, url_attr, None)
-        key = getattr(m, key_attr, None)
+        url, key = _resolve_destination_creds(m, platform, url_attr, key_attr)
         if en and url and key:
             out[platform] = _build_stream_url(url, key)
     return out
@@ -258,6 +269,19 @@ async def reconcile_egress(
         )
 
     if want_stream:
+        # If YouTube is in API mode, ensure we have a persistent
+        # liveStream + an active liveBroadcast before reading URLs. This
+        # writes the provisioned ingest URL/key onto the meeting so
+        # `_enabled_stream_urls` picks them up below. Failures here fall
+        # back to no-op: the host sees the destination skipped (idle
+        # rather than streaming) without breaking the whole reconcile.
+        if (
+            bool(m.livestream_youtube_enabled)
+            and (m.livestream_youtube_mode or "rtmp") == "api"
+            and m.livestream_youtube_refresh_token
+        ):
+            await _ensure_youtube_api_ready(m, db)
+
         urls = _enabled_stream_urls(m)
         if not urls:
             raise HTTPException(
@@ -339,6 +363,48 @@ async def reconcile_egress(
     )
     db.commit()
     return {"egress_id": new_egress_id, "recording_id": new_recording_id, "no_change": False}
+
+
+async def _ensure_youtube_api_ready(m: Meeting, db: Session) -> None:
+    """Provision the persistent liveStream and a fresh liveBroadcast for
+    a YouTube-API-mode meeting that's about to start streaming.
+
+    Called from `reconcile_egress` only when `want_stream=True` and
+    YouTube is enabled in API mode. Writes the ingest URL/key + active
+    broadcast metadata to the meeting row. Idempotent: if a fresh stream
+    already exists we reuse it; if a broadcast is already live we leave
+    it alone.
+
+    Best-effort: any YouTubeLiveError is logged but does NOT raise — the
+    caller's `_enabled_stream_urls` will simply skip YouTube if the
+    columns remained empty, so other destinations keep streaming."""
+    from datetime import datetime, timezone
+    from app.services import youtube_live
+
+    try:
+        prov = await youtube_live.ensure_provisioned_stream(m)
+    except youtube_live.YouTubeLiveError:
+        import logging
+        logging.getLogger(__name__).exception("youtube provision skipped")
+        return
+    m.livestream_youtube_stream_id = prov.stream_id
+    m.livestream_youtube_api_ingest_url = prov.ingest_url
+    m.livestream_youtube_api_ingest_key = prov.ingest_key
+
+    # Reuse the existing broadcast if it's still within YouTube's 12h
+    # cap; otherwise start a fresh one. The supervisor handles mid-stream
+    # rotation — this branch only creates the *initial* broadcast when
+    # the host clicks Start streaming.
+    if not m.livestream_youtube_broadcast_id:
+        try:
+            bc = await youtube_live.create_broadcast(m)
+            m.livestream_youtube_broadcast_id = bc.broadcast_id
+            m.livestream_youtube_watch_url = bc.watch_url
+            m.livestream_youtube_broadcast_started_at = datetime.now(timezone.utc)
+        except youtube_live.YouTubeLiveError:
+            import logging
+            logging.getLogger(__name__).exception("youtube broadcast create skipped")
+    db.commit()
 
 
 async def _set_recording_metadata(

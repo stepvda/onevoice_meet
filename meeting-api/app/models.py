@@ -107,6 +107,38 @@ class Meeting(Base):
     livestream_youtube_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     livestream_youtube_rtmps_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     livestream_youtube_stream_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # YouTube live streaming has two modes:
+    #   "rtmp" (default) — owner pastes the RTMP URL + stream key from
+    #                      studio.youtube.com into the two columns above.
+    #   "api"            — owner connects their channel via OAuth; Meet
+    #                      provisions a persistent `liveStream` and rotates
+    #                      `liveBroadcast` resources. The API-provisioned
+    #                      ingest URL + key live in
+    #                      `livestream_youtube_api_ingest_url` /
+    #                      `livestream_youtube_api_ingest_key`, leaving the
+    #                      manual columns untouched so switching back to
+    #                      "rtmp" preserves the hand-pasted credentials.
+    livestream_youtube_mode: Mapped[str] = mapped_column(String(10), default="rtmp", nullable=False)
+    # OAuth refresh token (long-lived) and channel display info captured
+    # during the consent callback. The access token is short-lived and
+    # NOT stored — it's exchanged from the refresh token on demand.
+    livestream_youtube_refresh_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    livestream_youtube_channel_title: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    livestream_youtube_channel_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    # Provisioned `liveStream` resource — reusable across many broadcasts.
+    # Created once on first reconcile, reused forever.
+    livestream_youtube_stream_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    livestream_youtube_api_ingest_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    livestream_youtube_api_ingest_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Currently-active `liveBroadcast` resource. Rotated every ~11h30m
+    # because YouTube hard-caps single broadcasts at 12h. Watch URL is
+    # the public `https://www.youtube.com/watch?v=<broadcastId>` for the
+    # active broadcast; surfaced to the owner UI for sharing.
+    livestream_youtube_broadcast_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    livestream_youtube_broadcast_started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    livestream_youtube_watch_url: Mapped[str | None] = mapped_column(String(200), nullable=True)
     # Facebook Live destination.
     livestream_facebook_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     livestream_facebook_rtmps_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -601,6 +633,11 @@ class LivestreamDestinationState(Base):
     # failed: connection closed remotely"). NULL otherwise.
     error: Mapped[str | None] = mapped_column(String(500), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+    # Concurrent viewer count + when it was last polled. Populated by the
+    # YouTube supervisor for `platform_id="youtube"` rows when the meeting
+    # is in API mode. Other platforms leave these NULL (no API to query).
+    viewer_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    viewer_count_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("meeting_id", "platform_id", name="uq_dest_state_meeting_platform"),
