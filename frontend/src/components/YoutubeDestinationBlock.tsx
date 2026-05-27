@@ -57,19 +57,23 @@ export default function YoutubeDestinationBlock({
   const [oauthConnected, setOauthConnected] = useState(initialOauthConnected);
   const [channelTitle, setChannelTitle] = useState<string | null>(initialChannelTitle ?? null);
   const [channelId, setChannelId] = useState<string | null>(null);
-  // Broadcast-specific watch URL (only set while a broadcast is active).
-  // We keep it for completeness but the primary share link is the
-  // channel-live URL computed from channelId, which is stable across
-  // broadcasts.
+  // Broadcast-specific watch URL — direct deep link to the currently
+  // active broadcast. Set whenever a broadcast resource exists on the
+  // meeting (i.e. from the moment Start-streaming provisions one).
   const [watchUrl, setWatchUrl] = useState<string | null>(initialWatchUrl ?? null);
-  // Permanent "channel live" page — stable once we know the channel id,
-  // good for sharing in advance of going live. When the channel goes
-  // live this URL renders the live stream; otherwise it shows a
-  // placeholder page on YouTube.
+  // Channel /live page — stable across broadcasts but **only routes
+  // viewers to the active broadcast if the broadcast privacy is
+  // "public"**. Default broadcast privacy is "unlisted", so this URL
+  // typically renders an empty channel-live page in the common case.
+  // Used as a fallback when the host hasn't started streaming yet so
+  // they at least have *something* to share before going live.
   const channelLiveUrl = channelId
     ? `https://www.youtube.com/channel/${channelId}/live`
     : null;
-  const shareUrl = channelLiveUrl ?? watchUrl;
+  // Prefer the direct watch URL whenever a broadcast exists — it works
+  // regardless of privacy. Fall back to the channel-live URL only when
+  // no broadcast has been provisioned yet.
+  const shareUrl = watchUrl ?? channelLiveUrl;
   const [busy, setBusy] = useState<"connect" | "disconnect" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
