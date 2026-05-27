@@ -218,16 +218,20 @@ async def get_stream_destinations(meeting_id: str, user: RequireUser, db: Sessio
                     if not platform:
                         continue
                     raw = getattr(sr, "status", None)
+                    # LiveKit StreamInfo.Status: ACTIVE=0, FINISHED=1, FAILED=2.
+                    # See the matching comment in webhooks.py for context on
+                    # the previous (wrong) mapping that silently treated
+                    # successful pushes as "idle".
                     try:
                         st_int = int(raw) if raw is not None else -1
                     except (TypeError, ValueError):
                         st_int = -1
-                    if st_int == 1:
+                    if st_int == 0:
                         status = "streaming"
+                    elif st_int == 1:
+                        status = "complete"
                     elif st_int == 2:
                         status = "failed"
-                    elif st_int == 3:
-                        status = "complete"
                     else:
                         status = "idle"
                     err = (getattr(sr, "error", "") or "").strip()[:500] or None

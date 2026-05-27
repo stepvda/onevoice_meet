@@ -118,18 +118,24 @@ def _update_destination_states(db, info, etype: str) -> None:
             continue
 
         raw_status = getattr(sr, "status", None)
-        # LiveKit StreamInfo.Status enum is an int. 1=ACTIVE 2=FAILED
-        # 3=FINISHED. Treat anything else (incl. 0=NEW) as idle.
+        # LiveKit StreamInfo.Status enum (verified against the installed
+        # `livekit.protocol.egress.StreamInfo.Status`):
+        #   ACTIVE = 0, FINISHED = 1, FAILED = 2.
+        # An earlier revision of this code assumed 1=ACTIVE/2=FAILED/3=FINISHED,
+        # which silently mapped every successful push to "idle" (the
+        # default branch) — so the modal's green dot never lit up for
+        # platforms that *worked*, only the red dot for Facebook (which
+        # happened to line up on 2=FAILED by coincidence).
         try:
             status_int = int(raw_status) if raw_status is not None else -1
         except (TypeError, ValueError):
             status_int = -1
-        if status_int == 1:
+        if status_int == 0:
             status = "streaming"
+        elif status_int == 1:
+            status = "complete"
         elif status_int == 2:
             status = "failed"
-        elif status_int == 3:
-            status = "complete"
         else:
             status = "idle"
         # If the whole egress ended, anything still listed as streaming
