@@ -56,7 +56,20 @@ export default function YoutubeDestinationBlock({
   const [showKey, setShowKey] = useState(false);
   const [oauthConnected, setOauthConnected] = useState(initialOauthConnected);
   const [channelTitle, setChannelTitle] = useState<string | null>(initialChannelTitle ?? null);
+  const [channelId, setChannelId] = useState<string | null>(null);
+  // Broadcast-specific watch URL (only set while a broadcast is active).
+  // We keep it for completeness but the primary share link is the
+  // channel-live URL computed from channelId, which is stable across
+  // broadcasts.
   const [watchUrl, setWatchUrl] = useState<string | null>(initialWatchUrl ?? null);
+  // Permanent "channel live" page — stable once we know the channel id,
+  // good for sharing in advance of going live. When the channel goes
+  // live this URL renders the live stream; otherwise it shows a
+  // placeholder page on YouTube.
+  const channelLiveUrl = channelId
+    ? `https://www.youtube.com/channel/${channelId}/live`
+    : null;
+  const shareUrl = channelLiveUrl ?? watchUrl;
   const [busy, setBusy] = useState<"connect" | "disconnect" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -72,6 +85,7 @@ export default function YoutubeDestinationBlock({
         if (cancelled) return;
         setOauthConnected(!!s.connected);
         setChannelTitle(s.channel_title ?? null);
+        setChannelId(s.channel_id ?? null);
         setWatchUrl(s.watch_url ?? null);
       } catch {
         /* not fatal — keep last-known state */
@@ -127,6 +141,7 @@ export default function YoutubeDestinationBlock({
       await api.youtubeOauthDisconnect(meetingId);
       setOauthConnected(false);
       setChannelTitle(null);
+      setChannelId(null);
       setWatchUrl(null);
       // Server flips mode back to "rtmp" on disconnect.
       onModeChange("rtmp");
@@ -137,10 +152,10 @@ export default function YoutubeDestinationBlock({
     }
   }
 
-  async function copyWatchUrl() {
-    if (!watchUrl) return;
+  async function copyShareUrl() {
+    if (!shareUrl) return;
     try {
-      await navigator.clipboard.writeText(watchUrl);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -356,29 +371,29 @@ export default function YoutubeDestinationBlock({
                       </span>
                     </div>
 
-                    {watchUrl && (
+                    {shareUrl && (
                       <Field
-                        id={`ls-${dest.id}-watch-url`}
-                        label={t("livestream.youtubeWatchUrlLabel", {
-                          defaultValue: "Public watch URL",
+                        id={`ls-${dest.id}-share-url`}
+                        label={t("livestream.youtubeShareUrlLabel", {
+                          defaultValue: "Live stream URL",
                         })}
                       >
                         <div className="flex gap-2">
                           <Input
-                            id={`ls-${dest.id}-watch-url`}
-                            data-testid="ls-youtube-watch-url"
+                            id={`ls-${dest.id}-share-url`}
+                            data-testid="ls-youtube-share-url"
                             type="text"
-                            value={watchUrl}
+                            value={shareUrl}
                             readOnly
                             onFocus={(e) => e.currentTarget.select()}
                           />
                           <button
                             type="button"
-                            onClick={copyWatchUrl}
-                            aria-label={t("livestream.youtubeWatchUrlCopy", {
-                              defaultValue: "Copy watch URL",
+                            onClick={copyShareUrl}
+                            aria-label={t("livestream.youtubeShareUrlCopy", {
+                              defaultValue: "Copy live stream URL",
                             })}
-                            data-testid="ls-youtube-watch-url-copy"
+                            data-testid="ls-youtube-share-url-copy"
                             className="px-2 text-xs text-slate-300 rounded-md bg-primary-800 hover:bg-primary-700 border border-primary-700 flex items-center gap-1"
                           >
                             {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -387,10 +402,10 @@ export default function YoutubeDestinationBlock({
                               : t("common.copy", { defaultValue: "Copy" })}
                           </button>
                           <a
-                            href={watchUrl}
+                            href={shareUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            aria-label={t("livestream.youtubeWatchUrlOpen", {
+                            aria-label={t("livestream.youtubeShareUrlOpen", {
                               defaultValue: "Open on YouTube",
                             })}
                             className="px-2 text-xs text-slate-300 rounded-md bg-primary-800 hover:bg-primary-700 border border-primary-700 flex items-center"
@@ -400,6 +415,28 @@ export default function YoutubeDestinationBlock({
                         </div>
                       </Field>
                     )}
+
+                    {/* Viewer count — populated by the supervisor while a
+                        broadcast is live. When not streaming we show a
+                        muted placeholder so the host knows where the
+                        number will appear. */}
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <Eye size={14} className="text-slate-400" />
+                      <span className="text-slate-400">
+                        {t("livestream.youtubeViewersLabel", { defaultValue: "Concurrent viewers:" })}
+                      </span>
+                      {typeof viewerCount === "number" ? (
+                        <span className="font-medium text-slate-100">
+                          {viewerCount.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">
+                          {t("livestream.youtubeViewersNotStreaming", {
+                            defaultValue: "— (not currently streaming)",
+                          })}
+                        </span>
+                      )}
+                    </div>
 
                     <Button
                       type="button"
