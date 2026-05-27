@@ -136,7 +136,12 @@ class Settings(BaseSettings):
     # `{meeting_title}` which is substituted at provision time.
     youtube_live_default_title: str = "{meeting_title} — Live"
     youtube_live_default_description: str = ""
-    youtube_live_default_privacy: str = ""  # blank → fall back to youtube_default_privacy
+    # Default for managed-mode broadcasts. `public` so the broadcast
+    # surfaces on the channel's /live page, in YouTube search, and in
+    # subscriber feeds — the host-facing intent for "go live". Keep it
+    # decoupled from `youtube_default_privacy` (which governs the
+    # recording-upload flow and stays "unlisted" by default).
+    youtube_live_default_privacy: str = "public"
     # Hard rotation point. YouTube cuts broadcasts at 12h; we rotate
     # earlier so the next broadcast is bound and live before the old
     # one is forced complete. 11h30m is a safe margin.
