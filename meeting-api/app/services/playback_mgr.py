@@ -42,6 +42,41 @@ log = logging.getLogger(__name__)
 # guard if added) and the SPA can rely on this string to find the track.
 PLAYBACK_IDENTITY = "playback"
 
+
+def _vp8_video_options() -> "api.IngressVideoOptions":
+    """Output spec for URL_INPUT ingresses — VP8 instead of LiveKit's
+    H.264 default.
+
+    Why: Firefox on Linux can't decode H.264 unless OpenH264 (or
+    system gstreamer/ffmpeg) is correctly installed. Many distro
+    builds — Firefox Snap and several Flatpak channels in particular —
+    ship without working H.264 support, so a viewer on a public
+    `/public/<slug>` page would see a frozen/black video while the
+    Opus audio kept playing. VP8 is universally supported in every
+    browser without plugins, at the cost of slightly heavier encode
+    on the ingress container (negligible at 720p30 / 1.5 Mbps).
+
+    720p30 / 1.5 Mbps matches the egress encoding profile in
+    egress_mgr._encoding_options() so the recorded MP4, the
+    livestream RTMP push, and what the live viewers see all look the
+    same.
+    """
+    return api.IngressVideoOptions(
+        source=api.TrackSource.CAMERA,
+        options=api.IngressVideoEncodingOptions(
+            video_codec=api.VideoCodec.VP8,
+            frame_rate=30,
+            layers=[
+                api.VideoLayer(
+                    quality=api.VideoQuality.HIGH,
+                    width=1280,
+                    height=720,
+                    bitrate=1_500_000,
+                ),
+            ],
+        ),
+    )
+
 # Internal URL the ingress container fetches the file from. Same docker
 # network — caddy isn't involved. The ?token=… is an HMAC-signed expiry
 # so the URL isn't a free-floating credential.
@@ -307,6 +342,7 @@ async def _start_ingress_for_item(
                 participant_identity=PLAYBACK_IDENTITY,
                 participant_name=participant_name,
                 url=url,
+                video=_vp8_video_options(),
             )
         )
         if initial:
@@ -495,6 +531,7 @@ async def pause_playback(m: Meeting, user_sub: str, db: Session) -> dict:
                 participant_identity=PLAYBACK_IDENTITY,
                 participant_name=item.filename,
                 url=freeze_url,
+                video=_vp8_video_options(),
             )
         )
     finally:
@@ -616,6 +653,7 @@ async def advance_after_ingress_ended(
                     participant_identity=PLAYBACK_IDENTITY,
                     participant_name=cur_item.filename,
                     url=freeze_url,
+                    video=_vp8_video_options(),
                 )
             )
         finally:
