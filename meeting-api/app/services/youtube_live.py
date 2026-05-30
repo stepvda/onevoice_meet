@@ -455,6 +455,14 @@ async def supervise_meeting(m: Meeting, db: Any) -> int:
     # 1. Rotation: if broadcast has been live long enough, create+bind
     # a new one and transition the old to complete.
     started = m.livestream_youtube_broadcast_started_at
+    # SQLite + SQLAlchemy hand back naive datetimes even when the column
+    # was written as tz-aware (the DateTime(timezone=True) flag is a
+    # type-decorator hint, not real storage). Coerce to UTC so the
+    # subtraction below doesn't crash — without this the supervisor
+    # raises TypeError every tick and broadcasts never rotate at the
+    # 12 h YouTube cap, silently aging the stream off-air.
+    if started is not None and started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
     if (
         started
         and m.livestream_youtube_broadcast_id
