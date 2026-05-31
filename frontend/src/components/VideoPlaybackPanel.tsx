@@ -458,7 +458,7 @@ export default function VideoPlaybackPanel({ meeting, open, onClose, onMeetingUp
         // Same overlay/inline split as ChatPanel: overlays the stage on
         // mobile, becomes a flex column on sm+.
         "absolute inset-y-0 right-0 z-20 sm:static sm:z-auto",
-        "h-full w-full sm:w-96 flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col",
+        "h-full w-full sm:w-[614px] flex-shrink-0 bg-primary-900/95 backdrop-blur border-l border-primary-700 flex flex-col",
       ].join(" ")}
       role="complementary"
       aria-label={t("playback.title", { defaultValue: "Playlist" })}
