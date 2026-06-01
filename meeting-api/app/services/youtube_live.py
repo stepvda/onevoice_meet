@@ -47,29 +47,6 @@ log = logging.getLogger(__name__)
 # recording-upload feature uses its own (single global) refresh token.
 OAUTH_SCOPES = "https://www.googleapis.com/auth/youtube"
 
-# In-memory throttle for the supervisor's `transition→live` retry. A
-# broadcast stuck in `lifeCycleStatus=ready` with an active stream
-# rejects ready→live with HTTP 403 invalidTransition (observed in
-# production), and we cannot tell from the error whether the next try
-# will succeed. Throttling to ~5 min between attempts caps the wasted
-# quota (50 units/call) while still allowing eventual recovery if the
-# state ever becomes transition-eligible. Reset on every meeting-api
-# restart, which is fine — that's a fresh chance to try.
-_TRANSITION_RETRY_INTERVAL_SECONDS = 300
-_last_transition_attempt: dict[str, datetime] = {}
-
-
-def _transition_attempt_allowed(broadcast_id: str) -> bool:
-    last = _last_transition_attempt.get(broadcast_id)
-    if last is None:
-        return True
-    return (datetime.now(timezone.utc) - last).total_seconds() >= _TRANSITION_RETRY_INTERVAL_SECONDS
-
-
-def _record_transition_attempt(broadcast_id: str) -> None:
-    _last_transition_attempt[broadcast_id] = datetime.now(timezone.utc)
-
-
 OAUTH_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token"
 OAUTH_REVOKE_URL = "https://oauth2.googleapis.com/revoke"
@@ -547,39 +524,38 @@ async def supervise_meeting(m: Meeting, db: Any) -> int:
         except Exception:
             log.exception("supervise: rotation failed")
 
-    # 3. Initial transition to live — only when the broadcast actually
-    # needs transitioning, AND only at most once every
-    # _TRANSITION_RETRY_INTERVAL_SECONDS. In production we observed
-    # broadcasts stuck in `ready` lifecycle indefinitely (active
-    # stream, healthy bytes flowing, but YouTube refuses
-    # ready→live with HTTP 403 `invalidTransition`). Every transition
-    # call costs ~50 quota units; at 30 s ticks that's 144 k/day, well
-    # above the 10 k default quota. Throttle to at most ~12 attempts/h
-    # per broadcast so we still try to recover but stop burning quota.
+    # 3. Lifecycle observability only — the supervisor used to retry
+    # transition→live every tick, but in production that turned out to
+    # be futile:
+    #   • For the FIRST broadcast of a session, `enableAutoStart=True`
+    #     (set in create_broadcast) flips ready→live the moment YouTube
+    #     receives the first bytes. The supervisor's transition call
+    #     was unnecessary belt-and-suspenders.
+    #   • For ROTATION broadcasts (we create a fresh one at ~11h30m
+    #     while the egress keeps streaming continuously to the same
+    #     RTMP key), autoStart doesn't fire because YouTube never sees
+    #     a "new" stream connection — and a direct transition request
+    #     returns HTTP 403 `invalidTransition`. The retry just burns
+    #     ~50 quota units per tick (144 k/day at 30 s) and never
+    #     succeeds.
+    #
+    # We keep the cheap (1-unit) lifecycle peek so the log captures
+    # when a broadcast is stuck or has died on YouTube's side. Fixing
+    # rotation properly needs an egress pause/resume around the bind
+    # — a separate, larger change.
     if m.livestream_youtube_broadcast_id:
         lifecycle = await get_broadcast_lifecycle(m)
-        if lifecycle in ("ready", "testing") and _transition_attempt_allowed(
-            m.livestream_youtube_broadcast_id
-        ):
-            try:
-                health = await get_stream_health(m)
-            except Exception:
-                health = None
-            if health and health.stream_status == "active":
-                _record_transition_attempt(m.livestream_youtube_broadcast_id)
-                try:
-                    await transition_broadcast(m, to="live")
-                except Exception:
-                    pass
-        elif lifecycle in ("complete", "revoked"):
-            # Broadcast died on YouTube's side before our 11h30m
-            # rotation tick was due (e.g. they 12h-capped it or the
-            # owner deleted it from Studio). Log it; the rotation path
-            # will mint a fresh one on its normal schedule. We
-            # deliberately don't auto-rotate here to avoid surprising
-            # quota usage when a meeting is briefly disconnected.
+        if lifecycle in ("complete", "revoked"):
             log.warning(
                 "supervise: broadcast %s on meeting %s is %s — no transitions until rotation",
+                m.livestream_youtube_broadcast_id, m.id, lifecycle,
+            )
+        elif lifecycle in ("ready", "testing"):
+            # Stuck broadcast (rotation case described above) — not an
+            # error per se, but worth a debug breadcrumb so the host can
+            # tell whether the supervisor noticed.
+            log.debug(
+                "supervise: broadcast %s on meeting %s is %s (autoStart will promote on next stream connection)",
                 m.livestream_youtube_broadcast_id, m.id, lifecycle,
             )
 
