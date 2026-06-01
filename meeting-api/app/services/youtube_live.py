@@ -47,6 +47,29 @@ log = logging.getLogger(__name__)
 # recording-upload feature uses its own (single global) refresh token.
 OAUTH_SCOPES = "https://www.googleapis.com/auth/youtube"
 
+# In-memory throttle for the supervisor's `transition→live` retry. A
+# broadcast stuck in `lifeCycleStatus=ready` with an active stream
+# rejects ready→live with HTTP 403 invalidTransition (observed in
+# production), and we cannot tell from the error whether the next try
+# will succeed. Throttling to ~5 min between attempts caps the wasted
+# quota (50 units/call) while still allowing eventual recovery if the
+# state ever becomes transition-eligible. Reset on every meeting-api
+# restart, which is fine — that's a fresh chance to try.
+_TRANSITION_RETRY_INTERVAL_SECONDS = 300
+_last_transition_attempt: dict[str, datetime] = {}
+
+
+def _transition_attempt_allowed(broadcast_id: str) -> bool:
+    last = _last_transition_attempt.get(broadcast_id)
+    if last is None:
+        return True
+    return (datetime.now(timezone.utc) - last).total_seconds() >= _TRANSITION_RETRY_INTERVAL_SECONDS
+
+
+def _record_transition_attempt(broadcast_id: str) -> None:
+    _last_transition_attempt[broadcast_id] = datetime.now(timezone.utc)
+
+
 OAUTH_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token"
 OAUTH_REVOKE_URL = "https://oauth2.googleapis.com/revoke"
@@ -525,19 +548,25 @@ async def supervise_meeting(m: Meeting, db: Any) -> int:
             log.exception("supervise: rotation failed")
 
     # 3. Initial transition to live — only when the broadcast actually
-    # needs transitioning. Once it flips to `live` (typically via the
-    # broadcast's `enableAutoStart=True` the moment bytes arrive),
-    # spamming transition every 30 s costs 50 quota units per call AND
-    # YouTube returns HTTP 403 `Invalid transition`. The lifecycle peek
-    # below is 1 unit and gates the expensive call.
+    # needs transitioning, AND only at most once every
+    # _TRANSITION_RETRY_INTERVAL_SECONDS. In production we observed
+    # broadcasts stuck in `ready` lifecycle indefinitely (active
+    # stream, healthy bytes flowing, but YouTube refuses
+    # ready→live with HTTP 403 `invalidTransition`). Every transition
+    # call costs ~50 quota units; at 30 s ticks that's 144 k/day, well
+    # above the 10 k default quota. Throttle to at most ~12 attempts/h
+    # per broadcast so we still try to recover but stop burning quota.
     if m.livestream_youtube_broadcast_id:
         lifecycle = await get_broadcast_lifecycle(m)
-        if lifecycle in ("ready", "testing"):
+        if lifecycle in ("ready", "testing") and _transition_attempt_allowed(
+            m.livestream_youtube_broadcast_id
+        ):
             try:
                 health = await get_stream_health(m)
             except Exception:
                 health = None
             if health and health.stream_status == "active":
+                _record_transition_attempt(m.livestream_youtube_broadcast_id)
                 try:
                     await transition_broadcast(m, to="live")
                 except Exception:
