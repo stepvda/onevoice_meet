@@ -737,6 +737,12 @@ _INGRESS_HEALTHY_STATUSES = {1, 2}
 # Don't flag a freshly-started ingress as stale — it takes a few seconds
 # to negotiate with the source and transition into BUFFERING/PUBLISHING.
 _WATCHDOG_GRACE_SECONDS = 25
+# Wall-clock margin beyond the item's known duration before treating the
+# ingress as stale on duration alone. LiveKit's list_ingress was observed
+# returning healthy status (ENDPOINT_BUFFERING/PUBLISHING) for tens of
+# minutes after the ingress actually finished — the wall-clock check is
+# the belt-and-suspenders fallback for that case.
+_WATCHDOG_DURATION_OVERRUN_SECONDS = 60
 
 
 async def watchdog_check_stale_ingresses(db: Session) -> int:
@@ -763,6 +769,7 @@ async def watchdog_check_stale_ingresses(db: Session) -> int:
     recovered = 0
     try:
         for m in candidates:
+            age: Optional[float] = None
             if m.playback_started_at:
                 started = m.playback_started_at
                 if started.tzinfo is None:
@@ -770,6 +777,54 @@ async def watchdog_check_stale_ingresses(db: Session) -> int:
                 age = (datetime.now(timezone.utc) - started).total_seconds()
                 if age < _WATCHDOG_GRACE_SECONDS:
                     continue
+
+                # Wall-clock duration-overrun fallback. When LiveKit's
+                # ingress server holds onto a dead ingress in a healthy
+                # state (we observed this on a clean EOS where the
+                # `ingress_ended` webhook was lost, leaving the playlist
+                # stalled for ~52 min), the list_ingress check below
+                # never flags it. The item's own `duration_seconds`
+                # tells us when wall-clock has clearly outrun reality.
+                if m.playback_current_item_id:
+                    cur_item = (
+                        db.query(PlaybackItem)
+                        .filter_by(id=m.playback_current_item_id)
+                        .first()
+                    )
+                    if cur_item is not None:
+                        eff_duration: Optional[float] = cur_item.duration_seconds
+                        # Alias items have no duration of their own;
+                        # borrow from the source row.
+                        if eff_duration is None and cur_item.source_item_id:
+                            src = (
+                                db.query(PlaybackItem)
+                                .filter_by(id=cur_item.source_item_id)
+                                .first()
+                            )
+                            if src is not None:
+                                eff_duration = src.duration_seconds
+                        if (
+                            eff_duration is not None
+                            and age > eff_duration + _WATCHDOG_DURATION_OVERRUN_SECONDS
+                        ):
+                            log.warning(
+                                "playback watchdog: meeting %s ingress %s overran"
+                                " expected duration (age=%.0fs duration=%.0fs)"
+                                " — advancing playlist",
+                                m.id, m.playback_ingress_id, age, eff_duration,
+                            )
+                            try:
+                                await advance_after_ingress_ended(
+                                    m.playback_ingress_id, db
+                                )
+                                recovered += 1
+                            except Exception:
+                                log.exception(
+                                    "playback watchdog: duration-overrun"
+                                    " advance failed for %s",
+                                    m.playback_ingress_id,
+                                )
+                            continue
 
             ingress_id = m.playback_ingress_id
             stale_reason: Optional[str] = None

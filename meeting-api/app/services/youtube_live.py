@@ -297,6 +297,34 @@ async def get_stream_health(m: Meeting) -> StreamHealth:
 # ─── liveBroadcast lifecycle ───────────────────────────────────────────
 
 
+async def get_broadcast_lifecycle(m: Meeting) -> str | None:
+    """Return the broadcast's current `lifeCycleStatus`
+    (`created` | `ready` | `testing` | `live` | `complete` | `revoked`)
+    or None if it can't be fetched.
+
+    Used by the supervisor to decide whether a `transition→live` call is
+    even meaningful. Once a broadcast is `live` (typically via
+    `enableAutoStart=True` flipping it the moment bytes arrive),
+    re-transitioning is a no-op that costs 50 quota units and returns
+    HTTP 403 `Invalid transition`. Checking lifecycle first costs 1 unit
+    and gates the noisy transition retry."""
+    if not m.livestream_youtube_refresh_token or not m.livestream_youtube_broadcast_id:
+        return None
+    try:
+        at = await _access_token(m.livestream_youtube_refresh_token)
+        body = await _api(
+            at, "GET", "/liveBroadcasts",
+            params={"part": "status", "id": m.livestream_youtube_broadcast_id},
+        )
+    except YouTubeLiveError as e:
+        log.warning("broadcast lifecycle fetch failed: %s", str(e)[:200])
+        return None
+    items = body.get("items") or []
+    if not items:
+        return None
+    return (items[0].get("status") or {}).get("lifeCycleStatus")
+
+
 def _default_privacy() -> str:
     p = (settings.youtube_live_default_privacy or settings.youtube_default_privacy or "unlisted").lower()
     if p not in ("public", "unlisted", "private"):
@@ -496,18 +524,35 @@ async def supervise_meeting(m: Meeting, db: Any) -> int:
         except Exception:
             log.exception("supervise: rotation failed")
 
-    # 3. Initial transition to live (idempotent thanks to the
-    # redundantTransition swallow in transition_broadcast).
+    # 3. Initial transition to live — only when the broadcast actually
+    # needs transitioning. Once it flips to `live` (typically via the
+    # broadcast's `enableAutoStart=True` the moment bytes arrive),
+    # spamming transition every 30 s costs 50 quota units per call AND
+    # YouTube returns HTTP 403 `Invalid transition`. The lifecycle peek
+    # below is 1 unit and gates the expensive call.
     if m.livestream_youtube_broadcast_id:
-        try:
-            health = await get_stream_health(m)
-        except Exception:
-            health = None
-        if health and health.stream_status == "active":
+        lifecycle = await get_broadcast_lifecycle(m)
+        if lifecycle in ("ready", "testing"):
             try:
-                await transition_broadcast(m, to="live")
+                health = await get_stream_health(m)
             except Exception:
-                pass
+                health = None
+            if health and health.stream_status == "active":
+                try:
+                    await transition_broadcast(m, to="live")
+                except Exception:
+                    pass
+        elif lifecycle in ("complete", "revoked"):
+            # Broadcast died on YouTube's side before our 11h30m
+            # rotation tick was due (e.g. they 12h-capped it or the
+            # owner deleted it from Studio). Log it; the rotation path
+            # will mint a fresh one on its normal schedule. We
+            # deliberately don't auto-rotate here to avoid surprising
+            # quota usage when a meeting is briefly disconnected.
+            log.warning(
+                "supervise: broadcast %s on meeting %s is %s — no transitions until rotation",
+                m.livestream_youtube_broadcast_id, m.id, lifecycle,
+            )
 
     # 4. Viewer count + health snapshot to LivestreamDestinationState.
     if m.livestream_youtube_broadcast_id:
