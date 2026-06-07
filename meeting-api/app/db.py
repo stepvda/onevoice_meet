@@ -115,6 +115,11 @@ def lightweight_migrate() -> None:
                 # the in-meeting settings panel.
                 ("pip_enabled", "ALTER TABLE meetings ADD COLUMN pip_enabled BOOLEAN DEFAULT 0 NOT NULL"),
                 ("pip_overlay_identity", "ALTER TABLE meetings ADD COLUMN pip_overlay_identity TEXT"),
+                # Room-wide composition layout shared across live / recording /
+                # livestream. Default "grid" — fits the typical multi-party
+                # meeting; the host flips to speaker / single-speaker via
+                # the toolbar picker.
+                ("room_layout", "ALTER TABLE meetings ADD COLUMN room_layout TEXT DEFAULT 'grid' NOT NULL"),
                 # YouTube Live OAuth + Data API mode. See models.py for
                 # the meaning of each column.
                 ("livestream_youtube_mode", "ALTER TABLE meetings ADD COLUMN livestream_youtube_mode TEXT DEFAULT 'rtmp' NOT NULL"),

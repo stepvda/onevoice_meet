@@ -208,6 +208,13 @@ export interface Preferences {
     disableHardwareAcceleration: boolean;
     prewarmIceOnPageLoad: boolean;
     reconnectAttempts: number; // 0–10
+    // When true, subscriptions stay on the publisher's HIGH simulcast layer
+    // regardless of how small each tile is on screen. Useful for hosts who
+    // want to see everyone at the best available quality (e.g., while
+    // recording or in spotlight mode). Default off because it costs more
+    // downlink bandwidth. Applied at connection time — toggling mid-meeting
+    // requires a rejoin.
+    forceHighQualitySubscription: boolean;
   };
 
   // ── Language & locale ─────────────────────────────────────────────
@@ -354,6 +361,7 @@ export const defaults: Preferences = {
     disableHardwareAcceleration: false,
     prewarmIceOnPageLoad: true,
     reconnectAttempts: 5,
+    forceHighQualitySubscription: false,
   },
   locale: {
     language: "en",

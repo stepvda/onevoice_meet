@@ -250,6 +250,11 @@ class MeetingOut(BaseModel):
     # Picture-in-Picture egress layout (recording + livestream output).
     pip_enabled: bool = False
     pip_overlay_identity: str | None = None
+    # Room-wide composition layout shared across live / recording / stream.
+    # Used by the SPA as the initial value before LiveKit room metadata
+    # arrives, and as a fallback when the metadata doesn't carry the key
+    # (e.g. fresh room post-recycle).
+    room_layout: str = "grid"
     # Public view-only stream. `public_url` is computed from the slug.
     public_enabled: bool = False
     public_slug: str | None = None
@@ -325,6 +330,7 @@ def _to_out(m: Meeting) -> MeetingOut:
         playback_current_item_id=m.playback_current_item_id,
         pip_enabled=bool(m.pip_enabled),
         pip_overlay_identity=m.pip_overlay_identity,
+        room_layout=m.room_layout or "grid",
         public_enabled=bool(m.public_enabled),
         public_slug=m.public_slug,
         public_url=_public_url(m),

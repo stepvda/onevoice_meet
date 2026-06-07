@@ -12,6 +12,7 @@ import {
   Check,
   Pencil,
   PictureInPicture2,
+  FileVideo,
   X,
 } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
@@ -32,6 +33,10 @@ interface Props {
   onConfigureLivestream?: () => void;
   // Owner-only entry to open the VideoPlaybackPanel. Same gating rules as
   // livestream: hidden for non-owners, hidden when undefined.
+
+  // Owner-only entry to open the MeetingRecordingsModal — lists the
+  // recordings of the current meeting with a per-row Download button.
+  onViewRecordings?: () => void;
 
   // Owner-only Public stream group. When `meeting` is provided we render
   // the toggle + slug editor; otherwise the group stays hidden. Mutations
@@ -54,6 +59,7 @@ export default function InMeetingSettings({
   open,
   onClose,
   onConfigureLivestream,
+  onViewRecordings,
   meeting,
   onMeetingUpdated,
 }: Props) {
@@ -266,6 +272,30 @@ export default function InMeetingSettings({
 
         {meeting && onMeetingUpdated && (
           <PublicGroup meeting={meeting} onMeetingUpdated={onMeetingUpdated} />
+        )}
+
+        {onViewRecordings && (
+          <Group
+            icon={<FileVideo size={14} />}
+            title={t("inMeetingSettings.groupRecordings", { defaultValue: "Recordings" })}
+          >
+            <p className="text-xs text-slate-400">
+              {t("inMeetingSettings.recordingsHint", {
+                defaultValue:
+                  "List the recordings of the current meeting and download them directly.",
+              })}
+            </p>
+            <button
+              type="button"
+              onClick={onViewRecordings}
+              data-testid="im-view-recordings"
+              className="text-left text-sm px-3 py-1.5 rounded-md bg-primary-800 hover:bg-primary-700 text-slate-100 border border-primary-700"
+            >
+              {t("inMeetingSettings.viewRecordings", {
+                defaultValue: "View recordings of this meeting…",
+              })}
+            </button>
+          </Group>
         )}
 
         {onConfigureLivestream && (

@@ -425,6 +425,17 @@ export default function Settings() {
             </Select>
           </Field>
           <Toggle id="pref-simulcast" label={t("settings.network.simulcast")} checked={prefs.network.simulcastEnabled} onChange={(v) => { prefs.setNetwork({ simulcastEnabled: v }); saved(); }} />
+          <Toggle
+            id="pref-force-high-quality"
+            label={t("settings.network.forceHighQuality", {
+              defaultValue: "Always subscribe at highest quality (uses more bandwidth)",
+            })}
+            checked={prefs.network.forceHighQualitySubscription}
+            onChange={(v) => {
+              prefs.setNetwork({ forceHighQualitySubscription: v });
+              saved();
+            }}
+          />
           <Field id="pref-bw-limit" label={t("settings.network.bwLimit")}>
             <Input id="pref-bw-limit" data-testid="pref-bw-limit" type="number" min={0} max={50000} value={prefs.network.bandwidthLimitKbps ?? 0} onChange={(e) => { const n = clamp(Number(e.target.value), 0, 50000); prefs.setNetwork({ bandwidthLimitKbps: n === 0 ? null : n }); saved(); }} />
           </Field>

@@ -166,6 +166,18 @@ class Meeting(Base):
     # the host hasn't picked one yet (overlay is hidden in that case).
     pip_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     pip_overlay_identity: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    # Room-wide composition layout, applied identically to live viewers,
+    # recordings, and livestreams (see PresenterSpotlight + EgressLayoutPiP
+    # on the frontend). One of "single-speaker" | "speaker" | "grid".
+    # Persisted so rejoiners after a room recycle see the host's last
+    # choice instead of falling back to the default. The host changes it
+    # via POST /meetings/{id}/layout, which updates this column AND pushes
+    # the value to LiveKit room metadata so every client observes the
+    # change in real time. PiP / composite-track overlay logic remains
+    # independent and overrides this when active.
+    # Default "grid" — fits the typical multi-participant case; the host
+    # flips to speaker / single-speaker via the toolbar picker.
+    room_layout: Mapped[str] = mapped_column(String(40), default="grid", nullable=False)
     # Video playback: host uploads MP4s into a playlist (PlaybackItem rows
     # below) and clicks Play to ingest them as a participant track via
     # LiveKit Ingress (URL_INPUT). `playback_enabled` is the per-meeting

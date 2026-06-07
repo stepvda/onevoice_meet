@@ -80,7 +80,12 @@ export function roomOptions(tokenResp: AnonTokenResponse): {
     serverUrl: tokenResp.livekit_url,
     token: tokenResp.token,
     roomOptions: {
-      adaptiveStream: true,
+      // adaptiveStream auto-downgrades subscriptions when the rendered
+      // tile is small (grid mode, many participants). For hosts who want
+      // to see everyone at the publisher's HIGH layer regardless of tile
+      // size — useful while recording or just for the best possible view —
+      // the pref disables it so subscriptions stay pinned to HIGH.
+      adaptiveStream: !prefs.network.forceHighQualitySubscription,
       dynacast: true,
       audioCaptureDefaults: {
         autoGainControl: prefs.av.autoGainControl,
@@ -89,6 +94,19 @@ export function roomOptions(tokenResp: AnonTokenResponse): {
       },
       publishDefaults: {
         simulcast: prefs.network.simulcastEnabled,
+        // Bump the HIGH layer to 2.5 Mbps. LiveKit's default for 720p is
+        // ~1.7 Mbps, which is conservative for VP8 (Firefox-published
+        // simulcast tracks ALWAYS use VP8, since Firefox can't simulcast
+        // H.264 reliably). VP8 needs ~1.5× the bits of H.264 for the same
+        // perceptual quality, so faces look softer than the equivalent
+        // H.264 stream. 2.5 Mbps gets VP8 720p to roughly H.264 1.5 Mbps
+        // visual quality at the cost of a bit more upload. The lower
+        // simulcast layers (LOW/MEDIUM) are left at LiveKit's defaults
+        // because they're already CPU-bound, not bitrate-bound.
+        videoEncoding: {
+          maxBitrate: 2_500_000,
+          maxFramerate: 30,
+        },
       },
     },
     connectOptions,

@@ -11,16 +11,16 @@ import { RoomEvent } from "livekit-client";
 import {
   Check,
   CircleStopIcon,
-  Crown,
   Link2,
   Mail,
   MessageSquare,
   MicOff,
+  Pin,
+  PinOff,
   Radio,
   Film,
   FileText,
   Settings as SettingsIcon,
-  Square,
   UserPlus,
   Users,
   Vote,
@@ -39,6 +39,7 @@ import ParticipantsPanel from "../components/ParticipantsPanel";
 import InMeetingSettings from "../components/InMeetingSettings";
 import InviteModal from "../components/InviteModal";
 import LivestreamSettingsModal from "../components/LivestreamSettingsModal";
+import MeetingRecordingsModal from "../components/MeetingRecordingsModal";
 import VideoPlaybackPanel from "../components/VideoPlaybackPanel";
 import OutputVolumeControl from "../components/OutputVolumeControl";
 import AudioWaveform from "../components/AudioWaveform";
@@ -218,7 +219,16 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
     onOpenHelp: () => setShortcutsOpen(true),
   });
   const [recordingActive, setRecordingActive] = useState(false);
-  const [recordingLayout, setRecordingLayout] = useState<"speaker" | "grid" | "single-speaker">("speaker");
+  // `recordingLayout` now mirrors the ROOM-WIDE composition layout
+  // (mirrored to live viewers, the recording, and the livestream). The
+  // host changes it via the toolbar picker, which calls api.setRoomLayout
+  // — that persists on the meeting + writes LiveKit room metadata so
+  // every connected client re-renders. Name kept for backward compat
+  // with existing callers (startRecording / startStream pass it through).
+  // Default "grid" — best fit for the typical multi-participant meeting
+  // and matches user-facing intuition. Overridden once the meeting load
+  // completes with the persisted `meeting.room_layout`.
+  const [recordingLayout, setRecordingLayout] = useState<"speaker" | "grid" | "single-speaker">("grid");
   // Livestream-to-X.com. `livestreamEnabled` mirrors the meeting flag
   // (toolbar button only renders when true); `livestreamActive` flips when
   // the egress is running. We poll on mount/owner-only because the meeting
@@ -226,6 +236,7 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
   const [livestreamEnabled, setLivestreamEnabled] = useState(false);
   const [livestreamActive, setLivestreamActive] = useState(false);
   const [livestreamSettingsOpen, setLivestreamSettingsOpen] = useState(false);
+  const [recordingsModalOpen, setRecordingsModalOpen] = useState(false);
   const [livestreamMeeting, setLivestreamMeeting] = useState<MeetingOut | null>(null);
   // Video playback. `playbackEnabled` mirrors the meeting toggle —
   // when off, the Playlist toolbar button stays hidden. `playbackActive`
@@ -299,17 +310,18 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
         setLivestreamActive(!!mine.livestream_active);
         setPlaybackEnabled(!!mine.playback_enabled);
         setPlaybackActive(!!mine.playback_active);
-        // Seed the layout dropdown from whatever the running (or last)
-        // egress was started with, so rejoining a meeting whose stream
-        // is on "single-speaker" doesn't reset the toolbar dropdown to
-        // "speaker" and tempt the host into restarting with a layout
-        // they didn't pick. NULL → keep the default "speaker".
-        if (mine.current_egress_layout && (
-          mine.current_egress_layout === "speaker" ||
-          mine.current_egress_layout === "grid" ||
-          mine.current_egress_layout === "single-speaker"
-        )) {
-          setRecordingLayout(mine.current_egress_layout);
+        // Seed the layout picker from the persisted room_layout. This is
+        // the source of truth for what every live viewer + the recording
+        // + the livestream are using. Fall back to current_egress_layout
+        // for rooms persisted before room_layout existed.
+        const seeded =
+          mine.room_layout ?? mine.current_egress_layout ?? null;
+        if (
+          seeded === "speaker" ||
+          seeded === "grid" ||
+          seeded === "single-speaker"
+        ) {
+          setRecordingLayout(seeded);
         }
       } catch {
         /* surface as no button — keeps the toolbar usable */
@@ -380,15 +392,44 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
     }
   }
 
-  async function takeCenterStage() {
-    if (!meetingId) return;
-    const me = room.localParticipant.identity;
-    await withBusy("center-stage", () => api.setPresenter(meetingId, me));
-  }
+  // Current pinned presenter (room metadata), mirrored locally so the
+  // toolbar button can flip its label between "Pin myself" and "Unpin"
+  // and so other PresenterSpotlight changes (e.g. another co-host pinning
+  // a guest) reflect immediately. Updates via the same metadata events
+  // the composition layer already subscribes to.
+  const [presenterId, setPresenterId] = useState<string | null>(null);
+  useEffect(() => {
+    const apply = () => {
+      try {
+        const md = JSON.parse(room.metadata || "{}");
+        setPresenterId(
+          typeof md.presenter_identity === "string" ? md.presenter_identity : null,
+        );
+      } catch {
+        setPresenterId(null);
+      }
+    };
+    apply();
+    room.on(RoomEvent.RoomMetadataChanged, apply);
+    room.on(RoomEvent.Connected, apply);
+    room.on(RoomEvent.Reconnected, apply);
+    return () => {
+      room.off(RoomEvent.RoomMetadataChanged, apply);
+      room.off(RoomEvent.Connected, apply);
+      room.off(RoomEvent.Reconnected, apply);
+    };
+  }, [room]);
 
-  async function backToGrid() {
+  const me = room.localParticipant.identity;
+  const iAmPinned = presenterId === me;
+
+  async function togglePin() {
     if (!meetingId) return;
-    await withBusy("clear-presenter", () => api.setPresenter(meetingId, null));
+    if (iAmPinned) {
+      await withBusy("clear-presenter", () => api.setPresenter(meetingId, null));
+    } else {
+      await withBusy("pin-self", () => api.setPresenter(meetingId, me));
+    }
   }
 
   async function muteAll() {
@@ -484,29 +525,48 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
 
         {isOwner && (
           <>
+            {/* Pin-myself toggle. When pinned (presenter_identity ==
+                me on the room metadata), the new layout system shows me
+                as the main video in single-speaker / speaker layouts
+                regardless of who is currently talking. Toggling off
+                hands the spotlight back to the active speaker. The old
+                separate "Take Stage" + "Grid" pair has been merged here
+                — Grid's name collided with the new layout picker. */}
             <button
               type="button"
-              onClick={takeCenterStage}
-              data-testid="btn-center-stage"
+              onClick={togglePin}
+              data-testid="btn-pin-self"
+              aria-pressed={iAmPinned}
               disabled={busy !== null}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50"
-              title={t("room.takeStageTitle")}
-              aria-label={t("room.takeStage")}
+              className={[
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50",
+                iAmPinned
+                  ? "bg-accent-500 text-white hover:bg-accent-600"
+                  : "bg-primary-700 text-slate-100 hover:bg-primary-600",
+              ].join(" ")}
+              title={
+                iAmPinned
+                  ? t("room.unpinTitle", {
+                      defaultValue:
+                        "Stop pinning yourself — the spotlight returns to the active speaker.",
+                    })
+                  : t("room.pinSelfTitle", {
+                      defaultValue:
+                        "Pin yourself as the main video for everyone, regardless of who is talking.",
+                    })
+              }
+              aria-label={
+                iAmPinned
+                  ? t("room.unpin", { defaultValue: "Unpin" })
+                  : t("room.pinSelf", { defaultValue: "Pin myself" })
+              }
             >
-              <Crown size={16} />
-              <span className="hidden md:inline">{t("room.takeStage")}</span>
-            </button>
-            <button
-              type="button"
-              onClick={backToGrid}
-              data-testid="btn-grid"
-              disabled={busy !== null}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50"
-              title={t("room.gridTitle")}
-              aria-label={t("room.grid")}
-            >
-              <Square size={16} />
-              <span className="hidden md:inline">{t("room.grid")}</span>
+              {iAmPinned ? <PinOff size={16} /> : <Pin size={16} />}
+              <span className="hidden md:inline">
+                {iAmPinned
+                  ? t("room.unpin", { defaultValue: "Unpin" })
+                  : t("room.pinSelf", { defaultValue: "Pin myself" })}
+              </span>
             </button>
             <button
               type="button"
@@ -520,27 +580,28 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
               <MicOff size={16} />
               <span className="hidden md:inline">{t("room.muteAll")}</span>
             </button>
-            {/* Layout dropdown is hidden while playback is active —
-                the egress is force-locked to single-speaker server-side
-                so the playback participant owns the composite. The
-                host's choice is restored automatically once playback
-                ends. */}
-            {!recordingActive && !playbackActive && (
-              <select
+            {/* Room-wide layout picker. Always visible for hosts — the
+                choice is mirrored to every live viewer + the recording +
+                the livestream via room metadata. While playback is
+                active the server force-locks the egress to
+                single-speaker; the host's choice still persists and is
+                applied to live viewers once playback ends. */}
+            {meetingId && (
+              <RecordingLayoutPicker
                 value={recordingLayout}
-                onChange={(e) =>
-                  setRecordingLayout(e.target.value as "speaker" | "grid" | "single-speaker")
-                }
+                onChange={async (v) => {
+                  // Optimistic update so the picker feels instant; if the
+                  // API fails we roll back to the previous value.
+                  const prev = recordingLayout;
+                  setRecordingLayout(v);
+                  try {
+                    await api.setRoomLayout(meetingId, v);
+                  } catch {
+                    setRecordingLayout(prev);
+                  }
+                }}
                 disabled={busy !== null}
-                data-testid="select-rec-layout"
-                title={t("room.recordLayoutTitle")}
-                aria-label={t("room.recordLayout")}
-                className="px-2 py-1.5 rounded-lg text-sm font-medium bg-primary-700 text-slate-100 hover:bg-primary-600 disabled:opacity-50 border-none"
-              >
-                <option value="speaker">{t("room.recordLayoutSpeaker")}</option>
-                <option value="grid">{t("room.recordLayoutGrid")}</option>
-                <option value="single-speaker">{t("room.recordLayoutSingle")}</option>
-              </select>
+              />
             )}
             {/* Owner-only Playlist button — toggles the right-hand
                 side panel. The panel itself contains the
@@ -831,11 +892,26 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
                 }
               : undefined
           }
+          onViewRecordings={
+            isOwner
+              ? () => {
+                  setRecordingsModalOpen(true);
+                  setSettingsOpen(false);
+                }
+              : undefined
+          }
           meeting={isOwner ? livestreamMeeting : null}
           onMeetingUpdated={
             isOwner ? (updated) => setLivestreamMeeting(updated) : undefined
           }
         />
+        {isOwner && meetingId && (
+          <MeetingRecordingsModal
+            open={recordingsModalOpen}
+            onClose={() => setRecordingsModalOpen(false)}
+            meetingId={meetingId}
+          />
+        )}
         <ParticipantsPanel
           open={participantsOpen}
           onClose={() => setParticipantsOpen(false)}
@@ -1056,5 +1132,98 @@ export default function Room() {
         />
       )}
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Recording-layout picker: three icon buttons (one per layout) instead of a
+// text dropdown. Native <select> can't render images per option, so we use a
+// radio-group of buttons. The active button is highlighted; tooltips on
+// each button still show the localized layout name.
+// ---------------------------------------------------------------------------
+type RecordingLayoutKey = "speaker" | "grid" | "single-speaker";
+
+function IconSingleSpeaker() {
+  return (
+    <svg viewBox="0 0 32 24" width={26} height={20} aria-hidden="true">
+      <rect x="2" y="2" width="28" height="20" rx="2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconSpeaker() {
+  return (
+    <svg viewBox="0 0 32 24" width={26} height={20} aria-hidden="true">
+      <rect x="2" y="2" width="28" height="14" rx="1.5" fill="currentColor" />
+      <rect x="2" y="18" width="6" height="4" rx="0.5" fill="currentColor" opacity="0.6" />
+      <rect x="13" y="18" width="6" height="4" rx="0.5" fill="currentColor" opacity="0.6" />
+      <rect x="24" y="18" width="6" height="4" rx="0.5" fill="currentColor" opacity="0.6" />
+    </svg>
+  );
+}
+
+function IconGrid() {
+  return (
+    <svg viewBox="0 0 32 24" width={26} height={20} aria-hidden="true">
+      <rect x="2" y="2" width="13" height="9" rx="1" fill="currentColor" />
+      <rect x="17" y="2" width="13" height="9" rx="1" fill="currentColor" />
+      <rect x="2" y="13" width="13" height="9" rx="1" fill="currentColor" />
+      <rect x="17" y="13" width="13" height="9" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function RecordingLayoutPicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: RecordingLayoutKey;
+  onChange: (v: RecordingLayoutKey) => void;
+  disabled: boolean;
+}) {
+  const { t } = useTranslation();
+  const options: Array<{ key: RecordingLayoutKey; icon: React.ReactNode; label: string }> = [
+    { key: "single-speaker", icon: <IconSingleSpeaker />, label: t("room.recordLayoutSingle") },
+    { key: "speaker", icon: <IconSpeaker />, label: t("room.recordLayoutSpeaker") },
+    { key: "grid", icon: <IconGrid />, label: t("room.recordLayoutGrid") },
+  ];
+  return (
+    <div
+      role="radiogroup"
+      aria-label={t("room.recordLayout")}
+      title={t("room.recordLayoutTitle")}
+      data-testid="rec-layout-picker"
+      className={[
+        "inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-primary-700",
+        disabled ? "opacity-50" : "",
+      ].join(" ")}
+    >
+      {options.map(({ key, icon, label }) => {
+        const active = value === key;
+        return (
+          <button
+            key={key}
+            type="button"
+            role="radio"
+            aria-checked={active ? "true" : "false"}
+            aria-label={label}
+            title={label}
+            disabled={disabled}
+            data-testid={`btn-rec-layout-${key}`}
+            onClick={() => onChange(key)}
+            className={[
+              "inline-flex items-center justify-center px-2 py-1 rounded-md transition-colors",
+              active
+                ? "bg-primary-500 text-white"
+                : "text-slate-300 hover:text-slate-100 hover:bg-primary-600",
+              disabled ? "cursor-not-allowed" : "cursor-pointer",
+            ].join(" ")}
+          >
+            {icon}
+          </button>
+        );
+      })}
+    </div>
   );
 }

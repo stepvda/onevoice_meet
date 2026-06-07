@@ -87,15 +87,31 @@ export default function BackgroundPicker() {
   const animHandleRef = useRef<{ stop: () => void } | null>(null);
 
   // Re-apply the active processor whenever the camera track changes (the
-  // track reference is replaced when the user switches camera devices).
+  // track reference is replaced when the user switches camera devices),
+  // AND force the underlying MediaStreamTrack to `resizeMode: "none"`
+  // so the publish stream stays at the camera's native aspect ratio.
+  //
+  // Why: LiveKit's default camera constraint is 1280×720 (16:9). On a
+  // 4:3-native camera (most laptop webcams), that crops the image
+  // awkwardly. The first time `setProcessor` is ever called, the
+  // @livekit/track-processors lib applies `resizeMode: "none"` itself
+  // — at which point the aspect snaps to the camera's true 4:3 — and
+  // never resets it on `stopProcessor`. Result: turning a background on
+  // changes aspect, turning it off again doesn't change it back. Apply
+  // the same constraint up front on every track change, so the default
+  // already matches what processors expect and toggling background is a
+  // no-op for aspect ratio.
   useEffect(() => {
-    if (active === "off") return;
     const track = getCameraTrack(localParticipant);
     if (!track) return;
     let cancelled = false;
     (async () => {
       try {
-        await applyToTrack(track, active);
+        await applyNativeAspect(track);
+        if (cancelled) return;
+        if (active !== "off") {
+          await applyToTrack(track, active);
+        }
       } catch (e) {
         if (!cancelled) setErr((e as Error).message || "processor failed");
       }
@@ -105,6 +121,25 @@ export default function BackgroundPicker() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraTrack]);
+
+  async function applyNativeAspect(track: LocalVideoTrack): Promise<void> {
+    try {
+      const ms = track.mediaStreamTrack;
+      const cur = ms.getConstraints();
+      await ms.applyConstraints({
+        ...cur,
+        // resizeMode is a non-standard constraint. Chromium honors it;
+        // Firefox/Safari ignore unknown constraints, so this is a no-op
+        // there (those cams already publish at native aspect under
+        // LiveKit's defaults). Cast keeps TS quiet about the missing
+        // field in the standard MediaTrackConstraints type.
+        resizeMode: "none",
+      } as MediaTrackConstraints & { resizeMode: string });
+    } catch {
+      // Some browsers / cameras reject the constraint set; silently
+      // skip and let LiveKit's defaults stand.
+    }
+  }
 
   // Release the blob URL + stop any animation on unmount.
   useEffect(() => {
@@ -163,6 +198,12 @@ export default function BackgroundPicker() {
     animHandleRef.current = null;
     if (key === "off") {
       await track.stopProcessor();
+      // Belt-and-suspenders: re-assert native aspect after detaching
+      // the processor. stopProcessor doesn't restore the previous
+      // constraints, so without this the track would keep whatever
+      // resizeMode the processor set — which is what we want anyway,
+      // but this is also called outside the cameraTrack useEffect path.
+      await applyNativeAspect(track);
       return;
     }
     if (key === "blur") {

@@ -112,6 +112,9 @@ export interface MeetingOut {
   playback_current_item_id?: string | null;
   pip_enabled?: boolean;
   pip_overlay_identity?: string | null;
+  // Room-wide composition layout. The SPA uses this as initial state and
+  // listens for LiveKit RoomMetadataChanged for live updates.
+  room_layout?: "single-speaker" | "speaker" | "grid";
   public_enabled?: boolean;
   public_slug?: string | null;
   public_url?: string | null;
@@ -657,6 +660,15 @@ export const api = {
   tiCafeLive: () =>
     request<{ user_ids: number[] }>("/api/v1/ti-cafe/live"),
 
+  setRoomLayout: (
+    meetingId: string,
+    layout: "single-speaker" | "speaker" | "grid",
+  ) =>
+    request<{ ok: boolean; room_layout: string }>(
+      `/api/v1/meetings/${meetingId}/layout`,
+      { method: "POST", body: JSON.stringify({ layout }) },
+    ),
+
   setPresenter: (meetingId: string, participant_identity: string | null) =>
     request(`/api/v1/meetings/${meetingId}/presenter`, {
       method: "POST",
@@ -1016,6 +1028,9 @@ export const api = {
     ),
 
   listRecordings: () => request<unknown[]>("/api/v1/recordings"),
+
+  listMeetingRecordings: (meetingId: string) =>
+    request<unknown[]>(`/api/v1/meetings/${meetingId}/recordings`),
 
   downloadTranscript: async (recordingId: string, filename: string) => {
     const tok = getAccessToken() ?? (await bootstrapFromOneWitysk());

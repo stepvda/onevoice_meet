@@ -36,6 +36,10 @@ class PresenterBody(BaseModel):
     participant_identity: str | None = None
 
 
+class RoomLayoutBody(BaseModel):
+    layout: str  # "single-speaker" | "speaker" | "grid"
+
+
 def _require_owner(meeting_id: str, user_id: str, db: Session) -> Meeting:
     """Now accepts owners AND co-hosts. Name kept for backward compatibility
     with existing callers; semantics widened from `owner only` to
@@ -203,3 +207,28 @@ async def set_presenter(meeting_id: str, body: PresenterBody, user: RequireUser,
         await lk.aclose()
     _audit(db, m.id, user.sub, "presenter", target=body.participant_identity)
     return {"ok": True, "presenter_identity": body.participant_identity}
+
+
+_VALID_ROOM_LAYOUTS = {"single-speaker", "speaker", "grid"}
+
+
+@router.post("/meetings/{meeting_id}/layout")
+async def set_room_layout(
+    meeting_id: str, body: RoomLayoutBody, user: RequireUser, db: Session = Depends(get_db)
+) -> dict:
+    """Set the room-wide composition layout. Persisted on the meeting AND
+    pushed to LiveKit room metadata so every live viewer, the recording, and
+    the livestream all switch in lockstep. PiP and composite-track overlays
+    are unaffected — they override this when active."""
+    if body.layout not in _VALID_ROOM_LAYOUTS:
+        raise HTTPException(status_code=400, detail=f"invalid layout: {body.layout}")
+    m = _require_owner(meeting_id, user.sub, db)
+    m.room_layout = body.layout
+    db.commit()
+    lk = livekit_api()
+    try:
+        await _update_metadata(lk, m.room_name, room_layout=body.layout)
+    finally:
+        await lk.aclose()
+    _audit(db, m.id, user.sub, "room_layout", target=body.layout)
+    return {"ok": True, "room_layout": body.layout}

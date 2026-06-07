@@ -10,29 +10,56 @@ import type { TrackReferenceOrPlaceholder } from "@livekit/components-react";
 import FlippableTile from "./FlippableTile";
 import { usePreferences } from "../lib/preferences";
 
+type RoomLayout = "single-speaker" | "speaker" | "grid";
+
 /**
- * Layout that switches between grid and spotlight based on:
- *   1. `display.layout` preference (grid / speaker / spotlight / auto)
- *   2. `room.metadata.presenter_identity` for the legacy "Take stage" path
- *   3. `hideSelfView` to remove the local participant from the grid
+ * Room-wide composition shared between every live viewer, the recording,
+ * and the livestream. The layout is the room's, not per-user:
  *
- * Pref semantics:
- *   - "auto" / "spotlight": existing behaviour (presenter spotlight or grid)
- *   - "grid": always grid, even if a presenter is set
- *   - "speaker": always spotlight the currently active speaker (or presenter
- *     if one is set)
+ *   - "single-speaker": one full-bleed main = screenshare > playback >
+ *     presenter (Take stage) > active speaker > any cam.
+ *   - "speaker": same main, plus a centered bottom thumbnail strip of
+ *     every OTHER camera-publishing participant.
+ *   - "grid": equal-tile grid of everyone.
+ *
+ * Host changes the layout via the toolbar picker, which POSTs to
+ * `/meetings/{id}/layout`. That endpoint persists the choice on the
+ * meeting AND pushes it to LiveKit room metadata, so every connected
+ * client re-renders in lockstep on `RoomMetadataChanged`.
+ *
+ * Two things stay isolated from `roomLayout`:
+ *   1. Server-side composite (the PiP compositor publishes a track from
+ *      `composite-<room>`). When present, it's the final composite and we
+ *      render it full-bleed regardless of the room layout.
+ *   2. Client-side PiP (room metadata `pip_enabled` + `pip_overlay_identity`).
+ *      Same fallback layout as the old PiP page — main + corner overlay,
+ *      full-bleed. PiP is a separate toggle and takes precedence over the
+ *      room layout when on.
+ *
+ * Note: the per-user `display.layout` zustand pref (auto/grid/speaker/
+ * spotlight) is now ignored at composition time. `hideSelfView` and
+ * `hideEmptyTiles` are still honoured.
  */
+const VALID_ROOM_LAYOUTS: ReadonlySet<RoomLayout> = new Set([
+  "single-speaker",
+  "speaker",
+  "grid",
+]);
+
+function parseRoomLayout(v: unknown): RoomLayout | null {
+  return typeof v === "string" && VALID_ROOM_LAYOUTS.has(v as RoomLayout)
+    ? (v as RoomLayout)
+    : null;
+}
+
 export default function PresenterSpotlight() {
   const room = useRoomContext();
   const display = usePreferences((s) => s.display);
+  const [roomLayout, setRoomLayout] = useState<RoomLayout>("grid");
   const [presenterId, setPresenterId] = useState<string | null>(null);
   const [activeSpeakerId, setActiveSpeakerId] = useState<string | null>(null);
-  // Picture-in-Picture composition state, mirrored from the meeting's
-  // server-side toggle via LiveKit room metadata. When `pipEnabled` is
-  // true and there's a screenshare or playback (or, as fallback, an
-  // active speaker), the stage renders main full-bleed + the chosen
-  // webcam in the bottom-right corner. Layout matches the egress page
-  // at `/egress-layout/pip` so recordings / livestreams look the same.
+  // Picture-in-Picture is independent of `roomLayout`; mirrors the
+  // meeting's server-side toggle via LiveKit room metadata.
   const [pipEnabled, setPipEnabled] = useState(false);
   const [pipOverlayIdentity, setPipOverlayIdentity] = useState<string | null>(
     null,
@@ -46,6 +73,8 @@ export default function PresenterSpotlight() {
       } catch {
         /* leave md empty */
       }
+      const layout = parseRoomLayout(md.room_layout);
+      if (layout) setRoomLayout(layout);
       setPresenterId(
         typeof md.presenter_identity === "string" ? md.presenter_identity : null,
       );
@@ -59,13 +88,8 @@ export default function PresenterSpotlight() {
     apply();
     // LiveKit only fires `RoomMetadataChanged` for *changes* after the
     // initial join — late joiners receive the room metadata silently
-    // during the handshake and never see an event. Without the
-    // additional `Connected` and `Reconnected` listeners,
-    // PresenterSpotlight would stay stuck at the empty initial read
-    // and miss `pip_enabled` set on the server before they joined.
-    // Symptom we hit: the host's in-meeting tab showed PiP (their PATCH
-    // *was* a change → event fired) while a `/public/<slug>` viewer
-    // opened in a separate tab afterwards stayed un-composited.
+    // during the handshake and never see an event. The `Connected` and
+    // `Reconnected` listeners cover that initial-state gap.
     room.on(RoomEvent.RoomMetadataChanged, apply);
     room.on(RoomEvent.Connected, apply);
     room.on(RoomEvent.Reconnected, apply);
@@ -76,10 +100,10 @@ export default function PresenterSpotlight() {
     };
   }, [room]);
 
-  // Active-speaker tracking runs whenever the "speaker" layout pref OR
-  // PiP composition is active — both need it as a fallback "main".
+  // Active-speaker tracking — needed in single-speaker, speaker, and PiP
+  // modes. Cheaper to always subscribe than to gate by layout (the event
+  // fires regardless and toggling subscribe on/off is its own footgun).
   useEffect(() => {
-    if (display.layout !== "speaker" && !pipEnabled) return;
     const apply = () => {
       const top = room.activeSpeakers[0];
       if (top) setActiveSpeakerId(top.identity);
@@ -89,7 +113,7 @@ export default function PresenterSpotlight() {
     return () => {
       room.off(RoomEvent.ActiveSpeakersChanged, apply);
     };
-  }, [room, display.layout, pipEnabled]);
+  }, [room]);
 
   const rawTracks = useTracks(
     [
@@ -102,13 +126,11 @@ export default function PresenterSpotlight() {
   const tracks: TrackReferenceOrPlaceholder[] = useMemo(() => {
     const me = room.localParticipant.identity;
     return rawTracks.filter((t) => {
-      // Hide the compositor bot from the regular grid / sidebar — its
-      // screenshare track is handled by the dedicated composite branch
-      // below (renders full-bleed) and its participant entry never
-      // belongs in a tile alongside humans.
+      // Hide the compositor bot from regular tiles — its screenshare
+      // track is consumed by the composite branch below (full-bleed) and
+      // its entry never belongs in a tile alongside humans.
       if (t.participant.identity.startsWith("composite-")) return false;
       if (display.hideSelfView && t.participant.identity === me) return false;
-      // `hideEmptyTiles`: skip placeholder tiles (no published track).
       if (
         display.hideEmptyTiles &&
         !(t as { publication?: unknown }).publication
@@ -119,37 +141,12 @@ export default function PresenterSpotlight() {
     });
   }, [rawTracks, display.hideSelfView, display.hideEmptyTiles, room.localParticipant.identity]);
 
-  const focus = useMemo(() => {
-    // 1. Pref "grid" always wins.
-    if (display.layout === "grid") return null;
-    // 2. Presenter set on room metadata → spotlight them.
-    const pickFor = (identity: string | null) => {
-      if (!identity) return null;
-      return (
-        tracks.find((t) => t.participant.identity === identity && t.source === Track.Source.ScreenShare) ??
-        tracks.find((t) => t.participant.identity === identity) ??
-        null
-      );
-    };
-    if (presenterId) return pickFor(presenterId);
-    // 3. `pinFirstScreenshare`: any active screen-share gets the spotlight
-    //    even when no presenter has been explicitly chosen.
-    if (display.pinFirstScreenshare) {
-      const screen = tracks.find((t) => t.source === Track.Source.ScreenShare);
-      if (screen) return screen;
-    }
-    // 4. Pref "speaker" → spotlight active speaker (if any).
-    if (display.layout === "speaker") return pickFor(activeSpeakerId);
-    // 5. Default ("auto" / "spotlight"): grid until someone takes the stage.
-    return null;
-  }, [presenterId, tracks, display.layout, display.pinFirstScreenshare, activeSpeakerId]);
-
   // Video-playback hijacks the stage: when LiveKit Ingress publishes the
-  // current playlist item as participant identity "playback", show that
-  // tile full-screen and hide every other tile (no sidebar grid). This is
-  // independent of the presenter logic — playback always wins.
+  // current playlist item as participant identity "playback", that tile
+  // dominates in single-speaker and speaker layouts. In grid mode the
+  // playback tile still wins (it's the meeting's primary content).
   const playbackTrack = useMemo(
-    () => tracks.find((t) => t.participant.identity === "playback" && t.source === Track.Source.Camera),
+    () => tracks.find((t) => t.participant.identity === "playback" && t.source === Track.Source.Camera) ?? null,
     [tracks],
   );
 
@@ -158,12 +155,10 @@ export default function PresenterSpotlight() {
   // `composite-<room>`. Every client (including the publisher who
   // contributed the source tracks) shows this composite full-bleed,
   // hiding all raw tracks — so what people see live matches the
-  // recording / livestream byte-for-byte.
-  //
-  // While `pipEnabled` is true but the compositor session hasn't
-  // landed its first frame yet (~3 s after toggle), this is null and
-  // we fall through to the default grid; once the track shows up we
-  // swap to it without further input.
+  // recording / livestream byte-for-byte. While `pipEnabled` is true but
+  // the compositor session hasn't landed its first frame yet (~3 s
+  // after toggle), this is null and we fall through to the client-side
+  // PiP fallback below.
   const compositeTrack = useMemo(() => {
     return (
       rawTracks.find(
@@ -174,63 +169,55 @@ export default function PresenterSpotlight() {
     );
   }, [rawTracks]);
 
-  if (compositeTrack) {
-    return (
-      <div className="relative h-full bg-black overflow-hidden">
-        <div className="absolute inset-0">
-          <TrackRefContext.Provider value={compositeTrack}>
-            <FlippableTile />
-          </TrackRefContext.Provider>
-        </div>
-      </div>
-    );
-  }
-
-  // Client-side PiP composition. Identical priority ladder + visual
-  // layout as `/egress-layout/pip` so recordings + livestream + live
-  // viewers all see the same thing.
-  //
-  //   main (full-bleed):  screenshare > playback > active speaker > any cam
-  //   overlay (corner):   the `pip_overlay_identity` camera
-  const pipMain = (() => {
-    if (!pipEnabled) return null;
+  // Main video for single-speaker / speaker layouts AND for the
+  // client-side PiP fallback. Same priority ladder as the egress page so
+  // live + recording / livestream pick the same person.
+  const main = useMemo<TrackReferenceOrPlaceholder | null>(() => {
     const screen = tracks.find((t) => t.source === Track.Source.ScreenShare);
     if (screen) return screen;
     if (playbackTrack) return playbackTrack;
-    if (activeSpeakerId) {
-      const sp = tracks.find(
-        (t) =>
-          t.participant.identity === activeSpeakerId &&
-          t.source === Track.Source.Camera,
+    const pickCamFor = (identity: string | null) => {
+      if (!identity) return null;
+      return (
+        tracks.find(
+          (t) => t.participant.identity === identity && t.source === Track.Source.Camera,
+        ) ?? null
       );
-      if (sp) return sp;
-    }
-    return tracks.find((t) => t.source === Track.Source.Camera) ?? null;
-  })();
-
-  const pipOverlayTrack = (() => {
-    if (!pipEnabled || !pipOverlayIdentity) return null;
+    };
     return (
-      tracks.find(
-        (t) =>
-          t.participant.identity === pipOverlayIdentity &&
-          t.source === Track.Source.Camera,
-      ) ?? null
+      pickCamFor(presenterId) ??
+      pickCamFor(activeSpeakerId) ??
+      tracks.find((t) => t.source === Track.Source.Camera) ??
+      null
     );
-  })();
+  }, [tracks, playbackTrack, presenterId, activeSpeakerId]);
 
-  if (pipEnabled && pipMain) {
-    // Don't render the same person as main AND overlay.
+  // ── 1. Server composite always wins ─────────────────────────────────
+  if (compositeTrack) {
+    return <FullBleed track={compositeTrack} />;
+  }
+
+  // ── 2. Client-side PiP fallback (active when pip_enabled but the
+  //       compositor track hasn't landed yet) ─────────────────────────
+  if (pipEnabled && main) {
+    const pipOverlayTrack: TrackReferenceOrPlaceholder | null =
+      pipOverlayIdentity
+        ? tracks.find(
+            (t) =>
+              t.participant.identity === pipOverlayIdentity &&
+              t.source === Track.Source.Camera,
+          ) ?? null
+        : null;
     const showOverlay =
       pipOverlayTrack &&
       !(
-        pipOverlayTrack.participant.identity === pipMain.participant.identity &&
-        pipOverlayTrack.source === pipMain.source
+        pipOverlayTrack.participant.identity === main.participant.identity &&
+        pipOverlayTrack.source === main.source
       );
     return (
       <div className="relative h-full bg-black overflow-hidden">
         <div className="absolute inset-0">
-          <TrackRefContext.Provider value={pipMain}>
+          <TrackRefContext.Provider value={main}>
             <FlippableTile />
           </TrackRefContext.Provider>
         </div>
@@ -248,41 +235,86 @@ export default function PresenterSpotlight() {
     );
   }
 
-  if (playbackTrack) {
+  // ── 3. Playback hijack (full-bleed in single-speaker / speaker; in
+  //       grid we still tile but playback is the natural "main") ─────
+  if (playbackTrack && roomLayout !== "grid") {
+    return <FullBleed track={playbackTrack} />;
+  }
+
+  // ── 4. Room layout ───────────────────────────────────────────────────
+  // Grid + active screenshare auto-promotes to "speaker": the shared
+  // screen owns the main tile and webcams form a thumbnail strip. Same
+  // rule as the egress page, so live and recording match.
+  const hasScreenshare = tracks.some((t) => t.source === Track.Source.ScreenShare);
+  const effectiveRoomLayout: RoomLayout =
+    roomLayout === "grid" && hasScreenshare ? "speaker" : roomLayout;
+
+  if (effectiveRoomLayout === "grid") {
     return (
-      <div className="flex h-full bg-black">
-        <div className="flex-1 min-w-0 min-h-0">
-          <TrackRefContext.Provider value={playbackTrack}>
-            <FlippableTile />
-          </TrackRefContext.Provider>
-        </div>
-      </div>
+      <GridLayout tracks={tracks} className="h-full p-2">
+        <FlippableTile />
+      </GridLayout>
     );
   }
 
-  if (focus) {
-    const others = tracks.filter(
-      (t) => !(t.participant.identity === focus.participant.identity && t.source === focus.source)
-    );
+  if (!main) {
+    // No video yet — render an empty grid so placeholders fill the stage
+    // gracefully instead of going black.
     return (
-      <div className="flex h-full gap-2 p-2 flex-col landscape:flex-row sm:flex-row">
-        <div className="flex-[3] min-w-0 min-h-0">
-          <TrackRefContext.Provider value={focus}>
-            <FlippableTile />
-          </TrackRefContext.Provider>
-        </div>
-        <div className="flex-1 min-w-0 min-h-0 overflow-auto">
-          <GridLayout tracks={others}>
-            <FlippableTile />
-          </GridLayout>
-        </div>
-      </div>
+      <GridLayout tracks={tracks} className="h-full p-2">
+        <FlippableTile />
+      </GridLayout>
     );
   }
 
+  if (effectiveRoomLayout === "single-speaker") {
+    return <FullBleed track={main} />;
+  }
+
+  // effective "speaker": main + bottom thumbnail strip of others.
+  const others = tracks.filter(
+    (t) => !(t.participant.identity === main.participant.identity && t.source === main.source),
+  );
   return (
-    <GridLayout tracks={tracks} className="h-full p-2">
-      <FlippableTile />
-    </GridLayout>
+    <div className="flex h-full flex-col bg-black">
+      <div className="flex-1 min-h-0 p-2">
+        <div className="relative h-full">
+          <div className="absolute inset-0">
+            <TrackRefContext.Provider value={main}>
+              <FlippableTile />
+            </TrackRefContext.Provider>
+          </div>
+        </div>
+      </div>
+      {others.length > 0 && (
+        <div
+          data-testid="speaker-thumbnails"
+          className="h-[20%] min-h-[120px] flex justify-center items-stretch gap-2 px-3 py-2 bg-black/40 overflow-x-auto"
+        >
+          {others.map((t) => (
+            <div
+              key={`${t.participant.identity}-${t.source}`}
+              className="aspect-video h-full flex-shrink-0 rounded-md overflow-hidden bg-primary-900"
+            >
+              <TrackRefContext.Provider value={t}>
+                <FlippableTile />
+              </TrackRefContext.Provider>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FullBleed({ track }: { track: TrackReferenceOrPlaceholder }) {
+  return (
+    <div className="relative h-full bg-black overflow-hidden">
+      <div className="absolute inset-0">
+        <TrackRefContext.Provider value={track}>
+          <FlippableTile />
+        </TrackRefContext.Provider>
+      </div>
+    </div>
   );
 }
