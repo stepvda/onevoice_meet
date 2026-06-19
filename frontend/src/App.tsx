@@ -12,6 +12,7 @@ const EgressLayoutPiP = lazy(() => import("./routes/EgressLayoutPiP"));
 const EgressLayoutComposite = lazy(() => import("./routes/EgressLayoutComposite"));
 const CreateMeeting = lazy(() => import("./routes/CreateMeeting"));
 const Recordings = lazy(() => import("./routes/Recordings"));
+const OnDemand = lazy(() => import("./routes/OnDemand"));
 const Settings = lazy(() => import("./routes/Settings"));
 const MeetingChat = lazy(() => import("./routes/MeetingChat"));
 const TICafe = lazy(() => import("./routes/TICafe"));
@@ -90,6 +91,7 @@ export default function App() {
           {/* Static paths first — React Router v6 ranks static above dynamic. */}
           <Route path="/" element={<CreateMeeting />} />
           <Route path="/recordings" element={<Recordings />} />
+          <Route path="/on-demand" element={<OnDemand />} />
           <Route path="/ti-cafe" element={<TICafe />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/account" element={<Account />} />

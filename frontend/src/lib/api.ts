@@ -170,6 +170,23 @@ export interface PublicMeeting {
   joinable?: boolean;
 }
 
+export interface OnDemandVideo {
+  id: string;
+  filename: string;
+  duration_seconds: number;
+  // No-auth streaming path (relative), e.g. /api/v1/on-demand/items/<id>.
+  stream_url: string;
+}
+
+export interface OnDemandMeeting {
+  room_name: string;
+  display_title: string;
+  public_slug: string;
+  owner_name: string | null;
+  branding_url: string | null;
+  videos: OnDemandVideo[];
+}
+
 export interface PublicRoomInfoForViewer {
   room_name: string;
   display_title: string;
@@ -492,6 +509,10 @@ export const api = {
   // Powers the "Public livestreams" subsection of the Discover panel, shown
   // to signed-out visitors too.
   listPublicStreams: () => request<PublicMeeting[]>("/api/v1/public-streams"),
+
+  // No-auth: On Demand catalogue — ongoing public-livestream meetings whose
+  // playlists contain videos longer than 5 minutes. One entry per meeting.
+  listOnDemand: () => request<OnDemandMeeting[]>("/api/v1/on-demand"),
 
   ownerToken: (meetingId: string, body: { display_name?: string | null } = {}) =>
     request<AnonTokenResponse & { role?: "owner" | "cohost" }>(

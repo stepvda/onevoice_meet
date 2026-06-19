@@ -28,7 +28,7 @@ from app.auth import RequireUser
 from app.config import settings
 from app.db import get_db
 from app.models import Meeting, PlaybackItem
-from app.routes.meetings import is_moderator
+from app.routes.meetings import is_moderator, _branding_url
 from app.services.playback_mgr import (
     PLAYBACK_IDENTITY,
     start_playback,
@@ -254,6 +254,94 @@ def _resolve_source(item: PlaybackItem, db: Session) -> PlaybackItem:
         # this as a 410 "file missing".
         return item
     return src
+
+
+# Minimum length (seconds) for a playlist video to appear in On Demand.
+_ON_DEMAND_MIN_SECONDS = 300  # 5 minutes
+
+
+@router.get("/on-demand")
+def list_on_demand(db: Session = Depends(get_db)) -> list[dict]:
+    """Public, no-auth On Demand catalogue.
+
+    One entry per ONGOING meeting (`is_active`) that has a public livestream
+    (`public_enabled` + `public_slug`) AND a playlist containing videos
+    longer than five minutes. Each entry lists those videos (deduplicated to
+    unique source files, in playlist order) with a no-auth streaming URL.
+
+    Powers the home-page "On Demand" section, which is reachable by
+    anonymous visitors. The `public_enabled` gate is the meeting owner's
+    opt-in to public viewing — only those meetings' files are exposed."""
+    meetings = (
+        db.query(Meeting)
+        .filter(Meeting.is_active.is_(True))
+        .filter(Meeting.hidden.is_(False))
+        .filter(Meeting.public_enabled.is_(True))
+        .filter(Meeting.public_slug.isnot(None))
+        .order_by(Meeting.created_at.desc())
+        .all()
+    )
+    out: list[dict] = []
+    for m in meetings:
+        items = (
+            db.query(PlaybackItem)
+            .filter_by(meeting_id=m.id)
+            .order_by(PlaybackItem.position.asc())
+            .all()
+        )
+        videos: list[dict] = []
+        seen: set[str] = set()
+        for it in items:
+            src = _resolve_source(it, db)
+            dur = it.duration_seconds if it.duration_seconds is not None else src.duration_seconds
+            if dur is None or dur <= _ON_DEMAND_MIN_SECONDS:
+                continue
+            if not src.file_path or src.id in seen:
+                continue
+            seen.add(src.id)
+            videos.append({
+                "id": src.id,
+                "filename": it.filename,
+                "duration_seconds": dur,
+                "stream_url": f"/api/v1/on-demand/items/{src.id}",
+            })
+        if videos:
+            out.append({
+                "room_name": m.room_name,
+                "display_title": m.display_title,
+                "public_slug": m.public_slug,
+                "owner_name": m.owner_name,
+                "branding_url": _branding_url(m),
+                "videos": videos,
+            })
+    return out
+
+
+@router.get("/on-demand/items/{item_id}")
+def stream_on_demand_item(item_id: str, db: Session = Depends(get_db)) -> FileResponse:
+    """Public, no-auth inline streaming of an On Demand playlist video.
+
+    Gated identically to the `/on-demand` listing: the item must belong to
+    an active, non-hidden, public-enabled meeting and be longer than five
+    minutes. Served inline (Starlette adds Range support) so it plays and
+    seeks in a browser <video>."""
+    item = db.query(PlaybackItem).filter_by(id=item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="item not found")
+    m = db.query(Meeting).filter_by(id=item.meeting_id).first()
+    if not m or not m.is_active or m.hidden or not m.public_enabled:
+        raise HTTPException(status_code=404, detail="item not found")
+    source = _resolve_source(item, db)
+    dur = source.duration_seconds if source.duration_seconds is not None else item.duration_seconds
+    if dur is None or dur <= _ON_DEMAND_MIN_SECONDS:
+        raise HTTPException(status_code=404, detail="item not found")
+    if not source.file_path or not Path(source.file_path).exists():
+        raise HTTPException(status_code=410, detail="file missing on disk")
+    return FileResponse(
+        path=str(source.file_path),
+        media_type=source.mime_type or "video/mp4",
+        filename=item.filename,
+    )
 
 
 @router.get("/meetings/{meeting_id}/playback/items")

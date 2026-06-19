@@ -6,6 +6,7 @@
   "nav": {
     "home": "Home",
     "recordings": "Recordings",
+    "onDemand": "On Demand",
     "tiCafe": "Café",
     "settings": "Settings",
     "signedIn": "signed in via one.witysk.org",
@@ -238,6 +239,14 @@
     "viewTitle": "Watch the public view-only stream",
     "streamsTitle": "Public livestreams",
     "streamsSubtitle": "— watch-only, no account needed"
+  },
+  "onDemand": {
+    "title": "On Demand",
+    "subtitle": "Videos from ongoing public livestreams — watch any time, no account needed.",
+    "watch": "Watch",
+    "loading": "Loading…",
+    "empty": "Nothing on demand right now. Check back when a public livestream has videos in its playlist.",
+    "error": "Couldn't load On Demand right now."
   },
   "myMeetings": {
     "loading": "Loading your meetings…",

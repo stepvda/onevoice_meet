@@ -8,6 +8,7 @@ import {
   LogIn,
   LogOut,
   Menu,
+  MonitorPlay,
   Settings as SettingsIcon,
   Shield,
   Ticket,
@@ -31,6 +32,7 @@ interface NavItem {
 const primaryItems: NavItem[] = [
   { to: "/", i18nKey: "nav.home", icon: Home, end: true },
   { to: "/recordings", i18nKey: "nav.recordings", icon: Video },
+  { to: "/on-demand", i18nKey: "nav.onDemand", icon: MonitorPlay },
   { to: "/ti-cafe", i18nKey: "nav.tiCafe", icon: Coffee },
 ];
 
