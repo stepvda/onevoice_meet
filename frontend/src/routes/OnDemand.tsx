@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Clock, MonitorPlay, Play, Tv, X } from "lucide-react";
 import { api, OnDemandMeeting, OnDemandVideo } from "../lib/api";
+import { cleanPlaylistTitle } from "../lib/playlistName";
 import { Button, Card } from "../components/ui";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -124,7 +125,7 @@ export default function OnDemand() {
                 className="py-2.5 flex items-center gap-3 first:pt-0 last:pb-0"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-slate-100 truncate">{v.filename}</div>
+                  <div className="text-slate-100 truncate">{cleanPlaylistTitle(v.filename)}</div>
                   <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
                     <Clock size={12} /> {fmtDuration(v.duration_seconds)}
                   </div>
@@ -152,7 +153,7 @@ export default function OnDemand() {
         >
           <div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2">
-              <div className="text-slate-100 font-medium truncate pr-3">{playing.filename}</div>
+              <div className="text-slate-100 font-medium truncate pr-3">{cleanPlaylistTitle(playing.filename)}</div>
               <button
                 type="button"
                 onClick={() => setPlaying(null)}

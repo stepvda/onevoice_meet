@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { cleanPlaylistTitle as cleanTitle } from "../lib/playlistName";
 import {
   ArrowDown,
   ArrowUp,
@@ -34,20 +35,6 @@ function fmtSize(b: number): string {
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
   if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
   return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
-// Mirrors `whats_next_slide.clean_title` (Python) — strip a leading
-// `NN_` numeric prefix (possibly repeated), replace underscores with
-// spaces, drop a trailing extension. Used for any UI surface showing
-// a PlaybackItem filename so the rendered name matches what the
-// "What's up next" slide shows.
-function cleanTitle(filename: string): string {
-  let name = filename.replace(/\.[^./\\]+$/, "");
-  while (/^\d+_/.test(name)) {
-    name = name.replace(/^\d+_/, "");
-  }
-  const cleaned = name.replace(/_/g, " ").trim();
-  return cleaned || filename;
 }
 
 function fmtTime(seconds: number | null | undefined): string {
