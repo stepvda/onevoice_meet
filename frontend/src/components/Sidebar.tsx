@@ -27,12 +27,16 @@ interface NavItem {
   i18nKey: string;
   icon: LucideIcon;
   end?: boolean;
+  // English fallback shown when the active locale lacks `i18nKey` (newer
+  // items aren't yet in all ~50 locale files). Without it the raw key
+  // (e.g. "nav.onDemand") leaks into the UI.
+  label?: string;
 }
 
 const primaryItems: NavItem[] = [
   { to: "/", i18nKey: "nav.home", icon: Home, end: true },
   { to: "/recordings", i18nKey: "nav.recordings", icon: Video },
-  { to: "/on-demand", i18nKey: "nav.onDemand", icon: MonitorPlay },
+  { to: "/on-demand", i18nKey: "nav.onDemand", icon: MonitorPlay, label: "On Demand" },
   { to: "/ti-cafe", i18nKey: "nav.tiCafe", icon: Coffee },
 ];
 
@@ -150,7 +154,7 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-          {primaryItems.map(({ to, i18nKey, icon: Icon, end }) => (
+          {primaryItems.map(({ to, i18nKey, icon: Icon, end, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -166,7 +170,7 @@ export default function Sidebar() {
               }
             >
               <Icon size={20} />
-              <span>{t(i18nKey)}</span>
+              <span>{t(i18nKey, { defaultValue: label })}</span>
             </NavLink>
           ))}
         </nav>
@@ -175,7 +179,7 @@ export default function Sidebar() {
             footer; we add safe-area-bottom so the last menu item clears the
             iPhone home indicator. */}
         <div className="border-t border-white/10 px-3 py-2 space-y-1 mb-[calc(70px+env(safe-area-inset-bottom))]">
-          {secondaryForUser.map(({ to, i18nKey, icon: Icon, end }) => (
+          {secondaryForUser.map(({ to, i18nKey, icon: Icon, end, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -191,7 +195,7 @@ export default function Sidebar() {
               }
             >
               <Icon size={20} />
-              <span>{t(i18nKey)}</span>
+              <span>{t(i18nKey, { defaultValue: label })}</span>
             </NavLink>
           ))}
 

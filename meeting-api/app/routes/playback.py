@@ -318,13 +318,18 @@ def list_on_demand(db: Session = Depends(get_db)) -> list[dict]:
 
 
 @router.get("/on-demand/items/{item_id}")
-def stream_on_demand_item(item_id: str, db: Session = Depends(get_db)) -> FileResponse:
+def stream_on_demand_item(
+    item_id: str,
+    range_header: Annotated[str | None, Header(alias="Range")] = None,
+    db: Session = Depends(get_db),
+) -> Response:
     """Public, no-auth inline streaming of an On Demand playlist video.
 
     Gated identically to the `/on-demand` listing: the item must belong to
     an active, non-hidden, public-enabled meeting and be longer than five
-    minutes. Served inline (Starlette adds Range support) so it plays and
-    seeks in a browser <video>."""
+    minutes. Honours HTTP Range requests (206) — same hand-rolled handling
+    as the internal ingress route — so the browser <video> can seek;
+    without it the player can only progressive-download from the start."""
     item = db.query(PlaybackItem).filter_by(id=item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="item not found")
@@ -337,10 +342,37 @@ def stream_on_demand_item(item_id: str, db: Session = Depends(get_db)) -> FileRe
         raise HTTPException(status_code=404, detail="item not found")
     if not source.file_path or not Path(source.file_path).exists():
         raise HTTPException(status_code=410, detail="file missing on disk")
-    return FileResponse(
-        path=str(source.file_path),
-        media_type=source.mime_type or "video/mp4",
-        filename=item.filename,
+
+    path = Path(source.file_path)
+    file_size = path.stat().st_size
+    media_type = source.mime_type or "video/mp4"
+    common_headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Disposition": f'inline; filename="{item.filename}"',
+    }
+    if range_header is None:
+        return FileResponse(
+            path=str(path),
+            media_type=media_type,
+            filename=item.filename,
+            headers=common_headers,
+        )
+    parsed = _parse_range_header(range_header, file_size)
+    if parsed is None:
+        return Response(
+            status_code=416,
+            headers={**common_headers, "Content-Range": f"bytes */{file_size}"},
+        )
+    start, end = parsed
+    return StreamingResponse(
+        _iter_file_range(path, start, end),
+        status_code=206,
+        media_type=media_type,
+        headers={
+            **common_headers,
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Content-Length": str(end - start + 1),
+        },
     )
 
 
