@@ -233,7 +233,11 @@
     "subtitle": "— meetings open to join",
     "join": "Join",
     "maxParticipants": "max {{n}}",
-    "hostedBy": "Hosted by {{name}}"
+    "hostedBy": "Hosted by {{name}}",
+    "view": "View",
+    "viewTitle": "Watch the public view-only stream",
+    "streamsTitle": "Public livestreams",
+    "streamsSubtitle": "— watch-only, no account needed"
   },
   "myMeetings": {
     "loading": "Loading your meetings…",

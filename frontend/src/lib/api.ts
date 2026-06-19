@@ -488,6 +488,11 @@ export const api = {
 
   listPublicMeetings: () => request<PublicMeeting[]>("/api/v1/public-meetings"),
 
+  // No-auth: active public view-only streams (public_enabled + public_slug).
+  // Powers the "Public livestreams" subsection of the Discover panel, shown
+  // to signed-out visitors too.
+  listPublicStreams: () => request<PublicMeeting[]>("/api/v1/public-streams"),
+
   ownerToken: (meetingId: string, body: { display_name?: string | null } = {}) =>
     request<AnonTokenResponse & { role?: "owner" | "cohost" }>(
       `/api/v1/meetings/${meetingId}/token`,

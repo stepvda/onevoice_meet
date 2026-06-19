@@ -1055,6 +1055,29 @@ def list_public_meetings(db: Session = Depends(get_db)) -> list[dict]:
     return [_to_public_out(m, viewer_is_authenticated=False) for m in rows]
 
 
+@router.get("/public-streams")
+def list_public_streams(db: Session = Depends(get_db)) -> list[dict]:
+    """Active public view-only streams, visible to anyone (no auth required).
+
+    A meeting surfaces here when its owner has enabled the public
+    watch-only page (`public_enabled=True` with a `public_slug`),
+    independent of the Discover visibility flags. These power the
+    "Public livestreams" subsection of the home-page Discover panel so
+    even signed-out visitors can find streams to watch at
+    `/public/<slug>`. Returns the public projection only."""
+    rows = (
+        db.query(Meeting)
+        .filter(Meeting.is_active.is_(True))
+        .filter(Meeting.hidden.is_(False))
+        .filter(Meeting.public_enabled.is_(True))
+        .filter(Meeting.public_slug.isnot(None))
+        .order_by(Meeting.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return [_to_public_out(m, viewer_is_authenticated=False) for m in rows]
+
+
 @router.get("/rooms/{room_name}/info")
 def public_room_info(room_name: str, db: Session = Depends(get_db)) -> dict:
     """Public endpoint used by the lobby to show meeting title + branding
