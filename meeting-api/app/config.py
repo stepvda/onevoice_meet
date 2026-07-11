@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     meeting_api_port: int = 8080
     database_url: str = "sqlite:////var/lib/meet/meet.db"
     recordings_dir: str = "/var/lib/meet/recordings"
+    # Playlist MP4s for in-meeting playback, laid out as
+    # <playback_dir>/<meeting_id>/<item_id>.mp4. Previously derived from
+    # `recordings_dir`'s parent, which silently pinned it to /var/lib/meet.
+    # Explicit now so the (large) playlist library can sit on its own volume —
+    # production sets PLAYBACK_DIR=/mnt/video1/meetvideos in `.env`. Must be
+    # mounted into the meeting-api container at the same absolute path.
+    playback_dir: str = "/var/lib/meet/playback"
     branding_dir: str = "/var/lib/meet/branding"
     branding_max_bytes: int = 2 * 1024 * 1024  # 2 MB cap for upload
     chat_attachments_dir: str = "/var/lib/meet/chat-attachments"
@@ -108,6 +115,19 @@ class Settings(BaseSettings):
 
     # Public URL (for join links in responses)
     public_url: str = "https://meet.witysk.org"
+
+    # --- Live HLS for the TI-TV public channel -------------------------------
+    # The mobile apps need a *castable / backgroundable* live stream, which the
+    # WebRTC public room can't provide. When the public channel whose slug is
+    # `titv_public_slug` is streaming, its RoomCompositeEgress also writes an
+    # HLS output (segments + a sliding-window live playlist) under
+    # `<recordings_dir>/hls/<slug>/`, served by Caddy at
+    # `<public_url>/hls/<slug>/live.m3u8`. Reuses the composite's encoded frames
+    # (no second encode) so the extra cost is roughly one more muxer.
+    titv_public_slug: str = "titv"
+    hls_enabled: bool = True
+    hls_segment_seconds: int = 6          # per-segment length (latency vs. request rate)
+    hls_retention_seconds: int = 180      # prune .ts segments older than this (disk cap)
 
     # Resend (email). Source the key from one.witysk.org's RESEND_API_KEY.
     # `from_email` follows onevoice's convention (FROM_EMAIL env var); supports

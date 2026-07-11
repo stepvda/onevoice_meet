@@ -52,6 +52,31 @@ meet.witysk.org {
         file_server
     }
 
+    # Live HLS for the TI-TV mobile apps (native Media3/ExoPlayer + AVPlayer,
+    # plus any web player). Served from the egress local-storage HLS dir which
+    # is mounted read-only at /srv/hls (see docker-compose caddy volumes).
+    # `handle_path` strips the /hls prefix so /hls/titv/live.m3u8 maps to
+    # /srv/hls/titv/live.m3u8. CORS is open (native players don't send Origin,
+    # but a browser HLS player needs it) and caching is disabled so the
+    # sliding-window live playlist and its newest segments are always fresh.
+    handle_path /hls/* {
+        header {
+            Access-Control-Allow-Origin *
+            Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+            Access-Control-Allow-Headers "Range"
+            Cache-Control "no-cache, no-store, must-revalidate"
+        }
+        # Force correct HLS MIME types — Caddy's Go mime table mislabels `.ts`
+        # as text/vnd.trolltech.linguist, which strict web/Safari HLS players
+        # reject (native AVPlayer/ExoPlayer infer from the playlist and don't care).
+        @m3u8 path *.m3u8
+        header @m3u8 Content-Type "application/vnd.apple.mpegurl"
+        @ts path *.ts
+        header @ts Content-Type "video/mp2t"
+        root * /srv/hls
+        file_server
+    }
+
     # /egress-layout/* is the custom Web template used by LiveKit Egress.
     # LiveKit's headless Chrome fetches this page with no cookies and
     # passes the LiveKit WS URL as a query param. In this deployment

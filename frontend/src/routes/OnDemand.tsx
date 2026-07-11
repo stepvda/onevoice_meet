@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Clock, MonitorPlay, Play, Tv, X } from "lucide-react";
+import { Check, Clock, Link2, MonitorPlay, Play, Tv, X } from "lucide-react";
 import { api, OnDemandMeeting, OnDemandVideo } from "../lib/api";
 import { cleanPlaylistTitle } from "../lib/playlistName";
 import { Button, Card } from "../components/ui";
@@ -22,11 +23,65 @@ function fmtDuration(total: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
 }
 
+/**
+ * Icon button that copies a shareable deep-link to this video. The link points
+ * at the On Demand page with `?v=<id>`, which auto-opens the player (see the
+ * deep-link effect in OnDemand) — so a recipient lands on the branded page with
+ * the video playing, not a bare MP4 URL. Owns its own transient "copied" state
+ * so each row flips independently.
+ */
+function CopyLinkButton({ video }: { video: OnDemandVideo }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const clearRef = useRef<number | null>(null);
+
+  // Clear the pending reset on unmount so we never setState on a gone row.
+  useEffect(
+    () => () => {
+      if (clearRef.current) window.clearTimeout(clearRef.current);
+    },
+    [],
+  );
+
+  async function copy() {
+    const url = `${window.location.origin}/on-demand?v=${video.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard API blocked (insecure context / denied) — fall back to a
+      // prompt the user can copy from manually.
+      window.prompt(t("onDemand.copyLinkPrompt", { defaultValue: "Copy this link" }), url);
+    }
+    setCopied(true);
+    if (clearRef.current) window.clearTimeout(clearRef.current);
+    clearRef.current = window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <Button
+      type="button"
+      variant={copied ? "accent" : "secondary"}
+      size="sm"
+      onClick={copy}
+      title={t("onDemand.copyLinkTitle", { defaultValue: "Copy link to video to clipboard" })}
+      aria-label={t("onDemand.copyLink", { defaultValue: "Copy link to video" })}
+      data-testid={`on-demand-copy-${video.id}`}
+    >
+      {copied ? <Check size={16} /> : <Link2 size={16} />}
+    </Button>
+  );
+}
+
 export default function OnDemand() {
   const { t } = useTranslation();
   const [meetings, setMeetings] = useState<OnDemandMeeting[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [playing, setPlaying] = useState<OnDemandVideo | null>(null);
+  const [searchParams] = useSearchParams();
+  const deepLinkId = searchParams.get("v");
+  // Only auto-open a given deep-link once; otherwise the 30s poll refreshing
+  // `meetings` would re-open the player after the visitor closes it.
+  const handledDeepLink = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +109,18 @@ export default function OnDemand() {
       window.clearInterval(id);
     };
   }, []);
+
+  // Deep-link: when arriving at /on-demand?v=<id>, open that video's player
+  // as soon as the catalogue has loaded and contains it. Runs once per id.
+  useEffect(() => {
+    if (!deepLinkId || !meetings) return;
+    if (handledDeepLink.current === deepLinkId) return;
+    const video = meetings.flatMap((m) => m.videos).find((v) => v.id === deepLinkId);
+    if (video) {
+      handledDeepLink.current = deepLinkId;
+      setPlaying(video);
+    }
+  }, [deepLinkId, meetings]);
 
   return (
     <div className="p-4 lg:p-8 max-w-4xl mx-auto flex flex-col gap-6">
@@ -130,15 +197,18 @@ export default function OnDemand() {
                     <Clock size={12} /> {fmtDuration(v.duration_seconds)}
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="accent"
-                  size="sm"
-                  onClick={() => setPlaying(v)}
-                  data-testid={`on-demand-play-${v.id}`}
-                >
-                  <Play size={16} /> {t("onDemand.watch", { defaultValue: "Watch" })}
-                </Button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <CopyLinkButton video={v} />
+                  <Button
+                    type="button"
+                    variant="accent"
+                    size="sm"
+                    onClick={() => setPlaying(v)}
+                    data-testid={`on-demand-play-${v.id}`}
+                  >
+                    <Play size={16} /> {t("onDemand.watch", { defaultValue: "Watch" })}
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>

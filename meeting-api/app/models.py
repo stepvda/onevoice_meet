@@ -578,9 +578,13 @@ class PlaybackItem(Base):
     `position` order via LiveKit Ingress (URL_INPUT) as a participant
     track everyone in the room sees.
 
-    Files live under /var/lib/meet/playback/<meeting_id>/<id>.mp4 — the
-    container path is shared between meeting-api (writer) and the
-    livekit-ingress container (reader).
+    Files live under <settings.playback_dir>/<meeting_id>/<id>.mp4 (production
+    puts that on a dedicated volume, /mnt/video1/meetvideos). `file_path` holds
+    the absolute path, so the directory must be mounted into meeting-api at the
+    same path it had when the row was written. Ingress never reads the file off
+    disk — it fetches it from meeting-api over a signed HTTP URL.
+
+    Alias rows (`source_item_id` set) carry `file_path=""` and own no file.
     """
     __tablename__ = "playback_items"
 

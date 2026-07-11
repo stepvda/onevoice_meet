@@ -154,6 +154,37 @@ def _current_state(m: Meeting, db: Session) -> tuple[str | None, bool, bool]:
     return egress_id, bool(file_egress), bool(stream_egress)
 
 
+def _titv_hls_segment_outputs(m: Meeting) -> list:
+    """HLS output for the TI-TV public channel so the mobile apps get a
+    castable / backgroundable LIVE stream.
+
+    Returns an empty list for every meeting except the configured TI-TV public
+    channel (so regular meetings are unaffected). For LOCAL storage the paths
+    must be ABSOLUTE — LiveKit egress does NOT join `filename_prefix` with
+    `storage.local.path` (a relative prefix is resolved against `/`, so egress
+    tried `mkdir /hls` and the whole egress failed with permission denied).
+    Mirroring the MP4 `EncodedFileOutput` (which uses an absolute `filepath`),
+    we write under `<recordings_dir>/hls/<slug>/`. Caddy serves that dir at
+    `<public_url>/hls/<slug>/live.m3u8`. `live_playlist_name` is a
+    sliding-window playlist for live viewing; the old `.ts` segments it drops
+    are pruned by `scheduler._hls_segment_prune_job` (LiveKit doesn't delete
+    them itself). Segments and both playlists share one dir, so the playlist's
+    relative (basename) segment refs resolve correctly under the `/hls/` route.
+    """
+    if not settings.hls_enabled or m.public_slug != settings.titv_public_slug:
+        return []
+    base = f"{settings.recordings_dir}/hls/{m.public_slug}"
+    return [
+        api.SegmentedFileOutput(
+            protocol=api.SegmentedFileProtocol.HLS_PROTOCOL,
+            filename_prefix=f"{base}/seg",
+            playlist_name=f"{base}/vod.m3u8",
+            live_playlist_name=f"{base}/live.m3u8",
+            segment_duration=settings.hls_segment_seconds,
+        )
+    ]
+
+
 async def reconcile_egress(
     m: Meeting,
     *,
@@ -295,6 +326,13 @@ async def reconcile_egress(
             api.StreamOutput(protocol=api.StreamProtocol.RTMP, urls=urls)
         )
 
+    # Live HLS for the TI-TV public channel — a castable / backgroundable feed
+    # for the mobile apps. Only emitted when THIS meeting is the configured
+    # TI-TV public channel AND it's streaming, so regular meetings never pay the
+    # cost. It's an additional output on the SAME egress, reusing the composite's
+    # encoded frames (~one extra muxer, not a second encode).
+    segment_outputs = _titv_hls_segment_outputs(m) if want_stream else []
+
     req_kwargs: dict = {
         "room_name": m.room_name,
         "layout": effective_layout,
@@ -308,6 +346,8 @@ async def reconcile_egress(
         req_kwargs["file_outputs"] = file_outputs
     if stream_outputs:
         req_kwargs["stream_outputs"] = stream_outputs
+    if segment_outputs:
+        req_kwargs["segment_outputs"] = segment_outputs
 
     lk = livekit_api()
     try:

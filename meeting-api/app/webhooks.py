@@ -392,21 +392,36 @@ async def livekit_webhook(
             db.commit()
 
     elif etype in ("ingress_started", "ingress_updated", "ingress_ended") and event.ingress_info:
-        # Video-playback ingress lifecycle. We only care about the "ended"
-        # event — when the current playlist item finishes (or fails), pick
-        # the next one (with loop support) or end playback. The whole
-        # transition runs in a background task so the webhook ack is fast.
+        # Video-playback ingress lifecycle. We advance the playlist when:
+        #   1. `ingress_ended` arrives — the canonical end-of-item signal.
+        #   2. `ingress_updated` arrives with a non-healthy status (ERROR or
+        #      COMPLETE). When the LiveKit ingress handler segfaults
+        #      mid-item (we observed SIGTRAPs from libav on videos with
+        #      non-mod16 widths), the SFU keeps the published track around
+        #      and `ingress_ended` is never fired — but LiveKit DOES push
+        #      an `ingress_updated` with status=ENDPOINT_ERROR. Without
+        #      reacting to that, the playlist stalls silently until the
+        #      wall-clock duration-overrun watchdog kicks in (which can be
+        #      tens of minutes for long items). The transition runs in a
+        #      background task so the webhook ack is fast.
         info = event.ingress_info
+        status = getattr(getattr(info, "state", None), "status", None)
         log.info(
             "ingress event %s id=%s state=%s",
             etype,
             getattr(info, "ingress_id", "?"),
-            getattr(getattr(info, "state", None), "status", None),
+            status,
         )
-        if etype == "ingress_ended":
+        # ENDPOINT_INACTIVE=0, ENDPOINT_BUFFERING=1, ENDPOINT_PUBLISHING=2,
+        # ENDPOINT_ERROR=3, ENDPOINT_COMPLETE=4
+        unhealthy = status is not None and status not in (0, 1, 2)
+        should_advance = etype == "ingress_ended" or (
+            etype == "ingress_updated" and unhealthy
+        )
+        if should_advance:
             from app.services.playback_mgr import advance_after_ingress_ended
 
-            async def _advance(ingress_id: str) -> None:
+            async def _advance(ingress_id: str, why: str) -> None:
                 from app.db import SessionLocal
                 with SessionLocal() as session:
                     try:
@@ -414,9 +429,14 @@ async def livekit_webhook(
                     except Exception:
                         import logging
                         logging.getLogger(__name__).exception(
-                            "playback: advance_after_ingress_ended failed"
+                            "playback: advance_after_ingress_ended failed (trigger=%s)",
+                            why,
                         )
 
-            background.add_task(_advance, info.ingress_id)
+            background.add_task(
+                _advance,
+                info.ingress_id,
+                f"{etype}:status={status}",
+            )
 
     return {"ok": True, "event": etype}

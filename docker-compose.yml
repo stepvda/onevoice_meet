@@ -10,6 +10,11 @@ services:
       - caddy_data:/data
       - caddy_config:/config
       - frontend_build:/srv/frontend:ro
+      # Live HLS segments written by egress (RoomComposite SegmentedFileOutput)
+      # under <recordings_dir>/hls; served read-only by the /hls handle in the
+      # Caddyfile. The host dir must exist and be readable by Caddy — see the
+      # HLS deploy runbook (mkdir -p /var/lib/meet/recordings/hls).
+      - /var/lib/meet/recordings/hls:/srv/hls:ro
     # Needed so Caddy's reverse_proxy can reach LiveKit, which runs with
     # network_mode: host and is NOT on the Docker bridge network.
     extra_hosts:
@@ -155,6 +160,13 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - /var/lib/meet:/var/lib/meet
+      # Playlist MP4s live on a dedicated 50 GB volume (fs label: video1)
+      # because they outgrew the 38 GB root disk. Mounted at the SAME path
+      # inside the container so the absolute `file_path` values stored in
+      # playback_items resolve without translation. Matches PLAYBACK_DIR
+      # in .env. Ingress doesn't need this mount — it pulls playlist files
+      # from meeting-api over signed HTTP URLs, never off the filesystem.
+      - /mnt/video1/meetvideos:/mnt/video1/meetvideos
       # File-backed logs: app.log / requests.log / db.log rotate daily,
       # gzip on rotation and survive container restarts. Kept on the host
       # under /var/log/meet/.

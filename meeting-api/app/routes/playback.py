@@ -38,8 +38,8 @@ from app.services.playback_mgr import (
 
 router = APIRouter(prefix="/v1")
 
-# Storage layout: /var/lib/meet/playback/<meeting_id>/<item_id>.mp4
-_PLAYBACK_ROOT = Path(settings.recordings_dir).parent / "playback"
+# Storage layout: <playback_dir>/<meeting_id>/<item_id>.mp4
+_PLAYBACK_ROOT = Path(settings.playback_dir)
 
 
 def _ffprobe_duration(file_path: str) -> float | None:

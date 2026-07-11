@@ -209,6 +209,15 @@ def public_room_info(public_slug: str, db: Session = Depends(get_db)) -> dict:
         "owner_name": m.owner_name,
         "branding_url": _branding_url_for(m),
         "public_slug": m.public_slug,
+        # Castable / backgroundable live HLS for the mobile apps (native
+        # players). Present only for the TI-TV channel; null elsewhere. The
+        # stream only actually exists while the channel is egressing, so a
+        # client should be prepared for the playlist to 404 when it's off-air.
+        "hls_url": (
+            f"{settings.public_url}/hls/{m.public_slug}/live.m3u8"
+            if settings.hls_enabled and m.public_slug == settings.titv_public_slug
+            else None
+        ),
     }
 
 
