@@ -24,10 +24,12 @@ issues asymmetric tokens, swap the body of `decode_access_token` to verify
 RS256/ES256 signatures via the JWKS and check the DPoP proof. The public
 shape of this module stays the same.
 """
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
+import httpx
 from fastapi import Depends, Header, HTTPException, status
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -56,16 +58,74 @@ class AuthUser:
     sub: str
 
 
-def decode_access_token(token: str) -> dict:
+# one.witysk.org JWKS cache (its ES256 public keys). Short TTL; on a fetch
+# failure we fall back to the last-known keys so a transient one.witysk.org blip
+# does not 401 every SSO login.
+_JWKS_CACHE: dict = {"keys": None, "at": 0.0}
+_JWKS_TTL_SECONDS = 600
+
+
+def _onevoice_jwks() -> list[dict]:
+    now = time.time()
+    cached = _JWKS_CACHE["keys"]
+    if cached is not None and (now - _JWKS_CACHE["at"]) < _JWKS_TTL_SECONDS:
+        return cached
     try:
-        return jwt.decode(
-            token,
-            settings.jwt_secret_key,
-            algorithms=[settings.jwt_algorithm],
-            # leeway tolerates small clock drift between meet and one.witysk.org
-            # (both validate the same signed JWT); without it freshly-minted
-            # access tokens can 401 here for ~30s after issuance.
-            options={"verify_aud": False, "leeway": 30},
+        resp = httpx.get(settings.onevoice_jwks_url, timeout=5.0)
+        resp.raise_for_status()
+        keys = resp.json().get("keys") or []
+        _JWKS_CACHE["keys"] = keys
+        _JWKS_CACHE["at"] = now
+        return keys
+    except Exception:
+        return cached or []
+
+
+def decode_access_token(token: str) -> dict:
+    """Verify a bearer JWT. Dual-scheme during the one.witysk.org HS256→ES256
+    signing migration:
+
+      - **ES256** (header alg) → a one.witysk.org SSO token: verify against the
+        published JWKS public key, PINNED to ES256.
+      - **HS256** → a pre-migration SSO token OR a meet-native token: verify
+        against the shared secret, PINNED to HS256.
+
+    The per-branch algorithm pin is the security crux (algorithm-confusion
+    defense): an attacker who signs an HS256 token using the ES256 *public* key
+    as the HMAC secret routes to the HS256 branch and is checked against the real
+    shared secret — which they do not have — so the forgery fails. `leeway`
+    tolerates ~30s clock drift between meet and one.witysk.org."""
+    opts = {"options": {"verify_aud": False, "leeway": 30}}
+    try:
+        header = jwt.get_unverified_header(token)
+    except JWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"invalid token: {exc}",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+
+    alg = header.get("alg")
+    try:
+        if alg == "ES256":
+            kid = header.get("kid")
+            keys = _onevoice_jwks()
+            jwk = next((k for k in keys if k.get("kid") == kid), None)
+            if jwk is None and len(keys) == 1:
+                jwk = keys[0]  # single published key → kid is optional
+            if jwk is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="no matching verification key",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            return jwt.decode(token, jwk, algorithms=["ES256"], **opts)
+        if alg == "HS256":
+            return jwt.decode(token, settings.jwt_secret_key, algorithms=["HS256"], **opts)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"unsupported token algorithm: {alg}",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     except JWTError as exc:
         raise HTTPException(

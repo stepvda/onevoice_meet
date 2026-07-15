@@ -101,6 +101,11 @@ class Settings(BaseSettings):
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     jwt_audience: str = "meet.witysk.org"
+    # one.witysk.org's JWKS (its ES256 public keys). During the HS256→ES256
+    # migration the decoder verifies ES256 SSO tokens against these and keeps
+    # verifying HS256 (pre-migration SSO tokens + meet-native tokens) against the
+    # shared secret. Meet-native tokens ALWAYS stay HS256 (minted locally).
+    onevoice_jwks_url: str = "https://one.witysk.org/.well-known/jwks.json"
 
     # coturn
     turn_host: str = "turn.witysk.org"
