@@ -17,11 +17,39 @@ const STORAGE_KEY = "access_token";
 // party storage access. On Safari / mobile / private modes it can't read
 // one.witysk.org's localStorage at all, so we fail fast and rely on the
 // explicit redirect-based flow (see startSsoRedirect below) instead.
-const BOOTSTRAP_TIMEOUT_MS = 1500;
+// 4s (was 1500ms): the bootstrap page now REFRESHES an expired token before
+// handing it over (it holds the httpOnly refresh cookie), which can add a
+// same-origin round-trip, so the parent must wait a little longer.
+const BOOTSTRAP_TIMEOUT_MS = 4000;
 
+/** True if the JWT is missing, unparseable, or within 10s of expiry.
+ *  We decode the payload only to read `exp` — no signature check (the backend
+ *  does that); this just stops us from reusing a token the server will reject. */
+function isTokenExpired(token: string | null): boolean {
+  if (!token) return true;
+  try {
+    const part = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const claims = JSON.parse(atob(part)) as { exp?: number };
+    if (typeof claims.exp !== "number") return true;
+    return claims.exp * 1000 <= Date.now() + 10_000;
+  } catch {
+    return true;
+  }
+}
+
+/** The cached access token, or null if absent OR EXPIRED. An expired cached
+ *  token is cleared so callers (isAuthenticated / bootstrapFromOneWitysk) treat
+ *  it as "not signed in" and re-bootstrap a fresh one from one.witysk.org,
+ *  instead of blindly sending a dead token that 401s with "Signature has
+ *  expired". This is the fix for the stale-token loop. */
 export function getAccessToken(): string | null {
   try {
-    return localStorage.getItem(STORAGE_KEY);
+    const tok = localStorage.getItem(STORAGE_KEY);
+    if (tok && isTokenExpired(tok)) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+      return null;
+    }
+    return tok;
   } catch {
     return null;
   }
