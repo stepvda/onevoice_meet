@@ -45,6 +45,7 @@ import OutputVolumeControl from "../components/OutputVolumeControl";
 import AudioWaveform from "../components/AudioWaveform";
 import PendingJoinersPanel from "../components/PendingJoinersPanel";
 import HandRaiseButton from "../components/HandRaiseButton";
+import GridAspectToggle from "../components/GridAspectToggle";
 import PostMeetingFeedback from "../components/PostMeetingFeedback";
 import ShortcutOverlay from "../components/ShortcutOverlay";
 import { useMeetingShortcuts } from "../lib/shortcuts";
@@ -61,6 +62,7 @@ import { useJoinSound, useChatSound } from "../lib/sounds";
 import { useMonoAudio } from "../lib/monoAudio";
 import { useVideoQualityPref } from "../lib/videoQualityPref";
 import { usePushToTalk } from "../lib/pushToTalk";
+import { useRoomLayout } from "../lib/useRoomLayout";
 import { useBrowserNotifications } from "../lib/browserNotifications";
 import { useJoinPolicy } from "../lib/joinPolicy";
 
@@ -77,6 +79,9 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
   const { t } = useTranslation();
   const navigate = useNavigate();
   const room = useRoomContext();
+  // Room-wide layout (from LiveKit metadata) so the grid-only tile-shape
+  // toggle can show/hide in the toolbar for every viewer, owner or not.
+  const roomLayout = useRoomLayout();
   const display = usePreferences((s) => s.display);
   const appearance = usePreferences((s) => s.appearance);
   const accessibility = usePreferences((s) => s.accessibility);
@@ -450,7 +455,10 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
       {/* TOP BAR */}
       <header
         data-testid="room-topbar"
-        className="flex items-center gap-2 px-3 py-2 bg-primary-900/90 backdrop-blur border-b border-primary-700 flex-wrap flex-shrink-0"
+        // On phones the button row would wrap to two rows and steal vertical
+        // space from the stage; keep it a single swipeable row instead
+        // (no-scrollbar hides the bar). Wraps normally from `sm` up.
+        className="flex items-center gap-2 px-3 py-2 bg-primary-900/90 backdrop-blur border-b border-primary-700 flex-nowrap overflow-x-auto no-scrollbar sm:flex-wrap sm:overflow-x-visible flex-shrink-0"
       >
         <div className="flex items-center gap-3 mr-2 min-w-0 max-w-[55%]">
           {brandingUrl && (
@@ -721,6 +729,9 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
         )}
 
         <OutputVolumeControl />
+        {/* Per-viewer grid tile-shape toggle — only meaningful in grid layout,
+            so it appears with the layout and is hidden in speaker/single. */}
+        {roomLayout === "grid" && <GridAspectToggle />}
         <HandRaiseButton />
         <ReactionsButton />
         <button
@@ -902,7 +913,15 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           }
           meeting={isOwner ? livestreamMeeting : null}
           onMeetingUpdated={
-            isOwner ? (updated) => setLivestreamMeeting(updated) : undefined
+            isOwner
+              ? (updated) => {
+                  setLivestreamMeeting(updated);
+                  // Sync the toolbar Playlist button — the settings drawer
+                  // hosts the enable toggle, so the button must appear the
+                  // moment the flag flips without waiting for a reload.
+                  setPlaybackEnabled(!!updated.playback_enabled);
+                }
+              : undefined
           }
         />
         {isOwner && meetingId && (

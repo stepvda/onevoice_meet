@@ -13,6 +13,7 @@ import {
   Pencil,
   PictureInPicture2,
   FileVideo,
+  Film,
   X,
 } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
@@ -31,9 +32,6 @@ interface Props {
   // Owner-only host entry to open the LivestreamSettingsModal. Hidden for
   // non-owners and when undefined (which is how guests/cohosts get rendered).
   onConfigureLivestream?: () => void;
-  // Owner-only entry to open the VideoPlaybackPanel. Same gating rules as
-  // livestream: hidden for non-owners, hidden when undefined.
-
   // Owner-only entry to open the MeetingRecordingsModal — lists the
   // recordings of the current meeting with a per-row Download button.
   onViewRecordings?: () => void;
@@ -318,6 +316,10 @@ export default function InMeetingSettings({
         )}
 
         {meeting && onMeetingUpdated && (
+          <PlaybackGroup meeting={meeting} onMeetingUpdated={onMeetingUpdated} />
+        )}
+
+        {meeting && onMeetingUpdated && (
           <PiPGroup meeting={meeting} onMeetingUpdated={onMeetingUpdated} />
         )}
 
@@ -584,6 +586,71 @@ function PublicGroup({
             className="text-xs text-slate-400 break-all"
           >
             {publicUrl}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+
+function PlaybackGroup({
+  meeting,
+  onMeetingUpdated,
+}: {
+  meeting: MeetingOut;
+  onMeetingUpdated: (m: MeetingOut) => void;
+}) {
+  const { t } = useTranslation();
+  const [enabled, setEnabled] = useState(!!meeting.playback_enabled);
+  const [err, setErr] = useState<string | null>(null);
+
+  // Keep local state in sync with the parent — the VideoPlaybackPanel
+  // carries the same toggle and both write through onMeetingUpdated.
+  useEffect(() => {
+    setEnabled(!!meeting.playback_enabled);
+  }, [meeting.playback_enabled]);
+
+  // Immediate-apply (no Save button): a lone toggle with optimistic
+  // revert on failure, same behavior as the twin toggle in the panel.
+  async function toggle(v: boolean) {
+    setEnabled(v);
+    setErr(null);
+    try {
+      const updated = await api.updateMeeting(meeting.id, { playback_enabled: v });
+      onMeetingUpdated(updated);
+    } catch (e) {
+      setEnabled(!v);
+      setErr((e as Error).message);
+    }
+  }
+
+  return (
+    <section>
+      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+        <span className="text-slate-500">
+          <Film size={14} />
+        </span>
+        {t("inMeetingSettings.groupPlayback", { defaultValue: "Video playback" })}
+      </h3>
+      <div className="flex flex-col gap-3">
+        <Toggle
+          id="im-playback-enabled"
+          label={t("inMeetingSettings.playbackEnable", {
+            defaultValue: "Video playlist",
+          })}
+          checked={enabled}
+          onChange={(v) => void toggle(v)}
+        />
+        <p className="text-xs text-slate-500">
+          {t("inMeetingSettings.playbackHint", {
+            defaultValue:
+              "When on, a Playlist button appears in the toolbar — upload MP4 files, reorder them and play them to every participant as a single stream. All mics and cameras auto-mute while a video is playing.",
+          })}
+        </p>
+        {err && (
+          <p data-testid="im-playback-error" className="text-xs text-red-400">
+            {err}
           </p>
         )}
       </div>

@@ -17,6 +17,11 @@ export type BackgroundEffect = "off" | "blur" | "light-blur" | "image";
 export type RecordingMode = "manual" | "auto_on_start" | "off";
 export type VideoQuality = "low" | "medium" | "high" | "auto";
 export type Theme = "system" | "dark" | "light";
+// Grid-mode tile-shape standardization. "off" = each tile keeps its source
+// aspect (letterboxed to fit). "landscape"/"portrait" force every tile box to
+// a uniform 4:3 / 3:4 so tiles stack neatly. Grid-mode only; toggled from the
+// stage. Cycles off -> landscape -> portrait -> off.
+export type GridAspect = "off" | "landscape" | "portrait";
 // All 50 locales we ship translations for (matches frontend/public/locales/).
 export type Language =
   | "am" | "ar" | "bg" | "bn" | "cs" | "da" | "de" | "el" | "en" | "es"
@@ -115,6 +120,7 @@ export interface Preferences {
     showMeetingClock: boolean;
     highlightSpeaker: boolean;
     maxVisibleTiles: number; // 4–50
+    gridAspect: GridAspect; // grid-mode tile-shape standardization toggle
   };
 
   // ── Defaults applied when this user creates a new meeting ─────────
@@ -284,6 +290,7 @@ export const defaults: Preferences = {
     showMeetingClock: false,
     highlightSpeaker: true,
     maxVisibleTiles: 16,
+    gridAspect: "off",
   },
   meetingDefaults: {
     maxParticipants: 50,

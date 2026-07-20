@@ -63,6 +63,10 @@ body {
 .meet-stage.compact .lk-grid-layout { gap: 4px !important; }
 .meet-stage.compact .lk-participant-tile { padding: 0 !important; }
 
+/* Hide the scrollbar on the mobile top toolbar (still swipe-scrollable). */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+
 /* Lock webcam / screen-share / playback aspect ratio. LiveKit's default
  * video CSS uses `object-fit: cover` so the video crops to fill its tile,
  * which distorts the way the streamer expects to be framed (especially

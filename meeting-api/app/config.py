@@ -133,6 +133,11 @@ class Settings(BaseSettings):
     hls_enabled: bool = True
     hls_segment_seconds: int = 6          # per-segment length (latency vs. request rate)
     hls_retention_seconds: int = 180      # prune .ts segments older than this (disk cap)
+    # If a streaming egress hasn't touched its live.m3u8 in this many seconds,
+    # the watchdog restarts it. Must be longer than hls_segment_seconds * 5
+    # (enough segments to ride through a transient pipeline pause) but short
+    # enough to catch a deadlocked egress before viewers notice.
+    hls_watchdog_stale_seconds: int = 30
 
     # Resend (email). Source the key from one.witysk.org's RESEND_API_KEY.
     # `from_email` follows onevoice's convention (FROM_EMAIL env var); supports
