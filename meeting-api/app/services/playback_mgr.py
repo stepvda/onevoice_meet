@@ -332,6 +332,12 @@ async def _start_ingress_for_item(
         # playback track lands — avoids a brief flash of the old layout
         # on the recording / livestream.
         await _force_single_speaker_layout(m, db)
+    # URL_INPUT ingresses are one-shot, but their REGISTRATIONS persist in
+    # LiveKit until explicitly deleted. Advancing a 24/7 playlist without
+    # deleting the previous one leaks a registration per item played —
+    # observed: >11,000 accumulated for a single room. Reap the old one
+    # right after the replacement is up.
+    old_ingress_id = m.playback_ingress_id
     lk = livekit_api()
     try:
         ingress = await lk.ingress.create_ingress(
@@ -347,6 +353,14 @@ async def _start_ingress_for_item(
         )
         if initial:
             await _mute_all_other_participants(lk, m.room_name)
+        if old_ingress_id and old_ingress_id != ingress.ingress_id:
+            try:
+                await lk.ingress.delete_ingress(
+                    api.DeleteIngressRequest(ingress_id=old_ingress_id)
+                )
+            except Exception:
+                # Already gone / never registered — nothing leaked.
+                log.info("playback: old ingress %s already deleted", old_ingress_id)
     finally:
         await lk.aclose()
 
@@ -656,6 +670,15 @@ async def advance_after_ingress_ended(
                     video=_vp8_video_options(),
                 )
             )
+            # This path nulled `playback_ingress_id` above, so the central
+            # old-ingress reap in _start_ingress_for_item can't see the
+            # ended ingress — delete its registration here.
+            try:
+                await lk.ingress.delete_ingress(
+                    api.DeleteIngressRequest(ingress_id=ingress_id)
+                )
+            except Exception:
+                log.info("playback: ended ingress %s already deleted", ingress_id)
         finally:
             await lk.aclose()
         m.playback_ingress_id = ingress.ingress_id
@@ -769,6 +792,29 @@ async def watchdog_check_stale_ingresses(db: Session) -> int:
     recovered = 0
     try:
         for m in candidates:
+            # A CLOSED meeting must never keep playback alive: without this
+            # guard the watchdog "recovers" the playlist of a dead room
+            # forever (observed: a closed meeting's loop transcoded into an
+            # empty room for weeks at a full core, leaking an ingress
+            # registration on every advance). The persistent public channel
+            # (TITV) is exempt — it is 24/7 by design, and its meeting row
+            # can flip inactive on a transient `room_finished` while the
+            # playlist should keep running and re-create the room.
+            if not m.is_active and m.public_slug != settings.titv_public_slug:
+                log.warning(
+                    "playback watchdog: meeting %s is closed — tearing down"
+                    " leftover playback (ingress %s)",
+                    m.id, m.playback_ingress_id,
+                )
+                try:
+                    await stop_playback(m, "playback_watchdog", db)
+                    recovered += 1
+                except Exception:
+                    log.exception(
+                        "playback watchdog: teardown failed for %s", m.id
+                    )
+                continue
+
             age: Optional[float] = None
             if m.playback_started_at:
                 started = m.playback_started_at

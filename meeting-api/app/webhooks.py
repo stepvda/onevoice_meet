@@ -318,6 +318,23 @@ async def livekit_webhook(
             m.is_active = False
             m.closed_at = _now()
             db.commit()
+        # The room is gone — any playback still pointed at it would loop
+        # invisibly forever (transcoding at a full core into nothing).
+        # Tear it down, EXCEPT for the persistent TITV channel, whose
+        # playlist must survive an empty-room blip and re-create the room
+        # on the next ingress.
+        if m and m.playback_ingress_id and m.public_slug != settings.titv_public_slug:
+            from app.services.playback_mgr import stop_playback
+
+            try:
+                await stop_playback(m, "room_finished", db)
+                log.info(
+                    "room_finished: tore down playback for closed meeting %s", m.id
+                )
+            except Exception:
+                log.exception(
+                    "room_finished: playback teardown failed for %s", m.id
+                )
 
     elif etype in ("egress_started", "egress_updated", "egress_ended") and event.egress_info:
         info = event.egress_info

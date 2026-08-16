@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 from ulid import ULID
 
 from app.auth import AuthUser, RequireAdmin, RequireUser
+import logging
+
 from app.config import settings
 from app.db import get_db
 from app.livekit_client import livekit_api, mint_participant_token, short_lived_turn_credentials
@@ -519,6 +521,19 @@ async def end_or_hide_meeting(meeting_id: str, user: RequireUser, db: Session = 
             raise HTTPException(status_code=404, detail="meeting not found")
 
     if m.is_active:
+        # Tear down any running playlist playback BEFORE the room goes
+        # away. Without this, the playback ingress keeps transcoding into
+        # the dead room indefinitely (observed: weeks at a full CPU core)
+        # and the playback watchdog dutifully keeps it alive.
+        if m.playback_ingress_id:
+            from app.services.playback_mgr import stop_playback
+
+            try:
+                await stop_playback(m, user.sub, db)
+            except Exception:
+                logging.getLogger(__name__).exception(
+                    "close: playback teardown failed for meeting %s", m.id
+                )
         lk = livekit_api()
         try:
             try:
