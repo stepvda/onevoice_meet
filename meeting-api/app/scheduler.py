@@ -155,35 +155,53 @@ def _hls_egress_watchdog_job() -> None:
     from app.config import settings
     from app.db import SessionLocal
     from app.models import Meeting
-    from app.services.egress_mgr import reconcile_egress
+    from app.services.egress_mgr import LIVESTREAM_DESTINATIONS, reconcile_egress
 
     if not settings.hls_enabled:
         return
 
     async def _run() -> int:
         with SessionLocal() as db:
-            stalled = db.query(Meeting).filter(
+            # Do NOT filter on livestream_egress_id here: when a dead egress
+            # is reaped, the egress_ended webhook nulls the pointer — the
+            # old filter then dropped the meeting from consideration and
+            # the stream stayed down until a human noticed (this orphaned
+            # the TITV simulcast for two days in Aug 2026). "Streaming
+            # desired" is instead derived from the per-destination toggles;
+            # to intentionally stop the 24/7 stream, disable those.
+            candidates = db.query(Meeting).filter(
                 Meeting.public_slug == settings.titv_public_slug,
-                Meeting.livestream_egress_id.isnot(None),
-                Meeting.livestream_enabled.is_(True),
             ).all()
 
             restarted = 0
             now = time.time()
-            for m in stalled:
+            for m in candidates:
+                want_stream = any(
+                    bool(getattr(m, dest[1], False))
+                    for dest in LIVESTREAM_DESTINATIONS
+                )
+                if not want_stream:
+                    continue
                 live_m3u8 = os.path.join(
                     settings.recordings_dir, "hls", m.public_slug, "live.m3u8"
                 )
-                if not os.path.isfile(live_m3u8):
-                    continue
-                age = now - os.path.getmtime(live_m3u8)
-                if age <= settings.hls_watchdog_stale_seconds:
-                    continue
-                log.warning(
-                    "hls watchdog: egress %s stale for %.0fs (live.m3u8 age), restarting",
-                    m.livestream_egress_id,
-                    age,
-                )
+                if m.livestream_egress_id is None:
+                    log.warning(
+                        "hls watchdog: streaming desired for %s but no egress"
+                        " is running — starting a fresh one",
+                        m.room_name,
+                    )
+                else:
+                    if not os.path.isfile(live_m3u8):
+                        continue
+                    age = now - os.path.getmtime(live_m3u8)
+                    if age <= settings.hls_watchdog_stale_seconds:
+                        continue
+                    log.warning(
+                        "hls watchdog: egress %s stale for %.0fs (live.m3u8 age), restarting",
+                        m.livestream_egress_id,
+                        age,
+                    )
                 try:
                     await reconcile_egress(
                         m,
