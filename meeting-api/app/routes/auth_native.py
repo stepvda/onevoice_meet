@@ -20,13 +20,21 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
+from jose import jwt
 from passlib.hash import argon2
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
-from app.auth import RequireUser, is_bootstrap_admin_email, issue_meet_token
+from app.auth import (
+    RequireUser,
+    _extract_bearer,
+    _user_from_claims,
+    decode_access_token,
+    is_bootstrap_admin_email,
+    issue_meet_token,
+)
 from app.config import settings
 from app.db import get_db
 from app.models import PasswordResetToken, User
@@ -300,6 +308,61 @@ def logout(user: RequireUser) -> dict:
     single canonical "I'm logging off" hook for future audit logging."""
     _ = user
     return {"ok": True}
+
+
+# Meet-minted SSO continuation tokens are deliberately shorter-lived than
+# native ones: the SPA's keep-alive renews them every few minutes while the
+# tab is open, and an SSO user who has been away longer than this simply
+# re-bootstraps through one.witysk.org (the authoritative session holder).
+SSO_CONTINUATION_TTL_HOURS = 24
+
+
+@router.post("/auth/refresh")
+def refresh_session(
+    authorization: Annotated[str | None, Header()] = None,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Sliding-session renewal: exchange a still-valid access token for a
+    fresh one. Consumed by the SPA's keep-alive so a token can't expire out
+    from under a long meeting (the "Stop recording 401" bug).
+
+      - native accounts → a normal meet token (iss="meet").
+      - SSO accounts → an HS256 continuation token with iss="meet-sso" and
+        the SAME `sub` (the one.witysk.org user_id), so `_user_from_claims`
+        resolves to the same User row and LiveKit identities stay stable.
+        This is the FALLBACK path; the SPA prefers pulling a genuine token
+        from one.witysk.org's bootstrap iframe, which also keeps the SSO
+        server session alive. iss is deliberately NOT "meet" (that would
+        route to the native branch) and deliberately not absent (so the
+        token is recognisably meet-minted, not a one.witysk.org original).
+
+    The incoming token must still be valid — an expired token cannot renew
+    itself; the SPA handles that case via the SSO iframe instead."""
+    token = _extract_bearer(authorization)
+    claims = decode_access_token(token)  # 401s on expired/invalid
+    if claims.get("type") != "access":
+        raise HTTPException(status_code=401, detail="only access tokens can be refreshed")
+    u = _user_from_claims(claims, db)
+    if u.is_disabled:
+        raise HTTPException(status_code=403, detail="account suspended")
+
+    if u.kind == "native":
+        return {"access_token": issue_meet_token(u.id), "kind": "native"}
+
+    now = datetime.now(timezone.utc)
+    payload: dict = {
+        "iss": "meet-sso",
+        "sub": str(claims.get("sub")),
+        "type": "access",
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(hours=SSO_CONTINUATION_TTL_HOURS)).timestamp()),
+    }
+    if u.email:
+        payload["email"] = u.email
+    return {
+        "access_token": jwt.encode(payload, settings.jwt_secret_key, algorithm="HS256"),
+        "kind": "sso",
+    }
 
 
 @router.post("/me/start-trial")

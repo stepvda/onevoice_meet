@@ -1,4 +1,4 @@
-import { bootstrapFromOneWitysk, clearAccessToken, getAccessToken } from "./auth";
+import { bootstrapFromOneWitysk, clearAccessToken, forceBootstrapFromOneWitysk, getAccessToken } from "./auth";
 
 export interface AnonTokenResponse {
   livekit_url: string;
@@ -382,22 +382,20 @@ async function fetchOnce(path: string, init: RequestInit, token: string | null):
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let res = await fetchOnce(path, init, getAccessToken());
 
-  // If the JWT expired, our cached token is stale. one.witysk.org's SPA
-  // auto-refreshes its own localStorage token (TokenManager), so a fresh
-  // re-bootstrap usually picks up a valid one. Try exactly once, then bail.
+  // On ANY 401, try one silent SSO re-bootstrap and retry. This used to be
+  // gated on the 401 detail matching /expired|invalid token/, which missed
+  // the most common real-world case: getAccessToken() had already CLEARED
+  // the expired token, the request went out with no Authorization header at
+  // all, and the 401 detail was "missing Authorization header" — no match,
+  // no retry, and the user saw an auth error mid-meeting (e.g. pressing
+  // Stop recording after a long session). The force variant is required
+  // for the same reason: the non-force bootstrap short-circuits on any
+  // cached token, which is exactly the token that just got rejected.
   if (res.status === 401) {
-    let detail = "";
-    try {
-      detail = (await res.clone().json())?.detail ?? "";
-    } catch {
-      /* ignore */
-    }
-    if (/expired|invalid token/i.test(detail)) {
-      clearAccessToken();
-      const fresh = await bootstrapFromOneWitysk();
-      if (fresh) {
-        res = await fetchOnce(path, init, fresh);
-      }
+    clearAccessToken();
+    const fresh = await forceBootstrapFromOneWitysk();
+    if (fresh) {
+      res = await fetchOnce(path, init, fresh);
     }
   }
 
@@ -1103,10 +1101,10 @@ export const api = {
       headers: tok ? { Authorization: `Bearer ${tok}` } : {},
     });
     if (res.status === 401) {
-      // Cached token may be stale; clear it so the bootstrap re-fetches the
-      // current value from one.witysk.org's localStorage.
+      // Cached token may be stale; clear it and force the bootstrap to
+      // re-fetch the current value from one.witysk.org's localStorage.
       clearAccessToken();
-      const fresh = await bootstrapFromOneWitysk();
+      const fresh = await forceBootstrapFromOneWitysk();
       if (fresh) {
         res = await fetch(`/api/v1/recordings/${recordingId}/download`, {
           headers: { Authorization: `Bearer ${fresh}` },

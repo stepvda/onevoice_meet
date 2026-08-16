@@ -22,19 +22,24 @@ const STORAGE_KEY = "access_token";
 // same-origin round-trip, so the parent must wait a little longer.
 const BOOTSTRAP_TIMEOUT_MS = 4000;
 
-/** True if the JWT is missing, unparseable, or within 10s of expiry.
- *  We decode the payload only to read `exp` — no signature check (the backend
- *  does that); this just stops us from reusing a token the server will reject. */
-function isTokenExpired(token: string | null): boolean {
-  if (!token) return true;
+/** Decoded-payload view of a JWT — `exp`/`iss` only, no signature check (the
+ *  backend does that). Returns null when the token is unparseable. */
+function tokenClaims(token: string | null): { exp?: number; iss?: string } | null {
+  if (!token) return null;
   try {
     const part = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    const claims = JSON.parse(atob(part)) as { exp?: number };
-    if (typeof claims.exp !== "number") return true;
-    return claims.exp * 1000 <= Date.now() + 10_000;
+    return JSON.parse(atob(part)) as { exp?: number; iss?: string };
   } catch {
-    return true;
+    return null;
   }
+}
+
+/** True if the JWT is missing, unparseable, or within 10s of expiry.
+ *  This just stops us from reusing a token the server will reject. */
+function isTokenExpired(token: string | null): boolean {
+  const claims = tokenClaims(token);
+  if (!claims || typeof claims.exp !== "number") return true;
+  return claims.exp * 1000 <= Date.now() + 10_000;
 }
 
 /** The cached access token, or null if absent OR EXPIRED. An expired cached
@@ -55,9 +60,24 @@ export function getAccessToken(): string | null {
   }
 }
 
+// Sticky "the user has signed in here before" marker. Survives the token
+// itself being cleared on expiry, so the keep-alive knows a silent SSO
+// re-bootstrap is worth attempting (vs. spawning iframes for a visitor who
+// never signed in). Cleared only on explicit logout.
+const HAD_SESSION_KEY = "meet_had_session";
+
+function hadSession(): boolean {
+  try {
+    return localStorage.getItem(HAD_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function setAccessToken(token: string): void {
   try {
     localStorage.setItem(STORAGE_KEY, token);
+    localStorage.setItem(HAD_SESSION_KEY, "1");
   } catch {
     /* ignore */
   }
@@ -129,8 +149,11 @@ export function logoutFromOneWitysk(): Promise<{ ok: boolean }> {
       }
       clearAccessToken();
       try {
-        // Clear any ancillary keys we use, just in case.
+        // Clear any ancillary keys we use, just in case. HAD_SESSION_KEY
+        // goes too — an explicit logout means the keep-alive must NOT
+        // silently re-bootstrap a new session behind the user's back.
         localStorage.removeItem("refresh_token");
+        localStorage.removeItem(HAD_SESSION_KEY);
       } catch {
         /* ignore */
       }
@@ -301,7 +324,19 @@ let bootstrapInFlight: Promise<string | null> | null = null;
 export function bootstrapFromOneWitysk(): Promise<string | null> {
   const existing = getAccessToken();
   if (existing) return Promise.resolve(existing);
+  return forceBootstrapFromOneWitysk();
+}
 
+/**
+ * Like bootstrapFromOneWitysk, but SKIPS the cached-token short-circuit —
+ * always asks the one.witysk.org iframe for its current token. Two callers
+ * need this: the 401 retry in api.ts (our cached token was just rejected,
+ * so returning it again is useless) and the session keep-alive (which
+ * wants a fresher token than the one we hold). As a side effect every
+ * call touches one.witysk.org's own auth endpoint, which keeps the SSO
+ * refresh-cookie session warm too.
+ */
+export function forceBootstrapFromOneWitysk(): Promise<string | null> {
   if (bootstrapInFlight) return bootstrapInFlight;
 
   bootstrapInFlight = new Promise((resolve) => {
@@ -341,4 +376,109 @@ export function bootstrapFromOneWitysk(): Promise<string | null> {
   });
 
   return bootstrapInFlight;
+}
+
+// ---------------------------------------------------------------------------
+// Session keep-alive
+//
+// Why: an SSO access token can expire while the user sits on one screen for
+// hours (a long meeting is the canonical case). Media keeps flowing — the
+// LiveKit token is separate — but the next REST call (e.g. "Stop recording")
+// 401s. Worse, getAccessToken() clears the expired token, so that call went
+// out with NO Authorization header, whose 401 detail didn't match the retry
+// guard in api.ts. The keep-alive makes this a non-event by renewing the
+// token BEFORE it expires, on every screen, in or out of a meeting.
+// ---------------------------------------------------------------------------
+
+/** Raw stored token, even if already expired — the keep-alive needs to see
+ *  expired tokens (to know renewal is due) without the clearing side effect
+ *  of getAccessToken(). */
+function getStoredTokenAny(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Exchange the current (still-valid) token for a fresh meet-minted one via
+ *  POST /api/v1/auth/refresh. Works for native accounts and as an SSO
+ *  fallback when the one.witysk.org iframe is unavailable. Returns true on
+ *  success. Plain fetch — api.ts imports this module, not vice versa. */
+export async function refreshMeetSession(): Promise<boolean> {
+  const tok = getStoredTokenAny();
+  if (!tok) return false;
+  try {
+    const res = await fetch("/api/v1/auth/refresh", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tok}` },
+    });
+    if (!res.ok) return false;
+    const j = (await res.json()) as { access_token?: string };
+    if (j.access_token) {
+      setAccessToken(j.access_token);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+const KEEPALIVE_TICK_MS = 4 * 60_000; // check every 4 minutes
+const RENEW_MARGIN_MS = 15 * 60_000; // renew when < 15 minutes remain
+
+let keepAliveStarted = false;
+
+/**
+ * Start the app-wide session keep-alive. Call once at app boot; subsequent
+ * calls are no-ops. Every 4 minutes (plus on tab-visible and network-online
+ * transitions) it checks the stored token and renews it before expiry:
+ *
+ *   - one.witysk.org SSO token → force a fresh iframe bootstrap (also keeps
+ *     the SSO server session alive); backend /auth/refresh as fallback
+ *     while the old token is still valid.
+ *   - meet-native / meet-refreshed token → backend /auth/refresh.
+ *   - token already gone but the user had a session (expired + cleared) →
+ *     silent SSO re-bootstrap, so even a laptop waking from sleep recovers.
+ */
+export function startSessionKeepAlive(): void {
+  if (keepAliveStarted) return;
+  keepAliveStarted = true;
+
+  const tick = async (): Promise<void> => {
+    const tok = getStoredTokenAny();
+    if (!tok) {
+      // Nothing stored. If this browser had a session before, an SSO
+      // re-bootstrap may restore it silently (native logins can't be
+      // restored without credentials — those users see the login page).
+      if (hadSession()) await forceBootstrapFromOneWitysk();
+      return;
+    }
+    const claims = tokenClaims(tok);
+    if (!claims || typeof claims.exp !== "number") return;
+    const msLeft = claims.exp * 1000 - Date.now();
+    if (msLeft > RENEW_MARGIN_MS) return; // healthy — nothing to do
+
+    const meetMinted = claims.iss === "meet" || claims.iss === "meet-sso";
+    if (meetMinted) {
+      // Backend refresh needs the token to still be valid — do it first.
+      if (msLeft > 60_000 && (await refreshMeetSession())) return;
+      // meet-sso users are SSO users at heart: the iframe can restore them.
+      if (claims.iss === "meet-sso") await forceBootstrapFromOneWitysk();
+      return;
+    }
+    // Genuine one.witysk.org token: prefer a fresh SSO token (keeps the SSO
+    // session alive server-side); fall back to a meet-minted continuation
+    // while the current token is still accepted.
+    const fresh = await forceBootstrapFromOneWitysk();
+    if (!fresh && msLeft > 60_000) await refreshMeetSession();
+  };
+
+  window.setInterval(() => void tick(), KEEPALIVE_TICK_MS);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) void tick();
+  });
+  window.addEventListener("online", () => void tick());
+  void tick();
 }

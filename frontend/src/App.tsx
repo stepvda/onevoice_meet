@@ -28,7 +28,7 @@ const AdminPanel = lazy(() => import("./routes/AdminPanel"));
 const Upgrade = lazy(() => import("./routes/Upgrade"));
 const ForgotPassword = lazy(() => import("./routes/ForgotPassword"));
 const ResetPassword = lazy(() => import("./routes/ResetPassword"));
-import { bootstrapFromOneWitysk } from "./lib/auth";
+import { bootstrapFromOneWitysk, startSessionKeepAlive } from "./lib/auth";
 import { syncServerLanguage } from "./i18n";
 import { TICafeProvider } from "./lib/tiCafe";
 import { usePrivacyServerSync, usePrivacyClassNames } from "./lib/privacy";
@@ -49,6 +49,10 @@ export default function App() {
     let cancelled = false;
     (async () => {
       const tok = await bootstrapFromOneWitysk();
+      // Renew the session token before it expires, on every route — screen-
+      // independent by design: a token that dies mid-meeting takes the
+      // "Stop recording" button (and every other API call) down with it.
+      startSessionKeepAlive();
       if (cancelled || !tok) return;
       await syncServerLanguage();
     })();
