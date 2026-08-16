@@ -202,6 +202,31 @@ def _hls_egress_watchdog_job() -> None:
                         m.livestream_egress_id,
                         age,
                     )
+                    # A stale playlist usually means the handler died without
+                    # LiveKit noticing (container recreation, hard kill): the
+                    # egress stays registered as active, reconcile_egress sees
+                    # no transition to make, and the "restart" loops as a
+                    # no-op forever. Force-stop the registration (best-effort
+                    # — it is often already dead) and clear the pointer so
+                    # the reconcile below starts a genuinely new egress.
+                    try:
+                        from livekit import api as lkapi
+
+                        from app.livekit_client import livekit_api
+
+                        lk = livekit_api()
+                        try:
+                            await lk.egress.stop_egress(
+                                lkapi.StopEgressRequest(
+                                    egress_id=m.livestream_egress_id
+                                )
+                            )
+                        finally:
+                            await lk.aclose()
+                    except Exception:
+                        pass  # unknown/already-ended egress — that's the point
+                    m.livestream_egress_id = None
+                    db.commit()
                 try:
                     await reconcile_egress(
                         m,

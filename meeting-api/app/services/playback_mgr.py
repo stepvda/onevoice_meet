@@ -903,6 +903,29 @@ async def watchdog_check_stale_ingresses(db: Session) -> int:
                 continue
 
             if not stale_reason:
+                # The registration can LOOK healthy while its handler is
+                # long dead (e.g. the ingress container was recreated: the
+                # state freezes at BUFFERING/ACTIVE and no webhook ever
+                # fires). Ground truth is the room itself: a live playback
+                # ingress means a `playback` participant is connected. We
+                # are already past the grace period here, so absence means
+                # the handler is gone.
+                try:
+                    parts = await lk.room.list_participants(
+                        api.ListParticipantsRequest(room=m.room_name)
+                    )
+                    if not any(
+                        p.identity == PLAYBACK_IDENTITY
+                        for p in parts.participants
+                    ):
+                        stale_reason = "no_playback_participant"
+                except api.TwirpError:
+                    # Room does not exist → certainly no playback in it.
+                    stale_reason = "room_gone"
+                except Exception:
+                    pass  # transient lookup failure — try again next tick
+
+            if not stale_reason:
                 continue
 
             log.warning(
