@@ -131,6 +131,10 @@ export default function EgressLayoutPiP() {
   // Tracks for the layout-specific extras. `speaker` populates this with
   // every non-main cam; `grid` populates it with every cam + screenshare.
   const [extraTracks, setExtraTracks] = useState<RemoteVideoTrack[]>([]);
+  // Grid-only: participants with no live (un-muted) video track still get
+  // a tile — a name placeholder — so everyone in the room is visible in
+  // the recording, not just the camera publishers.
+  const [placeholders, setPlaceholders] = useState<{ identity: string; name: string }[]>([]);
   const [status, setStatus] = useState<"connecting" | "connected" | "error">("connecting");
 
   useEffect(() => {
@@ -283,6 +287,10 @@ export default function EgressLayoutPiP() {
         p.videoTrackPublications.forEach((pub) => {
           const t = pub.videoTrack as RemoteVideoTrack | undefined;
           if (!t) return;
+          // A muted camera renders as a frozen/black rectangle — worse
+          // than no tile. Skip it here; pickPlaceholders gives that
+          // participant a name tile instead.
+          if (pub.isMuted) return;
           const sid = t.sid;
           if (!sid || seen.has(sid)) return;
           if (eff === "grid") {
@@ -299,6 +307,29 @@ export default function EgressLayoutPiP() {
             out.push(t);
           }
         });
+      });
+      return out;
+    }
+
+    function pickPlaceholders(): { identity: string; name: string }[] {
+      // Grid only: every real participant with no live video gets a name
+      // tile. Camera muted, camera hardware dead, audio-only join — all
+      // land here. Composite/compositor bots stay invisible as before.
+      if (isCompositeMain(pickMain())) return [];
+      const out: { identity: string; name: string }[] = [];
+      room.remoteParticipants.forEach((p) => {
+        if (p.identity.startsWith("composite-")) return;
+        let hasLiveVideo = false;
+        p.videoTrackPublications.forEach((pub) => {
+          if (
+            pub.videoTrack &&
+            !pub.isMuted &&
+            (pub.source === Track.Source.Camera || pub.source === Track.Source.ScreenShare)
+          ) {
+            hasLiveVideo = true;
+          }
+        });
+        if (!hasLiveVideo) out.push({ identity: p.identity, name: p.name || p.identity });
       });
       return out;
     }
@@ -420,6 +451,17 @@ export default function EgressLayoutPiP() {
           return cur;
         });
       }
+
+      // Name placeholders only make sense in the equal-tile grid; the
+      // speaker strip and single-speaker layouts stay video-only.
+      const nextPh = eff === "grid" ? pickPlaceholders() : [];
+      setPlaceholders((cur) => {
+        if (cur.length !== nextPh.length) return nextPh;
+        for (let i = 0; i < cur.length; i++) {
+          if (cur[i].identity !== nextPh[i].identity || cur[i].name !== nextPh[i].name) return nextPh;
+        }
+        return cur;
+      });
     }
 
     function attachAudio(track: RemoteTrack) {
@@ -464,6 +506,10 @@ export default function EgressLayoutPiP() {
 
     room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
     room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+    // Mute state drives the tile-vs-placeholder split in grid mode, so a
+    // camera toggling must re-pick immediately (not on the 2 s tick).
+    room.on(RoomEvent.TrackMuted, refresh);
+    room.on(RoomEvent.TrackUnmuted, refresh);
     room.on(RoomEvent.ActiveSpeakersChanged, refresh);
     room.on(RoomEvent.ParticipantConnected, refresh);
     room.on(RoomEvent.ParticipantDisconnected, refresh);
@@ -547,8 +593,10 @@ export default function EgressLayoutPiP() {
   // filling it.
   const isSpeaker = effectiveRenderLayout === "speaker";
   const mainHeightPct = isSpeaker ? "78%" : "100%";
-  const cols = gridColumns(extraTracks.length);
-  const rows = Math.max(1, Math.ceil(extraTracks.length / Math.max(1, cols)));
+  // Grid shape counts BOTH video tiles and name placeholders.
+  const tileCount = extraTracks.length + placeholders.length;
+  const cols = gridColumns(tileCount);
+  const rows = Math.max(1, Math.ceil(tileCount / Math.max(1, cols)));
 
   return (
     <div
@@ -647,7 +695,65 @@ export default function EgressLayoutPiP() {
           }}
         >
           {extraTracks.map((t) => (
-            <VideoTile key={t.sid} track={t} style={{ borderRadius: 6 }} />
+            // minWidth/minHeight: 0 is load-bearing: a bare <video> grid
+            // item's min-content size is the stream's intrinsic height
+            // (e.g. 480px for a 4:3 webcam), and 1fr tracks refuse to
+            // shrink below it — with 2 rows on a 720p canvas the bottom
+            // row overflows the frame and gets cut off in the recording.
+            <div
+              key={t.sid}
+              style={{ minWidth: 0, minHeight: 0, overflow: "hidden", borderRadius: 6 }}
+            >
+              <VideoTile track={t} />
+            </div>
+          ))}
+          {placeholders.map((ph) => (
+            <div
+              key={`ph-${ph.identity}`}
+              style={{
+                minWidth: 0,
+                minHeight: 0,
+                overflow: "hidden",
+                borderRadius: 6,
+                background: "#1a2030",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: "clamp(48px, 18%, 96px)",
+                  aspectRatio: "1",
+                  borderRadius: "50%",
+                  background: "#31405e",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "clamp(20px, 5vw, 42px)",
+                  color: "#dfe6f3",
+                  fontFamily: "sans-serif",
+                  fontWeight: 600,
+                }}
+              >
+                {ph.name.trim().charAt(0).toUpperCase() || "?"}
+              </div>
+              <div
+                style={{
+                  color: "#dfe6f3",
+                  fontFamily: "sans-serif",
+                  fontSize: "clamp(13px, 2vw, 20px)",
+                  maxWidth: "90%",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {ph.name}
+              </div>
+            </div>
           ))}
         </div>
       )}
