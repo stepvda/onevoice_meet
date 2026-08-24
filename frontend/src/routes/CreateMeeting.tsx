@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ImagePlus, Video, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
-import { bootstrapFromOneWitysk, fetchOneWityskName, isAuthenticated } from "../lib/auth";
+import { bootstrapFromOneWitysk, fetchOneWityskMe, fetchOneWityskName, isAuthenticated } from "../lib/auth";
 import { useMe } from "../lib/me";
 import { usePreferences } from "../lib/preferences";
 import { Button, Card, Field, Input, Label, Toggle } from "../components/ui";
@@ -115,6 +115,28 @@ export default function CreateMeeting() {
     };
   }, [authState]);
 
+  // Signed-in greeting. Name resolution mirrors the lobby prefill: meet's
+  // own /v1/me first (instant once the SSO row has a snapshot), then the
+  // one.witysk.org profile (cached bootstrap handoff / proxied fetch).
+  // Rendered only once a name is actually known — never "Welcome null".
+  const [welcomeName, setWelcomeName] = useState<string | null>(null);
+  useEffect(() => {
+    if (authState !== "authenticated") return;
+    const direct = me?.name || me?.username;
+    if (direct) {
+      setWelcomeName(direct);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const w = await fetchOneWityskMe();
+      if (!cancelled && w) setWelcomeName(w.name || w.username || null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [me, authState]);
+
   if (authState === "bootstrapping") {
     return (
       <div className="p-4 lg:p-8 max-w-4xl mx-auto flex flex-col gap-6">
@@ -208,6 +230,11 @@ export default function CreateMeeting() {
 
   return (
     <div className="p-4 lg:p-8 max-w-4xl mx-auto flex flex-col gap-6">
+      {welcomeName && (
+        <p data-testid="home-welcome" className="text-lg font-semibold text-slate-100 -mb-3">
+          {t("home.welcome", { name: welcomeName, defaultValue: "Welcome {{name}}" })}
+        </p>
+      )}
       <HomeDescription />
       <MyMeetings refreshKey={busy ? 0 : 1} />
       <DiscoverableMeetings />
