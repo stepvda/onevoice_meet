@@ -377,18 +377,25 @@ export default function Lobby() {
         )}
 
         <form onSubmit={join} className="flex flex-col gap-4">
+          {/* The name field shows for owners too: when the browser can't
+              fetch the preferred name from one.witysk.org (session/CORS
+              hiccups), this pre-filled — or hand-typed — value is the only
+              name source, and the backend snapshots it for future joins.
+              Owners used to skip it entirely and rendered as "User <sub>". */}
+          {!waitToken && (
+            <Field id="lobby-name" label={t("lobby.yourName")}>
+              <Input
+                id="lobby-name"
+                data-testid="lobby-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                maxLength={80}
+              />
+            </Field>
+          )}
           {!isOwner && !waitToken && (
             <>
-              <Field id="lobby-name" label={t("lobby.yourName")}>
-                <Input
-                  id="lobby-name"
-                  data-testid="lobby-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  maxLength={80}
-                />
-              </Field>
               <Field id="lobby-email" label={t("lobby.emailOptional")}>
                 <Input
                   id="lobby-email"
@@ -411,7 +418,7 @@ export default function Lobby() {
           {!waitToken && (
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-3">
-              <Button type="submit" disabled={busy || (!isOwner && !name)} data-testid="lobby-submit">
+              <Button type="submit" disabled={busy || !name.trim()} data-testid="lobby-submit">
                 {busy ? t("lobby.joining") : t("lobby.join")}
               </Button>
               <Button
