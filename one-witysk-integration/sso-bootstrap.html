@@ -215,14 +215,14 @@
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str))
       .then(function (d) { return _b64u(new Uint8Array(d)); });
   }
-  function signMeProof(token) {
+  function signGetProof(path, token) {
     return Promise.all([_idbGetKey(), _sha256b64u(token)]).then(function (rs) {
       var rec = rs[0], ath = rs[1];
       if (!rec || !rec.privateKey || !rec.publicJwk) return null;
       var header = { typ: "dpop+jwt", alg: "ES256", jwk: rec.publicJwk };
       var payload = {
         jti: _uuid(), htm: "GET",
-        htu: _normalizeHtu(window.location.origin + "/api/auth/me"),
+        htu: _normalizeHtu(window.location.origin + path),
         iat: Math.floor(Date.now() / 1000),
         ath: ath,
       };
@@ -233,25 +233,50 @@
       ).then(function (sig) { return signingInput + "." + _b64u(new Uint8Array(sig)); });
     }).catch(function () { return null; });
   }
+  // Same-origin GET with escalating auth: DPoP+Bearer (bound session), then
+  // Bearer-only (unbound), then cookie-only (like /api/auth/logout). Returns
+  // { status, json } — status 0 means we never got a response at all.
+  function proxiedFetch(path) {
+    return getFreshSnapshot().then(function (snap) {
+      var token = snap.access_token;
+      function attempt(headers) {
+        return fetch(path, { headers: headers, credentials: "include" })
+          .then(function (r) {
+            return r.json().catch(function () { return null; }).then(function (j) {
+              return { status: r.status, ok: r.ok, json: j };
+            });
+          })
+          .catch(function () { return null; });
+      }
+      function seq(attempts, last) {
+        if (!attempts.length) return Promise.resolve(last);
+        return attempts[0]().then(function (r) {
+          if (r && r.ok) return r;
+          return seq(attempts.slice(1), r || last);
+        });
+      }
+      var chain = [];
+      if (token) {
+        chain.push(function () {
+          return signGetProof(path, token).then(function (dpop) {
+            var h = { "Authorization": "Bearer " + token };
+            if (dpop) h["DPoP"] = dpop;
+            return attempt(h);
+          });
+        });
+        chain.push(function () { return attempt({ "Authorization": "Bearer " + token }); });
+      }
+      chain.push(function () { return attempt({}); });
+      return seq(chain, null);
+    }).then(function (r) {
+      return { status: r ? r.status : 0, json: r ? r.json : null };
+    }).catch(function () { return { status: 0, json: null }; });
+  }
   function fetchProfile(token) {
     if (!token) return Promise.resolve(null);
-    function attempt(headers) {
-      return fetch("/api/auth/me", { headers: headers, credentials: "include" })
-        .then(function (r) { return r.ok ? r.json().catch(function () { return null; }) : null; })
-        .catch(function () { return null; });
-    }
-    var work = signMeProof(token).then(function (dpop) {
-      var h = { "Authorization": "Bearer " + token };
-      if (dpop) h["DPoP"] = dpop;
-      return attempt(h);
-    }).then(function (j) {
-      if (j) return j;
-      return attempt({ "Authorization": "Bearer " + token }); // unbound session
-    }).then(function (j) {
-      if (j) return j;
-      return attempt({}); // cookie-first fallback (like /api/auth/logout)
-    }).then(function (j) {
-      if (!j || typeof j !== "object") return null;
+    var work = proxiedFetch("/api/auth/me").then(function (r) {
+      var j = r.json;
+      if (!r.status || r.status >= 400 || !j || typeof j !== "object") return null;
       return {
         name: typeof j.name === "string" ? j.name : null,
         username: typeof j.username === "string" ? j.username : null,
@@ -301,6 +326,30 @@
     // Polling: parent asks us to re-send a fresh token.
     if (ev.data.type === "witysk-sso-request") {
       snapshotWithProfile().then(function (payload) { send(ev.origin, payload); });
+      return;
+    }
+
+    // Same-origin fetch proxy: DPoP-bound sessions reject the parent's own
+    // cross-origin calls, so it asks us to perform an ALLOWLISTED GET here
+    // (profile + admin user lookups for meet's admin panel). The backend
+    // still authorises every call against THIS session's signed-in user, so
+    // the proxy grants the parent nothing that user couldn't already do —
+    // e.g. /api/admin/users/N still 403s for non-admins. Only exact-match
+    // paths below are ever fetched; anything else is refused unfetched.
+    if (ev.data.type === "witysk-sso-fetch") {
+      var reqId = typeof ev.data.id === "string" ? ev.data.id : null;
+      var path = typeof ev.data.path === "string" ? ev.data.path : "";
+      if (!reqId) return;
+      var allowed =
+        path === "/api/auth/me" ||
+        /^\/api\/admin\/users\/\d{1,12}$/.test(path);
+      if (!allowed) {
+        send(ev.origin, { fetch_id: reqId, fetch_status: 0, fetch_json: null });
+        return;
+      }
+      proxiedFetch(path).then(function (r) {
+        send(ev.origin, { fetch_id: reqId, fetch_status: r.status, fetch_json: r.json });
+      });
       return;
     }
 

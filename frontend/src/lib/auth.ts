@@ -238,17 +238,26 @@ export interface OneWityskUserDetail {
  */
 export async function fetchOneWityskUser(userId: number | string): Promise<OneWityskUserDetail | null> {
   const tok = getAccessToken();
-  if (!tok) return null;
-  try {
-    const res = await fetch(`${ONE_WITYSK}/api/admin/users/${encodeURIComponent(String(userId))}`, {
-      headers: { Authorization: `Bearer ${tok}` },
-      credentials: "omit",
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as OneWityskUserDetail;
-  } catch {
+  const idPart = encodeURIComponent(String(userId));
+  if (tok) {
+    try {
+      const res = await fetch(`${ONE_WITYSK}/api/admin/users/${idPart}`, {
+        headers: { Authorization: `Bearer ${tok}` },
+        credentials: "omit",
+      });
+      if (res.ok) return (await res.json()) as OneWityskUserDetail;
+    } catch {
+      /* fall through to the proxy */
+    }
+  }
+  // Direct call rejected — normal for DPoP-bound sessions. Route the lookup
+  // through the sso-bootstrap iframe, which performs it same-origin. A 401/
+  // 403/404 there means what it always did (not an admin / user gone) → null.
+  const proxied = await wityskProxyFetch(`/api/admin/users/${idPart}`);
+  if (!proxied || proxied.status !== 200 || !proxied.json || typeof proxied.json !== "object") {
     return null;
   }
+  return proxied.json as OneWityskUserDetail;
 }
 
 /**
@@ -355,6 +364,100 @@ export async function fetchOneWityskMe(): Promise<OneWityskMe | null> {
   } catch {
     return cachedProfileOrBootstrap();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Same-origin fetch proxy via the sso-bootstrap iframe
+//
+// DPoP-bound one.witysk.org sessions reject meet's cross-origin API calls
+// outright (the proof key is non-extractable in one.witysk.org's IndexedDB).
+// The bootstrap page accepts `witysk-sso-fetch` messages and performs an
+// allowlisted GET same-origin — where it CAN sign the proof — then posts the
+// result back. One hidden iframe is kept mounted and shared by all requests.
+// ---------------------------------------------------------------------------
+
+type ProxyResult = { status: number; json: unknown } | null;
+
+let proxyFrame: HTMLIFrameElement | null = null;
+let proxyReady: Promise<void> | null = null;
+const pendingProxy = new Map<string, (r: ProxyResult) => void>();
+
+function onProxyMessage(ev: MessageEvent): void {
+  if (ev.origin !== ONE_WITYSK) return;
+  if (!ev.data || typeof ev.data !== "object") return;
+  const d = ev.data as {
+    type?: string;
+    fetch_id?: string;
+    fetch_status?: number;
+    fetch_json?: unknown;
+    name?: string | null;
+    username?: string | null;
+    email?: string | null;
+  };
+  if (d.type !== "witysk-sso") return;
+  // The frame's on-load snapshot rides the same channel — harvest the
+  // profile piggyback here too so mounting the proxy doubles as a
+  // profile bootstrap.
+  if (d.name || d.username || d.email) {
+    cacheWityskProfile({
+      name: d.name ?? null,
+      username: d.username ?? null,
+      email: d.email ?? null,
+    });
+  }
+  if (typeof d.fetch_id !== "string") return;
+  const cb = pendingProxy.get(d.fetch_id);
+  if (cb) {
+    pendingProxy.delete(d.fetch_id);
+    cb({ status: d.fetch_status ?? 0, json: d.fetch_json ?? null });
+  }
+}
+
+function ensureProxyFrame(): Promise<void> {
+  if (proxyReady) return proxyReady;
+  proxyReady = new Promise((resolve) => {
+    window.addEventListener("message", onProxyMessage);
+    const iframe = document.createElement("iframe");
+    iframe.src = `${ONE_WITYSK}/sso-bootstrap.html`;
+    iframe.style.display = "none";
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.setAttribute("title", "SSO proxy");
+    iframe.addEventListener("load", () => resolve());
+    document.body.appendChild(iframe);
+    proxyFrame = iframe;
+    // Resolve regardless after a bound wait — individual requests carry
+    // their own timeout, so a stuck load degrades to nulls, not a hang.
+    window.setTimeout(() => resolve(), 4000);
+  });
+  return proxyReady;
+}
+
+/** Perform an allowlisted GET on one.witysk.org through the bootstrap
+ *  iframe. Returns null on refusal/timeout; otherwise the HTTP status and
+ *  parsed JSON body. Older deployed bootstrap builds ignore the message —
+ *  that surfaces as a timeout, so callers degrade exactly as before. */
+export async function wityskProxyFetch(path: string, timeoutMs = 6000): Promise<ProxyResult> {
+  await ensureProxyFrame();
+  const target = proxyFrame?.contentWindow;
+  if (!target) return null;
+  const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  return new Promise((resolve) => {
+    const timer = window.setTimeout(() => {
+      pendingProxy.delete(id);
+      resolve(null);
+    }, timeoutMs);
+    pendingProxy.set(id, (r) => {
+      window.clearTimeout(timer);
+      resolve(r);
+    });
+    try {
+      target.postMessage({ type: "witysk-sso-fetch", id, path }, ONE_WITYSK);
+    } catch {
+      pendingProxy.delete(id);
+      window.clearTimeout(timer);
+      resolve(null);
+    }
+  });
 }
 
 let bootstrapInFlight: Promise<string | null> | null = null;

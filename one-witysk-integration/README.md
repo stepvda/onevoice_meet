@@ -90,3 +90,13 @@ the original deployment. The page is maintained in the onevoice repo as
 well — keep the two in sync (this version was built on top of the deployed
 build fetched 2026-08-24, which added token refresh + DPoP; the previous
 copy in this directory predated both).
+
+## Fetch proxy (2026-08-24, same deploy)
+
+The page also accepts `witysk-sso-fetch` messages from allowed parents and
+performs an ALLOWLISTED same-origin GET on their behalf (`/api/auth/me`,
+`/api/admin/users/<id>`), replying with `{fetch_id, fetch_status,
+fetch_json}`. This restores meet's admin-panel SSO user enrichment, which
+DPoP binding had broken the same way as the name fetch. Authorisation is
+unchanged: the backend checks the signed-in session's rights on every call
+(non-admins still get 403), so the proxy adds no capability the user lacks.
