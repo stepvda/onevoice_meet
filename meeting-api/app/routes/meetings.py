@@ -1184,10 +1184,23 @@ def mint_owner_token(
     if not m.is_active:
         raise HTTPException(status_code=403, detail="meeting closed")
     is_real_owner = m.owner_user_id == user.sub
-    if body and body.display_name and is_real_owner:
-        m.owner_name = body.display_name
-        db.commit()
     identity = f"user-{user.sub}"
+    body_name = (body.display_name.strip() if body and body.display_name else "") or None
+    db_user = db.get(User, user.user_id)
+    dirty = False
+    if body_name and is_real_owner and m.owner_name != body_name:
+        m.owner_name = body_name
+        dirty = True
+    # Snapshot the name onto the SSO shell row too. SSO users are auto-
+    # provisioned with name/username NULL and PATCH /v1/me is blocked for
+    # them, so without this snapshot the User-row fallback below can never
+    # fire for SSO users and a single failed browser→one.witysk.org name
+    # fetch degrades them to the "User <sub>" placeholder.
+    if body_name and db_user is not None and db_user.kind == "sso" and db_user.name != body_name:
+        db_user.name = body_name
+        dirty = True
+    if dirty:
+        db.commit()
     # **NEVER** fall back to `user.email` here. This value is passed
     # to LiveKit `participant.name`, which is rendered on every
     # viewer's tile + the participants panel + chat — leaking the
@@ -1195,16 +1208,17 @@ def mint_owner_token(
     # anonymous joiners and public viewers).
     #
     # Priority instead:
-    #   1. The owner-specified display name stored on the meeting
-    #      (owners only; cohosts don't write to `owner_name`).
-    #   2. The User row's own `name` / `username` field (covers SSO
-    #      users who set a name on one.witysk.org as well as native
-    #      meet accounts).
-    #   3. A generic `User <sub>` placeholder.
-    db_user = db.get(User, user.user_id)
+    #   1. The display name the SPA sent with this mint — for owners
+    #      AND cohosts (cohosts used to be ignored here, so an SSO
+    #      cohost always rendered as "User <sub>").
+    #   2. The owner-name snapshot stored on the meeting (owners only).
+    #   3. The User row's own `name` / `username` field (the SSO
+    #      snapshot written above, or a native account's profile).
+    #   4. A generic `User <sub>` placeholder.
     fallback_name = (db_user.name or db_user.username) if db_user else None
     display_name = (
-        (m.owner_name if is_real_owner else None)
+        body_name
+        or (m.owner_name if is_real_owner else None)
         or fallback_name
         or f"User {user.sub}"
     )

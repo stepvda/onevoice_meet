@@ -210,9 +210,14 @@ export default function Lobby() {
     // post-connect getUserMedia call lands on an already-warm device.
     prewarmMedia();
     try {
+      // Moderator display name: prefer the lobby field (pre-filled from
+      // one.witysk.org / meet's own /v1/me, and editable by cohosts), then a
+      // fresh one.witysk.org fetch. Without the field fallback, one failed
+      // fetch used to send null and the backend rendered "User <sub>".
+      const modName = async () => name.trim() || (await fetchOneWityskName());
       if (isOwner) {
         try {
-          const resp = await api.ownerToken(ownerMeetingId!, { display_name: await fetchOneWityskName() });
+          const resp = await api.ownerToken(ownerMeetingId!, { display_name: await modName() });
           sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp));
           // Mark this session as moderator so Room.tsx exposes host controls.
           sessionStorage.setItem(`role:${roomName}`, resp.role ?? "owner");
@@ -243,7 +248,7 @@ export default function Lobby() {
           const role = await api.myRoleInRoom(roomName);
           if (role.role === "cohost" || role.role === "owner") {
             const resp = await api.ownerToken(role.meeting_id, {
-              display_name: await fetchOneWityskName(),
+              display_name: await modName(),
             });
             sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp));
             sessionStorage.setItem(`role:${roomName}`, resp.role ?? role.role);
