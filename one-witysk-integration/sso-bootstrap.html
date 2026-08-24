@@ -9,12 +9,24 @@
 <body>
 <!--
   Loaded as a hidden iframe by witysk.org subdomains (e.g. meet.witysk.org).
-  It can do two things on behalf of the parent:
+  It can do three things on behalf of the parent:
 
-    1. SSO bootstrap — read this origin's localStorage tokens and post them
-       back to the parent so it can sign in without a separate login.
+    1. SSO bootstrap — read this origin's access token and post it back to
+       the parent so it can sign in without a separate login. If the stored
+       access_token is expired/missing, we REFRESH it here first (this page
+       runs on one.witysk.org and can reach the httpOnly refresh cookie via
+       POST /api/auth/refresh) so the parent always receives a FRESH token —
+       even when no one.witysk.org tab is open to keep it warm.
 
-    2. SSO logout — accept a logout request from the parent, call
+    2. Profile handoff — piggyback the signed-in user's display name /
+       username / email on the token message. Needed because DPoP-BOUND
+       sessions reject cross-origin resource calls (the parent origin cannot
+       sign a proof — the key is non-extractable in THIS origin's IndexedDB),
+       so meet.witysk.org cannot call /api/auth/me itself. Best-effort: on
+       any failure the token is sent without profile fields, exactly like
+       older builds of this page.
+
+    3. SSO logout — accept a logout request from the parent, call
        /api/auth/logout (server-side session invalidation), clear this
        origin's localStorage, and confirm.
 
@@ -28,77 +40,290 @@
     // add more trusted witysk.org subdomains here if needed
   ];
 
-  function read() {
+  // Shared with the SPA's TokenManager (same lock name, same origin) so a
+  // refresh here is SERIALISED with the SPA's own refresh — never a concurrent
+  // rotation that would trip the backend's refresh-token-reuse revoke.
+  var REFRESH_LOCK = "onevoice_token_refresh";
+
+  // §2.1: the access token is held ONLY in this in-memory variable — never in
+  // localStorage — so an XSS payload on one.witysk.org cannot lift a persistent,
+  // long-lived credential. The token still comes from the httpOnly refresh cookie
+  // (doRefresh) and is handed to meet via postMessage exactly as before; the only
+  // change is that it is no longer persisted, so each fresh iframe load refreshes
+  // once (serialised under REFRESH_LOCK) instead of reading a cached copy.
+  var _mem = null;
+  // Purge any credential left in localStorage by an earlier build so existing
+  // sessions stop leaking it the moment this page loads.
+  try { localStorage.removeItem("access_token"); localStorage.removeItem("refresh_token"); } catch (e) {}
+
+  function readAccess() {
+    return _mem;
+  }
+
+  // True if the token is missing, unparseable, or within 10s of expiry.
+  function isExpired(tok) {
+    if (!tok) return true;
     try {
-      return {
-        access_token: localStorage.getItem("access_token"),
-        refresh_token: localStorage.getItem("refresh_token")
-      };
+      var part = tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      var claims = JSON.parse(atob(part));
+      if (!claims || typeof claims.exp !== "number") return true;
+      return (claims.exp * 1000) <= (Date.now() + 10000);
     } catch (e) {
-      return { access_token: null, refresh_token: null };
+      return true;
     }
   }
 
+  // --- web-DPoP proof for the refresh -------------------------------------
+  // A DPoP-BOUND web session's /api/auth/refresh REQUIRES a proof or the backend
+  // rejects it (401 dpop_refresh_required), leaving this page with no token and
+  // breaking meet SSO. This page runs on the one.witysk.org origin, so it can read
+  // the SAME non-extractable key the SPA stores (IndexedDB db `ov-dpop`, store
+  // `keys`, record `current`) and sign the (ath-less) refresh proof itself. Mirrors
+  // services/dpop.js exactly (typ=dpop+jwt, ES256, raw r||s sig, _normalize_htu).
+  // Best-effort: an UNBOUND browser has no key, so we send no proof and refresh as
+  // before.
+  function _b64u(bytes) {
+    var bin = "";
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function _b64uJson(o) { return _b64u(new TextEncoder().encode(JSON.stringify(o))); }
+  function _uuid() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    var b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    var h = []; for (var i = 0; i < 16; i++) h.push(("0" + b[i].toString(16)).slice(-2));
+    return h[0]+h[1]+h[2]+h[3]+"-"+h[4]+h[5]+"-"+h[6]+h[7]+"-"+h[8]+h[9]+"-"+h[10]+h[11]+h[12]+h[13]+h[14]+h[15];
+  }
+  function _normalizeHtu(raw) {
+    var uri = String(raw || "").split("#")[0].split("?")[0];
+    var sep = uri.indexOf("://");
+    if (sep === -1) return uri.trim().toLowerCase();
+    var scheme = uri.slice(0, sep).trim().toLowerCase();
+    var rest = uri.slice(sep + 3);
+    var slash = rest.indexOf("/");
+    var authority = (slash !== -1 ? rest.slice(0, slash) : rest).trim().toLowerCase();
+    var path = slash !== -1 ? rest.slice(slash) : "";
+    if (scheme === "https" && authority.slice(-4) === ":443") authority = authority.slice(0, -4);
+    else if (scheme === "http" && authority.slice(-3) === ":80") authority = authority.slice(0, -3);
+    return scheme + "://" + authority + path;
+  }
+  function _idbGetKey() {
+    return new Promise(function (resolve) {
+      var req;
+      try { req = indexedDB.open("ov-dpop", 1); } catch (e) { resolve(null); return; }
+      req.onupgradeneeded = function () {
+        var db = req.result;
+        if (!db.objectStoreNames.contains("keys")) db.createObjectStore("keys", { keyPath: "id" });
+      };
+      req.onerror = function () { resolve(null); };
+      req.onsuccess = function () {
+        var db = req.result;
+        try {
+          var g = db.transaction("keys", "readonly").objectStore("keys").get("current");
+          g.onsuccess = function () { resolve(g.result || null); try { db.close(); } catch (e) {} };
+          g.onerror = function () { resolve(null); try { db.close(); } catch (e) {} };
+        } catch (e) { resolve(null); try { db.close(); } catch (e2) {} }
+      };
+    });
+  }
+  function signRefreshProof() {
+    return _idbGetKey().then(function (rec) {
+      if (!rec || !rec.privateKey || !rec.publicJwk) return null;
+      var header = { typ: "dpop+jwt", alg: "ES256", jwk: rec.publicJwk };
+      var payload = {
+        jti: _uuid(), htm: "POST",
+        htu: _normalizeHtu(window.location.origin + "/api/auth/refresh"),
+        iat: Math.floor(Date.now() / 1000),
+      };
+      var signingInput = _b64uJson(header) + "." + _b64uJson(payload);
+      return crypto.subtle.sign(
+        { name: "ECDSA", hash: "SHA-256" }, rec.privateKey,
+        new TextEncoder().encode(signingInput)
+      ).then(function (sig) { return signingInput + "." + _b64u(new Uint8Array(sig)); });
+    }).catch(function () { return null; });
+  }
+
+  // A bound session's refresh needs a DPoP proof, or the backend soft-rejects
+  // it (401 dpop_refresh_required, NOT revoked — see auth_service.py's
+  // REFRESH_DPOP_WEB_REJECT comment: "the legit client reloads its key and
+  // retries"). This page is a fresh document on every load (no warm module
+  // cache like the SPA's TokenManager has), so a cold/racy first IndexedDB
+  // read is the COMMON case here, not a rare flap. Mirror TokenManager.js's
+  // _fetchAndApplyRefresh retry-once so a transient miss doesn't leave meet
+  // with no token until the user manually reloads.
+  function doRefresh(_retried) {
+    return signRefreshProof().then(function (dpop) {
+      var headers = { "Content-Type": "application/json" };
+      if (dpop) headers["DPoP"] = dpop;
+      return fetch("/api/auth/refresh", {
+        method: "POST",
+        headers: headers,
+        body: "{}",
+        credentials: "include",
+      });
+    }).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (j) {
+        if (r.ok && j && j.access_token) {
+          _mem = j.access_token;   // in-memory only — never persisted (§2.1)
+          return _mem;
+        }
+        if (!_retried && r.status === 401 && j && j.detail === "dpop_refresh_required") {
+          return doRefresh(true);
+        }
+        return null;
+      });
+    }).catch(function () { return null; });
+  }
+
+  // Resolve to a fresh access_token snapshot. Fast path: a still-valid stored
+  // token is returned immediately. Slow path: refresh under the shared web lock.
+  function getFreshSnapshot() {
+    var tok = readAccess();
+    if (!isExpired(tok)) return Promise.resolve({ access_token: tok, refresh_token: null });
+
+    function refreshFlow() {
+      // Re-check under the lock — the SPA may have just refreshed it.
+      var t2 = readAccess();
+      if (!isExpired(t2)) return Promise.resolve(t2);
+      return doRefresh();
+    }
+
+    var refreshed;
+    if (navigator.locks && navigator.locks.request) {
+      // Bound the wait so a stuck lock can't hang the handoff.
+      var ac = new AbortController();
+      var timer = setTimeout(function () { try { ac.abort(); } catch (e) {} }, 2500);
+      refreshed = navigator.locks
+        .request(REFRESH_LOCK, { signal: ac.signal }, refreshFlow)
+        .then(function (t) { clearTimeout(timer); return t; })
+        .catch(function () { clearTimeout(timer); return doRefresh(); }); // lock aborted -> best-effort
+    } else {
+      refreshed = refreshFlow();
+    }
+    return refreshed.then(function (t) {
+      return { access_token: t || readAccess(), refresh_token: null };
+    });
+  }
+
+  // --- profile handoff -----------------------------------------------------
+  // Fetch /api/auth/me SAME-ORIGIN so DPoP-bound sessions still work (a
+  // resource proof needs `ath` = b64u(sha256(access_token)); RFC 9449 §4.3).
+  // Escalating fallbacks cover unbound sessions and cookie-first setups.
+  // Never throws, never delays the token handoff more than 1200 ms.
+  function _sha256b64u(str) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str))
+      .then(function (d) { return _b64u(new Uint8Array(d)); });
+  }
+  function signMeProof(token) {
+    return Promise.all([_idbGetKey(), _sha256b64u(token)]).then(function (rs) {
+      var rec = rs[0], ath = rs[1];
+      if (!rec || !rec.privateKey || !rec.publicJwk) return null;
+      var header = { typ: "dpop+jwt", alg: "ES256", jwk: rec.publicJwk };
+      var payload = {
+        jti: _uuid(), htm: "GET",
+        htu: _normalizeHtu(window.location.origin + "/api/auth/me"),
+        iat: Math.floor(Date.now() / 1000),
+        ath: ath,
+      };
+      var signingInput = _b64uJson(header) + "." + _b64uJson(payload);
+      return crypto.subtle.sign(
+        { name: "ECDSA", hash: "SHA-256" }, rec.privateKey,
+        new TextEncoder().encode(signingInput)
+      ).then(function (sig) { return signingInput + "." + _b64u(new Uint8Array(sig)); });
+    }).catch(function () { return null; });
+  }
+  function fetchProfile(token) {
+    if (!token) return Promise.resolve(null);
+    function attempt(headers) {
+      return fetch("/api/auth/me", { headers: headers, credentials: "include" })
+        .then(function (r) { return r.ok ? r.json().catch(function () { return null; }) : null; })
+        .catch(function () { return null; });
+    }
+    var work = signMeProof(token).then(function (dpop) {
+      var h = { "Authorization": "Bearer " + token };
+      if (dpop) h["DPoP"] = dpop;
+      return attempt(h);
+    }).then(function (j) {
+      if (j) return j;
+      return attempt({ "Authorization": "Bearer " + token }); // unbound session
+    }).then(function (j) {
+      if (j) return j;
+      return attempt({}); // cookie-first fallback (like /api/auth/logout)
+    }).then(function (j) {
+      if (!j || typeof j !== "object") return null;
+      return {
+        name: typeof j.name === "string" ? j.name : null,
+        username: typeof j.username === "string" ? j.username : null,
+        email: typeof j.email === "string" ? j.email : null,
+      };
+    }).catch(function () { return null; });
+    // The parent only waits ~4 s for the whole handoff — cap the profile
+    // detour so a slow /api/auth/me can never cost meet the token itself.
+    return Promise.race([
+      work,
+      new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 1200); }),
+    ]);
+  }
+  function snapshotWithProfile() {
+    return getFreshSnapshot().then(function (snap) {
+      return fetchProfile(snap.access_token).then(function (profile) {
+        return Object.assign({}, snap, profile || {});
+      });
+    });
+  }
+
+  function send(origin, payload) {
+    try {
+      window.parent.postMessage(Object.assign({ type: "witysk-sso" }, payload), origin);
+    } catch (e) { /* parent may be gone; swallow */ }
+  }
+
   function clearTokens() {
+    _mem = null;
     try {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
     } catch (e) { /* ignore */ }
   }
 
-  function send(origin, payload) {
-    try {
-      window.parent.postMessage(
-        Object.assign({ type: "witysk-sso" }, payload),
-        origin
-      );
-    } catch (e) {
-      // parent may be gone; swallow
-    }
-  }
-
-  // On load, push current state to every allowed parent (sign-in bootstrap).
-  var snapshot = read();
-  ALLOWED_ORIGINS.forEach(function (o) { send(o, snapshot); });
+  // On load, hand a FRESH token (plus profile, best-effort) to every allowed
+  // parent (sign-in bootstrap).
+  snapshotWithProfile().then(function (payload) {
+    ALLOWED_ORIGINS.forEach(function (o) { send(o, payload); });
+  });
 
   // Respond to runtime messages from a parent.
   window.addEventListener("message", function (ev) {
     if (ALLOWED_ORIGINS.indexOf(ev.origin) === -1) return;
     if (!ev.data || typeof ev.data !== "object") return;
 
-    // Polling: parent asks us to re-send the current localStorage state.
+    // Polling: parent asks us to re-send a fresh token.
     if (ev.data.type === "witysk-sso-request") {
-      send(ev.origin, read());
+      snapshotWithProfile().then(function (payload) { send(ev.origin, payload); });
       return;
     }
 
-    // Logout: parent wants us to invalidate the server-side session AND
-    // clear this origin's localStorage. We post back { logout: 'ok' | 'failed' }.
+    // Logout: invalidate the server-side session AND clear the in-memory token.
     if (ev.data.type === "witysk-sso-logout") {
-      var token;
-      try { token = localStorage.getItem("access_token"); } catch (e) { token = null; }
+      var token = _mem;   // in-memory only (§2.1)
 
       function reply(ok) {
         clearTokens();
         send(ev.origin, { logout: ok ? "ok" : "failed" });
       }
 
-      if (!token) {
-        // Already logged out client-side; nothing to invalidate server-side.
-        reply(true);
-        return;
-      }
-
-      // Same-origin fetch — no CORS gymnastics required.
+      // Always attempt server-side logout: /api/auth/logout is cookie-first, so
+      // credentials:include authenticates it even when we hold no bearer token.
+      var headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = "Bearer " + token;
       fetch("/api/auth/logout", {
         method: "POST",
-        headers: { "Authorization": "Bearer " + token },
+        headers: headers,
         credentials: "include",
       }).then(function (r) {
         reply(r.ok || r.status === 401); // 401 = already invalid; same end state.
-      }).catch(function () {
-        reply(false);
-      });
+      }).catch(function () { reply(false); });
       return;
     }
   });

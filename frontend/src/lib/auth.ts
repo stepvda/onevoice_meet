@@ -154,6 +154,7 @@ export function logoutFromOneWitysk(): Promise<{ ok: boolean }> {
         // silently re-bootstrap a new session behind the user's back.
         localStorage.removeItem("refresh_token");
         localStorage.removeItem(HAD_SESSION_KEY);
+        localStorage.removeItem(PROFILE_KEY);
       } catch {
         /* ignore */
       }
@@ -284,6 +285,33 @@ export interface OneWityskMe {
   email: string | null;
 }
 
+// Profile snapshot delivered alongside the token by one.witysk.org's
+// sso-bootstrap page. Needed because one.witysk.org sessions can be
+// DPoP-bound: resource calls require a proof signed with a key that lives
+// only in one.witysk.org's IndexedDB, so meet's own cross-origin call to
+// /api/auth/me is rejected for bound sessions. The bootstrap iframe fetches
+// the profile same-origin (where it CAN sign the proof) and posts it here.
+const PROFILE_KEY = "witysk_profile";
+
+function cacheWityskProfile(p: OneWityskMe): void {
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getCachedWityskProfile(): OneWityskMe | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (!raw) return null;
+    const j = JSON.parse(raw) as Partial<OneWityskMe>;
+    return { name: j.name ?? null, username: j.username ?? null, email: j.email ?? null };
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch both the display name AND email from one.witysk.org. Used when
  *  meet's own `/v1/me` returns null fields for an SSO user (the meet
  *  account row is auto-provisioned with only the external_id; the
@@ -292,13 +320,17 @@ export interface OneWityskMe {
  *  Returns `null` on any failure — callers can render placeholders. */
 export async function fetchOneWityskMe(): Promise<OneWityskMe | null> {
   const tok = getAccessToken();
-  if (!tok) return null;
+  // DPoP-bound one.witysk.org sessions reject this cross-origin call (meet
+  // cannot sign the proof — the key is non-extractable in one.witysk.org's
+  // IndexedDB), so on ANY failure fall back to the profile snapshot the
+  // sso-bootstrap iframe delivered with the token handoff.
+  if (!tok) return getCachedWityskProfile();
   try {
     const res = await fetch(`${ONE_WITYSK}/api/auth/me`, {
       headers: { Authorization: `Bearer ${tok}` },
       credentials: "omit",
     });
-    if (!res.ok) return null;
+    if (!res.ok) return getCachedWityskProfile();
     const j = (await res.json()) as {
       name?: string | null;
       username?: string | null;
@@ -310,7 +342,7 @@ export async function fetchOneWityskMe(): Promise<OneWityskMe | null> {
       email: j.email ?? null,
     };
   } catch {
-    return null;
+    return getCachedWityskProfile();
   }
 }
 
@@ -365,7 +397,24 @@ export function forceBootstrapFromOneWitysk(): Promise<string | null> {
       if (ev.origin !== ONE_WITYSK) return;
       if (!ev.data || typeof ev.data !== "object") return;
       if ((ev.data as { type?: string }).type !== "witysk-sso") return;
-      const token = (ev.data as { access_token?: string | null }).access_token;
+      const d = ev.data as {
+        access_token?: string | null;
+        name?: string | null;
+        username?: string | null;
+        email?: string | null;
+      };
+      // Newer sso-bootstrap builds piggyback the user's profile on the token
+      // handoff (fetched same-origin, where DPoP-bound sessions still work).
+      // Cache it; fetchOneWityskMe falls back to this when its own
+      // cross-origin call is rejected. Only overwrite on a non-empty payload.
+      if (d.name || d.username || d.email) {
+        cacheWityskProfile({
+          name: d.name ?? null,
+          username: d.username ?? null,
+          email: d.email ?? null,
+        });
+      }
+      const token = d.access_token;
       finish(typeof token === "string" && token.length > 0 ? token : null);
     };
 
