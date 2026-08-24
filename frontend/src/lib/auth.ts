@@ -318,6 +318,17 @@ export function getCachedWityskProfile(): OneWityskMe | null {
  *  human-readable fields live on one.witysk.org).
  *
  *  Returns `null` on any failure — callers can render placeholders. */
+/** Fallback when the direct /api/auth/me call fails: the cached profile
+ *  from a previous bootstrap handoff, or — when the cache is still empty —
+ *  a forced iframe bootstrap, whose message handler caches the profile the
+ *  bootstrap page fetched same-origin (where DPoP-bound sessions work). */
+async function cachedProfileOrBootstrap(): Promise<OneWityskMe | null> {
+  const cached = getCachedWityskProfile();
+  if (cached && (cached.name || cached.username || cached.email)) return cached;
+  await forceBootstrapFromOneWitysk();
+  return getCachedWityskProfile();
+}
+
 export async function fetchOneWityskMe(): Promise<OneWityskMe | null> {
   const tok = getAccessToken();
   // DPoP-bound one.witysk.org sessions reject this cross-origin call (meet
@@ -330,7 +341,7 @@ export async function fetchOneWityskMe(): Promise<OneWityskMe | null> {
       headers: { Authorization: `Bearer ${tok}` },
       credentials: "omit",
     });
-    if (!res.ok) return getCachedWityskProfile();
+    if (!res.ok) return cachedProfileOrBootstrap();
     const j = (await res.json()) as {
       name?: string | null;
       username?: string | null;
@@ -342,7 +353,7 @@ export async function fetchOneWityskMe(): Promise<OneWityskMe | null> {
       email: j.email ?? null,
     };
   } catch {
-    return getCachedWityskProfile();
+    return cachedProfileOrBootstrap();
   }
 }
 
