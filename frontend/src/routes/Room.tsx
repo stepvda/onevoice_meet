@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { clearPendingToken, clearRoomMeta, loadPendingToken, loadRoomMeta } from "./Lobby";
 import { roomOptions } from "../lib/livekit";
+import { consumeCqReconnecting, rememberCqConnection } from "../lib/cq/reconnect";
 import { api, MeetingOut } from "../lib/api";
 import { LIVESTREAM_DESTINATIONS } from "../lib/livestreamDestinations";
 import { usePreferences } from "../lib/preferences";
@@ -1096,6 +1097,7 @@ export default function Room() {
   if (!pending) return null;
 
   const cfg = roomOptions(pending);
+  rememberCqConnection({ serverUrl: cfg.serverUrl, token: cfg.token, connectOptions: cfg.connectOptions });
   const ownerMeetingId = sessionStorage.getItem(`owner:${roomName}`);
   const isOwner = !!ownerMeetingId;
   // Every participant (owner, co-host or anon) needs the meeting_id to read
@@ -1116,6 +1118,7 @@ export default function Room() {
         options={cfg.roomOptions}
         connectOptions={cfg.connectOptions}
         onDisconnected={() => {
+          if (consumeCqReconnecting()) return;
           clearPendingToken();
           clearRoomMeta();
           // Capture identity/name BEFORE LiveKit unmounts the room context.

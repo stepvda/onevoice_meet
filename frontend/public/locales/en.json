@@ -166,7 +166,10 @@
     "loading": "Loading…",
     "close": "Close",
     "anonymous": "anonymous",
-    "requestFailed": "Request failed"
+    "requestFailed": "Request failed",
+    "on": "On",
+    "off": "Off",
+    "dismiss": "Dismiss"
   },
   "signInPrompt": {
     "button": "Sign in on one.witysk.org",
@@ -1046,5 +1049,125 @@
     "histMonthlySub": "Monthly subscription",
     "histAnnualSub": "Yearly subscription",
     "histVoucher": "Voucher"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Connection quality for {{name}} — {{band}}",
+      "title": "Connection quality"
+    },
+    "panel": {
+      "title": "Connection Quality",
+      "self": "your camera",
+      "ariaLabel": "Connection quality for {{name}}"
+    },
+    "band": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "lost": "Reconnecting…",
+      "measuring": "Measuring…"
+    },
+    "limiter": {
+      "network": "Network: packet loss and jitter",
+      "publisher": "Publisher device is limiting the stream",
+      "relay": "Relay path: elevated round-trip time",
+      "stability": "Unstable link: quality is oscillating",
+      "unknown": "Measuring the connection",
+      "lost": "Connection lost — reconnecting automatically"
+    },
+    "tab": {
+      "overview": "Overview",
+      "details": "Details",
+      "actions": "Actions",
+      "device": "Device"
+    },
+    "quality": {
+      "low": "Low",
+      "medium": "Med",
+      "high": "High",
+      "auto": "Auto"
+    },
+    "overview": {
+      "score": "score {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitrate",
+      "resolution": "Resolution",
+      "fps": "Frame rate",
+      "loss": "Packet loss",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Skipped frames",
+      "audioLoss": "Audio loss (last min)",
+      "transport": "Transport",
+      "direct": "Direct",
+      "relay": "Relay"
+    },
+    "details": {
+      "log": "Recent actions",
+      "none": "No actions yet",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "action": {
+      "quality": "Quality (simulcast layer)",
+      "maxBitrate": "Max bitrate",
+      "compression": "Compression",
+      "colorDepth": "Colour depth",
+      "colorDepthUnsupported": "10-bit is not available on this device / codec",
+      "audioOnly": "Audio only for this tile",
+      "resync": "Resync stream",
+      "resetAuto": "Reset to auto",
+      "reconnect": "Reconnect",
+      "reconnectConfirm": "Confirm reconnect",
+      "apply": "Apply",
+      "export": "Export report"
+    },
+    "scope": {
+      "receive": "Applies to what you receive — the publisher's camera stays untouched",
+      "publish": "Changes are visible to everyone in the meeting"
+    },
+    "autotune": {
+      "test": "Test optimal settings",
+      "running": "Testing the connection…",
+      "observing": "Observing… {{seconds}} s",
+      "applied": "Applied — settings kept",
+      "rolledBack": "Reverted — the new setting was worse on this network",
+      "recommended": "Recommended for this network",
+      "retry": "Retry",
+      "rejected": "{{layer}} was rejected: {{reason}}",
+      "phase": {
+        "baseline": "Collecting baseline…",
+        "probing": "Probing layers…",
+        "evaluating": "Evaluating candidates…",
+        "observing": "Observing the result…",
+        "done": "Done",
+        "failed": "Probe failed",
+        "idle": ""
+      },
+      "baseline": "Collecting baseline…",
+      "step": {
+        "low": "Testing LOW…",
+        "medium": "Testing MEDIUM…",
+        "high": "Testing HIGH…"
+      },
+      "evaluating": "Evaluating candidates…",
+      "done": "Recommendation ready"
+    },
+    "device": {
+      "remoteNote": "Camera and microphone settings belong to the publisher ({{name}})",
+      "camera": "Camera",
+      "resolution": "Resolution",
+      "frameRate": "Frame rate",
+      "cameraMax": "Camera supports up to {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Microphone",
+      "channels": "Channels",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Audio quality",
+      "voice": "Voice",
+      "music": "Music",
+      "stereoWarning": "Stereo disables echo cancellation and noise suppression — use headphones; it also raises uplink bandwidth",
+      "apply": "Apply to my camera & mic"
+    }
   }
 }

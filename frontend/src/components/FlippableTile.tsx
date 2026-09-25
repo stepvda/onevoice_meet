@@ -7,6 +7,7 @@ import {
 } from "@livekit/components-react";
 import { FlipHorizontal2, Hand } from "lucide-react";
 import { usePreferences } from "../lib/preferences";
+import ConnectionQualityButton from "./ConnectionQualityButton";
 import { GridStageContext, GridFocusContext } from "../lib/gridStage";
 import { useHandRaiseState } from "../lib/handRaise";
 
@@ -244,10 +245,11 @@ export default function FlippableTile() {
           ].join(" ")}
         >
           <ParticipantTile />
+          <ConnectionQualityButton />
           {hand.raised && (
             <div
               data-testid={`tile-hand-${identity}`}
-              className="absolute top-2 left-2 z-10 inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white shadow-md ring-2 ring-amber-300/50"
+              className="absolute top-2 left-11 z-10 inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white shadow-md ring-2 ring-amber-300/50"
               title={t("hand.tileBadge")}
               aria-label={t("hand.tileBadge")}
             >
