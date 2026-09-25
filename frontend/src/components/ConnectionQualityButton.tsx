@@ -5,6 +5,7 @@ import { Track } from "livekit-client";
 import { usePreferences } from "../lib/preferences";
 import { CADENCE, statsCollector } from "../lib/cq/connectionStats";
 import { useCqStore } from "../lib/cq/connectionQualityStore";
+import { reapplyVideoOverride } from "../lib/cq/connectionActions";
 import type { CqBand } from "../lib/cq/types";
 import ConnectionQualityOverlay from "./ConnectionQualityOverlay";
 
@@ -34,45 +35,52 @@ export default function ConnectionQualityButton() {
   const openPanel = useCqStore((s) => s.open);
   const closePanel = useCqStore((s) => s.close);
   const anchorRef = useRef<HTMLDivElement | null>(null);
-  const [tileWidth, setTileWidth] = useState(320);
+  const refRef = useRef(ref);
+  refRef.current = ref;
+  const [tileSize, setTileSize] = useState({ width: 320, height: 260 });
 
   const source = ref?.source;
   const eligible =
     !!ref && (source === Track.Source.Camera || source === Track.Source.ScreenShare);
 
+  const participant = ref?.participant;
+  const publicationTrack = ref?.publication?.track;
+
   useEffect(() => {
-    if (!eligible || !ref || !trackKey) return;
+    if (!eligible || !trackKey) return;
+    const current = refRef.current;
+    if (!current) return;
     const anchor = anchorRef.current;
-    let visible = true;
     const observer =
       typeof IntersectionObserver !== "undefined" && anchor
         ? new IntersectionObserver(
             (entries) => {
-              visible = entries.some((e) => e.isIntersecting);
-              if (visible) statsCollector.watch(trackKey, ref, CADENCE.idle);
+              const visible = entries.some((e) => e.isIntersecting);
+              if (visible) statsCollector.watch(trackKey, refRef.current ?? current, CADENCE.idle);
               else statsCollector.unwatch(trackKey);
             },
             { threshold: 0.05 },
           )
         : null;
-    if (!ref) return;
-    statsCollector.watch(trackKey, ref, CADENCE.idle);
+    statsCollector.watch(trackKey, current, CADENCE.idle);
+    reapplyVideoOverride(trackKey, current);
     if (observer && anchor) observer.observe(anchor);
     return () => {
       observer?.disconnect();
       statsCollector.unwatch(trackKey);
     };
-  }, [eligible, ref, trackKey]);
+  }, [eligible, trackKey, participant, publicationTrack]);
 
   useEffect(() => {
     if (!trackKey) return;
     statsCollector.setCadence(trackKey, isOpen ? CADENCE.watch : CADENCE.idle);
   }, [isOpen, trackKey]);
 
+
   useEffect(() => {
     const host = anchorRef.current?.parentElement;
     if (!host || typeof ResizeObserver === "undefined") return;
-    const update = () => setTileWidth(host.clientWidth || 320);
+    const update = () => setTileSize({ width: host.clientWidth || 320, height: host.clientHeight || 260 });
     update();
     const ro = new ResizeObserver(update);
     ro.observe(host);
@@ -88,7 +96,8 @@ export default function ConnectionQualityButton() {
   if (!show || !eligible || !ref || !trackKey) return null;
 
   const color = lost ? BAR_COLORS.low : BAR_COLORS[band as CqBand | "idle"];
-  const panelWidth = Math.max(220, Math.min(320, tileWidth - 16));
+  const panelWidth = Math.max(220, Math.min(320, tileSize.width - 16));
+  const panelHeight = Math.max(220, tileSize.height - 12);
   const icon = (
     <svg viewBox="0 0 18 18" width="16" height="16" aria-hidden="true">
       {barsFor(band as CqBand | "idle").map((h, i) => (
@@ -133,6 +142,7 @@ export default function ConnectionQualityButton() {
           trackKey={trackKey}
           trackRef={ref}
           width={panelWidth}
+          height={panelHeight}
           onClose={closePanel}
         />
       )}

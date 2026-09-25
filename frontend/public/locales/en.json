@@ -1168,6 +1168,22 @@
       "music": "Music",
       "stereoWarning": "Stereo disables echo cancellation and noise suppression — use headphones; it also raises uplink bandwidth",
       "apply": "Apply to my camera & mic"
+    },
+    "busy": {
+      "quality": "Changing quality…",
+      "resync": "Resyncing the stream…",
+      "reconnect": "Reconnecting…",
+      "maxBitrate": "Updating the bitrate cap…",
+      "compression": "Updating compression…",
+      "resolution": "Changing camera resolution…",
+      "frameRate": "Changing frame rate…",
+      "camera-device": "Switching camera…",
+      "mic-device": "Switching microphone…",
+      "mic-mode": "Applying microphone settings…",
+      "audioOnly": "Updating the stream…",
+      "applyTune": "Applying settings…",
+      "probe": "Testing the connection…",
+      "export": "Preparing the report…"
     }
   }
 }

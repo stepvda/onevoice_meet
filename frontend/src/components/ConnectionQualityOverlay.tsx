@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { useTranslation } from "react-i18next";
 import { useRoomContext } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-react";
+import type { RemoteTrackPublication } from "livekit-client";
 import { RefreshCw, Wifi, X } from "lucide-react";
 import { usePreferences } from "../lib/preferences";
 import { useCqStore } from "../lib/cq/connectionQualityStore";
@@ -29,6 +30,7 @@ interface Props {
   trackKey: string;
   trackRef: TrackReference;
   width: number;
+  height: number;
   onClose: () => void;
 }
 
@@ -149,7 +151,7 @@ function panelSection(title: string, children: ReactNode) {
   );
 }
 
-export default function ConnectionQualityOverlay({ trackKey, trackRef, width, onClose }: Props) {
+export default function ConnectionQualityOverlay({ trackKey, trackRef, width, height, onClose }: Props) {
   const room = useRoomContext();
   const { t } = useTranslation();
   const verdict = useCqStore((s) => s.verdicts[trackKey]);
@@ -174,13 +176,19 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
   const [channels, setChannels] = useState<MicChannelMode>("mono");
   const [quality, setQuality] = useState<AudioQualityMode>("voice");
   const [maxBitrate, setMaxBitrate] = useState(1200);
-  const [playbackMono] = useState(monoAudioPref);
+  const [videoEnabled, setVideoEnabled] = useState(true);
+  const playbackMono = monoAudioPref;
 
   const isLocal = trackRef.participant.isLocal;
   const latest = history[history.length - 1];
   const video = latest?.video;
   const audio = latest?.audio;
   const transport = latest?.transport;
+
+  useEffect(() => {
+    const pub = trackRef.publication as RemoteTrackPublication | undefined;
+    if (pub && typeof pub.isEnabled === "boolean") setVideoEnabled(pub.isEnabled);
+  }, [tab, trackRef]);
 
   useEffect(() => {
     if (!isLocal || tab !== "device") return;
@@ -215,9 +223,12 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
   const runTest = useCallback(() => {
     invoke("probe", async () => {
       setTuneStatus(t("cq.autotune.running", { defaultValue: "Testing the connection…" }));
-      const result = await runAutoTune(room, trackRef);
-      setTune(result);
-      setTuneStatus(null);
+      try {
+        const result = await runAutoTune(room, trackRef);
+        setTune(result);
+      } finally {
+        setTuneStatus(null);
+      }
     });
   }, [invoke, room, t, trackRef]);
 
@@ -226,13 +237,21 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
       invoke("applyTune", async () => {
         const baseline = verdict?.score ?? 60;
         const previous: QualityMode = override?.videoQuality ?? "auto";
-        await runAction(room, trackRef, { kind: "quality", quality: result.recommendedQuality });
+        const applyTarget = async (quality: QualityMode) => {
+          if (isLocal) {
+            const kbps = quality === "low" ? 150 : quality === "medium" ? 500 : 2500;
+            await runAction(room, trackRef, { kind: "maxBitrate", kbps });
+            return;
+          }
+          await runAction(room, trackRef, { kind: "quality", quality });
+        };
+        await applyTarget(result.recommendedQuality);
         setTuneStatus(t("cq.autotune.observing", { seconds: 15, defaultValue: "Observing for 15 s…" }));
         const rolledBack = await observeAndMaybeRollback(
           trackKey,
           baseline,
           async () => {
-            await runAction(room, trackRef, { kind: "quality", quality: previous });
+            await applyTarget(previous);
           },
           (secondsLeft) =>
             setTuneStatus(
@@ -247,7 +266,7 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
         if (!rolledBack) setTune(null);
       });
     },
-    [invoke, override?.videoQuality, room, t, trackKey, trackRef, verdict?.score],
+    [invoke, isLocal, override?.videoQuality, room, t, trackKey, trackRef, verdict?.score],
   );
 
   const exportReport = useCallback(() => {
@@ -337,8 +356,8 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
       role="dialog"
       aria-label={t("cq.panel.ariaLabel", { name: trackRef.participant.name || trackRef.participant.identity, defaultValue: "Connection quality" })}
       data-testid="cq-panel"
-      style={{ width }}
-      className="absolute left-0 top-9 rounded-xl border border-slate-500/60 bg-slate-950/85 backdrop-blur-md shadow-2xl text-slate-100 p-2.5"
+      style={{ width, maxHeight: height }}
+      className="absolute left-0 top-9 flex flex-col rounded-xl border border-slate-500/60 bg-slate-950/85 backdrop-blur-md shadow-2xl text-slate-100 p-2.5"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
@@ -377,7 +396,7 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
         ))}
       </div>
 
-      <div className="mt-2 max-h-[280px] overflow-y-auto pr-0.5">
+      <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-0.5">
         {tab === "overview" && (
           <div>
             <div className="flex items-center justify-between gap-2">
@@ -457,24 +476,19 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
 
         {tab === "actions" && (
           <div>
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-[10.5px] text-slate-400">{t("cq.action.quality", { defaultValue: "Quality (simulcast layer)" })}</span>
-              <Seg
-                options={qualityOptions}
-                value={override?.videoQuality ?? "auto"}
-                disabled={busy !== null}
-                onChange={(value) =>
-                  invoke("quality", async () => {
-                    const host = document.querySelector(`[data-testid="tile-cq-${trackRef.participant.identity}"]`)?.parentElement
-                      ?.parentElement;
-                    const size = host
-                      ? { width: host.clientWidth || 640, height: host.clientHeight || 360 }
-                      : undefined;
-                    await runAction(room, trackRef, { kind: "quality", quality: value, size });
-                  })
-                }
-              />
-            </div>
+            {!isLocal && (
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[10.5px] text-slate-400">{t("cq.action.quality", { defaultValue: "Quality (simulcast layer)" })}</span>
+                <Seg
+                  options={qualityOptions}
+                  value={override?.videoQuality ?? "auto"}
+                  disabled={busy !== null}
+                  onChange={(value) =>
+                    invoke("quality", () => runAction(room, trackRef, { kind: "quality", quality: value }))
+                  }
+                />
+              </div>
+            )}
             {isLocal && (
               <>
                 <div className="flex items-center justify-between gap-2 mb-1">
@@ -531,10 +545,14 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
                     { value: "off" as const, label: t("common.off", { defaultValue: "Off" }) },
                     { value: "on" as const, label: t("common.on", { defaultValue: "On" }) },
                   ]}
-                  value="off"
+                  value={videoEnabled ? "off" : "on"}
                   disabled={busy !== null}
                   onChange={(value) =>
-                    invoke("audioOnly", () => runAction(room, trackRef, { kind: "audioOnly", enabled: value === "on" }))
+                    invoke("audioOnly", async () => {
+                      await runAction(room, trackRef, { kind: "audioOnly", enabled: value === "on" });
+                      const pub = trackRef.publication as RemoteTrackPublication | undefined;
+                      if (pub) setVideoEnabled(pub.isEnabled);
+                    })
                   }
                 />
               </div>
@@ -605,7 +623,11 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
                 )}
                 <div className="mt-1 flex gap-1.5">
                   <Btn label={t("cq.action.apply", { defaultValue: "Apply" })} primary onClick={() => applyTune(tune)} />
-                  <Btn label={t("cq.autotune.retry", { defaultValue: "Retry" })} onClick={runTest} />
+                  <Btn
+                    label={t("cq.autotune.retry", { defaultValue: "Retry" })}
+                    disabled={busy !== null}
+                    onClick={runTest}
+                  />
                   <Btn label={t("common.dismiss", { defaultValue: "Dismiss" })} onClick={() => setTune(null)} />
                 </div>
               </div>
@@ -770,10 +792,12 @@ export default function ConnectionQualityOverlay({ trackKey, trackRef, width, on
         )}
       </div>
 
-      {(busy || probe) && (
+      {(busy !== null || probe !== null) && (
         <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-sky-300">
           <RefreshCw size={11} className="animate-spin" />
-          {probe ? t(`cq.autotune.phase.${probe.phase}`, { defaultValue: probe.phase }) : busy}
+          {probe
+            ? t(`cq.autotune.phase.${probe.phase}`, { defaultValue: probe.phase })
+            : t(`cq.busy.${busy}`, { defaultValue: busy ?? "" })}
         </div>
       )}
       {error && (

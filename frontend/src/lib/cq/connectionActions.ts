@@ -7,7 +7,7 @@ import {
   type Room as RoomType,
 } from "livekit-client";
 import type { TrackReference } from "@livekit/components-react";
-import { getCqConnection, beginCqReconnect } from "./reconnect";
+import { getCqConnection, beginCqReconnect, consumeCqReconnecting } from "./reconnect";
 import { useCqStore } from "./connectionQualityStore";
 import type { CompressionPreset, QualityMode, TileQualityOverride } from "./types";
 
@@ -43,19 +43,105 @@ const COMPRESSION_PROFILE: Record<
   high: { hint: "detail", degradation: "maintain-resolution", factor: 1.15 },
 };
 
+interface AdaptiveTrack {
+  adaptiveStreamSettings?: unknown;
+  on: (event: string, handler: (...args: unknown[]) => void) => void;
+  off: (event: string, handler: (...args: unknown[]) => void) => void;
+  updateDimensions?: () => void;
+  updateVisibility?: () => void;
+}
+
+interface SavedAdaptive {
+  pub: RemoteTrackPublication;
+  track: AdaptiveTrack;
+  settings: unknown;
+  dimensionsHandler?: (...args: unknown[]) => void;
+  visibilityHandler?: (...args: unknown[]) => void;
+}
+
+const savedAdaptive = new Map<string, SavedAdaptive>();
+
+/**
+ * Manual subscription controls (setVideoQuality / setEnabled) are refused by
+ * livekit-client while adaptiveStream drives the track. Pinning detaches the
+ * adaptive handlers for this one publication so the user's choice sticks;
+ * releaseVideoControl restores adaptive streaming when the tile returns to
+ * "Auto".
+ */
+export function pinVideoControl(trackKey: string, pub: RemoteTrackPublication): boolean {
+  const track = pub.track as unknown as AdaptiveTrack | undefined;
+  if (!track) return false;
+  const existing = savedAdaptive.get(trackKey);
+  if (existing && existing.pub === pub && existing.track === track) return false;
+  if (existing) savedAdaptive.delete(trackKey);
+  if (track.adaptiveStreamSettings === undefined) return false;
+
+  const pubAny = pub as unknown as {
+    handleVideoDimensionsChange?: (...args: unknown[]) => void;
+    handleVisibilityChange?: (...args: unknown[]) => void;
+    videoDimensionsAdaptiveStream?: unknown;
+    videoDimensions?: unknown;
+  };
+  const saved: SavedAdaptive = {
+    pub,
+    track,
+    settings: track.adaptiveStreamSettings,
+    dimensionsHandler: pubAny.handleVideoDimensionsChange,
+    visibilityHandler: pubAny.handleVisibilityChange,
+  };
+  try {
+    if (saved.dimensionsHandler) track.off("videoDimensionsChanged", saved.dimensionsHandler);
+    if (saved.visibilityHandler) track.off("visibilityChanged", saved.visibilityHandler);
+    track.adaptiveStreamSettings = undefined;
+    pubAny.videoDimensionsAdaptiveStream = undefined;
+    pubAny.videoDimensions = undefined;
+  } catch {
+    return false;
+  }
+  savedAdaptive.set(trackKey, saved);
+  return true;
+}
+
+export function releaseVideoControl(trackKey: string, pub: RemoteTrackPublication): void {
+  const saved = savedAdaptive.get(trackKey);
+  if (!saved || saved.pub !== pub) return;
+  savedAdaptive.delete(trackKey);
+  const track = pub.track as unknown as AdaptiveTrack | undefined;
+  if (!track || saved.track !== track) return;
+  try {
+    track.adaptiveStreamSettings = saved.settings;
+    if (saved.dimensionsHandler) track.on("videoDimensionsChanged", saved.dimensionsHandler);
+    if (saved.visibilityHandler) track.on("visibilityChanged", saved.visibilityHandler);
+    track.updateDimensions?.();
+    track.updateVisibility?.();
+  } catch {
+    return;
+  }
+}
+
 function remotePublication(ref: TrackReference): RemoteTrackPublication {
   const pub = ref.publication as RemoteTrackPublication | undefined;
   if (!pub || typeof pub.setVideoQuality !== "function") {
-    throw new CqActionError("not a remote video publication");
+    throw new CqActionError("This tile is not a subscribable video track");
   }
   return pub;
+}
+
+function attachedSize(pub: RemoteTrackPublication): { width: number; height: number } | null {
+  const element = pub.track?.attachedElements?.[0];
+  if (!element) return null;
+  const el = element as HTMLElement & { videoWidth?: number; videoHeight?: number };
+  const width = el.clientWidth || el.videoWidth || 0;
+  const height = el.clientHeight || el.videoHeight || 0;
+  if (width < 16 || height < 16) return null;
+  return { width, height };
 }
 
 function localVideoTrack(room: RoomType, ref: TrackReference): LocalVideoTrack {
   const pub = room.localParticipant.getTrackPublication(Track.Source.Camera);
   const track = pub?.track;
   if (ref.participant.isLocal && track instanceof LocalVideoTrack) return track;
-  throw new CqActionError("no local camera track");
+  throw new CqActionError("No active camera track on your tile");
 }
 
 async function setSenderEncoding(
@@ -63,11 +149,20 @@ async function setSenderEncoding(
   patch: (params: RTCRtpSendParameters) => void,
 ): Promise<void> {
   const sender = track.sender;
-  if (!sender) throw new CqActionError("no sender");
+  if (!sender) throw new CqActionError("This browser does not expose encoder controls");
   const params = sender.getParameters();
   if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
   patch(params);
   await sender.setParameters(params);
+}
+
+async function waitForConnected(room: Room, timeoutMs: number): Promise<boolean> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (room.state === "connected") return true;
+    await new Promise((resolve) => window.setTimeout(resolve, 200));
+  }
+  return room.state === "connected";
 }
 
 export async function runAction(
@@ -89,21 +184,41 @@ export async function runAction(
       }
       case "reconnect": {
         const conn = getCqConnection();
-        if (!conn) throw new CqActionError("missing connection credentials");
+        if (!conn) throw new CqActionError("Connection details are no longer available");
         beginCqReconnect();
-        await room.disconnect();
-        await room.connect(conn.serverUrl, conn.token, conn.connectOptions);
+        try {
+          await room.disconnect();
+          await room.connect(conn.serverUrl, conn.token, conn.connectOptions);
+        } catch {
+          // Fall through to the state check below; a reload re-joins cleanly.
+        }
+        const connected = await waitForConnected(room, 5000);
+        consumeCqReconnecting();
+        if (!connected) {
+          window.location.reload();
+          return;
+        }
         break;
       }
       case "quality": {
+        const pub = remotePublication(ref);
         if (action.quality === "auto") {
-          const pub = remotePublication(ref);
-          if (action.size) pub.setVideoDimensions(action.size);
+          const size = attachedSize(pub);
+          if (size) pub.setVideoDimensions(size);
+          else {
+            const resettable = pub as unknown as { setVideoQuality?: (q?: VideoQuality) => void };
+            resettable.setVideoQuality?.(undefined);
+          }
+          releaseVideoControl(trackKey, pub);
           store.clearOverride(trackKey);
           break;
         }
-        const pub = remotePublication(ref);
-        pub.setVideoQuality(QUALITY_MAP[action.quality]);
+        pinVideoControl(trackKey, pub);
+        const target = QUALITY_MAP[action.quality];
+        pub.setVideoQuality(target);
+        if (pub.videoQuality !== target) {
+          throw new CqActionError("The stream is not ready yet — try again in a moment");
+        }
         const override: TileQualityOverride = {
           trackKey,
           videoQuality: action.quality,
@@ -115,7 +230,11 @@ export async function runAction(
       }
       case "audioOnly": {
         const pub = remotePublication(ref);
+        pinVideoControl(trackKey, pub);
         pub.setEnabled(!action.enabled);
+        if (pub.isEnabled !== !action.enabled) {
+          throw new CqActionError("The stream is not ready yet — try again in a moment");
+        }
         break;
       }
       case "resolution": {
@@ -214,6 +333,15 @@ export async function runAction(
     });
     throw error;
   }
+}
+
+export function reapplyVideoOverride(trackKey: string, ref: TrackReference): void {
+  const override = useCqStore.getState().overrides[trackKey];
+  if (!override || override.videoQuality === "auto") return;
+  const pub = ref.publication as RemoteTrackPublication | undefined;
+  if (!pub || typeof pub.setVideoQuality !== "function") return;
+  pinVideoControl(trackKey, pub);
+  pub.setVideoQuality(QUALITY_MAP[override.videoQuality]);
 }
 
 export function clearTileOverride(trackKey: string): void {

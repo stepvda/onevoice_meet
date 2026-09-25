@@ -372,8 +372,8 @@ class StatsCollector {
       }
     }
     if (sample.audioConcealedDeltaSeconds !== undefined) sum += sample.audioConcealedDeltaSeconds;
-    const spanMs = Math.max(5_000, sample.at - oldest);
-    sample.audio.concealedSecondsPerMinute = (sum * 60_000) / Math.min(windowMs, spanMs);
+    const spanMs = Math.min(windowMs, Math.max(15_000, sample.at - oldest));
+    sample.audio.concealedSecondsPerMinute = Math.min(60, (sum * 60_000) / spanMs);
   }
 
   private async publisherStats(
