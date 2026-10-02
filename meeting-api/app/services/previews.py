@@ -49,7 +49,7 @@ _DEFAULT_TIMEOUT_SECONDS = 90
 # ─── Share-card layout ─────────────────────────────────────────────────────
 # Bump when the poster composition changes: the version is part of the cache
 # filename and the routes' media URLs, so social platforms refetch.
-_CARD_VERSION = 5
+_CARD_VERSION = 6
 # Candidate frame times for the card image. The configured preferred second
 # (default 5s) is tried first; the rest are fallbacks for videos whose
 # opening seconds are black or fading — a fixed 5s frame produced solid
@@ -365,7 +365,7 @@ def _compose_card(
         # Translucent caption panel: separates our title from whatever the
         # frame itself shows at the bottom (lower thirds, credits, subtitles).
         od.rounded_rectangle(
-            [28, H - 240, W - 28, H - 24], radius=18, fill=(4, 9, 18, 115)
+            [28, H - 240, W - 28, H - 24], radius=18, fill=(4, 9, 18, 170)
         )
         card = Image.alpha_composite(card.convert("RGBA"), overlay)
         draw = ImageDraw.Draw(card)
