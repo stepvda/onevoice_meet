@@ -49,7 +49,7 @@ _DEFAULT_TIMEOUT_SECONDS = 90
 # ─── Share-card layout ─────────────────────────────────────────────────────
 # Bump when the poster composition changes: the version is part of the cache
 # filename and the routes' media URLs, so social platforms refetch.
-_CARD_VERSION = 6
+_CARD_VERSION = 7
 # Candidate frame times for the card image. The configured preferred second
 # (default 5s) is tried first; the rest are fallbacks for videos whose
 # opening seconds are black or fading — a fixed 5s frame produced solid
@@ -362,10 +362,17 @@ def _compose_card(
         for y in range(grad_start, H):
             f = (y - grad_start) / max(1, H - grad_start)
             od.line([(0, y), (W, y)], fill=(4, 9, 18, int(235 * f * f)))
-        # Translucent caption panel: separates our title from whatever the
-        # frame itself shows at the bottom (lower thirds, credits, subtitles).
+        # Frosted caption bar: blur the region so lower thirds, credits or
+        # subtitles burned into the frame can't be read behind our text,
+        # then darken it for contrast.
+        blurred = card.filter(ImageFilter.GaussianBlur(14))
+        bar_mask = Image.new("L", (W, H), 0)
+        ImageDraw.Draw(bar_mask).rounded_rectangle(
+            [28, H - 240, W - 28, H - 24], radius=18, fill=255
+        )
+        card.paste(blurred, (0, 0), bar_mask)
         od.rounded_rectangle(
-            [28, H - 240, W - 28, H - 24], radius=18, fill=(4, 9, 18, 170)
+            [28, H - 240, W - 28, H - 24], radius=18, fill=(4, 9, 18, 150)
         )
         card = Image.alpha_composite(card.convert("RGBA"), overlay)
         draw = ImageDraw.Draw(card)
