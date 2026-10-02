@@ -13,9 +13,14 @@ services:
     image: caddy:2
     logging: *default-logging
     restart: unless-stopped
+    # Production (turn.witysk.org) runs a host-level `caddy-edge` layer4 proxy
+    # that owns :80/:443 and forwards meet.witysk.org to these loopback
+    # ports with PROXY protocol v2 (see DEPLOYMENT.md §5, Option A, and the
+    # listener_wrappers block in caddy/Caddyfile). On a host without that
+    # edge, change these back to "80:80" / "443:443".
     ports:
-      - "80:80"
-      - "443:443"
+      - "127.0.0.1:8443:443"
+      - "127.0.0.1:8081:80"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -181,6 +186,10 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - /var/lib/meet:/var/lib/meet
+      # Built SPA shell (index.html + assets), read-only. meeting-api reads
+      # index.html to inject per-video Open Graph meta tags for the
+      # /on-demand share pages; Caddy still serves the assets themselves.
+      - frontend_build:/srv/frontend:ro
       # Playlist MP4s live on a dedicated 50 GB volume (fs label: video1)
       # because they outgrew the 38 GB root disk. Mounted at the SAME path
       # inside the container so the absolute `file_path` values stored in

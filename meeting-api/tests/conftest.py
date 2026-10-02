@@ -8,6 +8,8 @@ import pytest
 _tmp = Path(tempfile.mkdtemp(prefix="meet-api-test-"))
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{_tmp / 'test.db'}")
 os.environ.setdefault("RECORDINGS_DIR", str(_tmp / "recordings"))
+os.environ.setdefault("ON_DEMAND_PREVIEW_DIR", str(_tmp / "previews"))
+os.environ.setdefault("FRONTEND_DIR", str(_tmp / "frontend"))
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-never-used-in-prod")
 os.environ.setdefault("LOG_DIR", str(_tmp / "logs"))
 os.environ.setdefault("LIVEKIT_API_KEY", "APItest")

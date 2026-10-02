@@ -14,6 +14,11 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://meet.witysk.org/"/>
   </url>
   <url>
+    <loc>https://meet.witysk.org/on-demand</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://meet.witysk.org/signup</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

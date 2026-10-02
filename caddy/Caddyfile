@@ -1,6 +1,27 @@
 {
     # Global options.
     email stephane@stepvda.com
+
+    # Behind the One Voice Mail edge (caddy-l4) since 2026-09-30: it owns the
+    # public :80/:443 and forwards Meet here with PROXY protocol v2 on :443.
+    # The :80 redirect listener stays plain (caddy-l4 forwards it without the
+    # PROXY header).
+    servers :443 {
+        listener_wrappers {
+            proxy_protocol {
+                allow 127.0.0.1/32 172.16.0.0/12
+            }
+            tls
+        }
+    }
+}
+
+# Locked-down framing/security headers for the normal SPA surface. Shared by
+# the catch-all fallback and the /on-demand share-page proxy so the two can
+# never drift apart.
+(spa_headers) {
+    header X-Frame-Options "DENY"
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://www.paypalobjects.com; img-src 'self' data: blob: https://storage.googleapis.com https://www.paypal.com https://www.paypalobjects.com https://t.paypal.com; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org https://cdn.jsdelivr.net https://storage.googleapis.com https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.sandbox.paypal.com https://t.paypal.com; frame-src https://one.witysk.org https://www.paypal.com https://www.sandbox.paypal.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 }
 
 meet.witysk.org {
@@ -94,6 +115,29 @@ meet.witysk.org {
         file_server
     }
 
+    # /on-demand is a client-rendered SPA route, but link-preview crawlers
+    # (X/Twitter, Facebook, WhatsApp, Telegram, Slack, Discord, LinkedIn) do
+    # not execute JavaScript. meeting-api serves the same built SPA shell
+    # with per-video Open Graph/Twitter meta tags injected, so crawlers get a
+    # rich card while browsers boot the normal app. The query string (`?v=…`)
+    # is preserved by `rewrite`.
+    @on_demand path /on-demand
+    handle @on_demand {
+        import spa_headers
+        rewrite * /api/v1/on-demand/page
+        reverse_proxy meeting-api:8080
+    }
+
+    # /embed/on-demand is the framable mini player page used for
+    # twitter:player / oEmbed HTML. It must be embeddable from any origin,
+    # so no X-Frame-Options and a relaxed frame-ancestors.
+    @on_demand_embed path /embed/on-demand
+    handle @on_demand_embed {
+        header Content-Security-Policy "default-src 'none'; img-src 'self' data:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; frame-ancestors *; base-uri 'none'; form-action 'none'"
+        rewrite * /api/v1/on-demand/embed
+        reverse_proxy meeting-api:8080
+    }
+
     # Frontend SPA fallback — locked-down framing for all other paths.
     # CSP rationale (Phase 12):
     #   - self for scripts/styles bundled by Vite
@@ -109,8 +153,7 @@ meet.witysk.org {
     #   cdn.jsdelivr.net at runtime; without this allowance, virtual
     #   backgrounds silently fail with a CSP violation.
     handle {
-        header X-Frame-Options "DENY"
-        header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://www.paypalobjects.com; img-src 'self' data: blob: https://storage.googleapis.com https://www.paypal.com https://www.paypalobjects.com https://t.paypal.com; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org https://cdn.jsdelivr.net https://storage.googleapis.com https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.sandbox.paypal.com https://t.paypal.com; frame-src https://one.witysk.org https://www.paypal.com https://www.sandbox.paypal.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        import spa_headers
         root * /srv/frontend
         try_files {path} /index.html
         file_server

@@ -260,6 +260,32 @@ def _resolve_source(item: PlaybackItem, db: Session) -> PlaybackItem:
 _ON_DEMAND_MIN_SECONDS = 300  # 5 minutes
 
 
+def resolve_on_demand_item(
+    item_id: str, db: Session
+) -> tuple[PlaybackItem, Meeting, PlaybackItem, Path, float]:
+    """Resolve an On Demand item to everything a public surface needs.
+
+    Returns `(item, meeting, source, path, duration_seconds)` and raises the
+    same 404/410 the streaming route has always used. Shared by
+    `stream_on_demand_item` and the social-card endpoints so the public
+    visibility gate lives in exactly one place: the item's meeting must be
+    active, non-hidden and public-enabled, and the video must be longer than
+    five minutes, with its file present on disk."""
+    item = db.query(PlaybackItem).filter_by(id=item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="item not found")
+    m = db.query(Meeting).filter_by(id=item.meeting_id).first()
+    if not m or not m.is_active or m.hidden or not m.public_enabled:
+        raise HTTPException(status_code=404, detail="item not found")
+    source = _resolve_source(item, db)
+    dur = source.duration_seconds if source.duration_seconds is not None else item.duration_seconds
+    if dur is None or dur <= _ON_DEMAND_MIN_SECONDS:
+        raise HTTPException(status_code=404, detail="item not found")
+    if not source.file_path or not Path(source.file_path).exists():
+        raise HTTPException(status_code=410, detail="file missing on disk")
+    return item, m, source, Path(source.file_path), float(dur)
+
+
 @router.get("/on-demand")
 def list_on_demand(db: Session = Depends(get_db)) -> list[dict]:
     """Public, no-auth On Demand catalogue.
@@ -293,7 +319,10 @@ def list_on_demand(db: Session = Depends(get_db)) -> list[dict]:
         seen: set[str] = set()
         for it in items:
             src = _resolve_source(it, db)
-            dur = it.duration_seconds if it.duration_seconds is not None else src.duration_seconds
+            # Mirror `resolve_on_demand_item`: source duration first so the
+            # catalogue and the public stream/share endpoints can never
+            # disagree on the five-minute eligibility gate.
+            dur = src.duration_seconds if src.duration_seconds is not None else it.duration_seconds
             if dur is None or dur <= _ON_DEMAND_MIN_SECONDS:
                 continue
             if not src.file_path or src.id in seen:
@@ -330,20 +359,8 @@ def stream_on_demand_item(
     minutes. Honours HTTP Range requests (206) — same hand-rolled handling
     as the internal ingress route — so the browser <video> can seek;
     without it the player can only progressive-download from the start."""
-    item = db.query(PlaybackItem).filter_by(id=item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="item not found")
-    m = db.query(Meeting).filter_by(id=item.meeting_id).first()
-    if not m or not m.is_active or m.hidden or not m.public_enabled:
-        raise HTTPException(status_code=404, detail="item not found")
-    source = _resolve_source(item, db)
-    dur = source.duration_seconds if source.duration_seconds is not None else item.duration_seconds
-    if dur is None or dur <= _ON_DEMAND_MIN_SECONDS:
-        raise HTTPException(status_code=404, detail="item not found")
-    if not source.file_path or not Path(source.file_path).exists():
-        raise HTTPException(status_code=410, detail="file missing on disk")
+    item, _m, source, path, _dur = resolve_on_demand_item(item_id, db)
 
-    path = Path(source.file_path)
     file_size = path.stat().st_size
     media_type = source.mime_type or "video/mp4"
     common_headers = {

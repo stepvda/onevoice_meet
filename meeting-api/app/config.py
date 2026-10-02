@@ -121,6 +121,28 @@ class Settings(BaseSettings):
     # Public URL (for join links in responses)
     public_url: str = "https://meet.witysk.org"
 
+    # --- On Demand social link previews --------------------------------------
+    # The built SPA shell (`index.html`) is mounted read-only here so
+    # meeting-api can inject per-video Open Graph / Twitter meta tags into
+    # the very same HTML the browser boots. See docker-compose volumes.
+    frontend_dir: str = "/srv/frontend"
+    # Cache for generated poster/GIF/clip previews. Small files; pruned to
+    # `on_demand_preview_cache_max_bytes` after each generation.
+    on_demand_preview_dir: str = "/var/lib/meet/previews"
+    on_demand_preview_cache_max_bytes: int = 2 * 1024 * 1024 * 1024  # 2 GiB
+    # Operator kill-switch for the preview encoders. When false, poster
+    # requests get the Pillow placeholder card and GIF/clip return 503 —
+    # no ffmpeg is spawned. Set ON_DEMAND_PREVIEWS_ENABLED=false and
+    # restart meeting-api if preview generation ever misbehaves on a busy
+    # host.
+    on_demand_previews_enabled: bool = True
+    # Frame grabbed for the og:image card (seconds into the video).
+    on_demand_poster_time_seconds: float = 5.0
+    # `summary_large_image` works everywhere. Set to `player` once
+    # meet.witysk.org is whitelisted for X/Twitter player cards — the
+    # twitter:player iframe tags are emitted either way.
+    on_demand_twitter_card: str = "summary_large_image"
+
     # --- Live HLS for the TI-TV public channel -------------------------------
     # The mobile apps need a *castable / backgroundable* live stream, which the
     # WebRTC public room can't provide. When the public channel whose slug is

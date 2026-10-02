@@ -11,6 +11,10 @@ Allow: /login$
 Allow: /terms$
 Allow: /privacy$
 Allow: /legal$
+Allow: /on-demand$
+# Card assets (og:image poster, og:video clip, oEmbed) referenced by the
+# allowed /on-demand pages must stay fetchable for search/rich results.
+Allow: /api/v1/on-demand/
 Disallow: /account
 Disallow: /settings
 Disallow: /recordings
@@ -20,6 +24,7 @@ Disallow: /j/
 Disallow: /record
 Disallow: /sso-callback
 Disallow: /ti-cafe
+Disallow: /embed/
 Disallow: /api/
 
 Sitemap: https://meet.witysk.org/sitemap.xml

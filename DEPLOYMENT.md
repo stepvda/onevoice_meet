@@ -271,6 +271,13 @@ loopback-only by editing `/opt/meet/docker-compose.yml`:
       - "127.0.0.1:8443:443" # change from "443:443"
 ```
 
+> **Production note:** `turn.witysk.org` already uses Option A — a host-level
+> `caddy-edge` (layer4) owns :80/:443 and forwards to these loopback ports
+> with PROXY protocol v2, which is why `caddy/Caddyfile` contains the
+> `servers :443 { listener_wrappers { proxy_protocol … } }` block and the
+> checked-in `docker-compose.yml` ships the loopback bindings. Don't change
+> them back unless the host edge is removed.
+
 Then in the existing proxy (example nginx):
 
 ```nginx
