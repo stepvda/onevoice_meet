@@ -49,13 +49,12 @@ _DEFAULT_TIMEOUT_SECONDS = 90
 # ─── Share-card layout ─────────────────────────────────────────────────────
 # Bump when the poster composition changes: the version is part of the cache
 # filename and the routes' media URLs, so social platforms refetch.
-_CARD_VERSION = 3
+_CARD_VERSION = 4
 # Candidate frame times for the card image. The configured preferred second
 # (default 5s) is tried first; the rest are fallbacks for videos whose
 # opening seconds are black or fading — a fixed 5s frame produced solid
 # black Facebook/WhatsApp cards in production.
 _CANDIDATE_TIMES: tuple[float, ...] = (8.0, 12.0, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0)
-_MIN_FRAME_BRIGHTNESS = 32.0  # 0-255 luma; below this the frame reads black
 _BEST_TIME: dict[str, tuple[float, float]] = {}  # "<path>|<mtime>" -> (mtime, t)
 
 _FONT_BOLD_PATHS = (
@@ -222,8 +221,8 @@ def _wrap_lines(draw, text: str, font, max_width: float, max_lines: int) -> list
     return lines
 
 
-def _probe_brightness(src: Path, t: float) -> float:
-    """Mean luma (0-255) of the frame at `t` via ffmpeg signalstats."""
+def _probe_frame_jpeg(src: Path, t: float) -> bytes | None:
+    """Extract one small frame at `t` as JPEG bytes (for scoring)."""
     cmd = [
         _FFMPEG_BIN,
         "-hide_banner",
@@ -231,27 +230,64 @@ def _probe_brightness(src: Path, t: float) -> float:
         "-ss", f"{max(0.0, t):.3f}",
         "-i", str(src),
         "-frames:v", "1",
-        "-vf", "scale=160:-2,signalstats,metadata=print:file=-",
-        "-f", "null", "-",
+        "-vf", "scale=192:-2",
+        "-f", "image2pipe",
+        "-vcodec", "mjpeg",
+        "-q:v", "5",
+        "pipe:1",
     ]
     try:
         with _GEN_SEMAPHORE:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+            proc = subprocess.run(cmd, capture_output=True, timeout=20)
     except (subprocess.TimeoutExpired, OSError):
-        return 0.0
-    match = re.search(r"signalstats\.YAVG=([\d.]+)", proc.stdout or "")
-    if match is None:
-        match = re.search(r"signalstats\.YAVG=([\d.]+)", proc.stderr or "")
-    return float(match.group(1)) if match else 0.0
+        return None
+    if proc.returncode != 0 or not proc.stdout:
+        return None
+    return proc.stdout
+
+
+def _frame_score(data: bytes) -> float:
+    """Heuristic scene score for a candidate frame. Rewards brightness,
+    texture and color; heavily penalizes black/fade frames and slide-like
+    frames (dark or white background covered in text) — a fair-use/title
+    card is bright but makes an ugly card."""
+    from io import BytesIO
+
+    from PIL import Image, ImageStat
+
+    try:
+        img = Image.open(BytesIO(data)).convert("RGB")
+    except Exception:  # noqa: BLE001
+        return -1.0
+    luma = img.convert("L")
+    hist = luma.histogram()
+    n = max(1, luma.width * luma.height)
+    mean = sum(i * c for i, c in enumerate(hist)) / n
+    var = sum((i - mean) ** 2 * c for i, c in enumerate(hist)) / n
+    std = var ** 0.5
+    # Tolerant thresholds: low-quality JPEG probes smear text edges.
+    dark = sum(hist[:40]) / n
+    bright = sum(hist[215:]) / n
+    sat = ImageStat.Stat(img.convert("HSV")).mean[1]
+
+    score = mean * 0.4 + std * 1.1 + sat * 0.7
+    if mean < 24:  # black / fade
+        score *= 0.15
+    if dark > 0.35 and bright > 0.02:  # dark slide with bright text
+        score *= 0.15
+    if bright > 0.30 and sat < 50:  # mostly-white slide
+        score *= 0.35
+    return score
 
 
 def pick_frame_time(src: Path, duration: float) -> float:
-    """Choose a visually usable frame time for the card and clips.
+    """Choose the best-looking frame time for the card and clips.
 
-    The configured `on_demand_poster_time_seconds` (5s default) wins when
-    that frame isn't black/faded; otherwise the earliest bright candidate is
-    used. Memoized per (path, mtime) so poster/GIF/clip agree and repeat
-    requests don't re-probe."""
+    Candidates start at `on_demand_poster_time_seconds` (5s default) and
+    include later offsets plus 5%/10% of the duration (to escape long
+    intros/slides). Each candidate is scored by `_frame_score` and the best
+    one wins. Memoized per (path, mtime) so poster/GIF/clip agree and
+    repeat requests don't re-probe."""
     try:
         mtime = src.stat().st_mtime
     except OSError:
@@ -263,22 +299,23 @@ def pick_frame_time(src: Path, duration: float) -> float:
 
     preferred = float(settings.on_demand_poster_time_seconds)
     limit = max(1.0, duration - 1.0)
-    ordered = [preferred, *(t for t in _CANDIDATE_TIMES if t != preferred)]
+    raw = [preferred, *_CANDIDATE_TIMES, duration * 0.05, duration * 0.10]
+    times: list[float] = []
+    for t in raw:
+        t = min(max(1.0, t), limit)
+        if all(abs(t - seen) > 0.5 for seen in times):
+            times.append(t)
 
-    chosen: float | None = None
-    brightest = (0.0, min(preferred, limit))
-    for t in ordered:
-        t = min(t, limit)
-        if t <= 0:
+    best_score = -1.0
+    chosen = min(preferred, limit)
+    for t in times:
+        data = _probe_frame_jpeg(src, t)
+        if data is None:
             continue
-        b = _probe_brightness(src, t)
-        if b > brightest[0]:
-            brightest = (b, t)
-        if b >= _MIN_FRAME_BRIGHTNESS:
+        s = _frame_score(data)
+        if s > best_score:
+            best_score = s
             chosen = t
-            break
-    if chosen is None:
-        chosen = brightest[1]
     if len(_BEST_TIME) > 1024:
         _BEST_TIME.clear()
     _BEST_TIME[key] = (mtime, chosen)
@@ -321,10 +358,10 @@ def _compose_card(
 
         overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         od = ImageDraw.Draw(overlay)
-        grad_start = int(H * 0.38)
+        grad_start = int(H * 0.35)
         for y in range(grad_start, H):
             f = (y - grad_start) / max(1, H - grad_start)
-            od.line([(0, y), (W, y)], fill=(4, 9, 18, int(225 * f * f)))
+            od.line([(0, y), (W, y)], fill=(4, 9, 18, int(235 * f * f)))
         card = Image.alpha_composite(card.convert("RGBA"), overlay)
         draw = ImageDraw.Draw(card)
 

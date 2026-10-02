@@ -169,6 +169,42 @@ def test_poster_endpoint(client, on_demand_video):
     assert r2.content == r.content
 
 
+def test_frame_score_prefers_scenes_over_slides():
+    """The card image should be a scene, not a black frame or a text slide
+    (a bright fair-use/title card produced ugly overlapped cards)."""
+    import random
+    from io import BytesIO
+
+    from PIL import Image, ImageDraw
+
+    from app.services import previews
+
+    def to_jpeg(img) -> bytes:
+        buf = BytesIO()
+        img.save(buf, "JPEG")
+        return buf.getvalue()
+
+    random.seed(7)
+    scene = Image.new("RGB", (192, 108))
+    px = scene.load()
+    for x in range(192):
+        for y in range(108):
+            px[x, y] = (
+                random.randint(40, 220),
+                random.randint(40, 220),
+                random.randint(40, 220),
+            )
+    slide = Image.new("RGB", (192, 108), (4, 4, 6))
+    d = ImageDraw.Draw(slide)
+    for i in range(6):
+        d.rectangle([10, 8 + i * 14, 180, 16 + i * 14], fill=(240, 240, 240))
+    black = Image.new("RGB", (192, 108), (2, 2, 2))
+
+    scene_score = previews._frame_score(to_jpeg(scene))
+    assert scene_score > previews._frame_score(to_jpeg(slide))
+    assert scene_score > previews._frame_score(to_jpeg(black))
+
+
 def test_pick_frame_time_skips_black_intro(tmp_path):
     """A video with a black opening must not produce a black card: the
     chosen frame moves past the fade-in."""
