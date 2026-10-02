@@ -46,6 +46,29 @@ _FFMPEG_BIN = shutil.which("meet-ffmpeg") or "ffmpeg"
 _GEN_SEMAPHORE = threading.BoundedSemaphore(1)
 _DEFAULT_TIMEOUT_SECONDS = 90
 
+# ─── Share-card layout ─────────────────────────────────────────────────────
+# Bump when the poster composition changes: the version is part of the cache
+# filename and the routes' media URLs, so social platforms refetch.
+_CARD_VERSION = 2
+# Candidate frame times for the card image. The configured preferred second
+# (default 5s) is tried first; the rest are fallbacks for videos whose
+# opening seconds are black or fading — a fixed 5s frame produced solid
+# black Facebook/WhatsApp cards in production.
+_CANDIDATE_TIMES: tuple[float, ...] = (8.0, 12.0, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0)
+_MIN_FRAME_BRIGHTNESS = 32.0  # 0-255 luma; below this the frame reads black
+_BEST_TIME: dict[str, tuple[float, float]] = {}  # "<path>|<mtime>" -> (mtime, t)
+
+_FONT_BOLD_PATHS = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+    "/Library/Fonts/Arial Bold.ttf",
+)
+_FONT_REGULAR_PATHS = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/System/Library/Fonts/Supplemental/Arial.ttf",
+    "/Library/Fonts/Arial.ttf",
+)
+
 _LOCKS: dict[str, threading.Lock] = {}
 _LOCKS_GUARD = threading.Lock()
 
@@ -69,21 +92,21 @@ def _lock_for(key: str) -> threading.Lock:
         return lock
 
 
-def _note_failure(out: Path) -> None:
+def _note_failure(key: str) -> None:
     now = time.time()
-    _FAILED[str(out)] = now + _FAILURE_TTL_SECONDS
+    _FAILED[key] = now + _FAILURE_TTL_SECONDS
     if len(_FAILED) > 2000:
-        for key, expiry in list(_FAILED.items()):
+        for k, expiry in list(_FAILED.items()):
             if expiry <= now:
-                _FAILED.pop(key, None)
+                _FAILED.pop(k, None)
 
 
-def _in_failure_cooldown(out: Path) -> bool:
-    expiry = _FAILED.get(str(out))
+def _in_failure_cooldown(key: str) -> bool:
+    expiry = _FAILED.get(key)
     if expiry is None:
         return False
     if expiry <= time.time():
-        _FAILED.pop(str(out), None)
+        _FAILED.pop(key, None)
         return False
     return True
 
@@ -100,8 +123,12 @@ def _cache_root() -> Path:
 
 def poster_cache_path(item_id: str, t: float = 5.0, width: int = 1200) -> Path:
     """Where the poster for these parameters is (or would be) cached. Used
-    by HEAD probes to answer without spawning ffmpeg."""
-    return _cache_root() / f"{_safe_id(item_id)}-poster-{int(t * 1000)}-w{width}.jpg"
+    by HEAD probes to answer without spawning ffmpeg. The layout version is
+    part of the name so a composition change invalidates old cards."""
+    return (
+        _cache_root()
+        / f"{_safe_id(item_id)}-poster-{int(t * 1000)}-w{width}-v{_CARD_VERSION}.jpg"
+    )
 
 
 def gif_cache_path(
@@ -126,12 +153,225 @@ def clip_cache_path(
     )
 
 
-def is_cached(out: Path) -> bool:
-    """Non-empty artifact already on disk (no freshness check — callers that
-    need mtime validation use the `*_path` functions)."""
+def find_cached(item_id: str, kind: str) -> Path | None:
+    """Newest cached artifact of `kind` ("poster", "gif", "clip") for an
+    item, regardless of which frame time it was generated at. Lets HEAD
+    probes answer from disk without re-deriving the chosen time."""
+    prefix = f"{_safe_id(item_id)}-{kind}-"
+    best: tuple[float, Path] | None = None
     try:
-        return out.stat().st_size > 0
+        for p in _cache_root().glob(f"{prefix}*"):
+            if not p.is_file() or ".tmp." in p.name or ".frame." in p.name:
+                continue
+            try:
+                st = p.stat()
+            except OSError:
+                continue
+            if st.st_size <= 0:
+                continue
+            if best is None or st.st_mtime > best[0]:
+                best = (st.st_mtime, p)
     except OSError:
+        return None
+    return best[1] if best else None
+
+
+def _fmt_duration(seconds: float) -> str:
+    s = max(0, int(round(seconds)))
+    h, rem = divmod(s, 3600)
+    m, sec = divmod(rem, 60)
+    return f"{h}:{m:02d}:{sec:02d}" if h else f"{m}:{sec:02d}"
+
+
+def _font(paths: tuple[str, ...], size: int):
+    from PIL import ImageFont
+
+    for path in paths:
+        try:
+            if Path(path).exists():
+                return ImageFont.truetype(path, size)
+        except OSError:
+            continue
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:  # Pillow < 10.1
+        return ImageFont.load_default()
+
+
+def _wrap_lines(draw, text: str, font, max_width: float, max_lines: int) -> list[str]:
+    words = (text or "").split()
+    if not words:
+        return []
+    lines: list[str] = []
+    cur = ""
+    for word in words:
+        probe = f"{cur} {word}".strip()
+        if cur and draw.textlength(probe, font=font) > max_width:
+            lines.append(cur)
+            cur = word
+        else:
+            cur = probe
+    if cur:
+        lines.append(cur)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        last = lines[-1]
+        while last and draw.textlength(last + "…", font=font) > max_width:
+            last = last[:-1]
+        lines[-1] = last + "…"
+    return lines
+
+
+def _probe_brightness(src: Path, t: float) -> float:
+    """Mean luma (0-255) of the frame at `t` via ffmpeg signalstats."""
+    cmd = [
+        _FFMPEG_BIN,
+        "-hide_banner",
+        "-loglevel", "error",
+        "-ss", f"{max(0.0, t):.3f}",
+        "-i", str(src),
+        "-frames:v", "1",
+        "-vf", "scale=160:-2,signalstats,metadata=print:file=-",
+        "-f", "null", "-",
+    ]
+    try:
+        with _GEN_SEMAPHORE:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+    except (subprocess.TimeoutExpired, OSError):
+        return 0.0
+    match = re.search(r"signalstats\.YAVG=([\d.]+)", proc.stdout or "")
+    if match is None:
+        match = re.search(r"signalstats\.YAVG=([\d.]+)", proc.stderr or "")
+    return float(match.group(1)) if match else 0.0
+
+
+def pick_frame_time(src: Path, duration: float) -> float:
+    """Choose a visually usable frame time for the card and clips.
+
+    The configured `on_demand_poster_time_seconds` (5s default) wins when
+    that frame isn't black/faded; otherwise the earliest bright candidate is
+    used. Memoized per (path, mtime) so poster/GIF/clip agree and repeat
+    requests don't re-probe."""
+    try:
+        mtime = src.stat().st_mtime
+    except OSError:
+        mtime = 0.0
+    key = f"{src}|{int(mtime)}"
+    cached = _BEST_TIME.get(key)
+    if cached is not None and cached[0] == mtime:
+        return cached[1]
+
+    preferred = float(settings.on_demand_poster_time_seconds)
+    limit = max(1.0, duration - 1.0)
+    ordered = [preferred, *(t for t in _CANDIDATE_TIMES if t != preferred)]
+
+    chosen: float | None = None
+    brightest = (0.0, min(preferred, limit))
+    for t in ordered:
+        t = min(t, limit)
+        if t <= 0:
+            continue
+        b = _probe_brightness(src, t)
+        if b > brightest[0]:
+            brightest = (b, t)
+        if b >= _MIN_FRAME_BRIGHTNESS:
+            chosen = t
+            break
+    if chosen is None:
+        chosen = brightest[1]
+    if len(_BEST_TIME) > 1024:
+        _BEST_TIME.clear()
+    _BEST_TIME[key] = (mtime, chosen)
+    return chosen
+
+
+def _compose_card(
+    frame_path: Path, out: Path, title: str, subtitle: str, duration: float
+) -> bool:
+    """Compose the 1200x630 social card: blurred cover background, the full
+    frame aspect-fit on top, a bottom gradient, play badge, title/subtitle
+    and a duration chip. Returns False when Pillow fails — the caller then
+    serves the raw frame instead."""
+    try:
+        from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageOps
+    except Exception:  # noqa: BLE001 — Pillow missing should degrade, not 500
+        return False
+
+    W, H = 1200, 630
+    try:
+        frame = Image.open(frame_path).convert("RGB")
+
+        bg = ImageOps.fit(frame, (W, H), method=Image.LANCZOS, centering=(0.5, 0.4))
+        bg = bg.filter(ImageFilter.GaussianBlur(26))
+        bg = ImageEnhance.Brightness(bg).enhance(0.45)
+        card = bg.copy()
+
+        fg = ImageOps.contain(frame, (W, H), method=Image.LANCZOS)
+        card.paste(fg, ((W - fg.width) // 2, (H - fg.height) // 2))
+
+        overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        od = ImageDraw.Draw(overlay)
+        grad_start = int(H * 0.40)
+        for y in range(grad_start, H):
+            f = (y - grad_start) / max(1, H - grad_start)
+            od.line([(0, y), (W, y)], fill=(4, 9, 18, int(215 * f * f)))
+        card = Image.alpha_composite(card.convert("RGBA"), overlay)
+        draw = ImageDraw.Draw(card)
+
+        # Play badge — signals "video" even where only the still is shown.
+        cx, cy, r = W // 2, H // 2, 60
+        draw.ellipse(
+            [cx - r, cy - r, cx + r, cy + r],
+            fill=(6, 12, 24, 130),
+            outline=(255, 255, 255, 210),
+            width=4,
+        )
+        draw.polygon(
+            [(cx - 16, cy - 26), (cx - 16, cy + 26), (cx + 28, cy)],
+            fill=(255, 255, 255, 235),
+        )
+
+        font_kick = _font(_FONT_BOLD_PATHS, 24)
+        font_title = _font(_FONT_BOLD_PATHS, 52)
+        font_sub = _font(_FONT_REGULAR_PATHS, 28)
+        font_chip = _font(_FONT_BOLD_PATHS, 26)
+
+        x = 56
+        y = H - 214
+        draw.text(
+            (x, y),
+            "ON DEMAND · MEET.WITYSK.ORG",
+            font=font_kick,
+            fill=(56, 189, 248, 255),
+        )
+        y += 40
+        for line in _wrap_lines(draw, title, font_title, W - x - 220, 2):
+            draw.text((x, y), line, font=font_title, fill=(246, 250, 255, 255))
+            y += 60
+        if subtitle:
+            sub_lines = _wrap_lines(draw, subtitle, font_sub, W - x - 220, 1)
+            if sub_lines:
+                draw.text(
+                    (x, y + 8), sub_lines[0], font=font_sub, fill=(203, 213, 225, 255)
+                )
+
+        if duration > 0:
+            label = _fmt_duration(duration)
+            text_w = draw.textlength(label, font=font_chip)
+            bx = W - 56 - text_w - 28
+            by = H - 92
+            draw.rounded_rectangle(
+                [bx, by, W - 56, by + 46], radius=10, fill=(6, 12, 24, 200)
+            )
+            draw.text(
+                (bx + 14, by + 8), label, font=font_chip, fill=(255, 255, 255, 255)
+            )
+
+        card.convert("RGB").save(out, "JPEG", quality=88)
+        return out.stat().st_size > 0
+    except Exception as e:  # noqa: BLE001
+        log.warning("card composition failed: %s", e)
+        out.unlink(missing_ok=True)
         return False
 
 
@@ -151,7 +391,7 @@ def _run_ffmpeg(args: list[str], out: Path, timeout: int = _DEFAULT_TIMEOUT_SECO
     try:
         _run_ffmpeg_inner(args, out, timeout)
     except PreviewError:
-        _note_failure(out)
+        _note_failure(str(out))
         raise
 
 
@@ -235,47 +475,66 @@ def _prune_cache() -> None:
 
 
 def poster_path(
-    src: Path, item_id: str, t: float = 5.0, width: int = 1200
+    src: Path,
+    item_id: str,
+    duration: float,
+    title: str = "",
+    subtitle: str = "",
+    width: int = 1200,
 ) -> Path:
-    """1200x630 JPEG still taken at `t` seconds (center-cropped from the
-    scaled frame so any aspect ratio fills the OG box)."""
-    height = max(1, round(width * 630 / 1200))
+    """1200x630 branded social card.
+
+    Picks the best usable frame near the configured second (skipping
+    black/fade openings), then composes it with a blurred cover background,
+    play badge, title, subtitle and duration chip. Falls back to the raw
+    frame when Pillow composition fails."""
+    kind_key = f"{_safe_id(item_id)}:poster"
+    if _in_failure_cooldown(kind_key):
+        raise PreviewError("recent poster failure; backing off")
+    t = pick_frame_time(src, duration)
     out = poster_cache_path(item_id, t, width)
     if _fresh(out, src):
         return out
     with _lock_for(str(out)):
         if _fresh(out, src):
             return out
-        if _in_failure_cooldown(out):
-            raise PreviewError("recent poster failure; backing off")
-        # Accurate-ish seek: land 0.5s before target on a keyframe, then
-        # decode forward. Costs little and avoids a poster seconds off.
-        pre = max(0.0, t - 0.5)
-        args = [
-            "-ss", f"{pre:.3f}",
-            "-i", str(src),
-            "-ss", f"{t - pre:.3f}",
-            "-frames:v", "1",
-            "-vf",
-            (
-                f"scale={width}:{round(width * 9 / 16)}:"
-                f"force_original_aspect_ratio=increase,crop={width}:{height}"
-            ),
-            "-q:v", "3",
-        ]
-        _run_ffmpeg(args, out, timeout=45)
+        try:
+            # Accurate-ish seek: land 0.5s before target on a keyframe,
+            # then decode forward. Costs little and avoids a frame off.
+            pre = max(0.0, t - 0.5)
+            args = [
+                "-ss", f"{pre:.3f}",
+                "-i", str(src),
+                "-ss", f"{t - pre:.3f}",
+                "-frames:v", "1",
+                "-vf", f"scale={width}:-2:flags=lanczos",
+                "-q:v", "2",
+            ]
+            frame = out.with_name(out.stem + ".frame" + out.suffix)
+            _run_ffmpeg(args, frame, timeout=45)
+            if not _compose_card(frame, out, title, subtitle, duration):
+                try:
+                    os.replace(frame, out)
+                except OSError as e:
+                    frame.unlink(missing_ok=True)
+                    raise PreviewError(f"could not store poster: {e}") from e
+            frame.unlink(missing_ok=True)
+        except PreviewError:
+            _note_failure(kind_key)
+            raise
     return out
 
 
 def gif_path(
     src: Path,
     item_id: str,
-    start: float = 5.0,
-    duration: float = 3.0,
+    source_duration: float,
+    clip_seconds: float = 3.0,
     width: int = 320,
     fps: int = 8,
+    start: float | None = None,
 ) -> Path:
-    """Short animated GIF.
+    """Short animated GIF starting at a bright frame.
 
     Intentionally a single-pass encode with the GIF muxer's own palette:
     `palettegen`/`paletteuse` from a large HEVC source buffers frames faster
@@ -283,59 +542,77 @@ def gif_path(
     production file. The plain pipeline stays under ~150 MB while still
     producing a serviceable preview (social platforms usually show only the
     first frame anyway)."""
+    kind_key = f"{_safe_id(item_id)}:gif"
+    if _in_failure_cooldown(kind_key):
+        raise PreviewError("recent gif failure; backing off")
+    if start is None:
+        start = pick_frame_time(src, source_duration)
+    duration = min(clip_seconds, max(0.5, source_duration - start))
     out = gif_cache_path(item_id, start, duration, width, fps)
     if _fresh(out, src):
         return out
     with _lock_for(str(out)):
         if _fresh(out, src):
             return out
-        if _in_failure_cooldown(out):
-            raise PreviewError("recent gif failure; backing off")
-        args = [
-            "-ss", f"{max(0.0, start):.3f}",
-            "-i", str(src),
-            "-t", f"{max(0.5, duration):.3f}",
-            "-an",
-            "-vf", f"fps={fps},scale={width}:-2:flags=bilinear",
-            "-loop", "0",
-        ]
-        _run_ffmpeg(args, out, timeout=45)
+        try:
+            args = [
+                "-ss", f"{max(0.0, start):.3f}",
+                "-i", str(src),
+                "-t", f"{max(0.5, duration):.3f}",
+                "-an",
+                "-vf", f"fps={fps},scale={width}:-2:flags=bilinear",
+                "-loop", "0",
+            ]
+            _run_ffmpeg(args, out, timeout=45)
+        except PreviewError:
+            _note_failure(kind_key)
+            raise
     return out
 
 
 def clip_path(
     src: Path,
     item_id: str,
-    start: float = 5.0,
-    duration: float = 8.0,
+    source_duration: float,
+    clip_seconds: float = 8.0,
     width: int = 1280,
+    start: float | None = None,
 ) -> Path:
     """Short H.264/AAC MP4 (faststart) used as og:video and as the
-    twitter:player:stream source."""
+    twitter:player:stream source. Starts at a bright frame so platforms'
+    inline players don't open on a black still."""
+    kind_key = f"{_safe_id(item_id)}:clip"
+    if _in_failure_cooldown(kind_key):
+        raise PreviewError("recent clip failure; backing off")
+    if start is None:
+        start = pick_frame_time(src, source_duration)
+    duration = min(clip_seconds, max(0.5, source_duration - start))
     out = clip_cache_path(item_id, start, duration, width)
     if _fresh(out, src):
         return out
     with _lock_for(str(out)):
         if _fresh(out, src):
             return out
-        if _in_failure_cooldown(out):
-            raise PreviewError("recent clip failure; backing off")
-        args = [
-            "-ss", f"{max(0.0, start):.3f}",
-            "-i", str(src),
-            "-t", f"{max(0.5, duration):.3f}",
-            "-vf", f"scale={width}:-2",
-            "-c:v", "libx264",
-            "-profile:v", "main",
-            "-preset", "veryfast",
-            "-crf", "24",
-            "-pix_fmt", "yuv420p",
-            "-c:a", "aac",
-            "-b:a", "96k",
-            "-ac", "2",
-            "-movflags", "+faststart",
-        ]
-        _run_ffmpeg(args, out, timeout=90)
+        try:
+            args = [
+                "-ss", f"{max(0.0, start):.3f}",
+                "-i", str(src),
+                "-t", f"{max(0.5, duration):.3f}",
+                "-vf", f"scale={width}:-2",
+                "-c:v", "libx264",
+                "-profile:v", "main",
+                "-preset", "veryfast",
+                "-crf", "24",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-b:a", "96k",
+                "-ac", "2",
+                "-movflags", "+faststart",
+            ]
+            _run_ffmpeg(args, out, timeout=90)
+        except PreviewError:
+            _note_failure(kind_key)
+            raise
     return out
 
 

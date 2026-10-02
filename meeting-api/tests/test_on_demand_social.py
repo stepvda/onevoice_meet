@@ -155,9 +155,41 @@ def test_poster_endpoint(client, on_demand_video):
     assert r.status_code == 200, r.text
     assert r.headers["content-type"] == "image/jpeg"
     assert len(r.content) > 2000
+    # The composed card must not be a black frame (the production bug this
+    # fixes) and must be the advertised 1200x630.
+    from io import BytesIO
+
+    from PIL import Image, ImageStat
+
+    img = Image.open(BytesIO(r.content))
+    assert img.size == (1200, 630)
+    assert ImageStat.Stat(img.convert("L")).mean[0] > 20
     # Cached second call serves the same bytes.
     r2 = client.get(f"/api/v1/on-demand/items/{vid}/poster.jpg")
     assert r2.content == r.content
+
+
+def test_pick_frame_time_skips_black_intro(tmp_path):
+    """A video with a black opening must not produce a black card: the
+    chosen frame moves past the fade-in."""
+    if not FFMPEG:
+        pytest.skip("ffmpeg not available")
+    src = tmp_path / "black-intro.mp4"
+    subprocess.run(
+        [
+            FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "color=c=black:s=320x240:r=10:d=7",
+            "-f", "lavfi", "-i", "testsrc=size=320x240:rate=10:d=15",
+            "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0",
+            "-pix_fmt", "yuv420p", "-t", "20", str(src),
+        ],
+        check=True,
+    )
+
+    from app.services import previews
+
+    chosen = previews.pick_frame_time(src, 20.0)
+    assert chosen >= 8.0, chosen
 
 
 def test_clip_endpoint(client, on_demand_video):
@@ -183,7 +215,7 @@ def test_embed_and_oembed(client, on_demand_video):
     assert r3.status_code == 200
     body = r3.json()
     assert body["type"] == "video"
-    assert body["thumbnail_url"].endswith("poster.jpg")
+    assert "poster.jpg" in body["thumbnail_url"]
     assert "<iframe" in body["html"]
 
 

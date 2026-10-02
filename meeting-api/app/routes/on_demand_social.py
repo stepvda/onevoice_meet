@@ -41,8 +41,9 @@ router = APIRouter(prefix="/v1")
 # 1200x630 is the ratio social platforms render as a large card.
 POSTER_WIDTH = 1200
 POSTER_HEIGHT = 630
-# Frame/time policy comes from the operator setting (seconds into the video).
-POSTER_TIME = float(settings.on_demand_poster_time_seconds)
+# Bump when card content changes so platforms refetch (the endpoints ignore
+# unknown query params and the internal cache filename is versioned too).
+MEDIA_URL_VERSION = 2
 # The other two formats the share page advertises. Kept fixed — the media
 # endpoints no longer expose per-request time/width parameters, because an
 # anonymous caller could otherwise force unbounded distinct ffmpeg encodes
@@ -159,8 +160,9 @@ def _video_context(item: PlaybackItem, meeting: Meeting, duration: float) -> dic
         "description": desc,
         "duration": duration,
         "share_url": share_url,
-        "poster_url": f"{base}/poster.jpg",
-        "clip_url": f"{base}/preview.mp4",
+        "poster_url": f"{base}/poster.jpg?v={MEDIA_URL_VERSION}",
+        "clip_url": f"{base}/preview.mp4?v={MEDIA_URL_VERSION}",
+        "stream_url": f"{base}",
         "stream_url": f"{base}",
         "embed_url": f"{settings.public_url}/embed/on-demand?v={item.id}",
         "uploaded_at": item.uploaded_at,
@@ -428,10 +430,6 @@ def _maybe_head(request: Request, response: Response) -> Response:
     )
 
 
-def _clamp_start(start: float, duration: float) -> float:
-    return min(max(0.0, start), max(0.0, duration - 0.5))
-
-
 def _cache_headers() -> dict[str, str]:
     return {"Cache-Control": "public, max-age=86400"}
 
@@ -440,11 +438,12 @@ def _media_response(path: Path, media_type: str) -> FileResponse:
     return FileResponse(str(path), media_type=media_type, headers=_cache_headers())
 
 
-def _head_media(cached: Path, media_type: str) -> Response:
-    """HEAD probe answer: headers for an existing artifact, or an empty 200
-    with the right media type so crawlers proceed to the GET. Never spawns
-    ffmpeg for a body nobody reads."""
-    if previews.is_cached(cached):
+def _head_media(item_id: str, kind: str, media_type: str) -> Response:
+    """HEAD probe answer: headers for an existing artifact of any variant,
+    or an empty 200 with the right media type so crawlers proceed to the
+    GET. Never spawns ffmpeg for a body nobody reads."""
+    cached = previews.find_cached(item_id, kind)
+    if cached is not None:
         return _media_response(cached, media_type)
     return Response(status_code=200, media_type=media_type, headers=_cache_headers())
 
@@ -452,9 +451,10 @@ def _head_media(cached: Path, media_type: str) -> Response:
 @router.get("/on-demand/items/{item_id}/poster.jpg")
 @router.head("/on-demand/items/{item_id}/poster.jpg", include_in_schema=False)
 def on_demand_poster(request: Request, item_id: str) -> Response:
-    """1200x630 still at the configured second — og:image / twitter:image.
-    Falls back to a branded placeholder card when previews are disabled or
-    the file can't be decoded.
+    """1200x630 branded card (og:image / twitter:image): best usable frame
+    near the configured second, composed with title, play badge and
+    duration. Falls back to a branded placeholder card when previews are
+    disabled or the file can't be decoded.
 
     The DB session is closed before any ffmpeg work starts so a slow encode
     never pins a pooled connection, and the variant is fixed (no
@@ -465,15 +465,19 @@ def on_demand_poster(request: Request, item_id: str) -> Response:
         item, meeting, _source, path, dur = resolve_on_demand_item(item_id, db)
         title = clean_title(item.filename)
         meeting_title = meeting.display_title or ""
-    t = _clamp_start(POSTER_TIME, dur)
     if request.method == "HEAD":
-        return _head_media(
-            previews.poster_cache_path(item_id, t, POSTER_WIDTH), "image/jpeg"
-        )
+        return _head_media(item_id, "poster", "image/jpeg")
     out: Path | None = None
     if settings.on_demand_previews_enabled:
         try:
-            out = previews.poster_path(path, item_id, t=t, width=POSTER_WIDTH)
+            out = previews.poster_path(
+                path,
+                item_id,
+                dur,
+                title=title,
+                subtitle=meeting_title,
+                width=POSTER_WIDTH,
+            )
         except previews.PreviewError as e:
             log.warning("poster generation failed for %s: %s", item_id, e)
     if out is None or not out.exists():
@@ -492,17 +496,17 @@ def on_demand_preview_gif(request: Request, item_id: str) -> Response:
     its first frame, some messaging apps animate it)."""
     with SessionLocal() as db:
         _item, _m, _source, path, source_dur = resolve_on_demand_item(item_id, db)
+    if request.method == "HEAD":
+        return _head_media(item_id, "gif", "image/gif")
     if not settings.on_demand_previews_enabled:
         raise HTTPException(status_code=503, detail="previews disabled")
-    start = _clamp_start(POSTER_TIME, source_dur)
-    dur = min(GIF_DURATION, max(0.5, source_dur - start))
-    if request.method == "HEAD":
-        return _head_media(
-            previews.gif_cache_path(item_id, start, dur, GIF_WIDTH), "image/gif"
-        )
     try:
         out = previews.gif_path(
-            path, item_id, start=start, duration=dur, width=GIF_WIDTH
+            path,
+            item_id,
+            source_dur,
+            clip_seconds=GIF_DURATION,
+            width=GIF_WIDTH,
         )
     except previews.PreviewError as e:
         log.warning("gif preview failed for %s: %s", item_id, e)
@@ -516,17 +520,17 @@ def on_demand_preview_clip(request: Request, item_id: str) -> Response:
     """Short H.264 clip for og:video / twitter:player:stream."""
     with SessionLocal() as db:
         _item, _m, _source, path, source_dur = resolve_on_demand_item(item_id, db)
+    if request.method == "HEAD":
+        return _head_media(item_id, "clip", "video/mp4")
     if not settings.on_demand_previews_enabled:
         raise HTTPException(status_code=503, detail="previews disabled")
-    start = _clamp_start(POSTER_TIME, source_dur)
-    dur = min(CLIP_DURATION, max(0.5, source_dur - start))
-    if request.method == "HEAD":
-        return _head_media(
-            previews.clip_cache_path(item_id, start, dur, CLIP_WIDTH), "video/mp4"
-        )
     try:
         out = previews.clip_path(
-            path, item_id, start=start, duration=dur, width=CLIP_WIDTH
+            path,
+            item_id,
+            source_dur,
+            clip_seconds=CLIP_DURATION,
+            width=CLIP_WIDTH,
         )
     except previews.PreviewError as e:
         log.warning("clip preview failed for %s: %s", item_id, e)
