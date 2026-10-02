@@ -49,7 +49,7 @@ _DEFAULT_TIMEOUT_SECONDS = 90
 # ─── Share-card layout ─────────────────────────────────────────────────────
 # Bump when the poster composition changes: the version is part of the cache
 # filename and the routes' media URLs, so social platforms refetch.
-_CARD_VERSION = 2
+_CARD_VERSION = 3
 # Candidate frame times for the card image. The configured preferred second
 # (default 5s) is tried first; the rest are fallbacks for videos whose
 # opening seconds are black or fading — a fixed 5s frame produced solid
@@ -288,10 +288,9 @@ def pick_frame_time(src: Path, duration: float) -> float:
 def _compose_card(
     frame_path: Path, out: Path, title: str, subtitle: str, duration: float
 ) -> bool:
-    """Compose the 1200x630 social card: blurred cover background, the full
-    frame aspect-fit on top, a bottom gradient, play badge, title/subtitle
-    and a duration chip. Returns False when Pillow fails — the caller then
-    serves the raw frame instead."""
+    """Compose the 1200x630 social card: a full-bleed (or blurred-background)
+    frame, bottom gradient, title/subtitle and a duration chip. Returns
+    False when Pillow fails — the caller then serves the raw frame."""
     try:
         from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageOps
     except Exception:  # noqa: BLE001 — Pillow missing should degrade, not 500
@@ -301,35 +300,33 @@ def _compose_card(
     try:
         frame = Image.open(frame_path).convert("RGB")
 
-        bg = ImageOps.fit(frame, (W, H), method=Image.LANCZOS, centering=(0.5, 0.4))
-        bg = bg.filter(ImageFilter.GaussianBlur(26))
-        bg = ImageEnhance.Brightness(bg).enhance(0.45)
-        card = bg.copy()
-
-        fg = ImageOps.contain(frame, (W, H), method=Image.LANCZOS)
-        card.paste(fg, ((W - fg.width) // 2, (H - fg.height) // 2))
+        # Landscape sources are cover-cropped full-bleed (a 4:3 recording
+        # often carries baked letterbox bars that would otherwise show as a
+        # second set of bars). Tall/portrait sources keep the whole frame,
+        # over a blurred cover background.
+        aspect = frame.width / max(1, frame.height)
+        if aspect >= 1.2:
+            card = ImageOps.fit(
+                frame, (W, H), method=Image.LANCZOS, centering=(0.5, 0.45)
+            )
+        else:
+            bg = ImageOps.fit(
+                frame, (W, H), method=Image.LANCZOS, centering=(0.5, 0.4)
+            )
+            bg = bg.filter(ImageFilter.GaussianBlur(26))
+            bg = ImageEnhance.Brightness(bg).enhance(0.45)
+            card = bg.copy()
+            fg = ImageOps.contain(frame, (W, H), method=Image.LANCZOS)
+            card.paste(fg, ((W - fg.width) // 2, (H - fg.height) // 2))
 
         overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         od = ImageDraw.Draw(overlay)
-        grad_start = int(H * 0.40)
+        grad_start = int(H * 0.38)
         for y in range(grad_start, H):
             f = (y - grad_start) / max(1, H - grad_start)
-            od.line([(0, y), (W, y)], fill=(4, 9, 18, int(215 * f * f)))
+            od.line([(0, y), (W, y)], fill=(4, 9, 18, int(225 * f * f)))
         card = Image.alpha_composite(card.convert("RGBA"), overlay)
         draw = ImageDraw.Draw(card)
-
-        # Play badge — signals "video" even where only the still is shown.
-        cx, cy, r = W // 2, H // 2, 60
-        draw.ellipse(
-            [cx - r, cy - r, cx + r, cy + r],
-            fill=(6, 12, 24, 130),
-            outline=(255, 255, 255, 210),
-            width=4,
-        )
-        draw.polygon(
-            [(cx - 16, cy - 26), (cx - 16, cy + 26), (cx + 28, cy)],
-            fill=(255, 255, 255, 235),
-        )
 
         font_kick = _font(_FONT_BOLD_PATHS, 24)
         font_title = _font(_FONT_BOLD_PATHS, 52)

@@ -43,7 +43,7 @@ POSTER_WIDTH = 1200
 POSTER_HEIGHT = 630
 # Bump when card content changes so platforms refetch (the endpoints ignore
 # unknown query params and the internal cache filename is versioned too).
-MEDIA_URL_VERSION = 2
+MEDIA_URL_VERSION = 3
 # The other two formats the share page advertises. Kept fixed — the media
 # endpoints no longer expose per-request time/width parameters, because an
 # anonymous caller could otherwise force unbounded distinct ffmpeg encodes
