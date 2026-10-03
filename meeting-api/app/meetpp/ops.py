@@ -854,6 +854,18 @@ def build_state(db: Session, s: MeetppSession) -> dict:
     }
 
 
+# Delta buckets use the plural collection names the client merges (matching
+# Appendix B: {"delta":{"actions":[…]}}). `changes[].kind` stays singular.
+_DELTA_KEY = {
+    "agenda": "agenda",
+    "decision": "decisions",
+    "action": "actions",
+    "attendance": "attendance",
+    "minutes": "minutes",
+    "attachment": "attachments",
+}
+
+
 def delta_from_applied(ctx: ApplyContext) -> dict:
     """Build a compact delta for the applied operations (bounded ≤ 8 KB)."""
     delta: dict[str, list] = {}
@@ -861,6 +873,10 @@ def delta_from_applied(ctx: ApplyContext) -> dict:
     for ap in ctx.applied:
         if ap.action == "remove":
             changes.append({"kind": ap.kind, "id": ap.id, "op": "remove"})
+            # Removal still needs the plural bucket so the client can drop it.
+            key = _DELTA_KEY.get(ap.kind)
+            if key:
+                delta.setdefault(key, [])
             continue
         changes.append({"kind": ap.kind, "id": ap.id, "op": ap.action})
         if ap.id is None:
@@ -876,8 +892,9 @@ def delta_from_applied(ctx: ApplyContext) -> dict:
             "minutes": minute_dict,
             "attachment": attachment_dict,
         }.get(ap.kind)
-        if bucket:
-            delta.setdefault(ap.kind, []).append(bucket(obj))
+        key = _DELTA_KEY.get(ap.kind)
+        if bucket and key:
+            delta.setdefault(key, []).append(bucket(obj))
     return {"changes": changes, "delta": delta}
 
 

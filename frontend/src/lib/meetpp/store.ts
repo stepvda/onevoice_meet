@@ -108,12 +108,34 @@ export const useMeetpp = create<MeetppStore>((set, get) => ({
       }
       const next: BoardState = { ...board };
       const delta = msg.delta as Record<string, unknown[]>;
-      if (delta.agenda) next.agenda = mergeById(board.agenda, delta.agenda as never);
-      if (delta.decisions) next.decisions = mergeById(board.decisions, delta.decisions as never);
-      if (delta.actions) next.actions = mergeById(board.actions, delta.actions as never);
-      if (delta.attendance) next.attendance = mergeById(board.attendance, delta.attendance as never);
-      if (delta.minutes) next.minutes = mergeById(board.minutes, delta.minutes as never);
-      if (delta.attachments) next.attachments = mergeById(board.attachments, delta.attachments as never);
+      // Accept both plural collection keys (server/Appendix B) and the legacy
+      // singular op-kind keys, so a key drift can never silently drop a delta.
+      const pick = (...keys: string[]): unknown[] | undefined => {
+        for (const k of keys) if (Array.isArray(delta[k])) return delta[k];
+        return undefined;
+      };
+      const agenda = pick("agenda");
+      const decisions = pick("decisions", "decision");
+      const actions = pick("actions", "action");
+      const attendance = pick("attendance");
+      const minutes = pick("minutes");
+      const attachments = pick("attachments", "attachment");
+      if (agenda) next.agenda = mergeById(board.agenda, agenda as never);
+      if (decisions) next.decisions = mergeById(board.decisions, decisions as never);
+      if (actions) next.actions = mergeById(board.actions, actions as never);
+      if (attendance) next.attendance = mergeById(board.attendance, attendance as never);
+      if (minutes) next.minutes = mergeById(board.minutes, minutes as never);
+      if (attachments) next.attachments = mergeById(board.attachments, attachments as never);
+      // Apply removals (attachment delete).
+      for (const change of msg.changes) {
+        if (change.op !== "remove" || !change.id) continue;
+        const key = change.kind;
+        if (key === "attachment") next.attachments = next.attachments.filter((a) => a.id !== change.id);
+        else if (key === "action") next.actions = next.actions.filter((a) => a.id !== change.id);
+        else if (key === "decision") next.decisions = next.decisions.filter((d) => d.id !== change.id);
+        else if (key === "agenda") next.agenda = next.agenda.filter((i) => i.id !== change.id);
+        else if (key === "attendance") next.attendance = next.attendance.filter((a) => a.id !== change.id);
+      }
       if (delta.session) next.session = { ...board.session, ...(delta.session[0] as unknown as SessionMeta) };
       if (next.session) next.session = { ...next.session, version: msg.version };
 

@@ -704,12 +704,13 @@ async def upload_attachment(
             is_gap=True,
         )
     )
+    session.state_version += 1
     db.commit()
     await runtime_mod.runtime.get(session_id)._broadcast(
         "state",
         version=session.state_version,
         changes=[{"kind": "attachment", "id": att_id, "op": "add"}],
-        delta={"attachment": [ops.attachment_dict(att)]},
+        delta={"attachments": [ops.attachment_dict(att)]},
     )
     return {"attachment": ops.attachment_dict(att)}
 

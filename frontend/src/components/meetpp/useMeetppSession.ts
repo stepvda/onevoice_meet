@@ -29,6 +29,9 @@ export function useMeetppSession({ room, roomName, meetingId, isOwner, roomToken
   const fetchState = useCallback(async (sid: string) => {
     try {
       const state = (await meetppApi.getState(sid)) as BoardState;
+      // Never let an in-flight (stale) snapshot overwrite a newer board.
+      const current = S().board?.session.version ?? -1;
+      if (state.session && state.session.version < current) return;
       S().setBoard(state);
       S().setActive(true);
       try {
@@ -89,13 +92,17 @@ export function useMeetppSession({ room, roomName, meetingId, isOwner, roomToken
       if (type === "state") {
         const version = Number(msg.version ?? 0);
         const local = S().board?.session.version ?? -1;
-        if (local === version - 1 || local < 0) {
-          S().applyState(msg as never);
-          S().setProposal(null);
-        } else if (local !== version) {
+        if (local > version) return; // stale / out-of-order
+        if (local < 0 || local < version - 1) {
+          // First state or a gap: pull a full snapshot.
           void fetchState(String(msg.sid));
           return;
         }
+        // local === version - 1 (next) or local === version (idempotent
+        // re-broadcast carrying a delta, e.g. an attachment at the same
+        // version). Always merge the delta.
+        S().applyState(msg as never);
+        S().setProposal(null);
         const focus = msg.focus as never;
         if (focus) S().applyFocus(focus, Date.now());
         return;

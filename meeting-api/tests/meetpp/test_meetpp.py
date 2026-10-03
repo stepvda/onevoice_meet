@@ -235,6 +235,25 @@ def test_import_agenda_populates_items(db):
     assert session.template == "agenda"
 
 
+def test_delta_buckets_use_plural_collection_keys(db):
+    """Regression: deltas must use the plural collection keys the client
+    merges (decisions/actions/attachments); singular keys were silently
+    dropped, so live decisions never reached the board."""
+    session = _seed(db)
+    ctx = _ctx(db, session)
+    ops.apply_ops(
+        ctx,
+        [
+            {"op": "decision.add", "item_id": "I1", "text": "Approve the budget", "evidence": [410]},
+            {"op": "action.add", "title": "Send the budget sheet", "evidence": [411]},
+        ],
+    )
+    payload = ops.delta_from_applied(ctx)
+    assert "decisions" in payload["delta"] and payload["delta"]["decisions"][0]["text"] == "Approve the budget"
+    assert "actions" in payload["delta"] and payload["delta"]["actions"][0]["title"] == "Send the budget sheet"
+    assert {c["kind"] for c in payload["changes"]} == {"decision", "action"}
+
+
 def test_phase_helpers():
     assert phases.phase_index("discussion") == 4
     assert phases.next_phase("opening") == "previous_actions"
