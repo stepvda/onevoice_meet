@@ -20,7 +20,8 @@
     "account": "Account",
     "upgrade": "Upgraden",
     "vouchers": "Waardebonnen",
-    "admin": "Beheerder"
+    "admin": "Beheerder",
+    "onDemand": "Op aanvraag"
   },
   "tiCafe": {
     "title": "Café",
@@ -65,7 +66,10 @@
     "loading": "Laden…",
     "close": "Sluiten",
     "anonymous": "anoniem",
-    "requestFailed": "Verzoek mislukt"
+    "requestFailed": "Verzoek mislukt",
+    "on": "Aan",
+    "off": "Uit",
+    "dismiss": "Sluiten"
   },
   "signInPrompt": {
     "button": "Meld u aan op one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Wachtkamer",
     "waitingRoomDesc": "Nieuwe deelnemers wachten tot u hen toelaat via de vergaderwerkbalk.",
     "autoAdmitAuthenticated": "Automatisch toegelaten voor ingelogde gebruikers (binnenkort beschikbaar)",
-    "autoAdmitAuthenticatedDesc": "Wachtkamer omzeilen voor ingelogde one.witysk.org-gebruikers. Nog niet afgedwongen — anonieme deelnemers worden altijd in de wachtrij geplaatst."
+    "autoAdmitAuthenticatedDesc": "Wachtkamer omzeilen voor ingelogde one.witysk.org-gebruikers. Nog niet afgedwongen — anonieme deelnemers worden altijd in de wachtrij geplaatst.",
+    "lobbyGreeting": "Lobbybegroeting",
+    "lobbyGreetingHint": "Wordt aan iedereen in de lobby getoond voordat ze deelnemen.",
+    "lobbyGreetingPlaceholder": "Welkom! Zet je microfoon uit als je niet praat.",
+    "schedule": "Planning",
+    "scheduleHint": "Stel een duur en (optioneel) een herhaling in zodat agenda-uitnodigingen automatisch worden herhaald.",
+    "duration": "Duur (minuten)",
+    "recurrence": "Herhaling",
+    "recurrenceNone": "Eenmalig (geen herhaling)",
+    "recurrenceDaily": "Dagelijks",
+    "recurrenceWeekly": "Wekelijks",
+    "recurrenceBiweekly": "Elke 2 weken",
+    "recurrenceMonthly": "Maandelijks"
   },
   "discover": {
     "title": "Ontdek",
     "subtitle": "— vergaderingen die openstaan om deel te nemen",
     "join": "Deelnemen",
     "maxParticipants": "max {{n}}",
-    "hostedBy": "Gehost door {{name}}"
+    "hostedBy": "Gehost door {{name}}",
+    "view": "Weergave",
+    "viewTitle": "Bekijk de openbare stream in alleen-lezen modus",
+    "streamsTitle": "Openbare livestreams",
+    "streamsSubtitle": "— alleen kijken, geen account nodig"
   },
   "myMeetings": {
     "loading": "Je vergaderingen laden…",
@@ -272,7 +292,14 @@
     "notImage": "Geen afbeelding ({{type}})",
     "processorFailed": "Achtergrond effecten worden niet ondersteund op dit apparaat.",
     "custom": "Aangepast: {{name}}",
-    "customDefault": "Aangepaste afbeelding"
+    "customDefault": "Aangepaste afbeelding",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Oceaangolven",
+    "particles": "Deeltjes",
+    "cityscape": "Stadslichten",
+    "cherryBlossoms": "Kersenbloesems",
+    "fireflies": "Fireflies"
   },
   "participants": {
     "title": "Deelnemers",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Maak {{name}} presentator",
     "removeFromMeeting": "Verwijderen uit vergadering",
     "removeName": "Verwijder {{name}}",
-    "authenticatedOwner": "Geverifieerde eigenaar"
+    "authenticatedOwner": "Geverifieerde eigenaar",
+    "cohost": "Co-host",
+    "promoteCohost": "Promoveer tot co-host",
+    "demoteCohost": "Medehost verwijderen"
   },
   "chatPanel": {
     "title": "Chat",
@@ -294,7 +324,10 @@
     "send": "Verstuur",
     "close": "Chat sluiten",
     "ariaLabel": "Vergaderchat",
-    "messageAria": "Chatbericht"
+    "messageAria": "Chatbericht",
+    "pin": "Vastzetten",
+    "unpin": "Losmaken",
+    "pinned": "Vastgezet"
   },
   "invite": {
     "title": "Uitnodigen via e-mail",
@@ -932,5 +965,378 @@
     "tileBadge": "Hand opgestoken",
     "lowerOther": "Steek de hand van deze deelnemer omlaag",
     "lowerName": "Hand van {{name}} laten zakken"
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI Meeting",
+      "aiNotesOn": "AI notes on",
+      "aiNotesPaused": "AI notes paused",
+      "menu": {
+        "pause": "Pause transcription",
+        "resume": "Resume transcription",
+        "mode": "Mode",
+        "boardToMain": "Bring board to main",
+        "snapshot": "Whiteboard snapshot",
+        "editors": "Editors…",
+        "end": "End AI meeting",
+        "showBoard": "Bord tonen",
+        "hideBoard": "Bord verbergen"
+      }
+    },
+    "setup": {
+      "title": "Start AI Meeting",
+      "intro": "Meet++ transcribes the meeting and keeps the board up to date.",
+      "structure": "Meeting structure",
+      "agendaDriven": "Agenda-driven",
+      "agendaDrivenHint": "Items and timeboxes",
+      "goalDriven": "Goal-driven",
+      "goalDrivenHint": "Goal → deliverables → next steps",
+      "goalPlaceholder": "Goal",
+      "language": "Language",
+      "mode": "AI mode",
+      "modeLead": "Lead",
+      "modeAssist": "Assist",
+      "series": "Meeting series",
+      "newSeries": "New series",
+      "agendaPdf": "Agenda PDF",
+      "previousNotesPdf": "Previous notes PDF",
+      "importedFromSeries": "Imported from series",
+      "itemsFound": "{{count}} agenda items found",
+      "parsing": "Parsing…",
+      "start": "Start",
+      "cancel": "Cancel",
+      "notice": "Live transcription runs on our server; the text is processed by the configured LLM provider to produce minutes.",
+      "errors": {
+        "noTextLayer": "This PDF looks scanned. Upload a text PDF or enter the agenda manually.",
+        "tooLarge": "The PDF is too large (max 10 MB).",
+        "encrypted": "This PDF is password-protected.",
+        "tooManyPages": "The PDF has too many pages (max 50).",
+        "capacity": "AI capacity busy — try again later."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Agenda",
+        "decisions": "Decisions",
+        "actions": "Actions",
+        "attendance": "Attendance",
+        "minutes": "Minutes",
+        "attachments": "Attachments",
+        "transcript": "Transcript",
+        "previousDecisions": "Previous meeting's decisions"
+      },
+      "follow": "Follow",
+      "followPaused": "Paused",
+      "status": {
+        "listening": "Listening",
+        "thinking": "Thinking",
+        "behind": "Behind {{s}}s",
+        "paused": "Paused",
+        "offline": "AI unavailable"
+      },
+      "empty": {
+        "agenda": "No agenda items yet.",
+        "decisions": "Decisions will appear here as they are made.",
+        "actions": "Actions will appear here as they are agreed.",
+        "attendance": "Attendance will appear as people join.",
+        "minutes": "Minutes will appear per agenda item.",
+        "attachments": "No attachments yet.",
+        "transcript": "The transcript appears here while the meeting runs."
+      },
+      "actions": {
+        "confirm": "Confirm",
+        "edit": "Edit",
+        "reject": "Reject",
+        "add": "Add",
+        "setActive": "Start",
+        "done": "Done",
+        "defer": "Defer",
+        "previous": "Previous (open)",
+        "new": "New this meeting",
+        "unassigned": "Unassigned",
+        "ownerPrompt": "Owner name or alias"
+      }
+    },
+    "phases": {
+      "opening": "Opening",
+      "previousActions": "Previous actions",
+      "agenda": "Agenda",
+      "goal": "Goal",
+      "discussion": "Discussion",
+      "aob": "Other business",
+      "nextSteps": "Next steps",
+      "newActions": "New actions",
+      "planning": "Planning",
+      "closing": "Closing",
+      "jumpConfirm": "Jump to this phase?"
+    },
+    "proposal": {
+      "title": "Move to the next phase?",
+      "moveNow": "Move now",
+      "notYet": "Not yet",
+      "autoIn": "Auto in {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Dismiss"
+    },
+    "consent": {
+      "title": "AI notes in this meeting",
+      "body": "This meeting uses AI notes: your speech is transcribed on our server and the text is processed by {{provider}} to produce minutes.",
+      "continue": "Continue",
+      "optOut": "Don't transcribe me",
+      "privacyLink": "Privacy",
+      "changeChoice": "Change my choice",
+      "notTranscribed": "Not transcribed"
+    },
+    "review": {
+      "title": "Review and publish",
+      "sections": {
+        "minutes": "Minutes",
+        "decisions": "Decisions",
+        "actions": "Actions",
+        "distribution": "Distribution"
+      },
+      "nextMeeting": {
+        "title": "Next meeting",
+        "date": "Date",
+        "duration": "Duration (min)",
+        "room": "Room",
+        "required": "Required next"
+      },
+      "distribution": {
+        "minutesToAttendees": "Minutes to attendees",
+        "invites": "Invitations to required attendees"
+      },
+      "publish": "Publish & send",
+      "published": "Published",
+      "saveDraft": "Save draft",
+      "finalisedChanges": "Finalisation changed",
+      "retry": "Retry"
+    },
+    "snapshot": {
+      "toolbarButton": "Snapshot to Meet++",
+      "added": "Snapshot added",
+      "failed": "Snapshot failed"
+    }
+  },
+  "onDemand": {
+    "title": "Op aanvraag",
+    "subtitle": "Video's van lopende openbare livestreams — altijd te bekijken, geen account nodig.",
+    "watch": "Kijken",
+    "loading": "Laden…",
+    "empty": "Momenteel niets op aanvraag. Kom later terug wanneer een publieke livestream video's in de afspeellijst heeft.",
+    "error": "On Demand kon nu niet worden geladen."
+  },
+  "devices": {
+    "toolbar": "Audio- en videapparaten",
+    "toolbarTitle": "Kies microfoon, camera en luidspreker",
+    "mic": "Microfoon",
+    "camera": "Camera",
+    "speaker": "Spreker",
+    "none": "Geen apparaten gevonden",
+    "speakerUnsupported": "Apparaatselectie voor uitvoer wordt niet ondersteund in deze browser."
+  },
+  "notes": {
+    "title": "Notities en whiteboard",
+    "toolbar": "Notities en whiteboard",
+    "toolbarTitle": "Gedeelde notities en whiteboard openen",
+    "close": "Notities sluiten",
+    "tabNotes": "Notities",
+    "tabBoard": "Whiteboard",
+    "hint": "Iedereen in de ruimte kan bewerken. Automatisch opgeslagen.",
+    "placeholder": "Typ hier gedeelde notities…",
+    "color": "Kleur",
+    "thickness": "Lijndikte",
+    "clear": "Bord wissen"
+  },
+  "polls": {
+    "title": "Peilingen & Q&A",
+    "toolbar": "Peilingen & Q&A",
+    "toolbarTitle": "Peilingen en Q&A openen",
+    "close": "Peilingen sluiten",
+    "tabPolls": "Peilingen",
+    "tabQna": "Vragen & antwoorden",
+    "empty": "Nog geen peilingen.",
+    "createTitle": "Een poll maken",
+    "createButton": "Aanmaken",
+    "questionPlaceholder": "Je vraag",
+    "optionPlaceholder": "Optie {{n}}",
+    "addOption": "+ Optie toevoegen",
+    "open": "Open",
+    "closed": "Gesloten",
+    "closePoll": "Peiling sluiten",
+    "qnaEmpty": "Nog geen vragen.",
+    "qnaPlaceholder": "Stel een vraag…",
+    "qnaAsk": "Vragen",
+    "qnaUpvote": "Omhoog stemmen",
+    "qnaMarkAnswered": "Beantwoord"
+  },
+  "pip": {
+    "enter": "Beeld-in-beeld",
+    "exit": "PiP sluiten",
+    "enterTitle": "De actieve spreker in een zwevend tegelvenster openen",
+    "exitTitle": "Zwevend tegel sluiten"
+  },
+  "shortcuts": {
+    "title": "Sneltoetsen",
+    "close": "Sluiten",
+    "disabled": "Sneltoetsen zijn momenteel uitgeschakeld in Instellingen → Toetsenbord.",
+    "editHint": "Sneltoetsen wijzigen op de pagina Instellingen (sectie Toetsenbord).",
+    "mute": "Microfoon in-/uitschakelen",
+    "camera": "Camera aan/uit",
+    "hand": "Hand opsteken / verlagen",
+    "screenshare": "Screenshare in-/uitschakelen",
+    "leave": "Vergadering verlaten",
+    "help": "Deze overlay tonen"
+  },
+  "feedback": {
+    "title": "Hoe was de vergadering?",
+    "body": "Hoe beoordeel je deze vergadering op een schaal van 0 (slechtst) tot 10 (best)?",
+    "commentLabel": "Nog iets? (optioneel)",
+    "submit": "Verzenden",
+    "sending": "Versturen…",
+    "skip": "Overslaan",
+    "thanks": "Bedankt voor je feedback!"
+  },
+  "reactions": {
+    "toolbar": "Reageren",
+    "toolbarTitle": "Stuur een zwevende emoji-reactie",
+    "send": "Verzenden {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Verbindingskwaliteit voor {{name}} — {{band}}",
+      "title": "Verbindingskwaliteit"
+    },
+    "panel": {
+      "title": "Verbindingskwaliteit",
+      "self": "je camera",
+      "ariaLabel": "Verbindingskwaliteit voor {{name}}"
+    },
+    "band": {
+      "high": "Hoog",
+      "medium": "Gemiddeld",
+      "low": "Laag",
+      "lost": "Opnieuw verbinden…",
+      "measuring": "Meten…"
+    },
+    "limiter": {
+      "network": "Netwerk: pakketverlies en jitter",
+      "publisher": "Apparaat van uitgever beperkt de stream",
+      "relay": "Relaypad: verhoogde round-trip tijd",
+      "stability": "Instabiele verbinding: kwaliteit schommelt",
+      "unknown": "De verbinding meten",
+      "lost": "Verbinding verbroken — automatisch opnieuw verbinden"
+    },
+    "tab": {
+      "overview": "Overzicht",
+      "details": "Details",
+      "actions": "Acties",
+      "device": "Apparaat"
+    },
+    "quality": {
+      "low": "Laag",
+      "medium": "Med",
+      "high": "Hoog",
+      "auto": "Auto"
+    },
+    "overview": {
+      "score": "score {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitrate",
+      "resolution": "Resolutie",
+      "fps": "Framerate",
+      "loss": "Pakketverlies",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Overgeslagen frames",
+      "audioLoss": "Audioverlies (laatste min)",
+      "transport": "Transport",
+      "direct": "Direct",
+      "relay": "Relay"
+    },
+    "details": {
+      "log": "Recente acties",
+      "none": "Nog geen acties",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "action": {
+      "quality": "Kwaliteit (simulcastlaag)",
+      "maxBitrate": "Max. bitrate",
+      "compression": "Compressie",
+      "colorDepth": "Kleurdiepte",
+      "colorDepthUnsupported": "10-bit is niet beschikbaar op dit apparaat / deze codec",
+      "audioOnly": "Alleen audio voor deze tegel",
+      "resync": "Stream opnieuw synchroniseren",
+      "resetAuto": "Terug naar automatisch",
+      "reconnect": "Opnieuw verbinden",
+      "reconnectConfirm": "Bevestig opnieuw verbinden",
+      "apply": "Toepassen",
+      "export": "Rapport exporteren"
+    },
+    "scope": {
+      "receive": "Geldt voor wat je ontvangt — de camera van de uitgever blijft ongewijzigd",
+      "publish": "Wijzigingen zijn zichtbaar voor iedereen in de vergadering"
+    },
+    "autotune": {
+      "test": "Test optimale instellingen",
+      "running": "De verbinding testen…",
+      "observing": "Waarnemen… {{seconds}} s",
+      "applied": "Toegepast — instellingen behouden",
+      "rolledBack": "Teruggedraaid — de nieuwe instelling werkte slechter op dit netwerk",
+      "recommended": "Aanbevolen voor dit netwerk",
+      "retry": "Opnieuw",
+      "rejected": "{{layer}} is geweigerd: {{reason}}",
+      "phase": {
+        "baseline": "Baseline verzamelen…",
+        "probing": "Lagen testen…",
+        "evaluating": "Kandidaten beoordelen…",
+        "observing": "Het resultaat bekijken…",
+        "done": "Klaar",
+        "failed": "Probe mislukt",
+        "idle": "Instellingen"
+      },
+      "baseline": "Baseline verzamelen…",
+      "step": {
+        "low": "LOW testen…",
+        "medium": "Gemiddeld testen…",
+        "high": "<<<KEEP_0>>> HIGH aan het testen…"
+      },
+      "evaluating": "Kandidaten beoordelen…",
+      "done": "Aanbeveling gereed"
+    },
+    "device": {
+      "remoteNote": "Camera- en microfooninstellingen horen bij de publisher ({{name}})",
+      "camera": "Camera",
+      "resolution": "Resolutie",
+      "frameRate": "Framerate",
+      "cameraMax": "Camera ondersteunt tot {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Microfoon",
+      "channels": "Kanalen",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Audiokwaliteit",
+      "voice": "Stem",
+      "music": "Muziek",
+      "stereoWarning": "Stereo schakelt echo-onderdrukking en ruisonderdrukking uit — gebruik een koptelefoon; het verhoogt ook de uplinkbandbreedte",
+      "apply": "Toepassen op mijn camera en microfoon"
+    },
+    "busy": {
+      "quality": "Kwaliteit wijzigen…",
+      "resync": "Stream opnieuw synchroniseren…",
+      "reconnect": "Opnieuw verbinden…",
+      "maxBitrate": "De bitratelimiet wordt bijgewerkt…",
+      "compression": "Compressie bijwerken…",
+      "resolution": "Cameraresolutie wijzigen…",
+      "frameRate": "Framerate wijzigen…",
+      "camera-device": "Camera wordt gewisseld…",
+      "mic-device": "Microfoon wisselen…",
+      "mic-mode": "Microfooninstellingen toepassen…",
+      "audioOnly": "De stream wordt bijgewerkt…",
+      "applyTune": "Instellingen toepassen…",
+      "probe": "De verbinding testen…",
+      "export": "Het rapport wordt voorbereid…"
+    }
   }
 }

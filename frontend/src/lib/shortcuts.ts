@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { Room } from "livekit-client";
 import { usePreferences } from "./preferences";
 import { useToggleHandRaise } from "./handRaise";
+import { useMeetpp } from "./meetpp/store";
 
 /**
  * Parses a binding string like "Ctrl+Shift+D" into a matcher and runs it
@@ -110,6 +111,12 @@ export function useMeetingShortcuts({
       if (matches(e, bindings.leave)) {
         e.preventDefault();
         onLeave();
+        return;
+      }
+      // Meet++: Ctrl+Shift+A toggles follow mode.
+      if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) {
+        e.preventDefault();
+        useMeetpp.getState().toggleFollow();
         return;
       }
     };

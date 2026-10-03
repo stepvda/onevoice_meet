@@ -26,3 +26,6 @@ build/
 /var/
 caddy_data/
 caddy_config/
+
+# Word lock files
+docs/~$*

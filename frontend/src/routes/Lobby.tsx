@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { meetppApi } from "../lib/meetpp/api";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api, AnonTokenResponse, PublicRoomInfo } from "../lib/api";
@@ -66,6 +67,7 @@ export default function Lobby() {
   // backend told us we're queued.
   const [waitToken, setWaitToken] = useState<string | null>(null);
   const [info, setInfo] = useState<PublicRoomInfo | null>(null);
+  const [aiNotes, setAiNotes] = useState<{ active: boolean; provider_label?: string } | null>(null);
   // Pre-flight mic/camera state — null=untested, "ok"=granted, "denied"=blocked,
   // "error"=other (no devices, secure-context, etc.). We surface the result
   // before joining the room so a denied prompt doesn't dump the user mid-call.
@@ -84,6 +86,21 @@ export default function Lobby() {
   // users who land here from the Discover list — doesn't have to
   // retype name + email.
   const { me } = useMe();
+
+  // Meet++ lobby notice: is an AI session active in this room?
+  useEffect(() => {
+    if (!roomName) return;
+    let cancelled = false;
+    meetppApi
+      .roomActive(roomName)
+      .then((r) => {
+        if (!cancelled) setAiNotes(r);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [roomName]);
 
   // Public room metadata (title + branding) — works for both owner and anon.
   useEffect(() => {
@@ -352,6 +369,16 @@ export default function Lobby() {
             className="rounded-lg border border-primary-700 bg-primary-800/50 text-slate-200 px-4 py-3 mb-4 whitespace-pre-wrap text-sm"
           >
             {info.lobby_greeting}
+          </div>
+        )}
+
+        {aiNotes?.active && (
+          <div
+            data-testid="lobby-ai-notes"
+            className="rounded-lg border border-purple-400/50 bg-purple-500/15 text-purple-100 px-4 py-3 mb-4 text-sm"
+          >
+            <b>{t("meetpp.button.aiNotesOn", { defaultValue: "AI notes on" })}</b> —{" "}
+            {t("meetpp.lobbyNotice", { defaultValue: "AI notes are active in this meeting. Your speech is transcribed after you consent." })}
           </div>
         )}
 

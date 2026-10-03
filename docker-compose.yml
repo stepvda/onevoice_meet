@@ -22,7 +22,11 @@ services:
       - "127.0.0.1:8443:443"
       - "127.0.0.1:8081:80"
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Mount the directory (not the single file): rsync replaces the file,
+      # which changes its inode, and a single-file bind mount would keep
+      # serving the old inode until the container is recreated. A directory
+      # mount reflects the new file immediately, so `caddy reload` is enough.
+      - ./caddy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
       - frontend_build:/srv/frontend:ro
@@ -65,7 +69,13 @@ services:
       - 'sed -e "s|__API_KEY__|$$LIVEKIT_API_KEY|g" -e "s|__API_SECRET__|$$LIVEKIT_API_SECRET|g" -e "s|__WEBHOOK_KEY__|$$LIVEKIT_WEBHOOK_KEY|g" /etc/livekit.yaml.tpl > /tmp/livekit.yaml; exec /livekit-server --config /tmp/livekit.yaml'
     volumes:
       - ./livekit/livekit.yaml.tpl:/etc/livekit.yaml.tpl:ro
-    env_file: .env
+    # Pass only the three LiveKit variables instead of the whole .env file:
+    # adding unrelated keys to .env would otherwise change the container's
+    # environment and force Compose to recreate LiveKit (dropping live rooms).
+    environment:
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      LIVEKIT_WEBHOOK_KEY: ${LIVEKIT_WEBHOOK_KEY}
     depends_on:
       - redis
 
@@ -244,6 +254,33 @@ services:
     # Internal-only — meeting-api reaches it via Docker DNS as "whisper:8080".
     expose:
       - "8080"
+
+  # Meet++ agent: joins each AI meeting as a hidden, subscribe-only
+  # participant, runs Silero VAD + faster-whisper per speaker, and serves
+  # TTS. Hard-capped so it can never starve the SFU or the 24/7 TITV egress.
+  # meeting-api reaches its session API via Docker DNS as "meetpp-agent:8091".
+  # No LIVEKIT_* variables are changed anywhere, so the egress config body
+  # (and the TITV stream) is never recreated.
+  meetpp-agent:
+    logging: *default-logging
+    build: ./meetpp-agent
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      LIVEKIT_WS_URL_INTERNAL: "ws://host.docker.internal:7880"
+      MEETING_API_URL: "http://meeting-api:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    expose:
+      - "8091"
+    volumes:
+      - /var/lib/meet/meetpp/tts:/var/lib/meet/meetpp/tts
+    cpus: 2.0
+    mem_limit: 3g
+    cpu_shares: 512
+    depends_on:
+      - livekit
+      - meeting-api
 
 volumes:
   caddy_data:

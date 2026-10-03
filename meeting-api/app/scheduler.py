@@ -17,6 +17,19 @@ def _retention_job() -> None:
     log.info("retention job deleted %d expired recordings", count)
 
 
+def _meetpp_retention_job() -> None:
+    from app.meetpp.retention import run_retention
+
+    result = run_retention()
+    log.info(
+        "meetpp retention: segments=%d documents=%d llm_calls=%d tts_files=%d",
+        result.get("segments", 0),
+        result.get("documents", 0),
+        result.get("llm_calls", 0),
+        result.get("tts_files", 0),
+    )
+
+
 def _disk_cap_job() -> None:
     result = enforce_disk_cap()
     log.info(
@@ -262,6 +275,14 @@ def start() -> None:
         _retention_job,
         CronTrigger(hour=3, minute=0),
         id="retention_cleanup",
+        replace_existing=True,
+    )
+    # 03:30 UTC — Meet++ retention: transcript segments, uploaded PDFs,
+    # LLM call metadata and the TTS cache.
+    scheduler.add_job(
+        _meetpp_retention_job,
+        CronTrigger(hour=3, minute=30),
+        id="meetpp_retention",
         replace_existing=True,
     )
     # Every hour — evict oldest recordings if disk usage exceeds the cap (75%).

@@ -20,7 +20,8 @@
     "account": "መለያ",
     "upgrade": "ማሻሻል",
     "vouchers": "ቫውቸሮች",
-    "admin": "አስተዳዳሪ"
+    "admin": "አስተዳዳሪ",
+    "onDemand": "በፍላጎት ላይ"
   },
   "tiCafe": {
     "title": "ካፌ",
@@ -65,7 +66,10 @@
     "loading": "በመጫን ላይ…",
     "close": "ዝጋ",
     "anonymous": "ማንነት የማይታወቅ",
-    "requestFailed": "ጥያቄው አልተሳካም"
+    "requestFailed": "ጥያቄው አልተሳካም",
+    "on": "በርቷል",
+    "off": "ጠፍቷል",
+    "dismiss": "አሰናብት"
   },
   "signInPrompt": {
     "button": "በ one.witysk.org ላይ ይግቡ",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "የመጠበቂያ ክፍል",
     "waitingRoomDesc": "አዲስ ተሳታፊዎች ከስብሰባ መሳሪያ አሞሌ እስክታስገቡዋቸው ድረስ ይጠብቃሉ።",
     "autoAdmitAuthenticated": "በመለያ የገቡ ተጠቃሚዎችን በራስ-ሰር ማስገባት (በቅርቡ)",
-    "autoAdmitAuthenticatedDesc": "በመለያ የገቡ one.witysk.org ተጠቃሚዎች የጥበቃ ክፍሉን እንዲያልፉ ያድርጉ። ገና አልተተገበረም — ማንነታቸው ያልታወቁ ተሳታፊዎች ሁልጊዜ ወረፋ ይጠብቃሉ።"
+    "autoAdmitAuthenticatedDesc": "በመለያ የገቡ one.witysk.org ተጠቃሚዎች የጥበቃ ክፍሉን እንዲያልፉ ያድርጉ። ገና አልተተገበረም — ማንነታቸው ያልታወቁ ተሳታፊዎች ሁልጊዜ ወረፋ ይጠብቃሉ።",
+    "lobbyGreeting": "የመጠባበቂያ ክፍል ሰላምታ",
+    "lobbyGreetingHint": "ሁሉም ሰው ከመቀላቀሉ በፊት በሎቢው ውስጥ ይታያል።",
+    "lobbyGreetingPlaceholder": "እንኳን ደህና መጡ! ሲናገሩ ካልሆነ ማይክራፎንዎን ያጥፉ።",
+    "schedule": "መርሐግብር",
+    "scheduleHint": "የቆይታ ጊዜ እና (በአማራጭ) ተደጋጋሚነት ያዘጋጁ ስለዚህ የቀን መቁጠሪያ ግብዣዎች በራስ-ሰር ይደጋገማሉ።",
+    "duration": "የቆይታ ጊዜ (ደቂቃዎች)",
+    "recurrence": "ድግግሞሽ",
+    "recurrenceNone": "የአንድ ጊዜ (ደጋግሞ አይደለም)",
+    "recurrenceDaily": "ዕለታዊ",
+    "recurrenceWeekly": "ሳምንታዊ",
+    "recurrenceBiweekly": "በየ2 ሳምንቱ",
+    "recurrenceMonthly": "ወርሃዊ"
   },
   "discover": {
     "title": "ያግኙ",
     "subtitle": "— ለመቀላቀል ክፍት የሆኑ ስብሰባዎች",
     "join": "ተቀላቀል",
     "maxParticipants": "ከፍተኛ {{n}}",
-    "hostedBy": "በ {{name}} የተዘጋጀ"
+    "hostedBy": "በ {{name}} የተዘጋጀ",
+    "view": "እይ",
+    "viewTitle": "የህዝብ እይታ-ብቻ ዥረትን ይመልከቱ",
+    "streamsTitle": "የሕዝብ ቀጥታ ስርጭቶች",
+    "streamsSubtitle": "— ለመመልከት ብቻ፣ መለያ አያስፈልግም"
   },
   "myMeetings": {
     "loading": "ስብሰባዎችዎን በመጫን ላይ…",
@@ -272,7 +292,14 @@
     "notImage": "ምስል አይደለም ({{type}})",
     "processorFailed": "ይህ መሣሪያ የበስተጀርባ ተፅዕኖዎችን አይደግፍም።",
     "custom": "ብጁ፡ {{name}}",
-    "customDefault": "ብጁ ምስል"
+    "customDefault": "ብጁ ምስል",
+    "aurora": "አውሮራ",
+    "bokeh": "Bokeh",
+    "wavesAnim": "የውቅያኖስ ማዕበሎች",
+    "particles": "ቅንጣቶች",
+    "cityscape": "የከተማ መብራቶች",
+    "cherryBlossoms": "የቼሪ አበቦች",
+    "fireflies": "<<<KEEP_1>>>"
   },
   "participants": {
     "title": "ተሳታፊዎች",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "{{name}} አቅራቢ አድርግ",
     "removeFromMeeting": "ከስብሰባ አስወግድ",
     "removeName": "{{name}}ን አስወግድ",
-    "authenticatedOwner": "የተረጋገጠ ባለቤት"
+    "authenticatedOwner": "የተረጋገጠ ባለቤት",
+    "cohost": "ጋራ አስተናጋጅ",
+    "promoteCohost": "ወደ ተባባሪ አስተናጋጅ አሳድግ",
+    "demoteCohost": "ጋር አስተናጋጅ አስወግድ"
   },
   "chatPanel": {
     "title": "ውይይት",
@@ -294,7 +324,10 @@
     "send": "ላክ",
     "close": "ውይይት ዝጋ",
     "ariaLabel": "የስብሰባ ውይይት",
-    "messageAria": "የውይይት መልእክት"
+    "messageAria": "የውይይት መልእክት",
+    "pin": "ለጥፍ",
+    "unpin": "አስወግድ",
+    "pinned": "የተሰካ"
   },
   "invite": {
     "title": "በኢሜል ይጋብዙ",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "ቀረጻዎች",
     "subtitle": "የስብሰባዎችዎ በሰርቨር በኩል የሚቀረጹ ቅጂዎች። የአካባቢ ፋይሎች ከ30 ቀናት በኋላ (ወይም ወደ ዩቲዩብ ሲለቀቁ) በራስ-ሰር ይሰረዛሉ። መጫን የሚችሉት ባለቤቱ ብቻ ነው።",
-    "empty": "እስካሁን ምንም ቅጂዎች የሉም። ስብሰባ ይጀምሩ እና አንዱን ለመቅረጽ <1>ቅጂ</1> የሚለውን ይጫኑ።",
+    "empty": "እስካሁን ቀረጻ የለም። ስብሰባ ጀምር እና <1>ቅዳ</1>ን ተጭነህ አንዱን ቅረጽ።",
     "loading": "በመጫን ላይ…",
     "signInFirst": "በመጀመሪያ በ one.witysk.org ላይ ይግቡ።",
     "signInTitle": "ቀርጾችዎን ለማየት ይግቡ",
@@ -932,5 +965,378 @@
     "tileBadge": "እጅ አንስቷል",
     "lowerOther": "የዚህን ተሳታፊ እጅ ዝቅ አድርግ",
     "lowerName": "{{name}}ን እጅ ዝቅ አድርግ"
+  },
+  "onDemand": {
+    "title": "በፍላጎት ላይ",
+    "subtitle": "በመቀጠል ላይ ካሉ የህዝብ ቀጥታ ስርጭቶች የተገኙ ቪዲዮዎች — በማንኛውም ጊዜ ይመልከቱ፣ መለያ አያስፈልግም።",
+    "watch": "ተመልከት",
+    "loading": "በመጫን ላይ…",
+    "empty": "በአሁኑ ጊዜ በፍላጎት ላይ ምንም የለም። አንድ የህዝብ ቀጥታ ስርጭት በአጫዋች ዝርዝሩ ውስጥ ቪዲዮዎች ሲኖሩት እንደገና ይመልከቱ።",
+    "error": "On Demand አሁን መጫን አልተቻለም።"
+  },
+  "devices": {
+    "toolbar": "የድምጽ እና የቪዲዮ መሣሪያዎች",
+    "toolbarTitle": "ማይክራፎን፣ ካሜራ እና ስፒከር ይምረጡ",
+    "mic": "ማይክራፎን",
+    "camera": "ካሜራ",
+    "speaker": "አዳራሽ",
+    "none": "ምንም መሳሪያዎች አልተገኙም",
+    "speakerUnsupported": "የውጤት መሣሪያ ምርጫ በዚህ አሳሽ ውስጥ አይደገፍም።"
+  },
+  "notes": {
+    "title": "ማስታወሻዎች እና ነጭ ሰሌዳ",
+    "toolbar": "ማስታወሻዎች እና ነጭ ሰሌዳ",
+    "toolbarTitle": "የተጋሩ ማስታወሻዎችን እና ነጭ ሰሌዳን ክፈት",
+    "close": "ማስታወሻዎችን ዝጋ",
+    "tabNotes": "ማስታወሻዎች",
+    "tabBoard": "ነጭ ሰሌዳ",
+    "hint": "በክፍሉ ውስጥ ያለ ሁሉም ሰው ማረም ይችላል። በራስ-ሰር ይቀመጣል።",
+    "placeholder": "የተጋሩ ማስታወሻዎችን እዚህ ይተይቡ…",
+    "color": "ቀለም",
+    "thickness": "የመስመር ውፍረት",
+    "clear": "ቦርዱን አጽዳ"
+  },
+  "polls": {
+    "title": "የሕዝብ አስተያየት እና ጥያቄ መልስ",
+    "toolbar": "የሕዝብ አስተያየት እና ጥያቄ መልስ",
+    "toolbarTitle": "የሕዝብ አስተያየት እና ጥያቄ እና መልስ ክፈት",
+    "close": "የምርጫ ውጤቶችን ዝጋ",
+    "tabPolls": "የሕዝብ አስተያየቶች",
+    "tabQna": "ጥያቄና መልስ",
+    "empty": "እስካሁን ምንም ድምጽ መስጫ የለም።",
+    "createTitle": "የምርጫ ይፍጠሩ",
+    "createButton": "ፍጠር",
+    "questionPlaceholder": "ጥያቄዎ",
+    "optionPlaceholder": "አማራጭ {{n}}",
+    "addOption": "+ አማራጭ ጨምር",
+    "open": "ክፈት",
+    "closed": "ዝግ",
+    "closePoll": "የምርጫ ውጤት ዝጋ",
+    "qnaEmpty": "እስካሁን ምንም ጥያቄዎች የሉም።",
+    "qnaPlaceholder": "ጥያቄ ይጠይቁ…",
+    "qnaAsk": "ጠይቅ",
+    "qnaUpvote": "ድጋፍ",
+    "qnaMarkAnswered": "ተመልሷል"
+  },
+  "pip": {
+    "enter": "ስዕል-በ-ስዕል",
+    "exit": "ከስዕል-ውስጥ-ስዕል ውጣ",
+    "enterTitle": "<<<KEEP_0>>> ንቁ ተናጋሪውን ወደ ተንሳፋፊ ሳጥን አውጣ",
+    "exitTitle": "የተንሳፋፊውን ሳጥን ዝጋ"
+  },
+  "shortcuts": {
+    "title": "የቁልፍ አቋራጮች",
+    "close": "ዝጋ",
+    "disabled": "አቋራጮች በአሁኑ ጊዜ በቅንብሮች → ኪቦርድ ውስጥ ተሰናክለዋል።",
+    "editHint": "በቅንብሮች ገጽ (የቁልፍ ሰሌዳ ክፍል) ላይ አቋራጮችን ይቀይሩ።",
+    "mute": "ማይክራፎን ቀያይር",
+    "camera": "ካሜራ ቀያይር",
+    "hand": "እጅ አንሳ / ዝቅ አድርግ",
+    "screenshare": "የስክሪን መጋራትን ቀያይር",
+    "leave": "ከስብሰባው ውጣ",
+    "help": "ይህን ተደራቢ አሳይ"
+  },
+  "feedback": {
+    "title": "ስብሰባው እንዴት ነበር?",
+    "body": "ከ0 (በጣም መጥፎ) እስከ 10 (በጣም ጥሩ) ባለው መለኪያ መሰረት፣ ይህን ስብሰባ እንዴት ይገመግሙታል?",
+    "commentLabel": "ሌላ ነገር? (አማራጭ)",
+    "submit": "አስገባ",
+    "sending": "በመላክ ላይ…",
+    "skip": "ዝለል",
+    "thanks": "ስለ አስተያየትዎ እናመሰግናለን!"
+  },
+  "reactions": {
+    "toolbar": "ሪአክት",
+    "toolbarTitle": "የሚንሳፈፍ ኢሞጂ ምላሽ ላክ",
+    "send": "ላክ {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "የግንኙነት ጥራት ለ{{name}} — {{band}}",
+      "title": "የግንኙነት ጥራት"
+    },
+    "panel": {
+      "title": "የግንኙነት ጥራት",
+      "self": "ካሜራዎ",
+      "ariaLabel": "የግንኙነት ጥራት ለ{{name}}"
+    },
+    "band": {
+      "high": "ከፍተኛ",
+      "medium": "መካከለኛ",
+      "low": "ዝቅተኛ",
+      "lost": "እንደገና በመገናኘት ላይ…",
+      "measuring": "በመለካት ላይ…"
+    },
+    "limiter": {
+      "network": "አውታረ መረብ፦ የፓኬት መጥፋት እና መወዛወዝ",
+      "publisher": "የአሳታሚ መሣሪያ ዥረቱን እየገደበ ነው",
+      "relay": "የማስተላለፊያ መንገድ፡ ከፍ ያለ የወደው እና የመመለሻ ጊዜ",
+      "stability": "ያልተረጋጋ ግንኙነት፦ ጥራቱ እየተለዋወጠ ነው",
+      "unknown": "የግንኙነቱን መለካት",
+      "lost": "ግንኙነት ተቋርጧል — በራስ-ሰር በመገናኘት ላይ"
+    },
+    "tab": {
+      "overview": "አጠቃላይ እይታ",
+      "details": "ዝርዝሮች",
+      "actions": "ተግባራት",
+      "device": "መሣሪያ"
+    },
+    "quality": {
+      "low": "ዝቅተኛ",
+      "medium": "መካከለኛ",
+      "high": "ከፍተኛ",
+      "auto": "ራስ-ሰር"
+    },
+    "overview": {
+      "score": "ነጥብ {{score}}"
+    },
+    "metric": {
+      "bitrate": "ቢትሬት",
+      "resolution": "ጥራት",
+      "fps": "የፍሬም መጠን",
+      "loss": "የፓኬት መጥፋት",
+      "jitterRtt": "ጂተር / RTT",
+      "dropped": "የተዘለሉ ፍሬሞች",
+      "audioLoss": "የድምጽ መጥፋት (የመጨረሻ ደቂቃ)",
+      "transport": "ትራንስፖርት",
+      "direct": "ቀጥታ",
+      "relay": "ማስተላለፊያ"
+    },
+    "details": {
+      "log": "የቅርብ ጊዜ እርምጃዎች",
+      "none": "እስካሁን ምንም እርምጃዎች የሉም",
+      "video": "ቪዲዮ",
+      "audio": "ድምጽ"
+    },
+    "action": {
+      "quality": "ጥራት (የሲሙልካስት ንብርብር)",
+      "maxBitrate": "ከፍተኛ ቢትሬት",
+      "compression": "መጭመቅ",
+      "colorDepth": "የቀለም ጥልቀት",
+      "colorDepthUnsupported": "በዚህ መሳሪያ / ኮዴክ ላይ 10-ቢት አይገኝም",
+      "audioOnly": "የድምጽ ብቻ ለዚህ ክፍል",
+      "resync": "ዥረቱን እንደገና አመሳስል",
+      "resetAuto": "ወደ ራስ-ሰር ይመልሱ",
+      "reconnect": "እንደገና ይገናኙ",
+      "reconnectConfirm": "እንደገና መገናኘቱን ያረጋግጡ",
+      "apply": "ተግብር",
+      "export": "ሪፖርት ላክ"
+    },
+    "scope": {
+      "receive": "የሚቀበሉትን ይመለከታል — የአቅራቢው ካሜራ ሳይነካ ይቆያል",
+      "publish": "ለውጦቹ በስብሰባው ውስጥ ላሉ ሁሉም ይታያሉ"
+    },
+    "autotune": {
+      "test": "የተመራጭ ቅንብሮችን ይፈትሹ",
+      "running": "ግንኙነቱን በመሞከር ላይ…",
+      "observing": "በመመልከት ላይ… {{seconds}} ሰከንድ",
+      "applied": "ተተግብሯል — ቅንብሮች ተቀምጠዋል",
+      "rolledBack": "ተመልሷል — አዲሱ ቅንብር በዚህ አውታረ መረብ ላይ የከፋ ነበር",
+      "recommended": "ለዚህ አውታረ መረብ የሚመከር",
+      "retry": "እንደገና ይሞክሩ",
+      "rejected": "{{layer}} ተገቢ አልተደረገም፦ {{reason}}",
+      "phase": {
+        "baseline": "መነሻ መስመር በመሰብሰብ ላይ…",
+        "probing": "የፍተሻ ንብርብሮች…",
+        "evaluating": "እጩዎችን በመገምገም ላይ…",
+        "observing": "ውጤቱን በመመልከት ላይ…",
+        "done": "ተጠናቅቋል",
+        "failed": "የምርመራው አልተሳካም",
+        "idle": "ጥሪውን ተቀላቀል"
+      },
+      "baseline": "መነሻ መስመር በመሰብሰብ ላይ…",
+      "step": {
+        "low": "ዝቅተኛ በመሞከር ላይ…",
+        "medium": "መካከለኛ በመሞከር ላይ…",
+        "high": "ከፍተኛ በመሞከር ላይ…"
+      },
+      "evaluating": "እጩዎችን በመገምገም ላይ…",
+      "done": "ምክረ ሀሳብ ዝግጁ ነው"
+    },
+    "device": {
+      "remoteNote": "የካሜራ እና ማይክራፎን ቅንብሮች የአታሚው ({{name}}) ናቸው",
+      "camera": "ካሜራ",
+      "resolution": "ጥራት",
+      "frameRate": "የፍሬም መጠን",
+      "cameraMax": "ካሜራ እስከ {{width}} × {{height}} @ {{fps}} fps ይደግፋል",
+      "microphone": "ማይክራፎን",
+      "channels": "ቻናሎች",
+      "mono": "ሞኖ",
+      "stereo": "ስቲሪዮ",
+      "audioQuality": "የድምጽ ጥራት",
+      "voice": "ድምጽ",
+      "music": "ሙዚቃ",
+      "stereoWarning": "ስቲሪዮ የማሚቶ ስረዛን እና የድምጽ ቅነሳን ያሰናክላል — የጆሮ ማዳመጫ ይጠቀሙ; እንዲሁም የላይኛውን የመስመር ስፋት ይጨምራል",
+      "apply": "ወደ ካሜራዬ እና ማይክሮፎኔዬ ተግብር"
+    },
+    "busy": {
+      "quality": "ጥራት በመቀየር ላይ…",
+      "resync": "ዥረቱን በድጋሚ በማመሳሰል ላይ…",
+      "reconnect": "እንደገና በመገናኘት ላይ…",
+      "maxBitrate": "የቢትሬት ጣሪያውን በማዘመን ላይ…",
+      "compression": "<<<KEEP_1>>> በማዘመን ላይ…",
+      "resolution": "የካሜራ ጥራት በመቀየር ላይ…",
+      "frameRate": "የፍሬም መጠን በመቀየር ላይ…",
+      "camera-device": "ካሜራ በመቀየር ላይ…",
+      "mic-device": "የድምፅ ማንሻ በመቀየር ላይ…",
+      "mic-mode": "የማይክራፎን ቅንብሮችን በመተግበር ላይ…",
+      "audioOnly": "ዥረቱን በማዘመን ላይ…",
+      "applyTune": "ቅንብሮችን በመተግበር ላይ…",
+      "probe": "ግንኙነቱን በመፈተሽ ላይ…",
+      "export": "ሪፖርቱን በማዘጋጀት ላይ…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "የ AI ስብሰባ",
+      "aiNotesOn": "የAI ማስታወሻዎች በርተዋል",
+      "aiNotesPaused": "የAI ማስታወሻዎች ቸል ተብለዋል",
+      "menu": {
+        "pause": "ግልባጭ ለአፍታ አቁም",
+        "resume": "የጽሑፍ ቅጂውን ቀጥል",
+        "mode": "ሁነታ",
+        "boardToMain": "ቦርዱን ወደ ዋና አምጣ",
+        "snapshot": "የነጭ ሰሌዳ ቅጽበታዊ ገጽታ",
+        "editors": "አርታዒዎች…",
+        "end": "የAI ስብሰባን ጨርስ",
+        "showBoard": "ሰሌዳ አሳይ",
+        "hideBoard": "ቦርዱን ደብቅ"
+      }
+    },
+    "setup": {
+      "title": "የAI ስብሰባ ጀምር",
+      "intro": "Meet++ ስብሰባውን በጽሑፍ ይመዘግባል እና ሰሌዳውን ወቅታዊ ያደርገዋል።",
+      "structure": "የስብሰባ አወቃቀር",
+      "agendaDriven": "በአጀንዳ የሚመራ",
+      "agendaDrivenHint": "ዕቃዎች እና የጊዜ ሳጥኖች",
+      "goalDriven": "በግብ የሚመራ",
+      "goalDrivenHint": "ግብ → ውጤቶች → ቀጣይ እርምጃዎች",
+      "goalPlaceholder": "ግብ",
+      "language": "ቋንቋ",
+      "mode": "የ AI ሁነታ",
+      "modeLead": "መሪ",
+      "modeAssist": "እርዳ",
+      "series": "የስብሰባ ተከታታይ",
+      "newSeries": "አዲስ ተከታታይ",
+      "agendaPdf": "የአጀንዳ PDF",
+      "previousNotesPdf": "የቀድሞ ማስታወሻዎች PDF",
+      "importedFromSeries": "ከተከታታይ የገባ",
+      "itemsFound": "{{count}} የአጀንዳ እቃዎች ተገኝተዋል",
+      "parsing": "በመተንተን ላይ…",
+      "start": "ጀምር",
+      "cancel": "ይቅር",
+      "notice": "የቀጥታ ጽሑፍ ቅይጥ በእኛ አገልጋይ ላይ ይሠራል፤ ጽሑፉ ማስታወሻ ለማዘጋጀት በተዋቀረው LLM አቅራቢ ይሰራል።",
+      "errors": {
+        "noTextLayer": "ይህ PDF የተቃኘ ይመስላል። የጽሑፍ PDF ይጫኑ ወይም አጀንዳውን በእጅ ያስገቡ።",
+        "tooLarge": "PDF በጣም ትልቅ ነው (ከፍተኛው 10 MB)።",
+        "encrypted": "ይህ PDF በይለፍ ቃል የተጠበቀ ነው።",
+        "tooManyPages": "ፒዲኤፉ በጣም ብዙ ገጾች አሉት (ከፍተኛው 50)።",
+        "capacity": "የAI አቅም ተይዟል — በኋላ እንደገና ይሞክሩ።"
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "አጀንዳ",
+        "decisions": "ውሳኔዎች",
+        "actions": "ተግባራት",
+        "attendance": "የተገኙ",
+        "minutes": "ደቂቃዎች",
+        "attachments": "አባሪዎች",
+        "transcript": "የጽሑፍ ቅጂ",
+        "previousDecisions": "የቀድሞው ስብሰባ ውሳኔዎች"
+      },
+      "follow": "ተከተል",
+      "followPaused": "ቸል ተብሏል",
+      "status": {
+        "listening": "በማዳመጥ ላይ",
+        "thinking": "በማሰብ ላይ",
+        "behind": "ከ{{s}} ሰከንዶች በኋላ",
+        "paused": "ቆሟል",
+        "offline": "AI አይገኝም"
+      },
+      "empty": {
+        "agenda": "እስካሁን ምንም የአጀንዳ አካል የለም።",
+        "decisions": "ውሳኔዎች ሲወሰኑ እዚህ ይታያሉ።",
+        "actions": "ተግባራት በሚስማሙበት ጊዜ እዚህ ይታያሉ።",
+        "attendance": "የተሳታፊዎች ሲቀላቀሉ መገኘት ይታያል።",
+        "minutes": "ደቂቃዎች በእያንዳንዱ የአጀንዳ እትም ይታያሉ።",
+        "attachments": "እስካሁን ምንም አባሪዎች የሉም።",
+        "transcript": "ግልባጩ ስብሰባው እየተካሄደ ሳለ እዚህ ይታያል።"
+      },
+      "actions": {
+        "confirm": "አረጋግጥ",
+        "edit": "አርትዕ",
+        "reject": "አትቀበል",
+        "add": "አክል",
+        "setActive": "ጀምር",
+        "done": "ተጠናቅቋል",
+        "defer": "አስተላልፍ",
+        "previous": "ቀዳሚ (ክፈት)",
+        "new": "አዲስ በዚህ ስብሰባ",
+        "unassigned": "ያልተመደበ",
+        "ownerPrompt": "የባለቤት ስም ወይም ቅጽል ስም"
+      }
+    },
+    "phases": {
+      "opening": "በመክፈት ላይ",
+      "previousActions": "የቀድሞ እርምጃዎች",
+      "agenda": "አጀንዳ",
+      "goal": "ግብ",
+      "discussion": "ውይይት",
+      "aob": "ሌላ ንግድ",
+      "nextSteps": "የሚቀጥሉት እርምጃዎች",
+      "newActions": "አዲስ እርምጃዎች",
+      "planning": "እቅድ",
+      "closing": "በመዝጋት ላይ",
+      "jumpConfirm": "ወደዚህ ደረጃ ዝለል?"
+    },
+    "proposal": {
+      "title": "ወደሚቀጥለው ምዕራፍ ይሂዱ?",
+      "moveNow": "አሁን ውሰድ",
+      "notYet": "እስካሁን አይደለም",
+      "autoIn": "በራስ-ሰር በ{{s}}ሰ"
+    },
+    "announce": {
+      "dismiss": "አሰናብት"
+    },
+    "consent": {
+      "title": "የAI ማስታወሻዎች በዚህ ስብሰባ",
+      "body": "ይህ ስብሰባ የAI ማስታወሻዎችን ይጠቀማል፦ ንግግርዎ በአገልጋያችን ላይ ይጻፋል፣ ጽሑፉም በ{{provider}} ተሰልቶ የስብሰባ ማስታወሻ ይዘጋጃል።",
+      "continue": "ይቀጥሉ",
+      "optOut": "አትገልጸኝ",
+      "privacyLink": "ግላዊነት",
+      "changeChoice": "ምርጫዬን ቀይር",
+      "notTranscribed": "አልተገለጸም"
+    },
+    "review": {
+      "title": "ገምግም እና አትም",
+      "sections": {
+        "minutes": "ደቂቃዎች",
+        "decisions": "ውሳኔዎች",
+        "actions": "ተግባራት",
+        "distribution": "ስርጭት"
+      },
+      "nextMeeting": {
+        "title": "ቀጣይ ስብሰባ",
+        "date": "ቀን",
+        "duration": "የቆይታ ጊዜ (ደቂቃ)",
+        "room": "ክፍል",
+        "required": "የሚቀጥለው ያስፈልጋል"
+      },
+      "distribution": {
+        "minutesToAttendees": "ደቂቃዎች ለተሳታፊዎች",
+        "invites": "የግዴታ ተሳታፊዎች ግብዣዎች"
+      },
+      "publish": "አትምና ላክ",
+      "published": "ታትሟል",
+      "saveDraft": "ረቂቅ አስቀምጥ",
+      "finalisedChanges": "የማጠናቀቂያ ሂደት ተቀይሯል",
+      "retry": "እንደገና ይሞክሩ"
+    },
+    "snapshot": {
+      "toolbarButton": "ወደ Meet++ ቅጽበታዊ ገጽታ",
+      "added": "ቅጽበታዊ ገጽ ተጨምሯል",
+      "failed": "የቅጽበታዊ ገጽታ አልተሳካም"
+    }
   }
 }

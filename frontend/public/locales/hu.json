@@ -20,7 +20,8 @@
     "account": "Fiók",
     "upgrade": "Frissítés",
     "vouchers": "Utalványok",
-    "admin": "Adminisztrátor"
+    "admin": "Adminisztrátor",
+    "onDemand": "Igény szerint"
   },
   "tiCafe": {
     "title": "Kávézó",
@@ -65,7 +66,10 @@
     "loading": "Betöltés…",
     "close": "Bezárás",
     "anonymous": "Névtelen",
-    "requestFailed": "A kérés sikertelen volt"
+    "requestFailed": "A kérés sikertelen volt",
+    "on": "Be",
+    "off": "Ki",
+    "dismiss": "Bezárás"
   },
   "signInPrompt": {
     "button": "Jelentkezzen be a one.witysk.org oldalon",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Váróterem",
     "waitingRoomDesc": "Az új résztvevők addig várnak, amíg beengedi őket az értekezlet eszköztárából.",
     "autoAdmitAuthenticated": "Bejelentkezett felhasználók automatikus beengedése (hamarosan)",
-    "autoAdmitAuthenticatedDesc": "A bejelentkezett one.witysk.org felhasználók számára a váróterem kihagyása. Még nincs érvényben — a névtelen csatlakozók mindig sorba állnak."
+    "autoAdmitAuthenticatedDesc": "A bejelentkezett one.witysk.org felhasználók számára a váróterem kihagyása. Még nincs érvényben — a névtelen csatlakozók mindig sorba állnak.",
+    "lobbyGreeting": "Előtér üdvözlés",
+    "lobbyGreetingHint": "A lobbyban mindenkinek megjelenik, mielőtt csatlakoznak.",
+    "lobbyGreetingPlaceholder": "Üdvözlünk! Kérünk, némítsd a mikrofont, amikor nem beszélsz.",
+    "schedule": "Ütemezés",
+    "scheduleHint": "Állíts be egy időtartamot és (opcionálisan) egy ismétlődést, hogy a naptármeghívók automatikusan ismétlődjenek.",
+    "duration": "Hosszúság (perc)",
+    "recurrence": "Ismétlődés",
+    "recurrenceNone": "Egyszeri (nincs ismétlődés)",
+    "recurrenceDaily": "Naponta",
+    "recurrenceWeekly": "Heti",
+    "recurrenceBiweekly": "Kéthetente",
+    "recurrenceMonthly": "Havi"
   },
   "discover": {
     "title": "Fedezze fel",
     "subtitle": "— nyilvános értekezletek",
     "join": "Csatlakozás",
     "maxParticipants": "max {{n}}",
-    "hostedBy": "Házigazda: {{name}}"
+    "hostedBy": "Házigazda: {{name}}",
+    "view": "Nézet",
+    "viewTitle": "Nyilvános, csak megtekinthető stream megtekintése",
+    "streamsTitle": "Nyilvános élő közvetítések",
+    "streamsSubtitle": "— csak nézés, fiók nélkül"
   },
   "myMeetings": {
     "loading": "Találkozók betöltése…",
@@ -272,7 +292,14 @@
     "notImage": "Nem kép ({{type}})",
     "processorFailed": "Háttéreffektusok nem támogatottak ezen az eszközön.",
     "custom": "Egyéni: {{name}}",
-    "customDefault": "Egyéni kép"
+    "customDefault": "Egyéni kép",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Óceáni hullámok",
+    "particles": "Részecskék",
+    "cityscape": "Városi fények",
+    "cherryBlossoms": "Cseresznyevirágok",
+    "fireflies": "Fireflies"
   },
   "participants": {
     "title": "Résztvevők",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Tegye meg {{name}} előadónak",
     "removeFromMeeting": "Eltávolítás a megbeszélésből",
     "removeName": "Távolítsa el {{name}}",
-    "authenticatedOwner": "Hitelesített tulajdonos"
+    "authenticatedOwner": "Hitelesített tulajdonos",
+    "cohost": "Társ-házigazda",
+    "promoteCohost": "Előléptetés társ-házigazgatóvá",
+    "demoteCohost": "Társ-házigazda eltávolítása"
   },
   "chatPanel": {
     "title": "Csevegés",
@@ -294,7 +324,10 @@
     "send": "Küldés",
     "close": "Csevegés bezárása",
     "ariaLabel": "Csevegés az értekezleten",
-    "messageAria": "Csevegő üzenet"
+    "messageAria": "Csevegő üzenet",
+    "pin": "Rögzítés",
+    "unpin": "Kitűzés megszüntetése",
+    "pinned": "Rögzítve"
   },
   "invite": {
     "title": "Meghívás e-mailben",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Felvételek",
     "subtitle": "Szerveroldali felvételek a megbeszéléseidről. A helyi fájlok 30 nap után automatikusan törlődnek (vagy amikor közzéteszed a YouTube-on). Feltöltést csak a tulajdonos kezdeményezhet.",
-    "empty": "Még nincsenek felvételek. Indítson egy megbeszélést, és kattintson a <1>Rögzítés</1> gombra az elkészítéséhez.",
+    "empty": "Még nincsenek felvételek. Indíts egy megbeszélést, és kattints a <1>Felvétel</1> gombra az elkészítéséhez.",
     "loading": "Betöltés…",
     "signInFirst": "Először jelentkezz be a one.witysk.org oldalon.",
     "signInTitle": "Jelentkezz be a felvételeid megtekintéséhez",
@@ -932,5 +965,378 @@
     "tileBadge": "Kézfeltartás",
     "lowerOther": "Emelje le ezt a résztvevő kezét",
     "lowerName": "{{name}} kezének leengedése"
+  },
+  "onDemand": {
+    "title": "Igény szerint",
+    "subtitle": "Nyilvános élő közvetítések videói — bármikor megtekinthetők, fiók nélkül.",
+    "watch": "Megtekintés",
+    "loading": "Betöltés…",
+    "empty": "Jelenleg nincs igény szerinti tartalom. Nézz vissza, amikor egy nyilvános élő közvetítés lejátszási listájában vannak videók.",
+    "error": "Nem sikerült betölteni az Igény szerinti tartalmat."
+  },
+  "devices": {
+    "toolbar": "Hang- és videoeszközök",
+    "toolbarTitle": "Válasszon mikrofont, kamerát és hangszórót",
+    "mic": "Mikrofon",
+    "camera": "Kamera",
+    "speaker": "Előadó",
+    "none": "Nem található eszköz",
+    "speakerUnsupported": "A kimeneti eszköz kiválasztása nem támogatott ebben a böngészőben."
+  },
+  "notes": {
+    "title": "Jegyzetek és tábla",
+    "toolbar": "Jegyzetek és tábla",
+    "toolbarTitle": "Megosztott jegyzetek és tábla megnyitása",
+    "close": "Jegyzetek bezárása",
+    "tabNotes": "Jegyzetek",
+    "tabBoard": "Tábla",
+    "hint": "A szobában mindenki szerkeszthet. Automatikus mentés.",
+    "placeholder": "Írjon megosztott jegyzeteket ide…",
+    "color": "Szín",
+    "thickness": "Körvonal vastagsága",
+    "clear": "Tábla törlése"
+  },
+  "polls": {
+    "title": "Szavazások és kérdések",
+    "toolbar": "Szavazások és kérdések",
+    "toolbarTitle": "Szavazások és kérdések megnyitása",
+    "close": "Szavazások lezárása",
+    "tabPolls": "Szavazások",
+    "tabQna": "Kérdések és válaszok",
+    "empty": "Még nincs szavazás.",
+    "createTitle": "Szavazás létrehozása",
+    "createButton": "Létrehozás",
+    "questionPlaceholder": "A kérdésed",
+    "optionPlaceholder": "{{n}}. lehetőség",
+    "addOption": "+ Opció hozzáadása",
+    "open": "Megnyitás",
+    "closed": "Bezárva",
+    "closePoll": "Szavazás lezárása",
+    "qnaEmpty": "Még nincs kérdés.",
+    "qnaPlaceholder": "Tegyél fel egy kérdést…",
+    "qnaAsk": "Kérdezz",
+    "qnaUpvote": "Szavazz fel",
+    "qnaMarkAnswered": "Megválaszolva"
+  },
+  "pip": {
+    "enter": "Kép a képben",
+    "exit": "Kilépés a kép a képben módból",
+    "enterTitle": "Az aktív beszélő kiemelése lebegő csempébe",
+    "exitTitle": "Lebegő csempe bezárása"
+  },
+  "shortcuts": {
+    "title": "Billentyűparancsok",
+    "close": "Bezárás",
+    "disabled": "A gyorsbillentyűk jelenleg le vannak tiltva a Beállítások → Billentyűzet menüben.",
+    "editHint": "A gyorsbillentyűk módosítása a Beállítások oldalon (Billentyűzet szakasz).",
+    "mute": "Mikrofon be- és kikapcsolása",
+    "camera": "Kamera be/ki",
+    "hand": "Jelentkezés / jelentkezés visszavonása",
+    "screenshare": "Képmegosztás be/ki",
+    "leave": "Kilépés a hívásból",
+    "help": "Az átfedés megjelenítése"
+  },
+  "feedback": {
+    "title": "Milyen volt a megbeszélés?",
+    "body": "0 (legrosszabb) és 10 (legjobb) közötti skálán hogyan értékelné ezt a megbeszélést?",
+    "commentLabel": "Van még valami? (nem kötelező)",
+    "submit": "Beküldés",
+    "sending": "Küldés…",
+    "skip": "Kihagyás",
+    "thanks": "Köszönjük a visszajelzést!"
+  },
+  "reactions": {
+    "toolbar": "Reagálás",
+    "toolbarTitle": "Úszó emoji reakció küldése",
+    "send": "Küldés: {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Kapcsolat minősége a következőhöz: {{name}} — {{band}}",
+      "title": "Kapcsolat minősége"
+    },
+    "panel": {
+      "title": "Kapcsolat minősége",
+      "self": "kamerád",
+      "ariaLabel": "{{name}} kapcsolatminősége"
+    },
+    "band": {
+      "high": "Magas",
+      "medium": "Közepes",
+      "low": "Alacsony",
+      "lost": "Újracsatlakozás…",
+      "measuring": "Mérés…"
+    },
+    "limiter": {
+      "network": "Hálózat: csomagvesztés és ingadozás",
+      "publisher": "A közzétevő eszköze korlátozza a streamet",
+      "relay": "Relay útvonal: megnövekedett oda-vissza idő",
+      "stability": "Instabil kapcsolat: ingadozik a minőség",
+      "unknown": "A kapcsolat mérése",
+      "lost": "A kapcsolat megszakadt – automatikus újracsatlakozás"
+    },
+    "tab": {
+      "overview": "Áttekintés",
+      "details": "Részletek",
+      "actions": "Műveletek",
+      "device": "Eszköz"
+    },
+    "quality": {
+      "low": "Alacsony",
+      "medium": "Méd",
+      "high": "Magas",
+      "auto": "Automatikus"
+    },
+    "overview": {
+      "score": "pontszám {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitráta",
+      "resolution": "Felbontás",
+      "fps": "Képsebesség",
+      "loss": "Csomagvesztés",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Kihagyott képkockák",
+      "audioLoss": "Hangvesztés (utolsó perc)",
+      "transport": "Átvitel",
+      "direct": "Közvetlen",
+      "relay": "Továbbító"
+    },
+    "details": {
+      "log": "Legutóbbi műveletek",
+      "none": "Még nincs művelet",
+      "video": "Videó",
+      "audio": "Hang"
+    },
+    "action": {
+      "quality": "Minőség (simulcast réteg)",
+      "maxBitrate": "Maximális bitráta",
+      "compression": "Tömörítés",
+      "colorDepth": "Színmélység",
+      "colorDepthUnsupported": "A 10 bites formátum nem érhető el ezen az eszközön / kodeken",
+      "audioOnly": "Csak hang ehhez a csempéhez",
+      "resync": "Stream újraszinkronizálása",
+      "resetAuto": "Visszaállítás automatikusra",
+      "reconnect": "Újracsatlakozás",
+      "reconnectConfirm": "Újracsatlakozás megerősítése",
+      "apply": "Alkalmaz",
+      "export": "Jelentés exportálása"
+    },
+    "scope": {
+      "receive": "A fogadott képre vonatkozik — a közzétevő kamerája érintetlen marad",
+      "publish": "A módosításokat a megbeszélés minden résztvevője látja"
+    },
+    "autotune": {
+      "test": "Optimális beállítások tesztelése",
+      "running": "A kapcsolat tesztelése…",
+      "observing": "Figyelés… {{seconds}} mp",
+      "applied": "Alkalmazva — a beállítások megmaradnak",
+      "rolledBack": "Visszaállítva — az új beállítás rosszabb volt ezen a hálózaton",
+      "recommended": "Ajánlott ehhez a hálózathoz",
+      "retry": "Újra",
+      "rejected": "{{layer}} elutasítva: {{reason}}",
+      "phase": {
+        "baseline": "Alapvonal gyűjtése…",
+        "probing": "Rétegek vizsgálata…",
+        "evaluating": "Jelöltek értékelése…",
+        "observing": "A(z) eredmény megfigyelése…",
+        "done": "Kész",
+        "failed": "A vizsgálat sikertelen",
+        "idle": "Beállítások\nÁltalános\nHang\nVideó\n<<<KEEP_0>>>\nNyelv\nVálassza ki a felület nyelvét.\nMentés\nMentés folyamatban…\nMentve\nNyelv mentése nem sikerült\nHang\nMikrofon engedélyezése\nKapcsolja ki a mikrofon némításához.\nKamera engedélyezése\nKapcsolja ki a kamera kikapcsolásához.\nMikrofon\nVálassza ki a mikrofont.\nKamera\nVálassza ki a kamerát.\nHangszóró\nVálassza ki a hangszórót.\nKamera felbontása\nVálassza ki a kamera felbontását.\nTükrözés\nTükrözze a saját videót.\nZajcsökkentés\nCsökkentse a háttérzajt.\nEcho visszaverődés\nCsökkentse a visszaverődést.\nAutomatikus erősítés\nAutomatikusan állítsa be a mikrofon hangerejét.\nVideó\nVideó beállítások\nFelbontás\nKamera felbontása\nTükrözés\nTükrözze a saját videót.\nZajcsökkentés\nCsökkentse a háttérzajt.\nEcho visszaverődés\nCsökkentse a visszaverődést.\nAutomatikus erősítés\nAutomatikusan állítsa be a mikrofon hangerejét.\n<<<KEEP_1>>>\n<<<KEEP_2>>>\n<<<KEEP_3>>>\n<<<KEEP_4>>>\n<<<KEEP_5>>>\n<<<KEEP_6>>>\n<<<KEEP_7>>>\n<<<KEEP_8>>>\n<<<KEEP_9>>>\n<<<KEEP_10>>>\n<<<KEEP_11>>>\n<<<KEEP_12>>>\n<<<KEEP_13>>>\n<<<KEEP_14>>>\n<<<KEEP_15>>>\n<<<KEEP_16>>>\n<<<KEEP_17>>>\n<<<KEEP_18>>>\n<<<KEEP_19>>>\n<<<KEEP_20>>>\n<<<KEEP_21>>>\n<<<KEEP_22>>>\n<<<KEEP_23>>>\n<<<KEEP_24>>>\n<<<KEEP_25>>>\n<<<KEEP_26>>>\n<<<KEEP_27>>>\n<<<KEEP_28>>>"
+      },
+      "baseline": "Alapvonal gyűjtése…",
+      "step": {
+        "low": "Tesztelés LOW…",
+        "medium": "Közepes tesztelése…",
+        "high": "Magas minőség tesztelése…"
+      },
+      "evaluating": "Jelöltek kiértékelése…",
+      "done": "Javaslat kész"
+    },
+    "device": {
+      "remoteNote": "A kamera- és mikrofonbeállítások a közzétevőhöz ({{name}}) tartoznak",
+      "camera": "Kamera",
+      "resolution": "Felbontás",
+      "frameRate": "Képsebesség",
+      "cameraMax": "A kamera legfeljebb {{width}} × {{height}} @ {{fps}} fps felbontást támogat",
+      "microphone": "Mikrofon",
+      "channels": "Csatornák",
+      "mono": "Monó",
+      "stereo": "Sztereó",
+      "audioQuality": "Hangminőség",
+      "voice": "Hang",
+      "music": "Zene",
+      "stereoWarning": "A sztereó kikapcsolja a visszhangszűrést és a zajcsökkentést – használj fejhallgatót; a feltöltési sávszélességet is megnöveli",
+      "apply": "Alkalmazás a kamerámra és a mikrofonomra"
+    },
+    "busy": {
+      "quality": "Minőség váltása…",
+      "resync": "Újraszinkronizálás…",
+      "reconnect": "Újracsatlakozás…",
+      "maxBitrate": "Bitráta korlát frissítése…",
+      "compression": "Tömörítés frissítése…",
+      "resolution": "Kamera felbontásának módosítása…",
+      "frameRate": "Képsebesség módosítása…",
+      "camera-device": "Kamera váltása…",
+      "mic-device": "Mikrofon váltása…",
+      "mic-mode": "Mikrofonbeállítások alkalmazása…",
+      "audioOnly": "A stream frissítése…",
+      "applyTune": "Beállítások alkalmazása…",
+      "probe": "Kapcsolat tesztelése…",
+      "export": "A jelentés előkészítése…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI-találkozó",
+      "aiNotesOn": "AI-jegyzetek bekapcsolva",
+      "aiNotesPaused": "AI-jegyzetek szüneteltetve",
+      "menu": {
+        "pause": "Átírás szüneteltetése",
+        "resume": "Átiratás folytatása",
+        "mode": "Mód",
+        "boardToMain": "Tábla előtérbe",
+        "snapshot": "Tábla pillanatkép",
+        "editors": "Szerkesztők…",
+        "end": "AI-találkozó befejezése",
+        "showBoard": "Tábla megjelenítése",
+        "hideBoard": "Tábla elrejtése"
+      }
+    },
+    "setup": {
+      "title": "AI-találkozó indítása",
+      "intro": "A Meet++ átírja a megbeszélést, és naprakészen tartja a táblát.",
+      "structure": "Értekezlet felépítése",
+      "agendaDriven": "Napirend-vezérelt",
+      "agendaDrivenHint": "Elemek és időkeretek",
+      "goalDriven": "Célvezérelt",
+      "goalDrivenHint": "Cél → eredmények → következő lépések",
+      "goalPlaceholder": "Cél",
+      "language": "Nyelv",
+      "mode": "AI mód",
+      "modeLead": "Vezető",
+      "modeAssist": "Segítség",
+      "series": "Találkozósorozat",
+      "newSeries": "Új sorozat",
+      "agendaPdf": "Napirend PDF",
+      "previousNotesPdf": "Korábbi jegyzetek PDF",
+      "importedFromSeries": "Sorozatból importálva",
+      "itemsFound": "{{count}} napirendi pont található",
+      "parsing": "Elemzés…",
+      "start": "Indítás",
+      "cancel": "Mégse",
+      "notice": "A élő átírás a szerverünkön fut; a szöveget a beállított LLM-szolgáltató dolgozza fel a jegyzőkönyv elkészítéséhez.",
+      "errors": {
+        "noTextLayer": "Ez a PDF szkenneltnek tűnik. Tölts fel szöveges PDF-et, vagy add meg a napirendet kézzel.",
+        "tooLarge": "A PDF túl nagy (max. 10 MB).",
+        "encrypted": "Ez a PDF jelszóval védett.",
+        "tooManyPages": "A PDF túl sok oldalt tartalmaz (max. 50).",
+        "capacity": "AI-kapacitás foglalt — próbálja újra később."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Napirend",
+        "decisions": "Döntések",
+        "actions": "Műveletek",
+        "attendance": "Részvétel",
+        "minutes": "Perc",
+        "attachments": "Mellékletek",
+        "transcript": "Átirat",
+        "previousDecisions": "Az előző megbeszélés döntései"
+      },
+      "follow": "Követés",
+      "followPaused": "Szüneteltetve",
+      "status": {
+        "listening": "Hallgatás",
+        "thinking": "Gondolkodás",
+        "behind": "{{s}} mp mögött",
+        "paused": "Szüneteltetve",
+        "offline": "AI nem elérhető"
+      },
+      "empty": {
+        "agenda": "Még nincsenek napirendi pontok.",
+        "decisions": "A döntések itt jelennek meg, amint megszületnek.",
+        "actions": "A műveletek itt jelennek meg, amint megegyeztek róluk.",
+        "attendance": "A résztvevők megjelennek, ahogy csatlakoznak.",
+        "minutes": "A jegyzőkönyv pontonként jelenik meg.",
+        "attachments": "Még nincsenek mellékletek.",
+        "transcript": "Az átirat itt jelenik meg, amíg a megbeszélés tart."
+      },
+      "actions": {
+        "confirm": "Megerősítés",
+        "edit": "Szerkesztés",
+        "reject": "Elutasítás",
+        "add": "Hozzáadás",
+        "setActive": "Indítás",
+        "done": "Kész",
+        "defer": "Elhalasztás",
+        "previous": "Előző (megnyitás)",
+        "new": "Új ezen a hívásban",
+        "unassigned": "Nincs hozzárendelve",
+        "ownerPrompt": "Tulajdonos neve vagy álneve"
+      }
+    },
+    "phases": {
+      "opening": "Megnyitás",
+      "previousActions": "Korábbi műveletek",
+      "agenda": "Napirend",
+      "goal": "Cél",
+      "discussion": "Beszélgetés",
+      "aob": "Egyéb üzleti",
+      "nextSteps": "Következő lépések",
+      "newActions": "Új műveletek",
+      "planning": "Tervezés",
+      "closing": "Bezárás",
+      "jumpConfirm": "Ugrás erre a szakaszra?"
+    },
+    "proposal": {
+      "title": "Továbblépés a következő fázisba?",
+      "moveNow": "Áthelyezés most",
+      "notYet": "Még nem",
+      "autoIn": "Automatikus {{s}} mp-ben"
+    },
+    "announce": {
+      "dismiss": "Bezárás"
+    },
+    "consent": {
+      "title": "AI-jegyzetek ezen a megbeszélésen",
+      "body": "Ez a megbeszélés AI-jegyzetelést használ: a beszédedet a szerverünkön írjuk át szöveggé, és a szöveget a {{provider}} dolgozza fel az emlékeztető elkészítéséhez.",
+      "continue": "Folytatás",
+      "optOut": "Ne írjon át",
+      "privacyLink": "Adatvédelem",
+      "changeChoice": "Módosítom a választásom",
+      "notTranscribed": "Nincs átirat"
+    },
+    "review": {
+      "title": "Áttekintés és közzététel",
+      "sections": {
+        "minutes": "Perc",
+        "decisions": "Döntések",
+        "actions": "Műveletek",
+        "distribution": "Terjesztés"
+      },
+      "nextMeeting": {
+        "title": "Következő értekezlet",
+        "date": "Dátum",
+        "duration": "Hosszúság (perc)",
+        "room": "Szoba",
+        "required": "Következő szükséges"
+      },
+      "distribution": {
+        "minutesToAttendees": "Percek a résztvevőknek",
+        "invites": "Meghívók a kötelező résztvevőknek"
+      },
+      "publish": "Közzététel és küldés",
+      "published": "Közzétéve",
+      "saveDraft": "Vázlat mentése",
+      "finalisedChanges": "A véglegesítés megváltozott",
+      "retry": "Újra"
+    },
+    "snapshot": {
+      "toolbarButton": "Pillanatkép a Meet++-ba",
+      "added": "Pillanatkép hozzáadva",
+      "failed": "A pillanatkép nem sikerült"
+    }
   }
 }

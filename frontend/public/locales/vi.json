@@ -20,7 +20,8 @@
     "account": "Tài khoản",
     "upgrade": "Nâng cấp",
     "vouchers": "Phiếu quà tặng",
-    "admin": "Quản trị viên"
+    "admin": "Quản trị viên",
+    "onDemand": "Theo yêu cầu"
   },
   "tiCafe": {
     "title": "Café",
@@ -65,7 +66,10 @@
     "loading": "Đang tải…",
     "close": "Đóng",
     "anonymous": "ẩn danh",
-    "requestFailed": "Yêu cầu thất bại"
+    "requestFailed": "Yêu cầu thất bại",
+    "on": "Bật",
+    "off": "Tắt",
+    "dismiss": "Bỏ qua"
   },
   "signInPrompt": {
     "button": "Đăng nhập tại one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Phòng chờ",
     "waitingRoomDesc": "Người tham gia mới chờ bạn phê duyệt từ thanh công cụ cuộc họp.",
     "autoAdmitAuthenticated": "Tự động cho phép người dùng đã đăng nhập (sắp ra mắt)",
-    "autoAdmitAuthenticatedDesc": "Bỏ qua phòng chờ cho người dùng đã đăng nhập one.witysk.org. Chưa áp dụng — người tham gia ẩn danh luôn phải xếp hàng."
+    "autoAdmitAuthenticatedDesc": "Bỏ qua phòng chờ cho người dùng đã đăng nhập one.witysk.org. Chưa áp dụng — người tham gia ẩn danh luôn phải xếp hàng.",
+    "lobbyGreeting": "Lời chào phòng chờ",
+    "lobbyGreetingHint": "Hiển thị cho mọi người trong phòng chờ trước khi họ tham gia.",
+    "lobbyGreetingPlaceholder": "Chào mừng! Vui lòng tắt mic khi không nói.",
+    "schedule": "Lịch",
+    "scheduleHint": "Đặt thời lượng và (tùy chọn) lịch lặp để lời mời trên lịch tự động lặp lại.",
+    "duration": "Thời lượng (phút)",
+    "recurrence": "Định kỳ",
+    "recurrenceNone": "Một lần (không lặp lại)",
+    "recurrenceDaily": "Hằng ngày",
+    "recurrenceWeekly": "Hàng tuần",
+    "recurrenceBiweekly": "Mỗi 2 tuần",
+    "recurrenceMonthly": "Hàng tháng"
   },
   "discover": {
     "title": "Khám phá",
     "subtitle": "— cuộc họp có thể tham gia",
     "join": "Tham gia",
     "maxParticipants": "tối đa {{n}}",
-    "hostedBy": "Tổ chức bởi {{name}}"
+    "hostedBy": "Tổ chức bởi {{name}}",
+    "view": "Xem",
+    "viewTitle": "Xem luồng chỉ xem công khai",
+    "streamsTitle": "Livestream công khai",
+    "streamsSubtitle": "— chỉ xem, không cần tài khoản"
   },
   "myMeetings": {
     "loading": "Đang tải cuộc họp của bạn…",
@@ -272,7 +292,14 @@
     "notImage": "Không phải hình ảnh ({{type}})",
     "processorFailed": "Thiết bị này không hỗ trợ hiệu ứng nền.",
     "custom": "Tùy chỉnh: {{name}}",
-    "customDefault": "Ảnh tùy chỉnh"
+    "customDefault": "Ảnh tùy chỉnh",
+    "aurora": "Cực quang",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Sóng biển",
+    "particles": "Hạt",
+    "cityscape": "Đèn thành phố",
+    "cherryBlossoms": "Hoa anh đào",
+    "fireflies": "Đom đóm"
   },
   "participants": {
     "title": "Người tham gia",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Đặt {{name}} làm người thuyết trình",
     "removeFromMeeting": "Xóa khỏi cuộc họp",
     "removeName": "Xóa {{name}}",
-    "authenticatedOwner": "Chủ sở hữu đã xác thực"
+    "authenticatedOwner": "Chủ sở hữu đã xác thực",
+    "cohost": "Đồng chủ trì",
+    "promoteCohost": "Thăng cấp thành đồng chủ trì",
+    "demoteCohost": "Xóa đồng chủ trì"
   },
   "chatPanel": {
     "title": "Trò chuyện",
@@ -294,7 +324,10 @@
     "send": "Gửi",
     "close": "Đóng chat",
     "ariaLabel": "Trò chuyện cuộc họp",
-    "messageAria": "Tin nhắn trò chuyện"
+    "messageAria": "Tin nhắn trò chuyện",
+    "pin": "Ghim",
+    "unpin": "Bỏ ghim",
+    "pinned": "Đã ghim"
   },
   "invite": {
     "title": "Mời qua email",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Bản ghi",
     "subtitle": "Bản ghi phía máy chủ của các cuộc họp của bạn. Tệp cục bộ tự động xóa sau 30 ngày (hoặc khi bạn đăng lên YouTube). Chỉ chủ sở hữu mới có thể tải lên.",
-    "empty": "Chưa có bản ghi nào. Hãy bắt đầu cuộc họp và nhấn <1>Ghi âm</1> để ghi lại.",
+    "empty": "Chưa có bản ghi nào. Bắt đầu cuộc họp và nhấp vào <1>Ghi</1> để tạo bản ghi.",
     "loading": "Đang tải…",
     "signInFirst": "Đăng nhập trên one.witysk.org trước.",
     "signInTitle": "Đăng nhập để xem bản ghi của bạn",
@@ -932,5 +965,378 @@
     "tileBadge": "Giơ tay",
     "lowerOther": "Hạ tay người tham gia này xuống",
     "lowerName": "Hạ tay của {{name}} xuống"
+  },
+  "onDemand": {
+    "title": "Theo yêu cầu",
+    "subtitle": "Video từ các buổi livestream công khai đang diễn ra — xem bất cứ lúc nào, không cần tài khoản.",
+    "watch": "Theo dõi",
+    "loading": "Đang tải…",
+    "empty": "Không có gì theo yêu cầu ngay bây giờ. Quay lại kiểm tra khi một buổi livestream công khai có video trong danh sách phát.",
+    "error": "Không thể tải On Demand ngay bây giờ."
+  },
+  "devices": {
+    "toolbar": "Thiết bị âm thanh & video",
+    "toolbarTitle": "Chọn micrô, camera và loa",
+    "mic": "Micrô",
+    "camera": "Máy ảnh",
+    "speaker": "Diễn giả",
+    "none": "Không tìm thấy thiết bị",
+    "speakerUnsupported": "Chọn thiết bị đầu ra không được hỗ trợ trong trình duyệt này."
+  },
+  "notes": {
+    "title": "Ghi chú & bảng trắng",
+    "toolbar": "Ghi chú & bảng trắng",
+    "toolbarTitle": "Mở ghi chú và bảng trắng được chia sẻ",
+    "close": "Đóng ghi chú",
+    "tabNotes": "Ghi chú",
+    "tabBoard": "Bảng trắng",
+    "hint": "Mọi người trong phòng đều có thể chỉnh sửa. Tự động lưu.",
+    "placeholder": "Nhập ghi chú chung ở đây…",
+    "color": "Màu sắc",
+    "thickness": "Độ dày nét vẽ",
+    "clear": "Xóa bảng"
+  },
+  "polls": {
+    "title": "Bình chọn & Hỏi đáp",
+    "toolbar": "Bình chọn & Hỏi đáp",
+    "toolbarTitle": "Mở bình chọn và hỏi đáp",
+    "close": "Đóng bình chọn",
+    "tabPolls": "Bình chọn",
+    "tabQna": "Hỏi & Đáp",
+    "empty": "Chưa có bình chọn nào.",
+    "createTitle": "Tạo cuộc thăm dò",
+    "createButton": "Tạo",
+    "questionPlaceholder": "Câu hỏi của bạn",
+    "optionPlaceholder": "Tùy chọn {{n}}",
+    "addOption": "+ Thêm tùy chọn",
+    "open": "Mở",
+    "closed": "Đã đóng",
+    "closePoll": "Đóng bình chọn",
+    "qnaEmpty": "Chưa có câu hỏi nào.",
+    "qnaPlaceholder": "Đặt câu hỏi…",
+    "qnaAsk": "Yêu cầu",
+    "qnaUpvote": "Bình chọn",
+    "qnaMarkAnswered": "Đã trả lời"
+  },
+  "pip": {
+    "enter": "Hình trong hình",
+    "exit": "Thoát hình trong hình",
+    "enterTitle": "Tách người nói đang hoạt động thành ô nổi",
+    "exitTitle": "Đóng ô nổi"
+  },
+  "shortcuts": {
+    "title": "Phím tắt",
+    "close": "Đóng",
+    "disabled": "Phím tắt hiện đang bị tắt trong Cài đặt → Bàn phím.",
+    "editHint": "Thay đổi phím tắt trong trang Cài đặt (mục Bàn phím).",
+    "mute": "Bật/tắt micrô",
+    "camera": "Bật/tắt camera",
+    "hand": "Giơ / hạ tay",
+    "screenshare": "Bật/tắt chia sẻ màn hình",
+    "leave": "Rời cuộc họp",
+    "help": "Hiển thị lớp phủ này"
+  },
+  "feedback": {
+    "title": "Cuộc họp thế nào?",
+    "body": "Trên thang điểm từ 0 (tệ nhất) đến 10 (tốt nhất), bạn đánh giá cuộc họp này như thế nào?",
+    "commentLabel": "Còn gì nữa không? (không bắt buộc)",
+    "submit": "Gửi",
+    "sending": "Đang gửi…",
+    "skip": "Bỏ qua",
+    "thanks": "Cảm ơn phản hồi của bạn!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Gửi biểu tượng cảm xúc nổi",
+    "send": "Gửi {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Chất lượng kết nối cho {{name}} — {{band}}",
+      "title": "Chất lượng kết nối"
+    },
+    "panel": {
+      "title": "Chất lượng kết nối",
+      "self": "Camera của bạn",
+      "ariaLabel": "Chất lượng kết nối cho {{name}}"
+    },
+    "band": {
+      "high": "Cao",
+      "medium": "Trung bình",
+      "low": "Thấp",
+      "lost": "Đang kết nối lại…",
+      "measuring": "Đang đo…"
+    },
+    "limiter": {
+      "network": "Mạng: mất gói và jitter",
+      "publisher": "Thiết bị phát đang giới hạn luồng",
+      "relay": "Đường truyền relay: thời gian khứ hồi tăng cao",
+      "stability": "Liên kết không ổn định: chất lượng dao động",
+      "unknown": "Đang đo kết nối",
+      "lost": "Mất kết nối — đang tự động kết nối lại"
+    },
+    "tab": {
+      "overview": "Tổng quan",
+      "details": "Chi tiết",
+      "actions": "Thao tác",
+      "device": "Thiết bị"
+    },
+    "quality": {
+      "low": "Thấp",
+      "medium": "Trung",
+      "high": "Cao",
+      "auto": "Tự động"
+    },
+    "overview": {
+      "score": "Điểm {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitrate",
+      "resolution": "Độ phân giải",
+      "fps": "Tốc độ khung hình",
+      "loss": "Mất gói",
+      "jitterRtt": "Độ trễ dao động / RTT",
+      "dropped": "Khung hình bị bỏ qua",
+      "audioLoss": "Mất âm thanh (phút cuối)",
+      "transport": "Truyền tải",
+      "direct": "Trực tiếp",
+      "relay": "Truyền tiếp"
+    },
+    "details": {
+      "log": "Thao tác gần đây",
+      "none": "Chưa có hành động nào",
+      "video": "Video",
+      "audio": "Âm thanh"
+    },
+    "action": {
+      "quality": "Chất lượng (lớp simulcast)",
+      "maxBitrate": "Bitrate tối đa",
+      "compression": "Nén",
+      "colorDepth": "Độ sâu màu",
+      "colorDepthUnsupported": "10-bit không khả dụng trên thiết bị / codec này",
+      "audioOnly": "Chỉ âm thanh cho ô này",
+      "resync": "Đồng bộ lại luồng",
+      "resetAuto": "Đặt lại về tự động",
+      "reconnect": "Kết nối lại",
+      "reconnectConfirm": "Xác nhận kết nối lại",
+      "apply": "Áp dụng",
+      "export": "Xuất báo cáo"
+    },
+    "scope": {
+      "receive": "Áp dụng cho nội dung bạn nhận được — camera của người phát không bị ảnh hưởng",
+      "publish": "Các thay đổi hiển thị với mọi người trong cuộc họp"
+    },
+    "autotune": {
+      "test": "Kiểm tra cài đặt tối ưu",
+      "running": "Đang kiểm tra kết nối…",
+      "observing": "Đang quan sát… {{seconds}} giây",
+      "applied": "Đã áp dụng — đã lưu cài đặt",
+      "rolledBack": "Đã hoàn tác — cài đặt mới hoạt động kém hơn trên mạng này",
+      "recommended": "Được đề xuất cho mạng này",
+      "retry": "Thử lại",
+      "rejected": "{{layer}} đã bị từ chối: {{reason}}",
+      "phase": {
+        "baseline": "Đang thu thập thông số cơ sở…",
+        "probing": "Đang kiểm tra các lớp…",
+        "evaluating": "Đang đánh giá ứng viên…",
+        "observing": "Đang quan sát kết quả…",
+        "done": "Xong",
+        "failed": "Kiểm tra thất bại",
+        "idle": "<<<KEEP_0>>>"
+      },
+      "baseline": "Đang thu thập đường cơ sở…",
+      "step": {
+        "low": "Đang kiểm tra THẤP…",
+        "medium": "Đang kiểm tra MEDIUM…",
+        "high": "Đang kiểm tra CAO…"
+      },
+      "evaluating": "Đang đánh giá ứng viên…",
+      "done": "Đề xuất đã sẵn sàng"
+    },
+    "device": {
+      "remoteNote": "Cài đặt camera và micrô thuộc về nhà xuất bản ({{name}})",
+      "camera": "Camera",
+      "resolution": "Độ phân giải",
+      "frameRate": "Tốc độ khung hình",
+      "cameraMax": "Camera hỗ trợ tối đa {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Micrô",
+      "channels": "Kênh",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Chất lượng âm thanh",
+      "voice": "Giọng nói",
+      "music": "Nhạc",
+      "stereoWarning": "Âm thanh nổi tắt khử vọng và khử ồn — hãy dùng tai nghe; đồng thời tăng băng thông tải lên",
+      "apply": "Áp dụng cho camera & mic của tôi"
+    },
+    "busy": {
+      "quality": "Đang thay đổi chất lượng…",
+      "resync": "Đang đồng bộ lại luồng…",
+      "reconnect": "Đang kết nối lại…",
+      "maxBitrate": "Đang cập nhật giới hạn bitrate…",
+      "compression": "Đang cập nhật nén…",
+      "resolution": "Đang thay đổi độ phân giải camera…",
+      "frameRate": "Đang thay đổi tốc độ khung hình…",
+      "camera-device": "Đang chuyển camera…",
+      "mic-device": "Đang chuyển micrô…",
+      "mic-mode": "Đang áp dụng cài đặt micrô…",
+      "audioOnly": "Đang cập nhật luồng…",
+      "applyTune": "Đang áp dụng cài đặt…",
+      "probe": "Đang kiểm tra kết nối…",
+      "export": "Đang chuẩn bị báo cáo…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "Cuộc họp AI",
+      "aiNotesOn": "Ghi chú AI bật",
+      "aiNotesPaused": "Ghi chú AI đã tạm dừng",
+      "menu": {
+        "pause": "Tạm dừng phiên âm",
+        "resume": "Tiếp tục phiên âm",
+        "mode": "Chế độ",
+        "boardToMain": "Đưa bảng lên chính",
+        "snapshot": "Ảnh chụp bảng trắng",
+        "editors": "Trình chỉnh sửa…",
+        "end": "Kết thúc cuộc họp AI",
+        "showBoard": "Hiện bảng",
+        "hideBoard": "Ẩn bảng"
+      }
+    },
+    "setup": {
+      "title": "Bắt đầu cuộc họp AI",
+      "intro": "Meet++ ghi lại biên bản cuộc họp và cập nhật bảng liên tục.",
+      "structure": "Cấu trúc cuộc họp",
+      "agendaDriven": "Theo chương trình",
+      "agendaDrivenHint": "Mục và khung thời gian",
+      "goalDriven": "Định hướng mục tiêu",
+      "goalDrivenHint": "Mục tiêu → sản phẩm bàn giao → bước tiếp theo",
+      "goalPlaceholder": "Mục tiêu",
+      "language": "Ngôn ngữ",
+      "mode": "Chế độ AI",
+      "modeLead": "Trưởng nhóm",
+      "modeAssist": "Trợ giúp",
+      "series": "Chuỗi cuộc họp",
+      "newSeries": "Bộ mới",
+      "agendaPdf": "Chương trình PDF",
+      "previousNotesPdf": "PDF ghi chú trước đó",
+      "importedFromSeries": "Đã nhập từ chuỗi",
+      "itemsFound": "Đã tìm thấy {{count}} mục trong chương trình",
+      "parsing": "Đang phân tích…",
+      "start": "Bắt đầu",
+      "cancel": "Hủy",
+      "notice": "Phiên âm trực tiếp chạy trên máy chủ của chúng tôi; văn bản được nhà cung cấp LLM đã cấu hình xử lý để tạo biên bản.",
+      "errors": {
+        "noTextLayer": "PDF này có vẻ là bản scan. Hãy tải lên PDF dạng văn bản hoặc nhập chương trình họp thủ công.",
+        "tooLarge": "Tệp PDF quá lớn (tối đa 10 MB).",
+        "encrypted": "PDF này được bảo vệ bằng mật khẩu.",
+        "tooManyPages": "PDF có quá nhiều trang (tối đa 50).",
+        "capacity": "Năng lực AI đang bận — vui lòng thử lại sau."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Chương trình",
+        "decisions": "Quyết định",
+        "actions": "Hành động",
+        "attendance": "Điểm danh",
+        "minutes": "Phút",
+        "attachments": "Tệp đính kèm",
+        "transcript": "Bản ghi",
+        "previousDecisions": "Các quyết định của cuộc họp trước"
+      },
+      "follow": "Theo dõi",
+      "followPaused": "Đã tạm dừng",
+      "status": {
+        "listening": "Đang nghe",
+        "thinking": "Đang suy nghĩ",
+        "behind": "Sau {{s}} giây",
+        "paused": "Đã tạm dừng",
+        "offline": "AI không khả dụng"
+      },
+      "empty": {
+        "agenda": "Chưa có mục nào trong chương trình.",
+        "decisions": "Các quyết định sẽ xuất hiện ở đây ngay khi được đưa ra.",
+        "actions": "Các hành động sẽ xuất hiện ở đây khi được thống nhất.",
+        "attendance": "Điểm danh sẽ hiển thị khi mọi người tham gia.",
+        "minutes": "Số phút sẽ hiển thị theo từng mục trong chương trình.",
+        "attachments": "Chưa có tệp đính kèm nào.",
+        "transcript": "Bản ghi xuất hiện ở đây trong khi cuộc họp diễn ra."
+      },
+      "actions": {
+        "confirm": "Xác nhận",
+        "edit": "Chỉnh sửa",
+        "reject": "Từ chối",
+        "add": "Thêm",
+        "setActive": "Bắt đầu",
+        "done": "Xong",
+        "defer": "Trì hoãn",
+        "previous": "Trước (mở)",
+        "new": "Mới trong cuộc họp này",
+        "unassigned": "Chưa chỉ định",
+        "ownerPrompt": "Tên hoặc bí danh chủ sở hữu"
+      }
+    },
+    "phases": {
+      "opening": "Đang mở",
+      "previousActions": "Hành động trước đó",
+      "agenda": "Chương trình",
+      "goal": "Mục tiêu",
+      "discussion": "Thảo luận",
+      "aob": "Kinh doanh khác",
+      "nextSteps": "Các bước tiếp theo",
+      "newActions": "Hành động mới",
+      "planning": "Lập kế hoạch",
+      "closing": "Đang đóng",
+      "jumpConfirm": "Chuyển đến giai đoạn này?"
+    },
+    "proposal": {
+      "title": "Chuyển sang giai đoạn tiếp theo?",
+      "moveNow": "Di chuyển ngay",
+      "notYet": "Chưa có",
+      "autoIn": "Tự động sau {{s}} giây"
+    },
+    "announce": {
+      "dismiss": "Bỏ qua"
+    },
+    "consent": {
+      "title": "Ghi chú AI trong cuộc họp này",
+      "body": "Cuộc họp này sử dụng ghi chú AI: lời nói của bạn được phiên âm trên máy chủ của chúng tôi và văn bản được {{provider}} xử lý để tạo biên bản.",
+      "continue": "Tiếp tục",
+      "optOut": "Đừng ghi lại lời tôi",
+      "privacyLink": "Quyền riêng tư",
+      "changeChoice": "Đổi lựa chọn của tôi",
+      "notTranscribed": "Chưa phiên âm"
+    },
+    "review": {
+      "title": "Xem lại và xuất bản",
+      "sections": {
+        "minutes": "Phút",
+        "decisions": "Quyết định",
+        "actions": "Hành động",
+        "distribution": "Phân phối"
+      },
+      "nextMeeting": {
+        "title": "Cuộc họp tiếp theo",
+        "date": "Ngày",
+        "duration": "Thời lượng (phút)",
+        "room": "Phòng",
+        "required": "Bắt buộc tiếp theo"
+      },
+      "distribution": {
+        "minutesToAttendees": "Số phút cho người tham dự",
+        "invites": "Lời mời gửi đến người tham dự bắt buộc"
+      },
+      "publish": "Phát & gửi",
+      "published": "Đã xuất bản",
+      "saveDraft": "Lưu bản nháp",
+      "finalisedChanges": "Đã thay đổi hoàn tất",
+      "retry": "Thử lại"
+    },
+    "snapshot": {
+      "toolbarButton": "Chụp nhanh vào Meet++",
+      "added": "Đã thêm ảnh chụp nhanh",
+      "failed": "Chụp nhanh thất bại"
+    }
   }
 }

@@ -22,10 +22,12 @@ import {
   OneWityskUserDetail,
 } from "../lib/auth";
 import { useMe } from "../lib/me";
+import { meetppApi } from "../lib/meetpp/api";
+import { getAccessToken } from "../lib/auth";
 import { Button, Card, Field, Input, Modal } from "../components/ui";
 import SignInPrompt from "../components/SignInPrompt";
 
-type Tab = "users" | "ips" | "ids";
+type Tab = "users" | "ips" | "ids" | "meetpp";
 
 export default function AdminPanel() {
   const { t } = useTranslation();
@@ -110,11 +112,15 @@ export default function AdminPanel() {
         <TabButton active={tab === "ids"} onClick={() => setTab("ids")}>
           {t("admin.tabs.ids", { defaultValue: "IDS" })}
         </TabButton>
+        <TabButton active={tab === "meetpp"} onClick={() => setTab("meetpp")}>
+          {t("admin.tabs.meetpp", { defaultValue: "Meet++" })}
+        </TabButton>
       </div>
 
       {tab === "users" && <UsersTab currentUserId={me.id} />}
       {tab === "ips" && <BlockedIPsTab />}
       {tab === "ids" && <IdsTab />}
+      {tab === "meetpp" && <MeetppAdminTab />}
     </div>
   );
 }
@@ -1236,5 +1242,83 @@ function TwoFaCell({ user, compact = false }: { user: AdminUserOut; compact?: bo
         </span>
       )}
     </span>
+  );
+}
+
+
+function MeetppAdminTab() {
+  const { t } = useTranslation();
+  const [data, setData] = useState<Awaited<ReturnType<typeof meetppApi.adminStatus>> | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const load = () => {
+    meetppApi.adminStatus().then(setData).catch((e) => setErr(e instanceof Error ? e.message : "failed"));
+  };
+  useEffect(() => {
+    load();
+    const timer = window.setInterval(load, 10000);
+    return () => window.clearInterval(timer);
+  }, []);
+  if (err) return <Card><p className="text-sm text-red-400">{err}</p></Card>;
+  if (!data) return <Card><p className="text-slate-300">{t("admin.loading", { defaultValue: "Loading…" })}</p></Card>;
+  return (
+    <div className="space-y-4" data-testid="admin-meetpp">
+      <Card>
+        <div className="mb-2 flex items-center gap-3 text-sm text-slate-200">
+          <span className={data.enabled ? "text-emerald-400" : "text-red-400"}>
+            {data.enabled ? "Meet++ enabled" : "Meet++ disabled"}
+          </span>
+          <span>· breaker: {data.breaker}</span>
+          <span>· tokens today: {data.tokens_today.toLocaleString()}</span>
+          {data.agent_health && (
+            <span>· agent: {String((data.agent_health as Record<string, unknown>).sessions ?? "?")} session(s), backlog {String((data.agent_health as Record<string, unknown>).backlog_s ?? 0)}s</span>
+          )}
+        </div>
+        {data.active_sessions.length === 0 ? (
+          <p className="text-sm text-slate-400">No active sessions.</p>
+        ) : (
+          <table className="w-full text-left text-sm text-slate-200">
+            <thead className="text-xs uppercase text-slate-400">
+              <tr><th className="py-1">Session</th><th>Meeting</th><th>Status</th><th>Phase</th><th>Lang</th><th /></tr>
+            </thead>
+            <tbody>
+              {data.active_sessions.map((s) => (
+                <tr key={s.sid} className="border-t border-primary-700">
+                  <td className="py-1 font-mono text-xs">{s.sid}</td>
+                  <td className="font-mono text-xs">{s.meeting_id}</td>
+                  <td>{s.status}</td>
+                  <td>{s.phase}</td>
+                  <td>{s.language}</td>
+                  <td className="text-right">
+                    <button
+                      className="rounded bg-red-600 px-2 py-0.5 text-xs text-white"
+                      onClick={async () => {
+                        if (!window.confirm("End this AI session?")) return;
+                        const tok = getAccessToken();
+                        await fetch(`/api/v1/admin/meetpp/sessions/${s.sid}/end`, { method: "POST", headers: tok ? { Authorization: `Bearer ${tok}` } : {} });
+                        load();
+                      }}
+                    >
+                      End
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+      <Card>
+        <h2 className="mb-2 text-sm font-semibold text-slate-100">Rejected operations (last 50)</h2>
+        {data.rejected_ops.length === 0 ? (
+          <p className="text-sm text-slate-400">None.</p>
+        ) : (
+          <ul className="space-y-1 text-xs text-slate-300">
+            {data.rejected_ops.map((r2, i) => (
+              <li key={i}><span className="font-mono">{r2.op_type}</span> — {r2.reason}</li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
   );
 }

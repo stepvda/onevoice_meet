@@ -217,6 +217,11 @@ class Meeting(Base):
     # column.
     playback_paused_offset_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    # Meet++ — series linkage added by lightweight_migrate; must also be
+    # mapped here or the ORM cannot read them.
+    meetpp_series_id: Mapped[str | None] = mapped_column(String(26), nullable=True)
+    meetpp_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")
 
@@ -776,3 +781,8 @@ class SecurityEvent(Base):
     user_agent: Mapped[str | None] = mapped_column(String(255))
     details: Mapped[str | None] = mapped_column(String(512))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
+
+
+# Import Meet++ models last so they register on Base before create_all runs.
+# Placed here (rather than in main.py) so any import of app.models gets them.
+from app.meetpp import models as _meetpp_models  # noqa: E402,F401

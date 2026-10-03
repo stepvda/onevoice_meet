@@ -20,7 +20,8 @@
     "account": "アカウント",
     "upgrade": "アップグレード",
     "vouchers": "バウチャー",
-    "admin": "管理者"
+    "admin": "管理者",
+    "onDemand": "オンデマンド"
   },
   "tiCafe": {
     "title": "カフェ",
@@ -65,7 +66,10 @@
     "loading": "読み込み中…",
     "close": "閉じる",
     "anonymous": "匿名",
-    "requestFailed": "リクエストに失敗しました"
+    "requestFailed": "リクエストに失敗しました",
+    "on": "オン",
+    "off": "オフ",
+    "dismiss": "閉じる"
   },
   "signInPrompt": {
     "button": "one.witysk.org にサインイン",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "待機室",
     "waitingRoomDesc": "新規参加者は、ミーティングツールバーから承認されるまでお待ちください。",
     "autoAdmitAuthenticated": "サインイン済みユーザーを自動入室（近日公開）",
-    "autoAdmitAuthenticatedDesc": "ログイン済みの one.witysk.org ユーザーは待機室をスキップ。まだ適用されていません — 匿名参加者は常に待機列に入ります。"
+    "autoAdmitAuthenticatedDesc": "ログイン済みの one.witysk.org ユーザーは待機室をスキップ。まだ適用されていません — 匿名参加者は常に待機列に入ります。",
+    "lobbyGreeting": "ロビーの挨拶",
+    "lobbyGreetingHint": "参加する前にロビーの全員に表示されます。",
+    "lobbyGreetingPlaceholder": "ようこそ！発言しないときはマイクをミュートにしてください。",
+    "schedule": "スケジュール",
+    "scheduleHint": "カレンダー招待を自動で繰り返すには、期間と（任意で）繰り返しを設定します。",
+    "duration": "<<<KEEP_0>>> (分)",
+    "recurrence": "繰り返し",
+    "recurrenceNone": "単発（繰り返しなし）",
+    "recurrenceDaily": "毎日",
+    "recurrenceWeekly": "毎週",
+    "recurrenceBiweekly": "2週間ごと",
+    "recurrenceMonthly": "月間"
   },
   "discover": {
     "title": "見つける",
     "subtitle": "— 参加可能なミーティング",
     "join": "参加する",
     "maxParticipants": "最大 {{n}}",
-    "hostedBy": "{{name}} 主催"
+    "hostedBy": "{{name}} 主催",
+    "view": "表示",
+    "viewTitle": "公開視聴専用ストリームを見る",
+    "streamsTitle": "公開ライブ配信",
+    "streamsSubtitle": "— 視聴のみ、アカウント不要"
   },
   "myMeetings": {
     "loading": "会議を読み込み中…",
@@ -272,7 +292,14 @@
     "notImage": "画像ではありません（{{type}}）",
     "processorFailed": "このデバイスでは背景効果がサポートされていません。",
     "custom": "カスタム: {{name}}",
-    "customDefault": "カスタム画像"
+    "customDefault": "カスタム画像",
+    "aurora": "オーロラ",
+    "bokeh": "ボケ",
+    "wavesAnim": "波の音",
+    "particles": "パーティクル",
+    "cityscape": "街の灯",
+    "cherryBlossoms": "桜",
+    "fireflies": "Fireflies"
   },
   "participants": {
     "title": "参加者",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "{{name}} を発表者にする",
     "removeFromMeeting": "ミーティングから削除",
     "removeName": "{{name}} を削除",
-    "authenticatedOwner": "認証済みの所有者"
+    "authenticatedOwner": "認証済みの所有者",
+    "cohost": "共同ホスト",
+    "promoteCohost": "共同ホストに昇格",
+    "demoteCohost": "共同ホストを解除"
   },
   "chatPanel": {
     "title": "チャット",
@@ -294,7 +324,10 @@
     "send": "送信",
     "close": "チャットを閉じる",
     "ariaLabel": "会議チャット",
-    "messageAria": "チャットメッセージ"
+    "messageAria": "チャットメッセージ",
+    "pin": "ピン",
+    "unpin": "ピン解除",
+    "pinned": "ピン留め"
   },
   "invite": {
     "title": "メールで招待",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "録画",
     "subtitle": "サーバー側で会議を録画。ローカルファイルは30日後（またはYouTube公開時）に自動削除。アップロードは所有者のみ実行可能。",
-    "empty": "まだ録画はありません。会議を開始し、<1>録画</1>をクリックして録画してください。",
+    "empty": "まだ録画がありません。会議を開始し、<1>録画</1>をクリックして録画してください。",
     "loading": "読み込み中…",
     "signInFirst": "まず one.witysk.org にサインインしてください。",
     "signInTitle": "サインインして録画を確認",
@@ -932,5 +965,378 @@
     "tileBadge": "手を挙げました",
     "lowerOther": "この参加者の挙手を下ろす",
     "lowerName": "{{name}} の手を下ろす"
+  },
+  "onDemand": {
+    "title": "オンデマンド",
+    "subtitle": "進行中の公開ライブ配信の動画 — アカウント不要でいつでも視聴できます。",
+    "watch": "視聴",
+    "loading": "読み込み中…",
+    "empty": "オンデマンドの配信は現在ありません。公開ライブ配信のプレイリストに動画が追加されたら、また確認してください。",
+    "error": "現在オンデマンドを読み込めませんでした。"
+  },
+  "devices": {
+    "toolbar": "オーディオ・ビデオデバイス",
+    "toolbarTitle": "マイク、カメラ、スピーカーを選択",
+    "mic": "マイク",
+    "camera": "カメラ",
+    "speaker": "スピーカー",
+    "none": "デバイスが見つかりません",
+    "speakerUnsupported": "このブラウザでは出力デバイスの選択はサポートされていません。"
+  },
+  "notes": {
+    "title": "メモとホワイトボード",
+    "toolbar": "ノートとホワイトボード",
+    "toolbarTitle": "共有メモとホワイトボードを開く",
+    "close": "メモを閉じる",
+    "tabNotes": "メモ",
+    "tabBoard": "ホワイトボード",
+    "hint": "ルーム内の全員が編集できます。自動保存されます。",
+    "placeholder": "共有メモをここに入力…",
+    "color": "色",
+    "thickness": "線の太さ",
+    "clear": "ボードをクリア"
+  },
+  "polls": {
+    "title": "投票とQ&A",
+    "toolbar": "投票とQ&A",
+    "toolbarTitle": "投票とQ&Aを開く",
+    "close": "投票を終了",
+    "tabPolls": "投票",
+    "tabQna": "Q&A",
+    "empty": "まだ投票はありません。",
+    "createTitle": "投票を作成",
+    "createButton": "作成",
+    "questionPlaceholder": "あなたの質問",
+    "optionPlaceholder": "オプション {{n}}",
+    "addOption": "+ オプションを追加",
+    "open": "開く",
+    "closed": "終了",
+    "closePoll": "投票を終了",
+    "qnaEmpty": "まだ質問はありません。",
+    "qnaPlaceholder": "質問する…",
+    "qnaAsk": "依頼",
+    "qnaUpvote": "高評価",
+    "qnaMarkAnswered": "回答済み"
+  },
+  "pip": {
+    "enter": "ピクチャーインピクチャー",
+    "exit": "ピクチャーインピクチャーを終了",
+    "enterTitle": "アクティブスピーカーをフローティングタイルにポップアウトする",
+    "exitTitle": "フローティングタイルを閉じる"
+  },
+  "shortcuts": {
+    "title": "キーボードショートカット",
+    "close": "閉じる",
+    "disabled": "ショートカットは現在、設定 → キーボードで無効になっています。",
+    "editHint": "設定ページ（キーボードセクション）でショートカットを変更します。",
+    "mute": "マイクを切り替え",
+    "camera": "カメラを切り替え",
+    "hand": "挙手 / 挙手解除",
+    "screenshare": "画面共有を切り替え",
+    "leave": "会議から退出",
+    "help": "このオーバーレイを表示"
+  },
+  "feedback": {
+    "title": "会議はいかがでしたか？",
+    "body": "この会議を0（最悪）から10（最高）の尺度で評価すると、何点ですか？",
+    "commentLabel": "他に何かありますか？（任意）",
+    "submit": "送信",
+    "sending": "送信中…",
+    "skip": "スキップ",
+    "thanks": "フィードバックありがとうございます！"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "フローティング絵文字リアクションを送信",
+    "send": "{{emoji}}を送信"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "{{name}} の接続品質 — {{band}}",
+      "title": "接続品質"
+    },
+    "panel": {
+      "title": "接続品質",
+      "self": "<<<KEEP_0>>>カメラ",
+      "ariaLabel": "{{name}}の接続品質"
+    },
+    "band": {
+      "high": "高",
+      "medium": "中",
+      "low": "低",
+      "lost": "再接続中…",
+      "measuring": "計測中…"
+    },
+    "limiter": {
+      "network": "ネットワーク: パケットロスとジッター",
+      "publisher": "配信元デバイスがストリームを制限しています",
+      "relay": "リレー経路: 往復遅延の増加",
+      "stability": "不安定な接続: 品質が変動しています",
+      "unknown": "接続を測定中",
+      "lost": "接続が切断されました — 自動的に再接続しています"
+    },
+    "tab": {
+      "overview": "概要",
+      "details": "詳細",
+      "actions": "アクション",
+      "device": "デバイス"
+    },
+    "quality": {
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "auto": "自動"
+    },
+    "overview": {
+      "score": "スコア {{score}}"
+    },
+    "metric": {
+      "bitrate": "ビットレート",
+      "resolution": "解像度",
+      "fps": "フレームレート",
+      "loss": "パケットロス",
+      "jitterRtt": "ジッター / RTT",
+      "dropped": "スキップされたフレーム",
+      "audioLoss": "音声欠落（直近1分）",
+      "transport": "トランスポート",
+      "direct": "ダイレクト",
+      "relay": "リレー"
+    },
+    "details": {
+      "log": "最近の操作",
+      "none": "まだ操作はありません",
+      "video": "ビデオ",
+      "audio": "オーディオ"
+    },
+    "action": {
+      "quality": "品質（サイマルキャストレイヤー）",
+      "maxBitrate": "最大ビットレート",
+      "compression": "圧縮",
+      "colorDepth": "色深度",
+      "colorDepthUnsupported": "このデバイス/コーデックでは10ビットは利用できません",
+      "audioOnly": "このタイルは音声のみ",
+      "resync": "ストリームを再同期",
+      "resetAuto": "自動にリセット",
+      "reconnect": "再接続",
+      "reconnectConfirm": "再接続を確認",
+      "apply": "適用",
+      "export": "レポートをエクスポート"
+    },
+    "scope": {
+      "receive": "受信側に適用 — 配信者のカメラは変更されません",
+      "publish": "変更は会議の全員に表示されます"
+    },
+    "autotune": {
+      "test": "最適な設定をテスト",
+      "running": "接続をテストしています…",
+      "observing": "観察中… {{seconds}} 秒",
+      "applied": "適用しました — 設定を保持しました",
+      "rolledBack": "元に戻しました — このネットワークでは新しい設定の方が悪化しました",
+      "recommended": "このネットワークに推奨",
+      "retry": "再試行",
+      "rejected": "{{layer}} は拒否されました: {{reason}}",
+      "phase": {
+        "baseline": "ベースラインを収集中…",
+        "probing": "レイヤーを確認中…",
+        "evaluating": "候補を評価中…",
+        "observing": "結果を確認中…",
+        "done": "完了",
+        "failed": "プローブに失敗しました",
+        "idle": "<<<KEEP_0>>>"
+      },
+      "baseline": "ベースラインを収集中…",
+      "step": {
+        "low": "低品質をテスト中…",
+        "medium": "中程度のテスト中…",
+        "high": "HIGH をテスト中…"
+      },
+      "evaluating": "候補を評価中…",
+      "done": "おすすめの準備ができました"
+    },
+    "device": {
+      "remoteNote": "カメラとマイクの設定は配信者（{{name}}）に属します",
+      "camera": "カメラ",
+      "resolution": "解像度",
+      "frameRate": "フレームレート",
+      "cameraMax": "カメラは最大 {{width}} × {{height}} @ {{fps}} fps に対応",
+      "microphone": "マイク",
+      "channels": "チャンネル",
+      "mono": "モノ",
+      "stereo": "ステレオ",
+      "audioQuality": "音声品質",
+      "voice": "音声",
+      "music": "音楽",
+      "stereoWarning": "ステレオではエコーキャンセルとノイズ抑制が無効になります — ヘッドホンをご使用ください。上り帯域幅も増加します",
+      "apply": "カメラとマイクに適用"
+    },
+    "busy": {
+      "quality": "画質を変更しています…",
+      "resync": "ストリームを再同期しています…",
+      "reconnect": "再接続中…",
+      "maxBitrate": "ビットレート上限を更新中…",
+      "compression": "圧縮を更新中…",
+      "resolution": "カメラの解像度を変更しています…",
+      "frameRate": "フレームレートを変更しています…",
+      "camera-device": "カメラを切り替えています…",
+      "mic-device": "マイクを切り替えています…",
+      "mic-mode": "マイク設定を適用しています…",
+      "audioOnly": "配信を更新中…",
+      "applyTune": "設定を適用しています…",
+      "probe": "接続をテストしています…",
+      "export": "レポートを準備しています…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI会議",
+      "aiNotesOn": "AIメモをオン",
+      "aiNotesPaused": "AIノート一時停止中",
+      "menu": {
+        "pause": "文字起こしを一時停止",
+        "resume": "文字起こしを再開",
+        "mode": "モード",
+        "boardToMain": "ボードをメインに表示",
+        "snapshot": "ホワイトボードのスナップショット",
+        "editors": "編集者…",
+        "end": "AI会議を終了",
+        "showBoard": "ボードを表示",
+        "hideBoard": "ボードを非表示"
+      }
+    },
+    "setup": {
+      "title": "AI会議を開始",
+      "intro": "Meet++は会議を文字起こしし、ボードを最新の状態に保ちます。",
+      "structure": "会議の構成",
+      "agendaDriven": "アジェンダ主導",
+      "agendaDrivenHint": "項目とタイムボックス",
+      "goalDriven": "目標駆動型",
+      "goalDrivenHint": "目標 → 成果物 → 次のステップ",
+      "goalPlaceholder": "目標",
+      "language": "言語",
+      "mode": "AIモード",
+      "modeLead": "リード",
+      "modeAssist": "アシスト",
+      "series": "ミーティングシリーズ",
+      "newSeries": "新しいシリーズ",
+      "agendaPdf": "議題 PDF",
+      "previousNotesPdf": "以前のノートPDF",
+      "importedFromSeries": "シリーズからインポート",
+      "itemsFound": "{{count}}件の議題が見つかりました",
+      "parsing": "解析中…",
+      "start": "開始",
+      "cancel": "キャンセル",
+      "notice": "ライブ文字起こしは当社のサーバーで実行され、テキストは設定されたLLMプロバイダーによって処理されて議事録が生成されます。",
+      "errors": {
+        "noTextLayer": "このPDFはスキャンされているようです。テキストPDFをアップロードするか、議題を手動で入力してください。",
+        "tooLarge": "PDFが大きすぎます（最大10 MB）。",
+        "encrypted": "このPDFはパスワードで保護されています。",
+        "tooManyPages": "PDFのページ数が多すぎます（最大50ページ）。",
+        "capacity": "AI容量が混雑しています — 後でもう一度お試しください。"
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "アジェンダ",
+        "decisions": "決定",
+        "actions": "操作",
+        "attendance": "参加者",
+        "minutes": "分",
+        "attachments": "添付ファイル",
+        "transcript": "文字起こし",
+        "previousDecisions": "前回の会議の決定事項"
+      },
+      "follow": "フォロー",
+      "followPaused": "一時停止中",
+      "status": {
+        "listening": "接続中",
+        "thinking": "考え中",
+        "behind": "{{s}}秒後",
+        "paused": "一時停止中",
+        "offline": "AI利用不可"
+      },
+      "empty": {
+        "agenda": "アジェンダ項目はまだありません。",
+        "decisions": "決定事項は決まり次第ここに表示されます。",
+        "actions": "合意されたアクションはここに表示されます。",
+        "attendance": "参加者が入室すると出席状況が表示されます。",
+        "minutes": "議事項目ごとに議事録が表示されます。",
+        "attachments": "添付ファイルはまだありません。",
+        "transcript": "会議中はここに文字起こしが表示されます。"
+      },
+      "actions": {
+        "confirm": "確認",
+        "edit": "編集",
+        "reject": "拒否",
+        "add": "追加",
+        "setActive": "開始",
+        "done": "完了",
+        "defer": "延期",
+        "previous": "前へ（開く）",
+        "new": "この会議の新着",
+        "unassigned": "未割り当て",
+        "ownerPrompt": "オーナー名またはエイリアス"
+      }
+    },
+    "phases": {
+      "opening": "開いています",
+      "previousActions": "以前の操作",
+      "agenda": "アジェンダ",
+      "goal": "目標",
+      "discussion": "ディスカッション",
+      "aob": "その他のビジネス",
+      "nextSteps": "次のステップ",
+      "newActions": "新しいアクション",
+      "planning": "プランニング",
+      "closing": "終了中",
+      "jumpConfirm": "このフェーズに移動しますか？"
+    },
+    "proposal": {
+      "title": "次のフェーズに進みますか？",
+      "moveNow": "今すぐ移動",
+      "notYet": "まだ",
+      "autoIn": "{{s}}秒後に自動"
+    },
+    "announce": {
+      "dismiss": "閉じる"
+    },
+    "consent": {
+      "title": "この会議のAIメモ",
+      "body": "この会議ではAI議事録を使用します。音声は当社サーバーで文字起こしされ、テキストは{{provider}}で処理されて議事録が作成されます。",
+      "continue": "続行",
+      "optOut": "文字起こししないで",
+      "privacyLink": "プライバシー",
+      "changeChoice": "選択を変更",
+      "notTranscribed": "文字起こしなし"
+    },
+    "review": {
+      "title": "確認して公開",
+      "sections": {
+        "minutes": "分",
+        "decisions": "決定",
+        "actions": "操作",
+        "distribution": "配信"
+      },
+      "nextMeeting": {
+        "title": "次のミーティング",
+        "date": "日付",
+        "duration": "時間 (分)",
+        "room": "ルーム",
+        "required": "次に必要"
+      },
+      "distribution": {
+        "minutesToAttendees": "<<<KEEP_1>>>分で参加者に通知",
+        "invites": "必須出席者への招待"
+      },
+      "publish": "公開して送信",
+      "published": "公開済み",
+      "saveDraft": "下書きを保存",
+      "finalisedChanges": "最終処理が変更されました",
+      "retry": "再試行"
+    },
+    "snapshot": {
+      "toolbarButton": "Meet++ にスナップショット",
+      "added": "スナップショットを追加しました",
+      "failed": "スナップショットに失敗しました"
+    }
   }
 }

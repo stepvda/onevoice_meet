@@ -204,5 +204,69 @@ class Settings(BaseSettings):
     # The default points to the sidecar container defined in docker-compose.
     whisper_url: str = "http://whisper:8080/inference"
 
+    # ─── Meet++ (AI-led meeting organisation) ──────────────────────────────
+    # Global kill switch. When false the button is hidden, starts are
+    # rejected and running sessions are stopped gracefully.
+    meetpp_enabled: bool = False
+    # JSON list of owner subs allowed to use Meet++ (empty = all owners).
+    meetpp_pilot_owner_subs: list[str] = []
+    # Concurrent CPU-STT sessions the host can sustain.
+    meetpp_max_active_sessions: int = 1
+    # HMAC secret shared with meetpp-agent for internal ingest calls.
+    meetpp_internal_secret: str = ""
+    # meetpp-agent session API (Docker-internal).
+    meetpp_agent_url: str = "http://meetpp-agent:8091"
+    # Uploads, attachments, outputs, TTS cache.
+    meetpp_data_dir: str = "/var/lib/meet/meetpp"
+    meetpp_upload_max_bytes: int = 10 * 1024 * 1024
+    meetpp_upload_max_pages: int = 50
+    # Selectable session languages (STT, TTS and templates must support them).
+    meetpp_languages: list[str] = ["en", "nl", "fr", "de"]
+    meetpp_default_mode: str = "lead"
+    # Alias participant names in prompts sent to external providers.
+    meetpp_speaker_aliasing: bool = True
+
+    # ─── Printable meeting report identity (minutes PDF header/footer) ────
+    meetpp_org_name: str = "TI One Voice vzw"
+    meetpp_org_tagline: str = "Non-profit association under Belgian law (vzw)"
+    meetpp_org_seat: str = "Van Volxemlaan 208 bus 31, 1190 Brussels, Belgium"
+    # Leave empty to omit the corresponding line from the report header.
+    meetpp_org_enterprise: str = ""
+    meetpp_org_rpr: str = ""
+    meetpp_org_email: str = "info@witysk.org"
+    meetpp_org_website: str = "https://one.witysk.org"
+    meetpp_org_iban: str = ""
+    # Optional notice block under the identity (e.g. PROVISIONAL). Empty = none.
+    meetpp_report_notice: str = ""
+    # Input-token budget per session-hour. Raised from 900k because live ticks
+    # run close to per-utterance (near-immediate extraction).
+    meetpp_max_tokens_per_hour: int = 2_000_000
+    meetpp_transcript_retention_days: int = 30
+    meetpp_upload_retention_days: int = 90
+    # Debug only: store raw prompts for 7 days.
+    meetpp_log_prompts: bool = False
+    # Meeting-creation right + pilot gating are re-checked server-side.
+    meetpp_invite_max_recipients: int = 50
+
+    # LLM gateway (OpenAI-compatible chat completions). Empty key = captions
+    # only. The server-side key is distinct from the developers'
+    # DEEPSEEK_API_KEY used by the offline translation scripts.
+    llm_base_url: str = "https://api.deepseek.com"
+    llm_api_key: str = ""
+    llm_model: str = "deepseek-chat"
+    llm_model_final: str = "deepseek-chat"
+    llm_provider_label: str = "DeepSeek API (outside the EU)"
+    llm_timeout_seconds: float = 45.0
+    llm_max_retries: int = 2
+
+    # STT / TTS configuration handed to meetpp-agent (also read there).
+    stt_model: str = "small"
+    stt_degrade_model: str = "base"
+    stt_threads: int = 2
+    stt_compute_type: str = "int8"
+    stt_remote_url: str = ""
+    # Piper voice per language, e.g. "en:en_GB-alba-medium,nl:nl_BE-nathalie-medium".
+    tts_voices: str = "en:en_GB-alba-medium,nl:nl_BE-nathalie-medium,fr:fr_FR-siwis-medium,de:de_DE-thorsten-medium"
+
 
 settings = Settings()

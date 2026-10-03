@@ -15,6 +15,7 @@ const Recordings = lazy(() => import("./routes/Recordings"));
 const OnDemand = lazy(() => import("./routes/OnDemand"));
 const Settings = lazy(() => import("./routes/Settings"));
 const MeetingChat = lazy(() => import("./routes/MeetingChat"));
+const MeetppReview = lazy(() => import("./routes/MeetppReview"));
 const TICafe = lazy(() => import("./routes/TICafe"));
 const SsoCallback = lazy(() => import("./routes/SsoCallback"));
 const SignUp = lazy(() => import("./routes/SignUp"));
@@ -111,6 +112,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/sso-callback" element={<SsoCallback />} />
           <Route path="/meetings/:meetingId/chat" element={<MeetingChat />} />
+          <Route path="/meetings/:meetingId/ai/:sessionId" element={<MeetppReview />} />
           {/* Public view-only stream. Anyone can open this URL — no auth,
               no publish rights, no participant-panel presence. */}
           <Route path="/public/:publicSlug" element={<PublicView />} />

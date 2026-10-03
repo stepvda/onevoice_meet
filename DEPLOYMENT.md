@@ -330,8 +330,15 @@ ssh root@turn.witysk.org 'cd /opt/meet && docker compose -p meet logs --tail=200
 Backup the SQLite DB:
 
 ```bash
-ssh root@turn.witysk.org 'cp /var/lib/meet/meet.db /var/lib/meet/meet.db.$(date +%Y%m%d)'
+# SQLite runs in WAL mode, so a plain `cp meet.db` misses committed
+# transactions still in meet.db-wal and can capture a torn snapshot.
+# Use the online backup API, which produces a consistent single file.
+ssh root@turn.witysk.org 'sqlite3 /var/lib/meet/meet.db ".backup /var/lib/meet/meet.db.$(date +%Y%m%d)"'
 ```
+
+If `sqlite3` is not installed, checkpoint and copy all three files together:
+`docker compose -p meet exec -T meeting-api python -c "import sqlite3; sqlite3.connect('/var/lib/meet/meet.db').execute('PRAGMA wal_checkpoint(TRUNCATE)')"`
+then copy `meet.db`, `meet.db-wal` and `meet.db-shm` in the same instant.
 
 Stop `meet` without touching coturn:
 
@@ -386,3 +393,31 @@ Run through §18 of the spec:
 7. Re-check `systemctl is-active coturn` — still active.
 
 If any of those fail, see logs in §7 or roll back per §8.
+
+## Meet++ bootstrap (first deploy)
+
+Meet++ ships disabled. After the first `scripts/deploy.sh` that includes the
+`meetpp-agent` service:
+
+1. Add the keys from `.env.example` (section "Meet++") to `/opt/meet/.env`.
+   At minimum:
+   - `MEETPP_INTERNAL_SECRET=$(openssl rand -hex 32)`
+   - `LLM_API_KEY=<provider key>` (leave empty for captions-only mode)
+   - `LLM_BASE_URL` / `LLM_MODEL` / `LLM_PROVIDER_LABEL` as required
+   - `MEETPP_ENABLED=false` for the first boot
+2. `cd /opt/meet && docker compose -p meet up -d meeting-api meetpp-agent`
+   (recreates meeting-api; egress is not touched).
+3. Smoke test: `curl -fsS http://localhost:8080/api/health`, then
+   `docker compose -p meet exec meetpp-agent curl -fsS http://localhost:8091/health`.
+4. Enable the pilot: set `MEETPP_ENABLED=true` and, optionally,
+   `MEETPP_PILOT_OWNER_SUBS=["<owner sub>"]`, then
+   `docker compose -p meet up -d meeting-api`.
+
+The deploy script reloads Caddy (internal-path block + 12 MB body limit) and,
+when `MEETPP_OPERATOR_TOKEN` is exported locally, warns before recreating the
+agent during a live session. Recreating `meetpp-agent` interrupts transcription
+for the session it is serving; `meeting-api` recreations are safe because
+sessions resume from the database and the agent buffers segments.
+
+SQLite now runs in WAL mode. The backup procedure must copy `meet.db-wal` and
+`meet.db-shm` alongside `meet.db`.

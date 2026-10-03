@@ -20,7 +20,8 @@
     "account": "Konto",
     "upgrade": "Uppgradera",
     "vouchers": "Presentkort",
-    "admin": "Administratör"
+    "admin": "Administratör",
+    "onDemand": "Beställningsvideo"
   },
   "tiCafe": {
     "title": "Kafé",
@@ -65,7 +66,10 @@
     "loading": "Laddar…",
     "close": "Stäng",
     "anonymous": "anonym",
-    "requestFailed": "Begäran misslyckades"
+    "requestFailed": "Begäran misslyckades",
+    "on": "På",
+    "off": "Av",
+    "dismiss": "Avfärda"
   },
   "signInPrompt": {
     "button": "Logga in på one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Väntrum",
     "waitingRoomDesc": "Nya deltagare väntar tills du släpper in dem från mötesverktygsfältet.",
     "autoAdmitAuthenticated": "Tillåt automatiskt inloggade användare (kommer snart)",
-    "autoAdmitAuthenticatedDesc": "Kringgå väntrummet för inloggade one.witysk.org-användare. Ännu inte tillämpat — anonyma deltagare hamnar alltid i kö."
+    "autoAdmitAuthenticatedDesc": "Kringgå väntrummet för inloggade one.witysk.org-användare. Ännu inte tillämpat — anonyma deltagare hamnar alltid i kö.",
+    "lobbyGreeting": "Lobbyhälsning",
+    "lobbyGreetingHint": "Visas för alla i lobbyn innan de ansluter.",
+    "lobbyGreetingPlaceholder": "Välkommen! Vänligen stäng av mikrofonen när du inte pratar.",
+    "schedule": "Schema",
+    "scheduleHint": "Ange en varaktighet och (valfritt) en upprepning så att kalenderinbjudningar upprepas automatiskt.",
+    "duration": "Längd (minuter)",
+    "recurrence": "Upprepning",
+    "recurrenceNone": "Engång (ingen upprepning)",
+    "recurrenceDaily": "Dagligen",
+    "recurrenceWeekly": "Veckovis",
+    "recurrenceBiweekly": "Varannan vecka",
+    "recurrenceMonthly": "Månadsvis"
   },
   "discover": {
     "title": "Upptäck",
     "subtitle": "— möten som är öppna att ansluta till",
     "join": "Gå med",
     "maxParticipants": "max {{n}}",
-    "hostedBy": "Värd: {{name}}"
+    "hostedBy": "Värd: {{name}}",
+    "view": "Visa",
+    "viewTitle": "Titta på den offentliga strömmen i endast visningsläge",
+    "streamsTitle": "Offentliga livestreamar",
+    "streamsSubtitle": "— endast titta, inget konto krävs"
   },
   "myMeetings": {
     "loading": "Laddar dina möten…",
@@ -272,7 +292,14 @@
     "notImage": "Inte en bild ({{type}})",
     "processorFailed": "Bakgrundseffekter stöds inte på den här enheten.",
     "custom": "Anpassad: {{name}}",
-    "customDefault": "Anpassad bild"
+    "customDefault": "Anpassad bild",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Havsvågor",
+    "particles": "Partiklar",
+    "cityscape": "Stadsljus",
+    "cherryBlossoms": "Körsbärsblommor",
+    "fireflies": "Fireflies"
   },
   "participants": {
     "title": "Deltagare",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Gör {{name}} till presentatör",
     "removeFromMeeting": "Ta bort från mötet",
     "removeName": "Ta bort {{name}}",
-    "authenticatedOwner": "Autentiserad ägare"
+    "authenticatedOwner": "Autentiserad ägare",
+    "cohost": "Medvärd",
+    "promoteCohost": "Befordra till medvärd",
+    "demoteCohost": "Ta bort medvärd"
   },
   "chatPanel": {
     "title": "Chatta",
@@ -294,7 +324,10 @@
     "send": "Skicka",
     "close": "Stäng chatt",
     "ariaLabel": "Möteschatt",
-    "messageAria": "Chattmeddelande"
+    "messageAria": "Chattmeddelande",
+    "pin": "Fäst",
+    "unpin": "Sluta fäst",
+    "pinned": "Fäst"
   },
   "invite": {
     "title": "Bjud in via e-post",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Inspelningar",
     "subtitle": "Server-sidan inspelningar av dina möten. Lokala filer raderas automatiskt efter 30 dagar (eller när du publicerar på YouTube). Uppladdningar initieras endast av ägaren.",
-    "empty": "Inga inspelningar än. Starta ett möte och klicka på <1>Spela in</1> för att fånga en.",
+    "empty": "Inga inspelningar ännu. Starta ett möte och klicka på <1>Spela in</1> för att göra en.",
     "loading": "Laddar…",
     "signInFirst": "Logga in på one.witysk.org först.",
     "signInTitle": "Logga in för att se dina inspelningar",
@@ -932,5 +965,378 @@
     "tileBadge": "Hand upp",
     "lowerOther": "Sänk denna deltagares hand",
     "lowerName": "Sänk {{name}}s hand"
+  },
+  "onDemand": {
+    "title": "Beställningsvideo",
+    "subtitle": "Videor från pågående offentliga livestreamar – titta när som helst, inget konto behövs.",
+    "watch": "Titta",
+    "loading": "Laddar…",
+    "empty": "Inget on demand just nu. Kom tillbaka när en offentlig livestream har videor i sin spellista.",
+    "error": "Kunde inte ladda On Demand just nu."
+  },
+  "devices": {
+    "toolbar": "Ljud- och videoenheter",
+    "toolbarTitle": "Välj mikrofon, kamera och högtalare",
+    "mic": "Mikrofon",
+    "camera": "Kamera",
+    "speaker": "Talare",
+    "none": "Inga enheter hittades",
+    "speakerUnsupported": "Val av utenhet stöds inte i den här webbläsaren."
+  },
+  "notes": {
+    "title": "Anteckningar och whiteboard",
+    "toolbar": "Anteckningar och whiteboard",
+    "toolbarTitle": "Öppna delade anteckningar och whiteboard",
+    "close": "Stäng anteckningar",
+    "tabNotes": "Anteckningar",
+    "tabBoard": "Whiteboard",
+    "hint": "Alla i rummet kan redigera. Sparas automatiskt.",
+    "placeholder": "Skriv delade anteckningar här…",
+    "color": "Färg",
+    "thickness": "Linjetjocklek",
+    "clear": "Rensa tavla"
+  },
+  "polls": {
+    "title": "Omröstningar & Frågor & Svar",
+    "toolbar": "Omröstningar & Frågor & Svar",
+    "toolbarTitle": "Öppna omröstningar och frågor",
+    "close": "Stäng omröstningar",
+    "tabPolls": "Omröstningar",
+    "tabQna": "Frågor & svar",
+    "empty": "Inga omröstningar ännu.",
+    "createTitle": "Skapa en omröstning",
+    "createButton": "Skapa",
+    "questionPlaceholder": "Din fråga",
+    "optionPlaceholder": "Alternativ {{n}}",
+    "addOption": "+ Lägg till alternativ",
+    "open": "Öppna",
+    "closed": "Stängd",
+    "closePoll": "Stäng omröstning",
+    "qnaEmpty": "Inga frågor ännu.",
+    "qnaPlaceholder": "Ställ en fråga…",
+    "qnaAsk": "Fråga",
+    "qnaUpvote": "Rösta upp",
+    "qnaMarkAnswered": "Besvarad"
+  },
+  "pip": {
+    "enter": "Bild-i-bild",
+    "exit": "Lämna bild-i-bild",
+    "enterTitle": "Poppa ut den aktiva talaren i en flytande ruta",
+    "exitTitle": "Stäng den flytande rutan"
+  },
+  "shortcuts": {
+    "title": "Tangentbordsgenvägar",
+    "close": "Stäng",
+    "disabled": "Genvägar är för närvarande inaktiverade i Inställningar → Tangentbord.",
+    "editHint": "Ändra kortkommandon på sidan Inställningar (avsnittet Tangentbord).",
+    "mute": "Växla mikrofon",
+    "camera": "Växla kamera",
+    "hand": "Räck upp / sänk hand",
+    "screenshare": "Växla skärmdelning",
+    "leave": "Lämna mötet",
+    "help": "Visa denna överlagring"
+  },
+  "feedback": {
+    "title": "Hur var mötet?",
+    "body": "På en skala från 0 (sämst) till 10 (bäst), hur skulle du betygsätta det här mötet?",
+    "commentLabel": "Något annat? (valfritt)",
+    "submit": "Skicka",
+    "sending": "Skickar…",
+    "skip": "Hoppa över",
+    "thanks": "Tack för din feedback!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Skicka en flytande emojireaktion",
+    "send": "Skicka {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Anslutningskvalitet för {{name}} — {{band}}",
+      "title": "Anslutningskvalitet"
+    },
+    "panel": {
+      "title": "Anslutningskvalitet",
+      "self": "Din kamera",
+      "ariaLabel": "Anslutningskvalitet för {{name}}"
+    },
+    "band": {
+      "high": "Hög",
+      "medium": "Medel",
+      "low": "Låg",
+      "lost": "Återansluter…",
+      "measuring": "Mäter…"
+    },
+    "limiter": {
+      "network": "Nätverk: paketförlust och jitter",
+      "publisher": "Publiceringsenheten begränsar strömmen",
+      "relay": "Reläväg: förhöjd fram- och återgångstid",
+      "stability": "Instabil länk: kvaliteten varierar",
+      "unknown": "Mäter anslutningen",
+      "lost": "Anslutningen bröts – återansluter automatiskt"
+    },
+    "tab": {
+      "overview": "Översikt",
+      "details": "Information",
+      "actions": "Åtgärder",
+      "device": "Enhet"
+    },
+    "quality": {
+      "low": "Låg",
+      "medium": "Med",
+      "high": "Hög",
+      "auto": "Auto"
+    },
+    "overview": {
+      "score": "poäng {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bithastighet",
+      "resolution": "Upplösning",
+      "fps": "Bildfrekvens",
+      "loss": "Paketförlust",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Överhoppade bildrutor",
+      "audioLoss": "Ljudbortfall (senaste min)",
+      "transport": "Transport",
+      "direct": "Direkt",
+      "relay": "Relä"
+    },
+    "details": {
+      "log": "Senaste åtgärder",
+      "none": "Inga åtgärder ännu",
+      "video": "Video",
+      "audio": "Ljud"
+    },
+    "action": {
+      "quality": "Kvalitet (simulcast-lager)",
+      "maxBitrate": "Max bitrate",
+      "compression": "Komprimering",
+      "colorDepth": "Färgdjup",
+      "colorDepthUnsupported": "10-bit är inte tillgängligt på den här enheten / codec",
+      "audioOnly": "Endast ljud för den här rutan",
+      "resync": "Synkronisera strömmen igen",
+      "resetAuto": "Återställ till auto",
+      "reconnect": "Återanslut",
+      "reconnectConfirm": "Bekräfta återanslutning",
+      "apply": "Tillämpa",
+      "export": "Exportera rapport"
+    },
+    "scope": {
+      "receive": "Gäller det du tar emot – utgivarens kamera förblir orörd",
+      "publish": "Ändringar är synliga för alla i mötet"
+    },
+    "autotune": {
+      "test": "Testa optimala inställningar",
+      "running": "Testar anslutningen…",
+      "observing": "Observerar… {{seconds}} s",
+      "applied": "Tillämpat – inställningarna behölls",
+      "rolledBack": "Återställde – den nya inställningen var sämre i det här nätverket",
+      "recommended": "Rekommenderas för detta nätverk",
+      "retry": "Försök igen",
+      "rejected": "{{layer}} avvisades: {{reason}}",
+      "phase": {
+        "baseline": "Samlar in baslinje…",
+        "probing": "Undersöker lager…",
+        "evaluating": "Utvärderar kandidater…",
+        "observing": "Observerar resultatet…",
+        "done": "Klart",
+        "failed": "Probe misslyckades",
+        "idle": "<<<KEEP_0>>>"
+      },
+      "baseline": "Samlar in baslinje…",
+      "step": {
+        "low": "Testar LÅG…",
+        "medium": "Testar MEDIUM…",
+        "high": "Testar HÖG…"
+      },
+      "evaluating": "Utvärderar kandidater…",
+      "done": "Rekommendation klar"
+    },
+    "device": {
+      "remoteNote": "Kamera- och mikrofoninställningar tillhör utgivaren ({{name}})",
+      "camera": "Kamera",
+      "resolution": "Upplösning",
+      "frameRate": "Bildfrekvens",
+      "cameraMax": "Kameran stöder upp till {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Mikrofon",
+      "channels": "Kanaler",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Ljudkvalitet",
+      "voice": "Röst",
+      "music": "Musik",
+      "stereoWarning": "Stereo inaktiverar eko­dämpning och brusreducering – använd hörlurar; det ökar även upplänkens bandbredd",
+      "apply": "Tillämpa på min kamera och mikrofon"
+    },
+    "busy": {
+      "quality": "Byter kvalitet…",
+      "resync": "Synkroniserar om strömmen…",
+      "reconnect": "Återansluter…",
+      "maxBitrate": "Uppdaterar bithastighetsgränsen…",
+      "compression": "Uppdaterar komprimering…",
+      "resolution": "Byter kameraupplösning…",
+      "frameRate": "Byter bildfrekvens…",
+      "camera-device": "Byter kamera…",
+      "mic-device": "Byter mikrofon…",
+      "mic-mode": "Tillämpar mikrofoninställningar…",
+      "audioOnly": "Uppdaterar strömmen…",
+      "applyTune": "Tillämpar inställningar…",
+      "probe": "Testar anslutningen…",
+      "export": "Förbereder rapporten…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI-möte",
+      "aiNotesOn": "AI-anteckningar på",
+      "aiNotesPaused": "AI-anteckningar pausade",
+      "menu": {
+        "pause": "Pausa transkribering",
+        "resume": "Återuppta transkribering",
+        "mode": "Läge",
+        "boardToMain": "Ta med tavlan till huvudvyn",
+        "snapshot": "Whiteboard-ögonblicksbild",
+        "editors": "Redigerare…",
+        "end": "Avsluta AI-möte",
+        "showBoard": "Visa tavla",
+        "hideBoard": "Dölj anslagstavla"
+      }
+    },
+    "setup": {
+      "title": "Starta AI-möte",
+      "intro": "Meet++ transkriberar mötet och håller tavlan uppdaterad.",
+      "structure": "Mötesstruktur",
+      "agendaDriven": "Agendastyrd",
+      "agendaDrivenHint": "Objekt och tidsrutor",
+      "goalDriven": "Målinriktad",
+      "goalDrivenHint": "Mål → leverabler → nästa steg",
+      "goalPlaceholder": "Mål",
+      "language": "Språk",
+      "mode": "AI-läge",
+      "modeLead": "Ledare",
+      "modeAssist": "Assistent",
+      "series": "Möteserie",
+      "newSeries": "Ny serie",
+      "agendaPdf": "Dagordning PDF",
+      "previousNotesPdf": "Tidigare anteckningar PDF",
+      "importedFromSeries": "Importerad från serie",
+      "itemsFound": "{{count}} dagordningspunkter hittades",
+      "parsing": "Tolkar…",
+      "start": "Starta",
+      "cancel": "Avbryt",
+      "notice": "Live-transkribering körs på vår server; texten bearbetas av den konfigurerade LLM-leverantören för att skapa mötesprotokoll.",
+      "errors": {
+        "noTextLayer": "Den här PDF-filen verkar vara skannad. Ladda upp en text-PDF eller ange agendan manuellt.",
+        "tooLarge": "PDF-filen är för stor (max 10 MB).",
+        "encrypted": "Den här PDF-filen är lösenordsskyddad.",
+        "tooManyPages": "PDF-filen har för många sidor (max 50).",
+        "capacity": "AI-kapaciteten är upptagen – försök igen senare."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Agenda",
+        "decisions": "Beslut",
+        "actions": "Åtgärder",
+        "attendance": "Närvaro",
+        "minutes": "Minuter",
+        "attachments": "Bilagor",
+        "transcript": "Transkript",
+        "previousDecisions": "Tidigare mötesbeslut"
+      },
+      "follow": "Följ",
+      "followPaused": "Pausad",
+      "status": {
+        "listening": "Lyssnar",
+        "thinking": "Tänker",
+        "behind": "Bakom {{s}}s",
+        "paused": "Pausad",
+        "offline": "AI ej tillgänglig"
+      },
+      "empty": {
+        "agenda": "Inga agendapunkter ännu.",
+        "decisions": "Beslut visas här allt eftersom de fattas.",
+        "actions": "Åtgärder visas här när de har godkänts.",
+        "attendance": "Närvaro visas när folk ansluter.",
+        "minutes": "Minuter visas per agendapunkt.",
+        "attachments": "Inga bilagor ännu.",
+        "transcript": "Transkriptet visas här medan mötet pågår."
+      },
+      "actions": {
+        "confirm": "Bekräfta",
+        "edit": "Redigera",
+        "reject": "Avvisa",
+        "add": "Lägg till",
+        "setActive": "Starta",
+        "done": "Klart",
+        "defer": "Skjut upp",
+        "previous": "Föregående (öppen)",
+        "new": "Ny i mötet",
+        "unassigned": "Ej tilldelad",
+        "ownerPrompt": "Ägarens namn eller alias"
+      }
+    },
+    "phases": {
+      "opening": "Öppnar",
+      "previousActions": "Tidigare åtgärder",
+      "agenda": "Agenda",
+      "goal": "Mål",
+      "discussion": "Diskussion",
+      "aob": "Övriga företag",
+      "nextSteps": "Nästa steg",
+      "newActions": "Nya åtgärder",
+      "planning": "Planering",
+      "closing": "Stänger",
+      "jumpConfirm": "Hoppa till den här fasen?"
+    },
+    "proposal": {
+      "title": "Gå vidare till nästa fas?",
+      "moveNow": "Flytta nu",
+      "notYet": "Inte än",
+      "autoIn": "Auto om {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Avfärda"
+    },
+    "consent": {
+      "title": "AI-anteckningar i detta möte",
+      "body": "Det här mötet använder AI-anteckningar: ditt tal transkriberas på vår server och texten bearbetas av {{provider}} för att skapa protokoll.",
+      "continue": "Fortsätt",
+      "optOut": "Transkribera inte mig",
+      "privacyLink": "Integritet",
+      "changeChoice": "Ändra mitt val",
+      "notTranscribed": "Inte transkriberat"
+    },
+    "review": {
+      "title": "Granska och publicera",
+      "sections": {
+        "minutes": "Minuter",
+        "decisions": "Beslut",
+        "actions": "Åtgärder",
+        "distribution": "Distribution"
+      },
+      "nextMeeting": {
+        "title": "Nästa möte",
+        "date": "Datum",
+        "duration": "Längd (min)",
+        "room": "Rum",
+        "required": "Nästa krävs"
+      },
+      "distribution": {
+        "minutesToAttendees": "Minuter till deltagare",
+        "invites": "Inbjudningar till obligatoriska deltagare"
+      },
+      "publish": "Publicera och skicka",
+      "published": "Publicerad",
+      "saveDraft": "Spara utkast",
+      "finalisedChanges": "Slutförandet ändrades",
+      "retry": "Försök igen"
+    },
+    "snapshot": {
+      "toolbarButton": "Skärmbild till Meet++",
+      "added": "Ögonblicksbild tillagd",
+      "failed": "Ögonblicksbild misslyckades"
+    }
   }
 }

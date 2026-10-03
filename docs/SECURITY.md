@@ -137,3 +137,41 @@ Per-user toggles, stored in `UserPreferences`:
 - **Compromised SSO issuer.** A stolen `JWT_SECRET_KEY` lets the holder mint admin tokens for any user. Treat the secret as production-critical.
 - **Coordinated DDoS.** The IDS and rate limits are designed to slow individual attackers, not absorb traffic floods. Run behind Cloudflare or similar if you're a target.
 - **Browser-level XSS through user-generated content.** Chat messages, meeting titles, notes, and whiteboard text are stored as plain text and rendered as text (not HTML). React's JSX escaping is the only defense — adding `dangerouslySetInnerHTML` *anywhere* could undo this.
+
+## Meet++ security & privacy
+
+- **Auth**: no Meet++ data is reachable by room name alone. Chair endpoints
+  use the user JWT + owner/co-host check. Room endpoints verify the caller's
+  signed LiveKit room token (`X-Meet-Room-Token`). Internal agent endpoints
+  are HMAC-SHA256 signed (`X-Meetpp-Timestamp`, `X-Meetpp-Signature`,
+  ±60 s window) and additionally blocked at the edge for
+  `/api/v1/internal/meetpp/*`.
+- **Consent**: each participant chooses Continue / Don't transcribe me per
+  session (`meetpp_consents`). Opt-out is applied at the audio level: the
+  agent never subscribes to that participant's microphone. The "AI notes on"
+  badge and lobby notice cannot be hidden by the chair.
+- **Data minimisation**: speaker names are aliased (P1…Pn) in LLM prompts by
+  default; no e-mail addresses are sent to the LLM. Evidence segment numbers
+  are required for every AI item.
+- **Transfers**: Release 1 sends transcript windows to DeepSeek (a PRC
+  processor) only with informed consent and aliasing. See the FDD §12.2 for
+  the GDPR assessment; switching to an EU-hosted or local provider is a
+  configuration change.
+- **Retention**: transcript segments 30 days after publish/end; uploaded PDFs
+  90 days; outputs and board state for the life of the session; TTS cache
+  7-day LRU. The owner can delete a session and all of its data.
+- **Prompt injection**: the LLM has no tools and no side effects; output is
+  schema-constrained operations; e-mail is only sent by a chair action.
+
+### Meet++ review addendum (3 Oct 2026)
+
+- **Autoescape** is explicit (`autoescape=True`) for the minutes/agenda
+  templates so participant names and LLM text cannot inject HTML/URLs into the
+  WeasyPrint render (stored XSS / blind SSRF).
+- **Read-only tokens** (public `viewer-`, egress/recorder) are rejected on all
+  write paths, including the whiteboard snapshot upload.
+- **Consent is default-deny**: only an explicit `accept` row leads to audio
+  subscription and segment ingest; this is re-checked server-side.
+- **Kill switch**: `MEETPP_ENABLED=false` and the pilot allow-list are
+  enforced on every chair/room request and stop sessions from resuming after a
+  restart. Operators can also end a session from **Admin → Meet++**.

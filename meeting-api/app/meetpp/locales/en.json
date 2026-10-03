@@ -1,0 +1,64 @@
+{
+  "announce": {
+    "start": {"title": "Meet++ is now taking notes", "subtitle": "Live captions and the shared board are on. You can opt out at any time."},
+    "end": {"title": "Meet++ has stopped taking notes", "subtitle": "Minutes will follow after the chair reviews them."},
+    "opening": {"title": "Opening", "subtitle": "Welcome and purpose"},
+    "previous_actions": {"title": "Let's start with last meeting's actions", "subtitle": "Reviewing open actions from the series"},
+    "agenda": {"title": "Agenda review starts now", "subtitle": "Confirmation of items and timeboxes"},
+    "goal": {"title": "Meeting goal", "subtitle": "What we want to achieve today"},
+    "discussion": {"title": "Item {n}: {item}", "subtitle": "Presented by {presenter}"},
+    "aob": {"title": "Any other business?", "subtitle": "Anything else to raise"},
+    "next_steps": {"title": "Next steps", "subtitle": "Who does what next"},
+    "new_actions": {"title": "Let's review the new actions", "subtitle": "Owners and due dates"},
+    "planning": {"title": "Planning", "subtitle": "Owners, dates and milestones"},
+    "closing": {"title": "Closing: let's plan the next meeting", "subtitle": "Date and required attendees"},
+    "timebox": {"title": "Item {n} is over its time", "subtitle": ""},
+    "paused": {"title": "AI notes paused", "subtitle": "Transcription is paused"},
+    "resumed": {"title": "AI notes resumed", "subtitle": "Transcription is active again"}
+  },
+  "email": {
+    "minutes_subject": "Minutes: {title}",
+    "invite_subject": "Invitation: {title}",
+    "review_subject": "Review the minutes: {title}",
+    "greeting": "Hello,",
+    "minutes_intro": "The minutes of {title} are attached. Decisions and actions are listed below.",
+    "invite_intro": "You are invited to {title}. The agenda is attached and in this invitation.",
+    "review_intro": "The AI draft for {title} is ready for your review. Nothing is sent until you publish.",
+    "open_review": "Open the review screen",
+    "join": "Join the meeting",
+    "footer": "Generated with Meet++"
+  },
+  "pdf": {
+    "minutes_title": "Minutes",
+    "agenda_title": "Agenda",
+    "attendance": "Attendance",
+    "present": "Present",
+    "apologies": "Apologies",
+    "absent": "Absent",
+    "not_transcribed": "Not transcribed",
+    "summary": "Executive summary",
+    "decisions": "Decisions",
+    "actions": "Actions",
+    "open_actions": "Open actions",
+    "item": "Item",
+    "owner": "Owner",
+    "due": "Due",
+    "status": "Status",
+    "generated": "Generated with Meet++ · reviewed by {chair} · v{version}"
+  },
+  "consent": {
+    "text": "This meeting uses AI notes: your speech is transcribed on our server and the text is processed by {provider} to produce minutes."
+  },
+  "phase": {
+    "opening": "Opening",
+    "previous_actions": "Previous actions",
+    "agenda": "Agenda",
+    "goal": "Goal",
+    "discussion": "Discussion",
+    "aob": "Other business",
+    "next_steps": "Next steps",
+    "new_actions": "New actions",
+    "planning": "Planning",
+    "closing": "Closing"
+  }
+}

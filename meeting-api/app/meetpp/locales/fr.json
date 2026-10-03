@@ -1,0 +1,64 @@
+{
+  "announce": {
+    "start": {"title": "Meet++ prend maintenant des notes", "subtitle": "Les sous-titres et le tableau partagé sont actifs. Vous pouvez vous désinscrire à tout moment."},
+    "end": {"title": "Meet++ a arrêté de prendre des notes", "subtitle": "Le procès-verbal suivra après relecture du président."},
+    "opening": {"title": "Ouverture", "subtitle": "Bienvenue et objectif"},
+    "previous_actions": {"title": "Commençons par les actions de la dernière réunion", "subtitle": "Actions ouvertes de la série"},
+    "agenda": {"title": "La revue de l'ordre du jour commence", "subtitle": "Confirmation des points et des durées"},
+    "goal": {"title": "Objectif de la réunion", "subtitle": "Ce que nous voulons accomplir aujourd'hui"},
+    "discussion": {"title": "Point {n} : {item}", "subtitle": "Présenté par {presenter}"},
+    "aob": {"title": "Autres points ?", "subtitle": "Divers"},
+    "next_steps": {"title": "Prochaines étapes", "subtitle": "Qui fait quoi"},
+    "new_actions": {"title": "Passons en revue les nouvelles actions", "subtitle": "Responsables et échéances"},
+    "planning": {"title": "Planification", "subtitle": "Responsables, dates et jalons"},
+    "closing": {"title": "Clôture : planifions la prochaine réunion", "subtitle": "Date et participants requis"},
+    "timebox": {"title": "Le point {n} dépasse son temps", "subtitle": ""},
+    "paused": {"title": "Notes IA en pause", "subtitle": "La transcription est en pause"},
+    "resumed": {"title": "Notes IA reprises", "subtitle": "La transcription est de nouveau active"}
+  },
+  "email": {
+    "minutes_subject": "Procès-verbal : {title}",
+    "invite_subject": "Invitation : {title}",
+    "review_subject": "Relire le procès-verbal : {title}",
+    "greeting": "Bonjour,",
+    "minutes_intro": "Le procès-verbal de {title} est joint. Les décisions et actions sont listées ci-dessous.",
+    "invite_intro": "Vous êtes invité à {title}. L'ordre du jour est joint et figure dans cette invitation.",
+    "review_intro": "Le brouillon IA de {title} est prêt pour votre relecture. Rien n'est envoyé avant votre publication.",
+    "open_review": "Ouvrir l'écran de relecture",
+    "join": "Rejoindre la réunion",
+    "footer": "Généré avec Meet++"
+  },
+  "pdf": {
+    "minutes_title": "Procès-verbal",
+    "agenda_title": "Ordre du jour",
+    "attendance": "Présence",
+    "present": "Présent",
+    "apologies": "Excusé",
+    "absent": "Absent",
+    "not_transcribed": "Non transcrit",
+    "summary": "Résumé",
+    "decisions": "Décisions",
+    "actions": "Actions",
+    "open_actions": "Actions ouvertes",
+    "item": "Point",
+    "owner": "Responsable",
+    "due": "Échéance",
+    "status": "Statut",
+    "generated": "Généré avec Meet++ · relu par {chair} · v{version}"
+  },
+  "consent": {
+    "text": "Cette réunion utilise des notes IA : votre voix est transcrite sur notre serveur et le texte est traité par {provider} pour produire le procès-verbal."
+  },
+  "phase": {
+    "opening": "Ouverture",
+    "previous_actions": "Actions précédentes",
+    "agenda": "Ordre du jour",
+    "goal": "Objectif",
+    "discussion": "Discussion",
+    "aob": "Divers",
+    "next_steps": "Prochaines étapes",
+    "new_actions": "Nouvelles actions",
+    "planning": "Planification",
+    "closing": "Clôture"
+  }
+}

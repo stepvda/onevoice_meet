@@ -1,0 +1,64 @@
+{
+  "announce": {
+    "start": {"title": "Meet++ macht jetzt Notizen", "subtitle": "Live-Untertitel und das geteilte Board sind aktiv. Du kannst jederzeit widersprechen."},
+    "end": {"title": "Meet++ hat aufgehört, Notizen zu machen", "subtitle": "Das Protokoll folgt nach Prüfung durch die Leitung."},
+    "opening": {"title": "Eröffnung", "subtitle": "Begrüßung und Zweck"},
+    "previous_actions": {"title": "Beginnen wir mit den Aufgaben der letzten Sitzung", "subtitle": "Offene Aufgaben der Reihe"},
+    "agenda": {"title": "Die Agenda-Besprechung beginnt", "subtitle": "Bestätigung von Punkten und Zeitfenstern"},
+    "goal": {"title": "Ziel der Besprechung", "subtitle": "Was wir heute erreichen wollen"},
+    "discussion": {"title": "Punkt {n}: {item}", "subtitle": "Vorgestellt von {presenter}"},
+    "aob": {"title": "Sonstiges?", "subtitle": "Weitere Punkte"},
+    "next_steps": {"title": "Nächste Schritte", "subtitle": "Wer macht was"},
+    "new_actions": {"title": "Sehen wir die neuen Aufgaben durch", "subtitle": "Verantwortliche und Fristen"},
+    "planning": {"title": "Planung", "subtitle": "Verantwortliche, Termine und Meilensteine"},
+    "closing": {"title": "Abschluss: Planen wir die nächste Sitzung", "subtitle": "Termin und erforderliche Teilnehmer"},
+    "timebox": {"title": "Punkt {n} überzieht seine Zeit", "subtitle": ""},
+    "paused": {"title": "KI-Notizen pausiert", "subtitle": "Transkription ist pausiert"},
+    "resumed": {"title": "KI-Notizen fortgesetzt", "subtitle": "Transkription ist wieder aktiv"}
+  },
+  "email": {
+    "minutes_subject": "Protokoll: {title}",
+    "invite_subject": "Einladung: {title}",
+    "review_subject": "Protokoll prüfen: {title}",
+    "greeting": "Hallo,",
+    "minutes_intro": "Das Protokoll von {title} ist angehängt. Entscheidungen und Aufgaben sind unten aufgeführt.",
+    "invite_intro": "Du bist zu {title} eingeladen. Die Agenda ist angehängt und in dieser Einladung enthalten.",
+    "review_intro": "Der KI-Entwurf für {title} ist zur Prüfung bereit. Es wird nichts gesendet, bis du veröffentlichst.",
+    "open_review": "Prüfansicht öffnen",
+    "join": "Beitreten",
+    "footer": "Erstellt mit Meet++"
+  },
+  "pdf": {
+    "minutes_title": "Protokoll",
+    "agenda_title": "Agenda",
+    "attendance": "Teilnahme",
+    "present": "Anwesend",
+    "apologies": "Entschuldigt",
+    "absent": "Abwesend",
+    "not_transcribed": "Nicht transkribiert",
+    "summary": "Zusammenfassung",
+    "decisions": "Entscheidungen",
+    "actions": "Aufgaben",
+    "open_actions": "Offene Aufgaben",
+    "item": "Punkt",
+    "owner": "Verantwortlich",
+    "due": "Frist",
+    "status": "Status",
+    "generated": "Erstellt mit Meet++ · geprüft von {chair} · v{version}"
+  },
+  "consent": {
+    "text": "Diese Besprechung nutzt KI-Notizen: Deine Stimme wird auf unserem Server transkribiert und der Text von {provider} verarbeitet, um ein Protokoll zu erstellen."
+  },
+  "phase": {
+    "opening": "Eröffnung",
+    "previous_actions": "Vorherige Aufgaben",
+    "agenda": "Agenda",
+    "goal": "Ziel",
+    "discussion": "Diskussion",
+    "aob": "Sonstiges",
+    "next_steps": "Nächste Schritte",
+    "new_actions": "Neue Aufgaben",
+    "planning": "Planung",
+    "closing": "Abschluss"
+  }
+}

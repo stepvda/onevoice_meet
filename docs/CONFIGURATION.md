@@ -144,3 +144,36 @@ These paths are bind-mounted into containers; create the host directories before
 ├── requests.log
 └── db.log
 ```
+
+## Meet++ configuration
+
+All in `/opt/meet/.env` (see `.env.example` for the full list).
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MEETPP_ENABLED` | `false` | Global kill switch. Start with false, enable after smoke test. |
+| `MEETPP_PILOT_OWNER_SUBS` | `[]` | JSON list of owner subs allowed to use Meet++ (empty = all). |
+| `MEETPP_MAX_ACTIVE_SESSIONS` | `1` | Concurrent CPU-STT sessions. |
+| `MEETPP_INTERNAL_SECRET` | — | HMAC secret shared with meetpp-agent (`openssl rand -hex 32`). |
+| `MEETPP_AGENT_URL` | `http://meetpp-agent:8091` | Agent session API. |
+| `MEETPP_DATA_DIR` | `/var/lib/meet/meetpp` | Uploads, attachments, outputs, TTS cache. |
+| `MEETPP_LANGUAGES` | `en,nl,fr,de` | Selectable session languages. |
+| `MEETPP_DEFAULT_MODE` | `lead` | `lead` (auto-advance) or `assist`. |
+| `LLM_BASE_URL` | `https://api.deepseek.com` | OpenAI-compatible endpoint. |
+| `LLM_API_KEY` | `""` | Empty = captions-only mode. Distinct from the offline translation `DEEPSEEK_API_KEY`. |
+| `LLM_MODEL` / `LLM_MODEL_FINAL` | `deepseek-chat` | Tick / finalisation models. |
+| `LLM_PROVIDER_LABEL` | `DeepSeek API (outside the EU)` | Shown in the setup notice and consent dialog. |
+| `STT_MODEL` / `STT_DEGRADE_MODEL` | `small` / `base` | faster-whisper models. |
+| `STT_REMOTE_URL` | `""` | Offload STT (Mac Studio). |
+| `TTS_VOICES` | `en:…,nl:…,fr:…,de:…` | Piper voice per language. |
+
+The agent service is capped (`cpus: 2.0`, `mem_limit: 3g`, `cpu_shares: 512`)
+so it can never starve the SFU or the 24/7 TITV egress.
+
+### Meet++ report identity (minutes PDF)
+
+`MEETPP_ORG_NAME`, `MEETPP_ORG_TAGLINE`, `MEETPP_ORG_SEAT`,
+`MEETPP_ORG_ENTERPRISE`, `MEETPP_ORG_RPR`, `MEETPP_ORG_EMAIL`,
+`MEETPP_ORG_WEBSITE`, `MEETPP_ORG_IBAN`, `MEETPP_REPORT_NOTICE`. Empty values
+omit the corresponding header line; `MEETPP_REPORT_NOTICE` renders an amber
+notice block (e.g. a PROVISIONAL marker).

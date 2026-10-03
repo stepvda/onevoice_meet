@@ -271,3 +271,57 @@ This stack is sized for the reference deployment (2 vCPUs, 4 GB RAM, one meeting
 - **More concurrent meetings** — LiveKit Server itself scales to thousands of participants on bigger hosts; the SQLite/SQLAlchemy layer is the next bottleneck. Switching to Postgres lifts that. The frontend, Caddy, Redis, and compositor are all stateless or near-stateless.
 - **Geographic redundancy** — run a LiveKit cluster with the [LiveKit Cloud routing](https://docs.livekit.io/realtime/concepts/geo-routing/) recipe, or stand up regional LiveKit Server instances and route via Caddy / DNS.
 - **High-volume transcription** — swap `whisper.cpp` for `WHISPER_URL` pointing at an external larger-model host (the same OpenAI-compatible `/inference` API).
+
+## Meet++ (AI meeting organiser)
+
+Meet++ turns a room into an AI-assisted meeting chair: per-speaker live
+transcription, a shared board (agenda / decisions / actions / attendance /
+minutes / attachments / transcript), phase steering with announcements, and
+post-meeting minutes + next-meeting invitations.
+
+- **meetpp-agent** (new container): joins each AI meeting as a hidden,
+  subscribe-only participant (LiveKit Python RTC), runs Silero VAD +
+  faster-whisper `small` int8 under a hard 2-vCPU cap, and serves Piper TTS.
+  It is the only new CPU-heavy workload; egress and LiveKit config are never
+  touched.
+- **meeting-api `app/meetpp/`**: data models (13 `meetpp_*` tables), the
+  provider-agnostic LLM gateway (OpenAI-compatible chat completions), the
+  operation validator/applier, the phase controller, PDF ingestion, HTML→PDF
+  rendering, ICS invitations, and the asyncio session runtime.
+- **Real-time** rides the existing data channel on topic `meet-ai`, with the
+  `{v:1,type}` convention; room metadata gains a `meetpp` key. Large state is
+  fetched over REST (`GET /api/v1/meetpp/sessions/{sid}/state`).
+- **Auth**: chair endpoints use the user JWT + moderator check; room
+  endpoints authenticate with the caller's LiveKit room token
+  (`X-Meet-Room-Token`); the agent signs internal calls with HMAC-SHA256
+  (`MEETPP_INTERNAL_SECRET`).
+- **Board** is a client-rendered virtual stage tile (`MeetppBoard`), also
+  rendered read-only in `/egress-layout/pip` so recordings show it (ADR-5).
+
+Schema evolution follows `lightweight_migrate` + `Base.metadata.create_all`;
+SQLite runs in WAL mode with a 5 s busy timeout so transcript writes and API
+reads coexist.
+
+### Meet++ review addendum (3 Oct 2026)
+
+See `docs/MeetPlusPlus_FDD_v2_review.md` for the adversarial review of the FDD
+and the disposition of each finding. Notable shipped behaviour that differs
+from the FDD text as written:
+
+- Ticks run close to per-utterance (loop wake 4 s, idle 3 s, cue phrases
+  immediate), not per 120 words / 45 s. The default input budget is 2M
+  tokens/hour.
+- Consent is default-deny: the agent subscribes only to identities with an
+  `accept` consent row and the server drops segments from everyone else.
+- `state_version` increments only when state actually changes, so focus hints
+  reach clients without version gaps.
+- The runner broadcasts `session started`, and a health watchdog recreates the
+  agent if it disappears mid-session.
+- Piper TTS is not installable on the R1 image; announcements fall back to the
+  browser `speechSynthesis` (text overlay always shown). The `/tts` contract
+  remains for a future wheel or a Mac Studio.
+- Captions are batched into one `captions` data message per ingest.
+- The LiveKit service now receives only its three `LIVEKIT_*` variables
+  (never the whole `.env`), so unrelated `.env` changes no longer recreate it.
+- The minutes PDF follows the reference meeting-report format; organisation
+  identity comes from `MEETPP_ORG_*`.

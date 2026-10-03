@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="{{ session.language }}">
+<head>
+<meta charset="utf-8" />
+<title>Meeting report — {{ meeting.display_title if meeting else session.id }}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm;
+    @bottom-left {
+      content: "{{ org.name }} · Meeting report";
+      font-size: 8pt; color: #6b7280;
+    }
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 8pt; color: #6b7280;
+    }
+  }
+  body { font-family: "Noto Sans", "DejaVu Sans", sans-serif; color: #111827; font-size: 10pt; line-height: 1.45; }
+  .org { border-bottom: 2px solid #1E3A5F; padding-bottom: 6pt; margin-bottom: 14pt; }
+  .org .name { font-size: 13pt; font-weight: 700; color: #1E3A5F; }
+  .org .line { font-size: 8.2pt; color: #4b5563; }
+  .report-title { font-size: 22pt; font-weight: 700; margin: 10pt 0 2pt; }
+  .report-sub { font-size: 14pt; color: #1E3A5F; margin-bottom: 12pt; }
+  .notice { border: 1px solid #d97706; background: #fffbeb; color: #92400e; font-size: 8.5pt; padding: 6pt 8pt; margin: 8pt 0; }
+  h2 { font-size: 13pt; margin: 18pt 0 6pt; border-bottom: 1px solid #d1d5db; padding-bottom: 3pt; color: #1E3A5F; }
+  table { width: 100%; border-collapse: collapse; margin: 6pt 0; }
+  th, td { border: 1px solid #e5e7eb; padding: 4pt 6pt; text-align: left; vertical-align: top; }
+  th { background: #f3f4f6; font-size: 8.8pt; }
+  .meta td:first-child { width: 26%; background: #f9fafb; font-weight: 600; }
+  .muted { color: #6b7280; }
+  .item { margin: 0 0 12pt; page-break-inside: avoid; }
+  .item .h { font-size: 11.5pt; font-weight: 700; margin-bottom: 2pt; }
+  .body { white-space: pre-wrap; }
+  .status { font-size: 8.8pt; color: #374151; margin-top: 3pt; }
+  .chip { display: inline-block; background: #eef2ff; color: #4338ca; border-radius: 8pt; padding: 1pt 6pt; font-size: 8pt; }
+  ul { margin: 4pt 0 4pt 16pt; padding: 0; }
+  img.snap { max-width: 100%; border: 1px solid #e5e7eb; margin: 6pt 0; }
+</style>
+</head>
+<body>
+  <div class="org">
+    <div class="name">{{ org.name }}</div>
+    {% if org.tagline %}<div class="line">{{ org.tagline }}</div>{% endif %}
+    {% if org.seat %}<div class="line">Registered seat: {{ org.seat }}</div>{% endif %}
+    {% if org.enterprise %}<div class="line">Enterprise number: {{ org.enterprise }}</div>{% endif %}
+    {% if org.rpr %}<div class="line">{{ org.rpr }}</div>{% endif %}
+    {% if org.email or org.website %}<div class="line">Email: {{ org.email }}{% if org.website %} · Website: {{ org.website }}{% endif %}</div>{% endif %}
+    {% if org.iban %}<div class="line">Bank account (IBAN): {{ org.iban }}</div>{% endif %}
+  </div>
+
+  {% if org.notice %}<div class="notice">{{ org.notice }}</div>{% endif %}
+
+  <div class="report-title">{{ t('meetpp.report.title', defaultValue='Meeting report') }}</div>
+  <div class="report-sub">{{ meeting.display_title if meeting else session.id }}</div>
+
+  <table class="meta">
+    <tr><td>{{ t('meetpp.report.dateTime', defaultValue='Date and time') }}</td><td>
+      {% if meeting and meeting.scheduled_at %}{{ meeting.scheduled_at.strftime('%d/%m/%Y %H:%M UTC') }}
+      {% elif session.started_at %}{{ session.started_at.strftime('%d/%m/%Y %H:%M UTC') }}{% else %}—{% endif %}
+    </td></tr>
+    <tr><td>{{ t('meetpp.report.location', defaultValue='Location') }}</td><td>{% if meeting %}{{ public_url }}/{{ meeting.room_name }}{% else %}—{% endif %}</td></tr>
+    <tr><td>{{ t('meetpp.report.type', defaultValue='Type') }}</td><td>{{ t('meetpp.report.typeMeeting', defaultValue='Meeting') }}</td></tr>
+    <tr><td>{{ t('meetpp.report.status', defaultValue='Status') }}</td><td>{{ t('meetpp.report.statusHeld', defaultValue='Held') }}</td></tr>
+    <tr><td>{{ t('meetpp.report.convenedAt', defaultValue='Convened at') }}</td><td>{% if meeting and meeting.created_at %}{{ meeting.created_at.strftime('%d/%m/%Y %H:%M UTC') }}{% else %}—{% endif %}</td></tr>
+    {% if chair %}<tr><td>{{ t('meetpp.report.chair', defaultValue='Chair') }}</td><td>{{ chair }}</td></tr>{% endif %}
+  </table>
+
+  {% if final and final.summary %}
+  <h2>{{ t('pdf.summary') }}</h2>
+  <ul>{% for b in final.summary %}<li>{{ b }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  <h2>{{ t('pdf.attendance') }}</h2>
+  <p>
+    Present: {{ counts.present }} | Excused: {{ counts.excused }} | Absent: {{ counts.absent }} | Not transcribed: {{ counts.not_transcribed }}
+  </p>
+  {% if groups.apologies %}
+  <p class="muted">Excused: {% for a in groups.apologies %}{{ a.display_name }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+  {% endif %}
+  <table>
+    <tr>
+      <th>{{ t('meetpp.report.member', defaultValue='Member') }}</th>
+      <th>{{ t('meetpp.report.username', defaultValue='Username / address') }}</th>
+      <th>{{ t('meetpp.report.statusCol', defaultValue='Status') }}</th>
+      <th>{{ t('pdf.not_transcribed') }}</th>
+      <th>{{ t('meetpp.report.requiredNext', defaultValue='Required next') }}</th>
+    </tr>
+    {% for a in groups.present + groups.apologies + groups.absent + groups.not_transcribed %}
+    <tr>
+      <td>{{ a.display_name }}</td>
+      <td>{{ a.email or a.person_key }}</td>
+      <td>{{ a.presence }}</td>
+      <td>{% if a.opted_out %}yes{% else %}—{% endif %}</td>
+      <td>{% if a.required_next %}yes{% if a.required_reason %} — {{ a.required_reason }}{% endif %}{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h2>{{ t('pdf.agenda_title') }}</h2>
+  {% if items %}
+    {% for item in items %}
+    <div class="item">
+      <div class="h">{{ loop.index }}. {{ item.title }}</div>
+      {% if item.presenter or item.timebox_minutes %}<div class="status">{{ item.presenter or '' }}{% if item.timebox_minutes %} · {{ item.timebox_minutes }} min{% endif %}</div>{% endif %}
+      {% set m = minutes.get(item.id) %}
+      <div class="body">{% if m and m.body_md %}{{ m.body_md }}{% else %}<span class="muted">—</span>{% endif %}</div>
+    </div>
+    {% endfor %}
+    {% set general = minutes.get(None) %}
+    {% if general and general.body_md %}
+    <div class="item"><div class="h">{{ t('pdf.minutes_title') }}</div><div class="body">{{ general.body_md }}</div></div>
+    {% endif %}
+  {% else %}
+    {% set general = minutes.get(None) %}
+    {% if general and general.body_md %}<div class="body">{{ general.body_md }}</div>{% else %}<p class="muted">{{ t('meetpp.report.noAgenda', defaultValue='No agenda items were recorded.') }}</p>{% endif %}
+  {% endif %}
+
+  <h2>{{ t('pdf.decisions') }}</h2>
+  {% if decisions %}
+    {% for d in decisions %}
+    <div class="item">
+      <div class="h">{{ loop.index }}. {{ d.text }}</div>
+      {% if d.rationale %}<div class="body">{{ d.rationale }}</div>{% endif %}
+      <div class="status">Status: {{ d.status }} — {{ d.ref }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">{{ t('meetpp.report.noDecisions', defaultValue='No decisions were recorded.') }}</p>
+  {% endif %}
+
+  <h2>{{ t('pdf.actions') }}</h2>
+  {% if actions %}
+    {% for a in actions %}
+    <div class="item">
+      <div class="h">{{ loop.index }}. {{ a.title }}</div>
+      <div class="status">Status: {{ a.status }} — {{ t('pdf.owner') }}: {{ a.owner_name or '—' }} — {{ t('pdf.due') }}: {{ a.due_date or '—' }} — {{ a.ref }}</div>
+      {% if a.note %}<div class="body">{{ a.note }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">{{ t('meetpp.report.noActions', defaultValue='No actions were recorded.') }}</p>
+  {% endif %}
+
+  {% set snaps = attachments | selectattr('kind', 'equalto', 'whiteboard') | list %}
+  {% if snaps %}
+  <h2>{{ t('board.tabs.attachments', defaultValue='Attachments') }}</h2>
+  {% for att in snaps %}
+    <img class="snap" src="file://{{ att.path }}" alt="{{ att.caption or '' }}" />
+  {% endfor %}
+  {% endif %}
+
+  <p class="muted" style="margin-top:16pt">{{ t('pdf.generated', chair=chair, version=version) }}</p>
+</body>
+</html>

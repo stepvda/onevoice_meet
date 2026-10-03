@@ -6,6 +6,7 @@ import {
   type RemoteTrack,
   type RemoteVideoTrack,
 } from "livekit-client";
+import MeetppBoardView from "../components/meetpp/MeetppBoardView";
 
 type EgressLayout = "single-speaker" | "speaker" | "grid";
 
@@ -86,12 +87,13 @@ function VideoTile({ track, style }: { track: RemoteVideoTrack; style?: CSSPrope
 }
 
 export default function EgressLayoutPiP() {
-  const { url, token, overlayHint, initialLayout } = useMemo(() => {
+  const { url, token, overlayHint, initialLayout, roomName } = useMemo(() => {
     const p = new URLSearchParams(window.location.search);
     return {
       url: p.get("url") || "",
       token: p.get("token") || "",
       overlayHint: p.get("overlay") || "",
+      roomName: p.get("room") || "",
       // The URL `layout` is the layout the egress was *started* with —
       // used only as the initial render before LiveKit room metadata
       // arrives. Live layout changes are then driven by room metadata
@@ -136,6 +138,11 @@ export default function EgressLayoutPiP() {
   // the recording, not just the camera publishers.
   const [placeholders, setPlaceholders] = useState<{ identity: string; name: string }[]>([]);
   const [status, setStatus] = useState<"connecting" | "connected" | "error">("connecting");
+  // Meet++: the room object (for data-channel updates) and metadata-driven
+  // board flag. When the board is main, the board renders over the stage so
+  // recordings and livestreams show what participants see.
+  const [lkRoom, setLkRoom] = useState<Room | null>(null);
+  const [boardMain, setBoardMain] = useState(false);
 
   useEffect(() => {
     if (!url || !token) {
@@ -147,6 +154,7 @@ export default function EgressLayoutPiP() {
       adaptiveStream: false,
       dynacast: false,
     });
+    setLkRoom(room);
 
     const attachedAudios = new Map<string, HTMLAudioElement>();
     let currentMainSid: string | null = null;
@@ -352,6 +360,15 @@ export default function EgressLayoutPiP() {
           typeof md.presenter_identity === "string"
             ? md.presenter_identity
             : null;
+        // Meet++: show the board when a session is active, the board is
+        // main, and the session setting allows it in recordings.
+        const mp = md.meetpp;
+        const boardOn =
+          !!mp &&
+          mp.active === true &&
+          mp.board_main !== false &&
+          mp.in_recordings !== false;
+        setBoardMain((cur) => (cur === boardOn ? cur : boardOn));
         // Live layout updates — mirror the host's picker click. We update
         // BOTH the closure var (consumed by pickMain/pickExtras/refresh
         // each tick) AND the React state (drives JSX branching). When
@@ -552,6 +569,7 @@ export default function EgressLayoutPiP() {
       attachedAudios.forEach((el) => el.remove());
       attachedAudios.clear();
       refreshRef.current = () => {};
+      setLkRoom(null);
       console.log("END_RECORDING");
       void room.disconnect();
     };
@@ -609,6 +627,9 @@ export default function EgressLayoutPiP() {
         padding: 0,
       }}
     >
+      {boardMain && token && (
+        <MeetppBoardView room={roomName} token={token} liveRoom={lkRoom} scale="720p" />
+      )}
       {effectiveRenderLayout !== "grid" && (
         <video
           ref={mainVideoRef}

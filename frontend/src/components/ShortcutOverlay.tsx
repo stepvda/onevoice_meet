@@ -29,6 +29,7 @@ export default function ShortcutOverlay({ open, onClose }: Props) {
     [t("shortcuts.hand"), kb.handRaiseKey],
     [t("shortcuts.screenshare"), kb.screenshareKey],
     [t("shortcuts.leave"), kb.leaveMeetingKey],
+    [t("shortcuts.meetppFollow", { defaultValue: "Meet++ follow mode" }), "Ctrl+Shift+A"],
     [t("shortcuts.help"), "?"],
   ];
 

@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
@@ -16,6 +16,20 @@ engine = create_engine(
     connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
     future=True,
 )
+
+if settings.database_url.startswith("sqlite"):
+
+    @event.listens_for(engine, "connect")
+    def _sqlite_pragmas(dbapi_conn, _record):  # type: ignore[no-untyped-def]
+        """WAL + busy timeout. Meet++ writes transcript segments concurrently
+        with API reads; WAL makes those safe. The setting persists in the
+        database file (so the backup procedure must also copy -wal/-shm)."""
+        cur = dbapi_conn.cursor()
+        try:
+            cur.execute("PRAGMA journal_mode=WAL")
+            cur.execute("PRAGMA busy_timeout=5000")
+        finally:
+            cur.close()
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
@@ -132,6 +146,9 @@ def lightweight_migrate() -> None:
                 ("livestream_youtube_broadcast_id", "ALTER TABLE meetings ADD COLUMN livestream_youtube_broadcast_id TEXT"),
                 ("livestream_youtube_broadcast_started_at", "ALTER TABLE meetings ADD COLUMN livestream_youtube_broadcast_started_at TIMESTAMP"),
                 ("livestream_youtube_watch_url", "ALTER TABLE meetings ADD COLUMN livestream_youtube_watch_url TEXT"),
+                # Meet++ — series linkage and per-owner enable flag.
+                ("meetpp_series_id", "ALTER TABLE meetings ADD COLUMN meetpp_series_id VARCHAR(26)"),
+                ("meetpp_enabled", "ALTER TABLE meetings ADD COLUMN meetpp_enabled BOOLEAN DEFAULT 1 NOT NULL"),
             )),
             ("livestream_destination_states", (
                 ("viewer_count", "ALTER TABLE livestream_destination_states ADD COLUMN viewer_count INTEGER"),
@@ -214,6 +231,12 @@ def lightweight_migrate() -> None:
             # the /public/<slug> endpoints (info + viewer-token).
             "CREATE UNIQUE INDEX IF NOT EXISTS ux_meetings_public_slug "
             "ON meetings (public_slug) WHERE public_slug IS NOT NULL",
+            # Meet++: composite indexes are declared on the models and created
+            # by create_all(), so the migration only adds the partial unique
+            # index that a model cannot express portably across create_all runs.
+            "CREATE UNIQUE INDEX IF NOT EXISTS ux_meetpp_sessions_live "
+            "ON meetpp_sessions (meeting_id) "
+            "WHERE status IN ('setup','running','paused','finalising')",
         ):
             try:
                 conn.exec_driver_sql(ddl)

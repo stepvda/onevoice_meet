@@ -20,7 +20,8 @@
     "account": "Cont",
     "upgrade": "Actualizează",
     "vouchers": "Vouchere",
-    "admin": "Administrator"
+    "admin": "Administrator",
+    "onDemand": "La cerere"
   },
   "tiCafe": {
     "title": "Café",
@@ -65,7 +66,10 @@
     "loading": "Se încarcă…",
     "close": "Închide",
     "anonymous": "anonim",
-    "requestFailed": "Cererea a eșuat"
+    "requestFailed": "Cererea a eșuat",
+    "on": "Pornit",
+    "off": "Oprit",
+    "dismiss": "Închide"
   },
   "signInPrompt": {
     "button": "Conectați-vă pe one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Sală de așteptare",
     "waitingRoomDesc": "Noii participanți așteaptă până îi admiteți din bara de instrumente a întâlnirii.",
     "autoAdmitAuthenticated": "Auto-admit utilizatorii autentificați (în curând)",
-    "autoAdmitAuthenticatedDesc": "Ocolește sala de așteptare pentru utilizatorii one.witysk.org autentificați. Încă neaplicat — utilizatorii anonimi sunt întotdeauna puși la coadă."
+    "autoAdmitAuthenticatedDesc": "Ocolește sala de așteptare pentru utilizatorii one.witysk.org autentificați. Încă neaplicat — utilizatorii anonimi sunt întotdeauna puși la coadă.",
+    "lobbyGreeting": "Salut din lobby",
+    "lobbyGreetingHint": "Vizibil tuturor din lobby înainte de a se alătura.",
+    "lobbyGreetingPlaceholder": "Bine ai venit! Te rugăm să îți oprești microfonul când nu vorbești.",
+    "schedule": "Programare",
+    "scheduleHint": "Setează o durată și (opțional) o recurență pentru ca invitațiile din calendar să se repete automat.",
+    "duration": "Durată (minute)",
+    "recurrence": "Recurență",
+    "recurrenceNone": "O singură dată (fără recurență)",
+    "recurrenceDaily": "Zilnic",
+    "recurrenceWeekly": "Săptămânal",
+    "recurrenceBiweekly": "La fiecare 2 săptămâni",
+    "recurrenceMonthly": "Lunar"
   },
   "discover": {
     "title": "Descoperă",
     "subtitle": "— întâlniri deschise pentru participare",
     "join": "Alătură-te",
     "maxParticipants": "maxim {{n}}",
-    "hostedBy": "Găzduit de {{name}}"
+    "hostedBy": "Găzduit de {{name}}",
+    "view": "Vizualizare",
+    "viewTitle": "Urmărește fluxul public doar pentru vizualizare",
+    "streamsTitle": "Transmisiuni publice live",
+    "streamsSubtitle": "— doar vizualizare, fără cont"
   },
   "myMeetings": {
     "loading": "Se încarcă întâlnirile tale…",
@@ -272,7 +292,14 @@
     "notImage": "Nu este o imagine ({{type}})",
     "processorFailed": "Efecte de fundal neacceptate pe acest dispozitiv.",
     "custom": "Personalizat: {{name}}",
-    "customDefault": "Imagine personalizată"
+    "customDefault": "Imagine personalizată",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Valuri oceanice",
+    "particles": "Particule",
+    "cityscape": "Lumini urbane",
+    "cherryBlossoms": "Flori de cireș",
+    "fireflies": "Licurici"
   },
   "participants": {
     "title": "Participanți",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Fă-l pe {{name}} prezentator",
     "removeFromMeeting": "Elimină din întâlnire",
     "removeName": "Elimină {{name}}",
-    "authenticatedOwner": "Proprietar autentificat"
+    "authenticatedOwner": "Proprietar autentificat",
+    "cohost": "Co-moderator",
+    "promoteCohost": "Promovează la co-gazdă",
+    "demoteCohost": "Elimină co-gazda"
   },
   "chatPanel": {
     "title": "Chat",
@@ -294,7 +324,10 @@
     "send": "Trimiteți",
     "close": "Închide chatul",
     "ariaLabel": "Chatul întâlnirii",
-    "messageAria": "Mesaj chat"
+    "messageAria": "Mesaj chat",
+    "pin": "Fixează",
+    "unpin": "Anulează fixarea",
+    "pinned": "Fixat"
   },
   "invite": {
     "title": "Invită prin e-mail",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Înregistrări",
     "subtitle": "Înregistrări ale întâlnirilor tale pe server. Fișierele locale se șterg automat după 30 de zile (sau când publici pe YouTube). Încărcările sunt inițiate doar de proprietar.",
-    "empty": "Încă nu există înregistrări. Începe o întâlnire și apasă <1>Înregistrează</1> pentru a captura una.",
+    "empty": "Nu există înregistrări încă. Începe o întâlnire și apasă <1>Înregistrează</1> pentru a captura una.",
     "loading": "Se încarcă…",
     "signInFirst": "Conectează-te mai întâi pe one.witysk.org.",
     "signInTitle": "Conectează-te pentru a vedea înregistrările tale",
@@ -932,5 +965,378 @@
     "tileBadge": "Mână ridicată",
     "lowerOther": "Coboară mâna acestui participant",
     "lowerName": "Ridică mâna lui/ei {{name}}"
+  },
+  "onDemand": {
+    "title": "La cerere",
+    "subtitle": "Videoclipuri din transmisiuni publice în direct — vizionează oricând, fără cont.",
+    "watch": "Urmărește",
+    "loading": "Se încarcă…",
+    "empty": "Momentan nu există nimic la cerere. Revino când un live public are videoclipuri în playlist.",
+    "error": "Nu s-a putut încărca On Demand acum."
+  },
+  "devices": {
+    "toolbar": "Dispozitive audio și video",
+    "toolbarTitle": "Alege microfonul, camera și difuzorul",
+    "mic": "Microfon",
+    "camera": "Cameră",
+    "speaker": "Difuzor",
+    "none": "Nu s-au găsit dispozitive",
+    "speakerUnsupported": "Selectarea dispozitivului de ieșire nu este acceptată în acest browser."
+  },
+  "notes": {
+    "title": "Note și tablă albă",
+    "toolbar": "Note și tablă albă",
+    "toolbarTitle": "Deschide notele partajate și tabla albă",
+    "close": "Închide notițele",
+    "tabNotes": "Note",
+    "tabBoard": "Tabla",
+    "hint": "Toți din cameră pot edita. Salvare automată.",
+    "placeholder": "Scrieți note partajate aici…",
+    "color": "Culoare",
+    "thickness": "Grosimea conturului",
+    "clear": "Șterge tabla"
+  },
+  "polls": {
+    "title": "Sondaje și întrebări",
+    "toolbar": "Sondaje și întrebări",
+    "toolbarTitle": "Deschide sondajele și întrebările și răspunsurile",
+    "close": "Închide sondajele",
+    "tabPolls": "Sondaje",
+    "tabQna": "Întrebări și răspunsuri",
+    "empty": "Nu există încă sondaje.",
+    "createTitle": "Creează un sondaj",
+    "createButton": "Creează",
+    "questionPlaceholder": "Întrebarea ta",
+    "optionPlaceholder": "Opțiunea {{n}}",
+    "addOption": "+ Adaugă opțiune",
+    "open": "Deschide",
+    "closed": "Închis",
+    "closePoll": "Închide sondajul",
+    "qnaEmpty": "Încă nicio întrebare.",
+    "qnaPlaceholder": "Pune o întrebare…",
+    "qnaAsk": "Solicită",
+    "qnaUpvote": "Votează pozitiv",
+    "qnaMarkAnswered": "A răspuns"
+  },
+  "pip": {
+    "enter": "Picture-in-picture",
+    "exit": "Ieși din modul imagine-în-imagine",
+    "enterTitle": "Scoate vorbitorul activ într-o fereastră flotantă",
+    "exitTitle": "Închide fereastra flotantă"
+  },
+  "shortcuts": {
+    "title": "Scurtături de tastatură",
+    "close": "Închide",
+    "disabled": "Scurtăturile sunt momentan dezactivate în Setări → Tastatură.",
+    "editHint": "Modificați comenzile rapide din pagina Setări (secțiunea Tastatură).",
+    "mute": "Comută microfonul",
+    "camera": "Comută camera",
+    "hand": "Ridică / coboară mâna",
+    "screenshare": "Comută partajarea ecranului",
+    "leave": "Părăsește întâlnirea",
+    "help": "Arată această suprapunere"
+  },
+  "feedback": {
+    "title": "Cum a fost întâlnirea?",
+    "body": "Pe o scară de la 0 (cel mai rău) la 10 (cel mai bun), cum ai evalua această întâlnire?",
+    "commentLabel": "Altceva? (opțional)",
+    "submit": "Trimite",
+    "sending": "Se trimite…",
+    "skip": "Sari peste",
+    "thanks": "Mulțumim pentru feedback!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Trimite o reacție emoji flotantă",
+    "send": "Trimite {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Calitatea conexiunii pentru {{name}} — {{band}}",
+      "title": "Calitatea conexiunii"
+    },
+    "panel": {
+      "title": "Calitatea conexiunii",
+      "self": "camera ta",
+      "ariaLabel": "Calitatea conexiunii pentru {{name}}"
+    },
+    "band": {
+      "high": "Înaltă",
+      "medium": "Mediu",
+      "low": "Redusă",
+      "lost": "Se reconectează…",
+      "measuring": "Măsurare…"
+    },
+    "limiter": {
+      "network": "Rețea: pierderi de pachete și jitter",
+      "publisher": "Dispozitivul publisher limitează fluxul",
+      "relay": "Cale releu: timp de dus-întors ridicat",
+      "stability": "Conexiune instabilă: calitatea oscilează",
+      "unknown": "Se măsoară conexiunea",
+      "lost": "Conexiune pierdută — reconectare automată"
+    },
+    "tab": {
+      "overview": "Prezentare generală",
+      "details": "Detalii",
+      "actions": "Acțiuni",
+      "device": "Dispozitiv"
+    },
+    "quality": {
+      "low": "Redusă",
+      "medium": "Med",
+      "high": "Înaltă",
+      "auto": "Automat"
+    },
+    "overview": {
+      "score": "scor {{score}}"
+    },
+    "metric": {
+      "bitrate": "Debit binar",
+      "resolution": "Rezoluție",
+      "fps": "Rata de cadre",
+      "loss": "Pierdere de pachete",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Cadre omise",
+      "audioLoss": "Pierdere audio (ultimul min)",
+      "transport": "Transport",
+      "direct": "Direct",
+      "relay": "Releu"
+    },
+    "details": {
+      "log": "Acțiuni recente",
+      "none": "Încă nicio acțiune",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "action": {
+      "quality": "Calitate (strat simulcast)",
+      "maxBitrate": "Debit binar maxim",
+      "compression": "Compresie",
+      "colorDepth": "Adâncimea culorii",
+      "colorDepthUnsupported": "10 biți nu este disponibil pe acest dispozitiv / codec",
+      "audioOnly": "Doar audio pentru acest panou",
+      "resync": "Resincronizează fluxul",
+      "resetAuto": "Revino la automat",
+      "reconnect": "Reconectare",
+      "reconnectConfirm": "Confirmă reconectarea",
+      "apply": "Aplică",
+      "export": "Export raport"
+    },
+    "scope": {
+      "receive": "Se aplică la ce primești — camera celui care publică rămâne neschimbată",
+      "publish": "Modificările sunt vizibile pentru toți participanții la întâlnire"
+    },
+    "autotune": {
+      "test": "Testează setările optime",
+      "running": "Se testează conexiunea…",
+      "observing": "Se observă… {{seconds}} s",
+      "applied": "Aplicat — setările au fost păstrate",
+      "rolledBack": "Am revenit — noua setare a fost mai slabă pe această rețea",
+      "recommended": "Recomandat pentru această rețea",
+      "retry": "Reîncearcă",
+      "rejected": "{{layer}} a fost respins: {{reason}}",
+      "phase": {
+        "baseline": "Se colectează datele de referință…",
+        "probing": "Se verifică nivelurile…",
+        "evaluating": "Se evaluează candidații…",
+        "observing": "Se observă rezultatul…",
+        "done": "Gata",
+        "failed": "Sondarea a eșuat",
+        "idle": "Cameră"
+      },
+      "baseline": "Se colectează datele de referință…",
+      "step": {
+        "low": "Testare LOW…",
+        "medium": "Se testează MEDIUM…",
+        "high": "Testare HIGH…"
+      },
+      "evaluating": "Se evaluează candidații…",
+      "done": "Recomandare pregătită"
+    },
+    "device": {
+      "remoteNote": "Setările camerei și microfonului aparțin publisherului ({{name}})",
+      "camera": "Cameră",
+      "resolution": "Rezoluție",
+      "frameRate": "Rata de cadre",
+      "cameraMax": "Camera suportă până la {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Microfon",
+      "channels": "Canale",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Calitate audio",
+      "voice": "Voce",
+      "music": "Muzică",
+      "stereoWarning": "Stereo dezactivează anularea ecoului și suprimarea zgomotului — folosește căști; de asemenea, crește lățimea de bandă pentru uplink",
+      "apply": "Aplică la camera și microfonul meu"
+    },
+    "busy": {
+      "quality": "Se schimbă calitatea…",
+      "resync": "Resincronizarea fluxului…",
+      "reconnect": "Se reconectează…",
+      "maxBitrate": "Se actualizează limita de bitrate…",
+      "compression": "Se actualizează compresia…",
+      "resolution": "Se schimbă rezoluția camerei…",
+      "frameRate": "Se schimbă rata de cadre…",
+      "camera-device": "Se schimbă camera…",
+      "mic-device": "Se schimbă microfonul…",
+      "mic-mode": "Se aplică setările microfonului…",
+      "audioOnly": "Se actualizează fluxul…",
+      "applyTune": "Se aplică setările…",
+      "probe": "Se testează conexiunea…",
+      "export": "Se pregătește raportul…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "Întâlnire AI",
+      "aiNotesOn": "Note AI activate",
+      "aiNotesPaused": "Notele AI au fost puse pe pauză",
+      "menu": {
+        "pause": "Pauză transcriere",
+        "resume": "Reluare transcriere",
+        "mode": "Mod",
+        "boardToMain": "Adu tabla în principal",
+        "snapshot": "Instantaneu tablă",
+        "editors": "Editori…",
+        "end": "Încheie ședința AI",
+        "showBoard": "Arată tabla",
+        "hideBoard": "Ascunde tabla"
+      }
+    },
+    "setup": {
+      "title": "Pornește întâlnirea AI",
+      "intro": "Meet++ transcrie întâlnirea și menține tabla actualizată.",
+      "structure": "Structura întâlnirii",
+      "agendaDriven": "Agendă",
+      "agendaDrivenHint": "Elemente și limite de timp",
+      "goalDriven": "Orientat spre obiective",
+      "goalDrivenHint": "Obiectiv → rezultate → pași următori",
+      "goalPlaceholder": "Scop",
+      "language": "Limbă",
+      "mode": "Mod AI",
+      "modeLead": "Conduce",
+      "modeAssist": "Asistență",
+      "series": "Serie de întâlniri",
+      "newSeries": "Serie nouă",
+      "agendaPdf": "Agenda PDF",
+      "previousNotesPdf": "PDF cu notele anterioare",
+      "importedFromSeries": "Importat din serie",
+      "itemsFound": "{{count}} puncte de ordine de zi găsite",
+      "parsing": "Se analizează…",
+      "start": "Începe",
+      "cancel": "Anulează",
+      "notice": "Transcrierea live rulează pe serverul nostru; textul este procesat de furnizorul LLM configurat pentru a genera procesul-verbal.",
+      "errors": {
+        "noTextLayer": "Acest PDF pare scanat. Încarcă un PDF text sau introdu agenda manual.",
+        "tooLarge": "PDF-ul este prea mare (max. 10 MB).",
+        "encrypted": "Acest PDF este protejat prin parolă.",
+        "tooManyPages": "PDF-ul are prea multe pagini (max. 50).",
+        "capacity": "Capacitatea AI este ocupată — încearcă din nou mai târziu."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Ordinea de zi",
+        "decisions": "Decizii",
+        "actions": "Acțiuni",
+        "attendance": "Prezență",
+        "minutes": "Minute",
+        "attachments": "Atașamente",
+        "transcript": "Transcriere",
+        "previousDecisions": "Deciziile ședinței anterioare"
+      },
+      "follow": "Urmărește",
+      "followPaused": "În pauză",
+      "status": {
+        "listening": "Se ascultă",
+        "thinking": "Se gândește",
+        "behind": "În spatele {{s}}s",
+        "paused": "În pauză",
+        "offline": "AI indisponibil"
+      },
+      "empty": {
+        "agenda": "Încă nu există puncte pe ordinea de zi.",
+        "decisions": "Deciziile vor apărea aici pe măsură ce sunt luate.",
+        "actions": "Acțiunile vor apărea aici pe măsură ce sunt agreate.",
+        "attendance": "Prezența va apărea pe măsură ce se alătură oamenii.",
+        "minutes": "Procesele-verbale vor apărea pentru fiecare punct de pe ordinea de zi.",
+        "attachments": "Încă nu există atașamente.",
+        "transcript": "Transcrierea apare aici în timpul desfășurării întâlnirii."
+      },
+      "actions": {
+        "confirm": "Confirmă",
+        "edit": "Editează",
+        "reject": "Respinge",
+        "add": "Adaugă",
+        "setActive": "Începe",
+        "done": "Gata",
+        "defer": "Amână",
+        "previous": "Anteriorul (deschis)",
+        "new": "Nou în această întâlnire",
+        "unassigned": "Neatribuit",
+        "ownerPrompt": "Numele sau aliasul proprietarului"
+      }
+    },
+    "phases": {
+      "opening": "Se deschide",
+      "previousActions": "Acțiuni anterioare",
+      "agenda": "Ordinea de zi",
+      "goal": "Scop",
+      "discussion": "Discuție",
+      "aob": "Altă activitate",
+      "nextSteps": "Pașii următori",
+      "newActions": "Acțiuni noi",
+      "planning": "Planificare",
+      "closing": "Se închide",
+      "jumpConfirm": "Sari la această fază?"
+    },
+    "proposal": {
+      "title": "Treci la faza următoare?",
+      "moveNow": "Mută acum",
+      "notYet": "Încă nu",
+      "autoIn": "Automat în {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Închide"
+    },
+    "consent": {
+      "title": "Note AI în această întâlnire",
+      "body": "Această întâlnire folosește note AI: discursul tău este transcris pe serverul nostru, iar textul este procesat de {{provider}} pentru a genera procesul-verbal.",
+      "continue": "Continuă",
+      "optOut": "Nu mă transcrie",
+      "privacyLink": "Confidențialitate",
+      "changeChoice": "Schimbă alegerea",
+      "notTranscribed": "Netranscris"
+    },
+    "review": {
+      "title": "Verifică și publică",
+      "sections": {
+        "minutes": "Minute",
+        "decisions": "Decizii",
+        "actions": "Acțiuni",
+        "distribution": "Distribuție"
+      },
+      "nextMeeting": {
+        "title": "Următoarea întâlnire",
+        "date": "Data",
+        "duration": "Durată (min)",
+        "room": "Cameră",
+        "required": "Necesar în continuare"
+      },
+      "distribution": {
+        "minutesToAttendees": "Minute pentru participanți",
+        "invites": "Invitații pentru participanții obligatorii"
+      },
+      "publish": "Publică și trimite",
+      "published": "Publicat",
+      "saveDraft": "Salvează schița",
+      "finalisedChanges": "Finalizarea s-a modificat",
+      "retry": "Reîncearcă"
+    },
+    "snapshot": {
+      "toolbarButton": "Instantaneu către Meet++",
+      "added": "Instantaneu adăugat",
+      "failed": "Captura instantanee a eșuat"
+    }
   }
 }

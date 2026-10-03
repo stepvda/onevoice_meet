@@ -20,6 +20,27 @@ if ! ssh "$HOST" "systemctl is-active coturn >/dev/null 2>&1 || docker ps --filt
   [[ "$ans" == "y" || "$ans" == "Y" ]] || exit 1
 fi
 
+# Meet++ pre-check: recreating the meetpp-agent interrupts its transcription.
+# When an operator token is available, ask the API whether a session is live and
+# prompt before continuing.
+if [[ -n "${MEETPP_OPERATOR_TOKEN:-}" ]]; then
+  echo "==> Checking for active Meet++ sessions…"
+  # Capture the HTTP status separately: an auth/connection failure must NOT be
+  # mistaken for "zero active sessions".
+  probe=$(ssh "$HOST" "code=\$(curl -s -o /tmp/meetpp-status.json -w '%{http_code}' -H 'Authorization: Bearer ${MEETPP_OPERATOR_TOKEN}' http://localhost:8080/api/v1/admin/meetpp/status); echo \"\$code\"; [ \"\$code\" = 200 ] && grep -c '\"sid\"' /tmp/meetpp-status.json || echo 0" 2>/dev/null || true)
+  code=$(printf '%s' "$probe" | sed -n '1p')
+  active=$(printf '%s' "$probe" | sed -n '2p')
+  if [[ "$code" != "200" ]]; then
+    echo "WARNING: Meet++ status endpoint not reachable/authorised (http ${code:-?}). Cannot verify whether a session is live. Continue? [yN]"
+    read -r ans
+    [[ "$ans" == "y" || "$ans" == "Y" ]] || exit 1
+  elif [[ "${active:-0}" -gt 0 ]]; then
+    echo "WARNING: ${active} Meet++ session(s) active. Recreating the agent interrupts transcription. Continue? [yN]"
+    read -r ans
+    [[ "$ans" == "y" || "$ans" == "Y" ]] || exit 1
+  fi
+fi
+
 echo "==> Rsyncing $LOCAL_DIR → $HOST:/tmp/meet-stage/"
 rsync -avz --delete \
   --exclude '.git' \
@@ -28,12 +49,17 @@ rsync -avz --delete \
   --exclude '.env' \
   --exclude '*.db' \
   --exclude '*.log' \
+  --exclude '.kilo' \
+  --exclude '.pytest_cache' \
+  --exclude '__pycache__' \
+  --exclude 'docs/*.docx' \
+  --exclude 'docs/~$*' \
   "$LOCAL_DIR/" "$HOST:/tmp/meet-stage/"
 
 echo "==> Installing to /opt/meet (preserving .env)…"
 ssh "$HOST" '
   set -e
-  mkdir -p /opt/meet /var/lib/meet/recordings /var/log/meet
+  mkdir -p /opt/meet /var/lib/meet/recordings /var/log/meet /var/lib/meet/meetpp/tts
   rsync -a --exclude ".env" /tmp/meet-stage/ /opt/meet/
   rm -rf /tmp/meet-stage
 '
@@ -50,6 +76,10 @@ ssh "$HOST" '
   sleep 3
   docker compose -p meet ps
 '
+
+echo "==> Reloading Caddy config (internal-path block + body limit, no downtime)…"
+ssh "$HOST" 'cd /opt/meet && docker compose -p meet exec -T caddy caddy reload --config /etc/caddy/Caddyfile' || \
+  echo "WARNING: caddy reload failed — check the Caddyfile manually."
 
 echo "==> Verifying coturn is still running…"
 ssh "$HOST" '

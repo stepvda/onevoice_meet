@@ -20,7 +20,8 @@
     "account": "Konto",
     "upgrade": "Opgrader",
     "vouchers": "Kuponer",
-    "admin": "Administrator"
+    "admin": "Administrator",
+    "onDemand": "On Demand"
   },
   "tiCafe": {
     "title": "Café",
@@ -65,7 +66,10 @@
     "loading": "Indlæser…",
     "close": "Luk",
     "anonymous": "anonym",
-    "requestFailed": "Anmodningen mislykkedes"
+    "requestFailed": "Anmodningen mislykkedes",
+    "on": "Til",
+    "off": "Fra",
+    "dismiss": "Afvis"
   },
   "signInPrompt": {
     "button": "Log ind på one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Venteværelse",
     "waitingRoomDesc": "Nye deltagere venter, indtil du lukker dem ind fra mødeværktøjslinjen.",
     "autoAdmitAuthenticated": "Auto-godkend brugere, der er logget ind (kommer snart)",
-    "autoAdmitAuthenticatedDesc": "Omgå venteværelset for loggede one.witysk.org-brugere. Endnu ikke håndhævet — anonyme deltagere stiller altid i kø."
+    "autoAdmitAuthenticatedDesc": "Omgå venteværelset for loggede one.witysk.org-brugere. Endnu ikke håndhævet — anonyme deltagere stiller altid i kø.",
+    "lobbyGreeting": "Lobbyhilsen",
+    "lobbyGreetingHint": "Vises til alle i lobbyen, før de deltager.",
+    "lobbyGreetingPlaceholder": "Velkommen! Slå mikrofonen fra, når du ikke taler.",
+    "schedule": "Tidsplan",
+    "scheduleHint": "Angiv en varighed og (valgfrit) en gentagelse, så kalenderinvitationer gentages automatisk.",
+    "duration": "Varighed (minutter)",
+    "recurrence": "Gentagelse",
+    "recurrenceNone": "Engangs (ingen gentagelse)",
+    "recurrenceDaily": "Dagligt",
+    "recurrenceWeekly": "Ugentlig",
+    "recurrenceBiweekly": "Hver 2. uge",
+    "recurrenceMonthly": "Månedligt"
   },
   "discover": {
     "title": "Opdag",
     "subtitle": "— møder, der er åbne at deltage i",
     "join": "Deltag",
     "maxParticipants": "maks {{n}}",
-    "hostedBy": "Vært: {{name}}"
+    "hostedBy": "Vært: {{name}}",
+    "view": "Vis",
+    "viewTitle": "Se den offentlige skrivebeskyttede stream",
+    "streamsTitle": "Offentlige livestreams",
+    "streamsSubtitle": "— kun visning, ingen konto nødvendig"
   },
   "myMeetings": {
     "loading": "Indlæser dine møder…",
@@ -272,7 +292,14 @@
     "notImage": "Ikke et billede ({{type}})",
     "processorFailed": "Baggrundseffekter understøttes ikke på denne enhed.",
     "custom": "Brugerdefineret: {{name}}",
-    "customDefault": "Brugerdefineret billede"
+    "customDefault": "Brugerdefineret billede",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Havbølger",
+    "particles": "Partikler",
+    "cityscape": "Bylens lys",
+    "cherryBlossoms": "Kirsebærblomster",
+    "fireflies": "Ildfluer"
   },
   "participants": {
     "title": "Deltagere",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Gør {{name}} til oplægsholder",
     "removeFromMeeting": "Fjern fra møde",
     "removeName": "Fjern {{name}}",
-    "authenticatedOwner": "Godkendt ejer"
+    "authenticatedOwner": "Godkendt ejer",
+    "cohost": "Medvært",
+    "promoteCohost": "Forfrem til medvært",
+    "demoteCohost": "Fjern medvært"
   },
   "chatPanel": {
     "title": "Chat",
@@ -294,7 +324,10 @@
     "send": "Send",
     "close": "Luk chat",
     "ariaLabel": "Mødechat",
-    "messageAria": "Chatbesked"
+    "messageAria": "Chatbesked",
+    "pin": "Fastgør",
+    "unpin": "Frigør",
+    "pinned": "Fastgjort"
   },
   "invite": {
     "title": "Inviter via e-mail",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Optagelser",
     "subtitle": "Server-side optagelser af dine møder. Lokale filer slettes automatisk efter 30 dage (eller når du publicerer til YouTube). Uploads initieres kun af ejeren.",
-    "empty": "Ingen optagelser endnu. Start et møde, og klik på <1>Optag</1> for at optage ét.",
+    "empty": "Ingen optagelser endnu. Start et møde, og klik på <1>Optag</1> for at lave en.",
     "loading": "Indlæser…",
     "signInFirst": "Log ind på one.witysk.org først.",
     "signInTitle": "Log ind for at se dine optagelser",
@@ -932,5 +965,378 @@
     "tileBadge": "Hånden hævet",
     "lowerOther": "Sænk denne deltagers hånd",
     "lowerName": "Sænk {{name}}'s hånd"
+  },
+  "onDemand": {
+    "title": "On Demand",
+    "subtitle": "Videoer fra igangværende offentlige livestreams — se når som helst, ingen konto nødvendig.",
+    "watch": "Se",
+    "loading": "Indlæser…",
+    "empty": "Intet on demand lige nu. Kom tilbage, når en offentlig livestream har videoer i sin playliste.",
+    "error": "Kunne ikke indlæse On Demand lige nu."
+  },
+  "devices": {
+    "toolbar": "Lyd- og videoenheder",
+    "toolbarTitle": "Vælg mikrofon, kamera og højttaler",
+    "mic": "Mikrofon",
+    "camera": "Kamera",
+    "speaker": "Højttaler",
+    "none": "Ingen enheder fundet",
+    "speakerUnsupported": "Valg af udgangsenhed understøttes ikke i denne browser."
+  },
+  "notes": {
+    "title": "Noter og whiteboard",
+    "toolbar": "Noter og whiteboard",
+    "toolbarTitle": "Åbn delte noter og whiteboard",
+    "close": "Luk noter",
+    "tabNotes": "Noter",
+    "tabBoard": "Whiteboard",
+    "hint": "Alle i rummet kan redigere. Gemmes automatisk.",
+    "placeholder": "Skriv fælles noter her…",
+    "color": "Farve",
+    "thickness": "Stregtykkelse",
+    "clear": "Ryd tavlen"
+  },
+  "polls": {
+    "title": "Afstemninger og Q&A",
+    "toolbar": "Afstemninger og Q&A",
+    "toolbarTitle": "Åbn afstemninger og Q&A",
+    "close": "Luk afstemninger",
+    "tabPolls": "Afstemninger",
+    "tabQna": "Spørgsmål og svar",
+    "empty": "Ingen afstemninger endnu.",
+    "createTitle": "Opret en afstemning",
+    "createButton": "Opret",
+    "questionPlaceholder": "Dit spørgsmål",
+    "optionPlaceholder": "Mulighed {{n}}",
+    "addOption": "+ Tilføj valgmulighed",
+    "open": "Åbn",
+    "closed": "Lukket",
+    "closePoll": "Luk afstemning",
+    "qnaEmpty": "Ingen spørgsmål endnu.",
+    "qnaPlaceholder": "Stil et spørgsmål…",
+    "qnaAsk": "Spørg",
+    "qnaUpvote": "Stem op",
+    "qnaMarkAnswered": "Besvaret"
+  },
+  "pip": {
+    "enter": "Billede-i-billede",
+    "exit": "Afslut billede-i-billede",
+    "enterTitle": "Pop den aktive taler ud i en flydende flise",
+    "exitTitle": "Luk den flydende flise"
+  },
+  "shortcuts": {
+    "title": "Tastaturgenveje",
+    "close": "Luk",
+    "disabled": "Genveje er i øjeblikket deaktiveret i Indstillinger → Tastatur.",
+    "editHint": "Skift genveje på siden Indstillinger (afsnittet Tastatur).",
+    "mute": "Slå mikrofon til/fra",
+    "camera": "Slå kamera til/fra",
+    "hand": "Ræk hånden op / ned",
+    "screenshare": "Slå skærmdeling til/fra",
+    "leave": "Forlad mødet",
+    "help": "Vis dette overlay"
+  },
+  "feedback": {
+    "title": "Hvordan gik mødet?",
+    "body": "På en skala fra 0 (dårligst) til 10 (bedst), hvordan vil du vurdere dette møde?",
+    "commentLabel": "Noget andet? (valgfrit)",
+    "submit": "Indsend",
+    "sending": "Sender…",
+    "skip": "Spring over",
+    "thanks": "Tak for din feedback!"
+  },
+  "reactions": {
+    "toolbar": "Reager",
+    "toolbarTitle": "Send en flydende emoji-reaktion",
+    "send": "Send {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Forbindelseskvalitet for {{name}} — {{band}}",
+      "title": "Forbindelseskvalitet"
+    },
+    "panel": {
+      "title": "Forbindelseskvalitet",
+      "self": "dit kamera",
+      "ariaLabel": "Forbindelseskvalitet for {{name}}"
+    },
+    "band": {
+      "high": "Høj",
+      "medium": "Mellem",
+      "low": "Lav",
+      "lost": "Genopretter forbindelse…",
+      "measuring": "Måler…"
+    },
+    "limiter": {
+      "network": "Netværk: pakketab og jitter",
+      "publisher": "Udgiverenheden begrænser streamet",
+      "relay": "Relæsti: forhøjet rundtur-tid",
+      "stability": "Ustabil forbindelse: kvaliteten svinger",
+      "unknown": "Måler forbindelsen",
+      "lost": "Forbindelsen mistet — genopretter automatisk"
+    },
+    "tab": {
+      "overview": "Oversigt",
+      "details": "Detaljer",
+      "actions": "Handlinger",
+      "device": "Enhed"
+    },
+    "quality": {
+      "low": "Lav",
+      "medium": "Med",
+      "high": "Høj",
+      "auto": "Auto"
+    },
+    "overview": {
+      "score": "score {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitrate",
+      "resolution": "Opløsning",
+      "fps": "Billedhastighed",
+      "loss": "Pakkestab",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Sprangne billeder",
+      "audioLoss": "Lydtab (sidste min)",
+      "transport": "Transport",
+      "direct": "Direkte",
+      "relay": "Relæ"
+    },
+    "details": {
+      "log": "Seneste handlinger",
+      "none": "Ingen handlinger endnu",
+      "video": "Video",
+      "audio": "Lyd"
+    },
+    "action": {
+      "quality": "Kvalitet (simulcast-lag)",
+      "maxBitrate": "Maks. bitrate",
+      "compression": "Komprimering",
+      "colorDepth": "Farvdybde",
+      "colorDepthUnsupported": "10-bit er ikke tilgængelig på denne enhed / codec",
+      "audioOnly": "Kun lyd til denne flise",
+      "resync": "Synkroniser stream igen",
+      "resetAuto": "Nulstil til auto",
+      "reconnect": "Genopret forbindelse",
+      "reconnectConfirm": "Bekræft genoprettelse",
+      "apply": "Anvend",
+      "export": "Eksportér rapport"
+    },
+    "scope": {
+      "receive": "Gælder for det, du modtager — udgiverens kamera forbliver urørt",
+      "publish": "Ændringer er synlige for alle i mødet"
+    },
+    "autotune": {
+      "test": "Test optimale indstillinger",
+      "running": "Tester forbindelsen…",
+      "observing": "Observerer… {{seconds}} s",
+      "applied": "Anvendt — indstillinger gemt",
+      "rolledBack": "Fortrudt — den nye indstilling var dårligere på dette netværk",
+      "recommended": "Anbefales til dette netværk",
+      "retry": "Prøv igen",
+      "rejected": "{{layer}} blev afvist: {{reason}}",
+      "phase": {
+        "baseline": "Indsamler baseline…",
+        "probing": "Undersøger lag…",
+        "evaluating": "Vurderer kandidater…",
+        "observing": "Observerer resultatet…",
+        "done": "Færdig",
+        "failed": "Probe mislykkedes",
+        "idle": "<<<KEEP_1>>>-møde"
+      },
+      "baseline": "Indsamler baseline…",
+      "step": {
+        "low": "Tester LAV…",
+        "medium": "Tester MEDIUM…",
+        "high": "Tester HØJ…"
+      },
+      "evaluating": "Vurderer kandidater…",
+      "done": "Anbefaling klar"
+    },
+    "device": {
+      "remoteNote": "Kamera- og mikrofonindstillinger tilhører udgiveren ({{name}})",
+      "camera": "Kamera",
+      "resolution": "Opløsning",
+      "frameRate": "Billedhastighed",
+      "cameraMax": "Kamera understøtter op til {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Mikrofon",
+      "channels": "Kanaler",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Lydkvalitet",
+      "voice": "Stemme",
+      "music": "Musik",
+      "stereoWarning": "Stereo deaktiverer ekkoannullering og støjdæmpning — brug hovedtelefoner; det øger også uplink-båndbredden",
+      "apply": "Anvend på mit kamera og min mikrofon"
+    },
+    "busy": {
+      "quality": "Skifter kvalitet…",
+      "resync": "Genopretter streamen…",
+      "reconnect": "Genopretter forbindelse…",
+      "maxBitrate": "Opdaterer bitrate-grænsen…",
+      "compression": "Opdaterer komprimering…",
+      "resolution": "Ændrer kameraopløsning…",
+      "frameRate": "Skifter billedhastighed…",
+      "camera-device": "Skifter kamera…",
+      "mic-device": "Skifter mikrofon…",
+      "mic-mode": "Anvender mikrofonindstillinger…",
+      "audioOnly": "Opdaterer streamet…",
+      "applyTune": "Anvender indstillinger…",
+      "probe": "Tester forbindelsen…",
+      "export": "Forbereder rapporten…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI-møde",
+      "aiNotesOn": "AI-noter til",
+      "aiNotesPaused": "AI-noter sat på pause",
+      "menu": {
+        "pause": "Pause transskription",
+        "resume": "Genoptag transskription",
+        "mode": "Tilstand",
+        "boardToMain": "Bring tavle til hoved",
+        "snapshot": "Whiteboard-snapshot",
+        "editors": "Redaktører…",
+        "end": "Afslut AI-møde",
+        "showBoard": "Vis tavle",
+        "hideBoard": "Skjul tavle"
+      }
+    },
+    "setup": {
+      "title": "Start AI-møde",
+      "intro": "Meet++ transskriberer mødet og holder tavlen opdateret.",
+      "structure": "Mødestruktur",
+      "agendaDriven": "Dagsordensstyret",
+      "agendaDrivenHint": "Elementer og tidsbokse",
+      "goalDriven": "Målstyret",
+      "goalDrivenHint": "Mål → leverancer → næste skridt",
+      "goalPlaceholder": "Mål",
+      "language": "Sprog",
+      "mode": "AI-tilstand",
+      "modeLead": "Vært",
+      "modeAssist": "Assist",
+      "series": "Mødeserie",
+      "newSeries": "Ny serie",
+      "agendaPdf": "Dagsorden-PDF",
+      "previousNotesPdf": "Tidligere noter PDF",
+      "importedFromSeries": "Importeret fra serie",
+      "itemsFound": "{{count}} dagsordenspunkter fundet",
+      "parsing": "Parser…",
+      "start": "Start",
+      "cancel": "Annuller",
+      "notice": "Live-transskription kører på vores server; teksten behandles af den konfigurerede LLM-udbyder for at generere referater.",
+      "errors": {
+        "noTextLayer": "Denne PDF ser scannet ud. Upload en tekst-PDF, eller indtast dagsordenen manuelt.",
+        "tooLarge": "PDF-filen er for stor (maks. 10 MB).",
+        "encrypted": "Denne PDF er adgangskodebeskyttet.",
+        "tooManyPages": "PDF'en har for mange sider (maks. 50).",
+        "capacity": "AI-kapacitet optaget – prøv igen senere."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Dagsorden",
+        "decisions": "Beslutninger",
+        "actions": "Handlinger",
+        "attendance": "Deltagelse",
+        "minutes": "Minutter",
+        "attachments": "Vedhæftninger",
+        "transcript": "Transskription",
+        "previousDecisions": "Beslutninger fra forrige møde"
+      },
+      "follow": "Følg",
+      "followPaused": "Sat på pause",
+      "status": {
+        "listening": "Lytter",
+        "thinking": "Tænker",
+        "behind": "Bag {{s}}s",
+        "paused": "Sat på pause",
+        "offline": "AI utilgængelig"
+      },
+      "empty": {
+        "agenda": "Ingen dagsordenspunkter endnu.",
+        "decisions": "Beslutninger vises her, efterhånden som de træffes.",
+        "actions": "Handlinger vises her, efterhånden som de aftales.",
+        "attendance": "Deltagelse vises, når folk kommer med.",
+        "minutes": "Minutter vises pr. dagsordenspunkt.",
+        "attachments": "Ingen vedhæftede filer endnu.",
+        "transcript": "Transskriptionen vises her, mens mødet kører."
+      },
+      "actions": {
+        "confirm": "Bekræft",
+        "edit": "Rediger",
+        "reject": "Afvis",
+        "add": "Tilføj",
+        "setActive": "Start",
+        "done": "Færdig",
+        "defer": "Udsæt",
+        "previous": "Forrige (åbn)",
+        "new": "Ny i dette møde",
+        "unassigned": "Ikke tildelt",
+        "ownerPrompt": "Ejernavn eller alias"
+      }
+    },
+    "phases": {
+      "opening": "Åbner",
+      "previousActions": "Tidligere handlinger",
+      "agenda": "Dagsorden",
+      "goal": "Mål",
+      "discussion": "Diskussion",
+      "aob": "Anden virksomhed",
+      "nextSteps": "Næste trin",
+      "newActions": "Nye handlinger",
+      "planning": "Planlægning",
+      "closing": "Lukker",
+      "jumpConfirm": "Spring til denne fase?"
+    },
+    "proposal": {
+      "title": "Gå videre til næste fase?",
+      "moveNow": "Flyt nu",
+      "notYet": "Ikke endnu",
+      "autoIn": "Auto om {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Afvis"
+    },
+    "consent": {
+      "title": "AI-noter i dette møde",
+      "body": "Dette møde bruger AI-noter: din tale transskriberes på vores server, og teksten behandles af {{provider}} for at producere referat.",
+      "continue": "Fortsæt",
+      "optOut": "Transskribér mig ikke",
+      "privacyLink": "Fortrolighed",
+      "changeChoice": "Skift mit valg",
+      "notTranscribed": "Ikke transskriberet"
+    },
+    "review": {
+      "title": "Gennemgå og udgiv",
+      "sections": {
+        "minutes": "Minutter",
+        "decisions": "Beslutninger",
+        "actions": "Handlinger",
+        "distribution": "Distribution"
+      },
+      "nextMeeting": {
+        "title": "Næste møde",
+        "date": "Dato",
+        "duration": "Varighed (min)",
+        "room": "Rum",
+        "required": "Næste påkrævet"
+      },
+      "distribution": {
+        "minutesToAttendees": "Minutter til deltagere",
+        "invites": "Invitationer til obligatoriske deltagere"
+      },
+      "publish": "Publicér og send",
+      "published": "Publiceret",
+      "saveDraft": "Gem kladde",
+      "finalisedChanges": "Afslutning ændret",
+      "retry": "Prøv igen"
+    },
+    "snapshot": {
+      "toolbarButton": "Snapshot til Meet++",
+      "added": "Snapshot tilføjet",
+      "failed": "Snapshot mislykkedes"
+    }
   }
 }

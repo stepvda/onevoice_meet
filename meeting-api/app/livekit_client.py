@@ -141,6 +141,38 @@ def mint_viewer_token(
     )
 
 
+def mint_agent_token(
+    *,
+    room_name: str,
+    identity: str,
+    ttl_hours: int = 12,
+) -> str:
+    """Token for the Meet++ agent: hidden, subscribe-only, no publish rights.
+
+    Hidden participants do not appear in participant lists and their published
+    tracks (there are none) are not distributed, so ParticipantsPanel needs no
+    change.
+    """
+    grants = api.VideoGrants(
+        room_join=True,
+        room=room_name,
+        can_publish=False,
+        can_publish_data=False,
+        can_subscribe=True,
+        can_update_own_metadata=False,
+        room_admin=False,
+        hidden=True,
+    )
+    return (
+        _token()
+        .with_identity(identity)
+        .with_name("Meet++")
+        .with_grants(grants)
+        .with_ttl(timedelta(hours=ttl_hours))
+        .to_jwt()
+    )
+
+
 def livekit_api() -> "api.LiveKitAPI":
     """
     Returns an async LiveKit server-API client. Intended for phase 7+ when

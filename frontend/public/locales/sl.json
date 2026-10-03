@@ -20,7 +20,8 @@
     "account": "Račun",
     "upgrade": "Nadgradi",
     "vouchers": "Vavčerji",
-    "admin": "Skrbnik"
+    "admin": "Skrbnik",
+    "onDemand": "Na zahtevo"
   },
   "tiCafe": {
     "title": "Kavarna",
@@ -65,7 +66,10 @@
     "loading": "Nalaganje…",
     "close": "Zapri",
     "anonymous": "anonimen",
-    "requestFailed": "Zahteva ni uspela"
+    "requestFailed": "Zahteva ni uspela",
+    "on": "Vklopljeno",
+    "off": "Izklopljeno",
+    "dismiss": "Opusti"
   },
   "signInPrompt": {
     "button": "Prijava na one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Čakalnica",
     "waitingRoomDesc": "Novi udeleženci počakajo, dokler jih ne sprejmete iz orodne vrstice sestanka.",
     "autoAdmitAuthenticated": "Samodejno sprejmi prijavljene uporabnike (kmalu na voljo)",
-    "autoAdmitAuthenticatedDesc": "Prezrni čakalnico za prijavljene uporabnike one.witysk.org. Še ni uveljavljeno – anonimni uporabniki vedno čakajo v vrsti."
+    "autoAdmitAuthenticatedDesc": "Prezrni čakalnico za prijavljene uporabnike one.witysk.org. Še ni uveljavljeno – anonimni uporabniki vedno čakajo v vrsti.",
+    "lobbyGreeting": "Pozdrav v preddverju",
+    "lobbyGreetingHint": "Prikazano vsem v čakalnici, preden se pridružijo.",
+    "lobbyGreetingPlaceholder": "Dobrodošli! Ko ne govorite, izklopite mikrofon.",
+    "schedule": "Razpored",
+    "scheduleHint": "Nastavite trajanje in (neobvezno) ponavljanje, da se koledarska povabila samodejno ponovijo.",
+    "duration": "Trajanje (minute)",
+    "recurrence": "Ponavljanje",
+    "recurrenceNone": "Enkratno (brez ponavljanja)",
+    "recurrenceDaily": "Dnevno",
+    "recurrenceWeekly": "Tedensko",
+    "recurrenceBiweekly": "Vsaka 2 tedna",
+    "recurrenceMonthly": "Mesečno"
   },
   "discover": {
     "title": "Odkrijte",
     "subtitle": "— sestanki, ki so odprti za pridružitev",
     "join": "Pridruži se",
     "maxParticipants": "največ {{n}}",
-    "hostedBy": "Gosti {{name}}"
+    "hostedBy": "Gosti {{name}}",
+    "view": "Pogled",
+    "viewTitle": "Spremljaj javni pretočni prenos samo za ogled",
+    "streamsTitle": "Javni prenosi v živo",
+    "streamsSubtitle": "— samo za gledanje, račun ni potreben"
   },
   "myMeetings": {
     "loading": "Nalagam vaše sestanke…",
@@ -272,7 +292,14 @@
     "notImage": "Ni slika ({{type}})",
     "processorFailed": "Ozadja niso podprta na tej napravi.",
     "custom": "Po meri: {{name}}",
-    "customDefault": "Slika po meri"
+    "customDefault": "Slika po meri",
+    "aurora": "Aurora",
+    "bokeh": "Zameglitev ozadja",
+    "wavesAnim": "Oceanski valovi",
+    "particles": "Delci",
+    "cityscape": "Mestne luči",
+    "cherryBlossoms": "Češnjevi cvetovi",
+    "fireflies": "Fireflies"
   },
   "participants": {
     "title": "Udeleženci",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Naredi {{name}} predavatelja",
     "removeFromMeeting": "Odstrani iz sestanka",
     "removeName": "Odstrani {{name}}",
-    "authenticatedOwner": "Overjen lastnik"
+    "authenticatedOwner": "Overjen lastnik",
+    "cohost": "Sogostitelj",
+    "promoteCohost": "Povišaj v so-gostitelja",
+    "demoteCohost": "Odstrani soorganitelja"
   },
   "chatPanel": {
     "title": "Klepet",
@@ -294,7 +324,10 @@
     "send": "Pošlji",
     "close": "Zapri klepet",
     "ariaLabel": "Klepet v sestanku",
-    "messageAria": "Sporočilo klepeta"
+    "messageAria": "Sporočilo klepeta",
+    "pin": "Pripni",
+    "unpin": "Odpni",
+    "pinned": "Pripeto"
   },
   "invite": {
     "title": "Povabi po e-pošti",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Posnetki",
     "subtitle": "Streposne posnetke vaših sestankov. Lokalne datoteke se samodejno izbrišejo po 30 dneh (ali ko objavite na YouTube). Nalaganja sproži le lastnik.",
-    "empty": "Ni še nobenih posnetkov. Začnite sestanek in kliknite <1>Posnemi</1>, da ga ustvarite.",
+    "empty": "Ni še posnetkov. Začnite sestanek in kliknite <1>Snemaj</1>, da ga posnamete.",
     "loading": "Nalaganje…",
     "signInFirst": "Najprej se prijavite na one.witysk.org.",
     "signInTitle": "Prijavite se za ogled svojih posnetkov",
@@ -932,5 +965,378 @@
     "tileBadge": "Roka dvignjena",
     "lowerOther": "Spusti roko tega udeleženca",
     "lowerName": "Spusti roko {{name}}"
+  },
+  "onDemand": {
+    "title": "Na zahtevo",
+    "subtitle": "Videoposnetki iz javnih prenosov v živo — gledate lahko kadarkoli, brez računa.",
+    "watch": "Glej",
+    "loading": "Nalaganje …",
+    "empty": "Trenutno ni ničesar na zahtevo. Preveri znova, ko bo imel javni prenos v živo videoposnetke na svojem seznamu predvajanja.",
+    "error": "Predvajanja na zahtevo trenutno ni bilo mogoče naložiti."
+  },
+  "devices": {
+    "toolbar": "Zvočne in video naprave",
+    "toolbarTitle": "Izberite mikrofon, kamero in zvočnik",
+    "mic": "Mikrofon",
+    "camera": "Kamera",
+    "speaker": "Govornik",
+    "none": "Ni najdenih naprav",
+    "speakerUnsupported": "Izbira izhodne naprave v tem brskalniku ni podprta."
+  },
+  "notes": {
+    "title": "Zapiski in tabla",
+    "toolbar": "Zapiski in tabla",
+    "toolbarTitle": "Odpri skupne zapiske in tablo",
+    "close": "Zapri zapiske",
+    "tabNotes": "Zapiski",
+    "tabBoard": "Beležnica",
+    "hint": "Vsi v sobi lahko urejajo. Samodejno shranjeno.",
+    "placeholder": "Tukaj vnesite skupne opombe …",
+    "color": "Barva",
+    "thickness": "Debelina poteze",
+    "clear": "Počisti tablo"
+  },
+  "polls": {
+    "title": "Ankete in vprašanja",
+    "toolbar": "Ankete in vprašanja",
+    "toolbarTitle": "Odpri ankete in vprašanja",
+    "close": "Zapri ankete",
+    "tabPolls": "Ankete",
+    "tabQna": "Vprašanja in odgovori",
+    "empty": "Ni še nobene ankete.",
+    "createTitle": "Ustvari anketo",
+    "createButton": "Ustvari",
+    "questionPlaceholder": "Vaše vprašanje",
+    "optionPlaceholder": "Možnost {{n}}",
+    "addOption": "+ Dodaj možnost",
+    "open": "Odpri",
+    "closed": "Zaprto",
+    "closePoll": "Zapri anketo",
+    "qnaEmpty": "Ni še vprašanj.",
+    "qnaPlaceholder": "Postavi vprašanje …",
+    "qnaAsk": "Vprašaj",
+    "qnaUpvote": "Glas za",
+    "qnaMarkAnswered": "Odgovorjeno"
+  },
+  "pip": {
+    "enter": "Slika v sliki",
+    "exit": "Zapri sliko v sliki",
+    "enterTitle": "Aktivnega govorca odpri v plavajočo ploščico",
+    "exitTitle": "Zapri plavajočo ploščico"
+  },
+  "shortcuts": {
+    "title": "Bližnjice na tipkovnici",
+    "close": "Zapri",
+    "disabled": "Bližnjice so trenutno onemogočene v Nastavitve → Tipkovnica.",
+    "editHint": "Spremenite bližnjice na strani Nastavitve (razdelek Tipkovnica).",
+    "mute": "Preklopi mikrofon",
+    "camera": "Preklopi kamero",
+    "hand": "Dvigni / spusti roko",
+    "screenshare": "Preklopi deljenje zaslona",
+    "leave": "Zapusti sestanek",
+    "help": "Pokaži ta prekrivni element"
+  },
+  "feedback": {
+    "title": "Kako je bilo sestanku?",
+    "body": "Na lestvici od 0 (najslabše) do 10 (najbolje), kako bi ocenili ta sestanek?",
+    "commentLabel": "Še kaj? (neobvezno)",
+    "submit": "Pošlji",
+    "sending": "Pošiljanje …",
+    "skip": "Preskoči",
+    "thanks": "Hvala za vaše povratne informacije!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Pošlji lebdečo emoji reakcijo",
+    "send": "Pošlji {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Kakovost povezave za {{name}} — {{band}}",
+      "title": "Kakovost povezave"
+    },
+    "panel": {
+      "title": "Kakovost povezave",
+      "self": "vaša kamera",
+      "ariaLabel": "Kakovost povezave za {{name}}"
+    },
+    "band": {
+      "high": "Visoko",
+      "medium": "Srednje",
+      "low": "Nizka",
+      "lost": "Ponovno povezovanje …",
+      "measuring": "Merjenje …"
+    },
+    "limiter": {
+      "network": "Omrežje: izguba paketov in tresenje",
+      "publisher": "Naprava izdajatelja omejuje pretok",
+      "relay": "Pot prenosa: povišan čas povratnega potovanja",
+      "stability": "Nestabilna povezava: kakovost niha",
+      "unknown": "Merjenje povezave",
+      "lost": "Povezava prekinjena — samodejno ponovno povezovanje"
+    },
+    "tab": {
+      "overview": "Pregled",
+      "details": "Podrobnosti",
+      "actions": "Dejanja",
+      "device": "Naprava"
+    },
+    "quality": {
+      "low": "Nizka",
+      "medium": "Vmes",
+      "high": "Visoka",
+      "auto": "Samodejno"
+    },
+    "overview": {
+      "score": "Rezultat {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitna hitrost",
+      "resolution": "Ločljivost",
+      "fps": "Hitrost sličic",
+      "loss": "Izguba paketov",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Izpustljeni kadri",
+      "audioLoss": "Izpad zvoka (zadnja min)",
+      "transport": "Prenos",
+      "direct": "Neposredno",
+      "relay": "Rele"
+    },
+    "details": {
+      "log": "Nedavna dejanja",
+      "none": "Ni še dejanj",
+      "video": "Video",
+      "audio": "Avdio"
+    },
+    "action": {
+      "quality": "Kakovost (simulcast sloj)",
+      "maxBitrate": "Najvišja bitna hitrost",
+      "compression": "Stiskanje",
+      "colorDepth": "Globina barv",
+      "colorDepthUnsupported": "10-bit ni na voljo na tej napravi / kodeku",
+      "audioOnly": "Samo zvok za to ploščico",
+      "resync": "Ponovno uskladi pretok",
+      "resetAuto": "Ponastavi na samodejno",
+      "reconnect": "Ponovno poveži",
+      "reconnectConfirm": "Potrdi ponovno povezavo",
+      "apply": "Uporabi",
+      "export": "Izvozi poročilo"
+    },
+    "scope": {
+      "receive": "Velja za to, kar prejmete – kamera izdajatelja ostane nedotaknjena",
+      "publish": "Spremembe so vidne vsem v sestanku"
+    },
+    "autotune": {
+      "test": "Preizkusite optimalne nastavitve",
+      "running": "Preizkušanje povezave …",
+      "observing": "Opazovanje … {{seconds}} s",
+      "applied": "Uporabljeno – nastavitve ohranjene",
+      "rolledBack": "Vrnjeno — nova nastavitev je bila na tem omrežju slabša",
+      "recommended": "Priporočeno za to omrežje",
+      "retry": "Poskusi znova",
+      "rejected": "{{layer}} je bil zavrnjen: {{reason}}",
+      "phase": {
+        "baseline": "Zbiram izhodišče …",
+        "probing": "Preverjanje plasti …",
+        "evaluating": "Ocenjevanje kandidatov …",
+        "observing": "Opazovanje rezultata …",
+        "done": "Končano",
+        "failed": "Preizkus ni uspel",
+        "idle": "Preverjanje"
+      },
+      "baseline": "Zbiranje izhodišča …",
+      "step": {
+        "low": "Preizkušanje NIZKO…",
+        "medium": "Preizkušanje SREDNJE…",
+        "high": "Preizkušanje VISOKO …"
+      },
+      "evaluating": "Ocenjevanje kandidatov …",
+      "done": "Priporočilo je pripravljeno"
+    },
+    "device": {
+      "remoteNote": "Nastavitve kamere in mikrofona pripadajo izdajatelju ({{name}})",
+      "camera": "Kamera",
+      "resolution": "Ločljivost",
+      "frameRate": "Hitrost sličic",
+      "cameraMax": "Kamera podpira do {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Mikrofon",
+      "channels": "Kanali",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Kakovost zvoka",
+      "voice": "Glas",
+      "music": "Glasba",
+      "stereoWarning": "Stereo onemogoči odpravo odmeva in zatiranje hrupa – uporabite slušalke; poveča tudi pasovno širino za pošiljanje",
+      "apply": "Uporabi za mojo kamero in mikrofon"
+    },
+    "busy": {
+      "quality": "Menjava kakovosti …",
+      "resync": "Ponovna sinhronizacija prenosa …",
+      "reconnect": "Ponovno povezovanje …",
+      "maxBitrate": "Posodabljanje omejitve bitne hitrosti …",
+      "compression": "Posodabljanje stiskanja …",
+      "resolution": "Menjava ločljivosti kamere …",
+      "frameRate": "Menjava hitrosti sličic …",
+      "camera-device": "Preklapljanje kamere …",
+      "mic-device": "Preklapljanje mikrofona …",
+      "mic-mode": "Uveljavljanje nastavitev mikrofona …",
+      "audioOnly": "Posodabljanje prenosa …",
+      "applyTune": "Uveljavljanje nastavitev …",
+      "probe": "Preizkušanje povezave …",
+      "export": "Pripravljam poročilo …"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI sestanek",
+      "aiNotesOn": "AI zapiski vklopljeni",
+      "aiNotesPaused": "AI zapiski ustavljeni",
+      "menu": {
+        "pause": "Ustavi prepisovanje",
+        "resume": "Nadaljuj s prepisovanjem",
+        "mode": "Način",
+        "boardToMain": "Prenesi tablo v glavno",
+        "snapshot": "Posnetek table",
+        "editors": "Urejevalniki …",
+        "end": "Končaj AI sestanek",
+        "showBoard": "Pokaži tablo",
+        "hideBoard": "Skrij tablo"
+      }
+    },
+    "setup": {
+      "title": "Začni AI sestanek",
+      "intro": "Meet++ prepisuje sestanek in sproti posodablja tablo.",
+      "structure": "Struktura srečanja",
+      "agendaDriven": "Dnevni red",
+      "agendaDrivenHint": "Elementi in časovni okviri",
+      "goalDriven": "Ciljno usmerjeno",
+      "goalDrivenHint": "Cilj → rezultati → naslednji koraki",
+      "goalPlaceholder": "Cilj",
+      "language": "Jezik",
+      "mode": "Način AI",
+      "modeLead": "Vodja",
+      "modeAssist": "Pomoč",
+      "series": "Serija srečanj",
+      "newSeries": "Nova serija",
+      "agendaPdf": "Dnevni red PDF",
+      "previousNotesPdf": "Prejšnje zapiske PDF",
+      "importedFromSeries": "Uvoženo iz serije",
+      "itemsFound": "Najdenih {{count}} točk dnevnega reda",
+      "parsing": "Razčlenjevanje …",
+      "start": "Začni",
+      "cancel": "Prekliči",
+      "notice": "Živi prepis deluje na našem strežniku; besedilo obdela konfigurirani ponudnik LLM za pripravo zapisnika.",
+      "errors": {
+        "noTextLayer": "Ta PDF je videti skeniran. Naložite besedilni PDF ali ročno vnesite dnevni red.",
+        "tooLarge": "PDF je prevelik (največ 10 MB).",
+        "encrypted": "Ta PDF je zaščiten z geslom.",
+        "tooManyPages": "PDF ima preveč strani (največ 50).",
+        "capacity": "Zmogljivost AI je zasedena – poskusite znova pozneje."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Dnevni red",
+        "decisions": "Odločitve",
+        "actions": "Dejanja",
+        "attendance": "Udeležba",
+        "minutes": "Minute",
+        "attachments": "Priloge",
+        "transcript": "Prepis",
+        "previousDecisions": "Sklepi prejšnjega sestanka"
+      },
+      "follow": "Sledi",
+      "followPaused": "Ustavljeno",
+      "status": {
+        "listening": "Poslušanje",
+        "thinking": "Razmišljam",
+        "behind": "Za {{s}} s",
+        "paused": "Ustavljeno",
+        "offline": "AI ni na voljo"
+      },
+      "empty": {
+        "agenda": "Ni še točk dnevnega reda.",
+        "decisions": "Odločitve bodo prikazane tukaj, ko bodo sprejete.",
+        "actions": "Dejanja se bodo prikazala tukaj, ko bodo dogovorjena.",
+        "attendance": "Udeležba se bo prikazala, ko se bodo ljudje pridružili.",
+        "minutes": "Zapisnik bo prikazan po posameznih točkah dnevnega reda.",
+        "attachments": "Ni še prilog.",
+        "transcript": "Prepis se prikaže tukaj, medtem ko sestanek poteka."
+      },
+      "actions": {
+        "confirm": "Potrdi",
+        "edit": "Uredi",
+        "reject": "Zavrni",
+        "add": "Dodaj",
+        "setActive": "Začni",
+        "done": "Končano",
+        "defer": "Odloži",
+        "previous": "Prejšnji (odprt)",
+        "new": "Novo na tem sestanku",
+        "unassigned": "Nerazporejeno",
+        "ownerPrompt": "Ime ali vzdevek lastnika"
+      }
+    },
+    "phases": {
+      "opening": "Odpiranje",
+      "previousActions": "Prejšnja dejanja",
+      "agenda": "Dnevni red",
+      "goal": "Cilj",
+      "discussion": "Razprava",
+      "aob": "Drugo podjetje",
+      "nextSteps": "Naslednji koraki",
+      "newActions": "Nova dejanja",
+      "planning": "Načrtovanje",
+      "closing": "Zapiranje",
+      "jumpConfirm": "Skoči na to fazo?"
+    },
+    "proposal": {
+      "title": "Preiti na naslednjo fazo?",
+      "moveNow": "Premakni se zdaj",
+      "notYet": "Še ne",
+      "autoIn": "Samodejno v {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Opusti"
+    },
+    "consent": {
+      "title": "AI zapiski v tem sestanku",
+      "body": "To srečanje uporablja AI zapiske: vaš govor se prepisuje na našem strežniku, besedilo pa obdela {{provider}} za pripravo zapisnika.",
+      "continue": "Nadaljuj",
+      "optOut": "Ne prepisuj me",
+      "privacyLink": "Zasebnost",
+      "changeChoice": "Spremeni mojo izbiro",
+      "notTranscribed": "Ni prepisano"
+    },
+    "review": {
+      "title": "Preglej in objavi",
+      "sections": {
+        "minutes": "Minute",
+        "decisions": "Odločitve",
+        "actions": "Dejanja",
+        "distribution": "Distribucija"
+      },
+      "nextMeeting": {
+        "title": "Naslednji sestanek",
+        "date": "Datum",
+        "duration": "Trajanje (min)",
+        "room": "Soba",
+        "required": "Zahtevano naprej"
+      },
+      "distribution": {
+        "minutesToAttendees": "Minute za udeležence",
+        "invites": "Vabila za obvezne udeležence"
+      },
+      "publish": "Objavi in pošlji",
+      "published": "Objavljeno",
+      "saveDraft": "Shrani osnutek",
+      "finalisedChanges": "Zaključevanje spremenjeno",
+      "retry": "Poskusi znova"
+    },
+    "snapshot": {
+      "toolbarButton": "Posnetek v Meet++",
+      "added": "Posnetek dodan",
+      "failed": "Zajem ni uspel"
+    }
   }
 }

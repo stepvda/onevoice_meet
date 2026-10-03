@@ -58,6 +58,7 @@ import PollsQnaPanel, { POLLS_TOPIC } from "../components/PollsQnaPanel";
 import NotesWhiteboardPanel, { BOARD_TOPIC, NOTES_TOPIC } from "../components/NotesWhiteboardPanel";
 import MeetingClock from "../components/MeetingClock";
 import CaptionsOverlay from "../components/CaptionsOverlay";
+import MeetppRoomLayer from "../components/meetpp/MeetppRoomLayer";
 import PushToTalkIndicator from "../components/PushToTalkIndicator";
 import { useJoinSound, useChatSound } from "../lib/sounds";
 import { useMonoAudio } from "../lib/monoAudio";
@@ -483,6 +484,13 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
           <AudioWaveform width={120} height={28} className="flex-shrink-0" />
           <RecordingIndicator />
           <StreamingIndicator />
+          <MeetppRoomLayer
+            room={room}
+            roomName={roomName}
+            meetingId={meetingId}
+            isOwner={isOwner}
+            roomToken={loadPendingToken()?.token ?? null}
+          />
         </div>
 
         <div className="flex-1" />

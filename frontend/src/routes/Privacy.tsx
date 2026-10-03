@@ -77,6 +77,18 @@ export default function Privacy() {
           (Europe) S.à.r.l. et Cie, S.C.A. (Luxembourg). PayPal is a separate data
           controller for payment information.
         </p>
+        <p className="mt-2">
+          If the chair starts <b>AI meeting notes (Meet++)</b>, the live transcript
+          and the current board state (with speaker names replaced by aliases and no
+          e-mail addresses) are sent to the configured large-language-model provider
+          to produce minutes. In the pilot this provider is <b>DeepSeek</b>, which is
+          established in the People's Republic of China, so this is a transfer
+          outside the EU/EEA under GDPR Chapter V. Participation is optional: every
+          participant is asked for consent before transcription starts and can choose
+          "Don't transcribe me" at any time, after which their audio is never
+          processed. A future configuration can use an EU-hosted or self-hosted model
+          without further code changes.
+        </p>
       </Section>
 
       <Section title="4. Sharing with third parties">
@@ -98,6 +110,12 @@ export default function Privacy() {
             <b>Hosting and infrastructure providers</b> as data processors under EU
             standard contractual clauses (Hetzner; LiveKit Cloud is not used —
             LiveKit runs self-hosted on our server).
+          </li>
+          <li>
+            <b>AI meeting notes (Meet++) only</b> — the configured LLM provider
+            (DeepSeek in the pilot) receives aliased transcript windows and the board
+            state to produce minutes and action items, and the e-mail provider
+            (Resend, US) delivers the minutes and invitations the chair publishes.
           </li>
         </ul>
         <p>

@@ -20,7 +20,8 @@
     "account": "Účet",
     "upgrade": "Inovovať",
     "vouchers": "Poukazy",
-    "admin": "Správca"
+    "admin": "Správca",
+    "onDemand": "Na požiadanie"
   },
   "tiCafe": {
     "title": "Kaviareň",
@@ -65,7 +66,10 @@
     "loading": "Načítava sa…",
     "close": "Zavrieť",
     "anonymous": "anonymný",
-    "requestFailed": "Požiadavka zlyhala"
+    "requestFailed": "Požiadavka zlyhala",
+    "on": "Zapnuté",
+    "off": "Vypnuté",
+    "dismiss": "Zavrieť"
   },
   "signInPrompt": {
     "button": "Prihlásiť sa na one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Čakáreň",
     "waitingRoomDesc": "Noví účastníci čakajú, kým ich pustíte z panela nástrojov stretnutia.",
     "autoAdmitAuthenticated": "Automaticky pripúšťať prihlásených používateľov (čoskoro)",
-    "autoAdmitAuthenticatedDesc": "Obísť čakáreň pre prihlásených používateľov one.witysk.org. Zatiaľ nevynútené — anonymní účastníci vždy čakajú v rade."
+    "autoAdmitAuthenticatedDesc": "Obísť čakáreň pre prihlásených používateľov one.witysk.org. Zatiaľ nevynútené — anonymní účastníci vždy čakajú v rade.",
+    "lobbyGreeting": "Pozdrav z vestibulu",
+    "lobbyGreetingHint": "Zobrazí sa všetkým v čakárni predtým, než sa pripoja.",
+    "lobbyGreetingPlaceholder": "Vitajte! Ak nehovoríte, mikrofón prosím stíšte.",
+    "schedule": "Naplánovať",
+    "scheduleHint": "Nastavte trvanie a (voliteľne) opakovanie, aby sa pozvánky do kalendára opakovali automaticky.",
+    "duration": "Trvanie (minúty)",
+    "recurrence": "Opakovanie",
+    "recurrenceNone": "Jednorazovo (bez opakovania)",
+    "recurrenceDaily": "Denne",
+    "recurrenceWeekly": "Týždenne",
+    "recurrenceBiweekly": "Každé 2 týždne",
+    "recurrenceMonthly": "Mesačne"
   },
   "discover": {
     "title": "Objaviť",
     "subtitle": "— stretnutia otvorené na pripojenie",
     "join": "Pripojiť sa",
     "maxParticipants": "max {{n}}",
-    "hostedBy": "Hostuje {{name}}"
+    "hostedBy": "Hostuje {{name}}",
+    "view": "Zobraziť",
+    "viewTitle": "Sledovať verejný stream iba na pozeranie",
+    "streamsTitle": "Verejné livestreamy",
+    "streamsSubtitle": "— iba na pozeranie, účet nie je potrebný"
   },
   "myMeetings": {
     "loading": "Načítavam vaše stretnutia…",
@@ -272,7 +292,14 @@
     "notImage": "Nie je obrázok ({{type}})",
     "processorFailed": "Zariadenie nepodporuje efekty pozadia.",
     "custom": "Vlastné: {{name}}",
-    "customDefault": "Vlastný obrázok"
+    "customDefault": "Vlastný obrázok",
+    "aurora": "Aurora",
+    "bokeh": "Rozmazanie pozadia",
+    "wavesAnim": "Morské vlny",
+    "particles": "Častice",
+    "cityscape": "Svetlá mesta",
+    "cherryBlossoms": "Čerešňové kvety",
+    "fireflies": "Fireflies"
   },
   "participants": {
     "title": "Účastníci",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Nastaviť {{name}} ako prezentujúceho",
     "removeFromMeeting": "Odstrániť zo stretnutia",
     "removeName": "Odstrániť {{name}}",
-    "authenticatedOwner": "Overený vlastník"
+    "authenticatedOwner": "Overený vlastník",
+    "cohost": "Spoluhostiteľ",
+    "promoteCohost": "Povýšiť na spoluhostiteľa",
+    "demoteCohost": "Odstrániť spoluhostiteľa"
   },
   "chatPanel": {
     "title": "Chat",
@@ -294,7 +324,10 @@
     "send": "Odoslať",
     "close": "Zatvoriť chat",
     "ariaLabel": "Chat na stretnutí",
-    "messageAria": "Správa v chate"
+    "messageAria": "Správa v chate",
+    "pin": "Pripnúť",
+    "unpin": "Odopnúť",
+    "pinned": "Pripnuté"
   },
   "invite": {
     "title": "Pozvať e-mailom",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Nahrávky",
     "subtitle": "Nahrávky vašich stretnutí na strane servera. Lokálne súbory sa automaticky vymažú po 30 dňoch (alebo po zverejnení na YouTube). Nahrávanie iniciuje iba vlastník.",
-    "empty": "Zatiaľ žiadne nahrávky. Spustite schôdzku a kliknite na <1>Nahrať</1> pre jej zachytenie.",
+    "empty": "Zatiaľ žiadne nahrávky. Spustite stretnutie a kliknutím na <1>Nahrávať</1> vytvorte nahrávku.",
     "loading": "Načítava sa…",
     "signInFirst": "Najprv sa prihláste na one.witysk.org.",
     "signInTitle": "Prihláste sa, aby ste videli svoje nahrávky",
@@ -932,5 +965,378 @@
     "tileBadge": "Zdvihnutá ruka",
     "lowerOther": "Zdvihnúť ruku tohto účastníka",
     "lowerName": "Zdvihnúť ruku používateľa {{name}}"
+  },
+  "onDemand": {
+    "title": "Na požiadanie",
+    "subtitle": "Videá z prebiehajúcich verejných livestreamov — pozerajte kedykoľvek, bez účtu.",
+    "watch": "Sledovať",
+    "loading": "Načítava sa…",
+    "empty": "Momentálne nič na požiadanie. Vráťte sa, keď bude mať verejný livestream videá v zozname skladieb.",
+    "error": "Momentálne sa nepodarilo načítať On Demand."
+  },
+  "devices": {
+    "toolbar": "Audio a video zariadenia",
+    "toolbarTitle": "Vyberte mikrofón, kameru a reproduktor",
+    "mic": "Mikrofón",
+    "camera": "Kamera",
+    "speaker": "Reproduktor",
+    "none": "Nenašli sa žiadne zariadenia",
+    "speakerUnsupported": "Výber výstupného zariadenia nie je v tomto prehliadači podporovaný."
+  },
+  "notes": {
+    "title": "Poznámky a tabuľa",
+    "toolbar": "Poznámky a tabuľa",
+    "toolbarTitle": "Otvoriť zdieľané poznámky a tabuľu",
+    "close": "Zavrieť poznámky",
+    "tabNotes": "Poznámky",
+    "tabBoard": "Tabuľa",
+    "hint": "Každý v miestnosti môže upravovať. Uloží sa automaticky.",
+    "placeholder": "Sem píšte zdieľané poznámky…",
+    "color": "Farba",
+    "thickness": "Hrúbka ťahu",
+    "clear": "Vymazať tabuľu"
+  },
+  "polls": {
+    "title": "Ankety a otázky",
+    "toolbar": "Ankety a otázky",
+    "toolbarTitle": "Otvoriť ankety a otázky a odpovede",
+    "close": "Zavrieť ankety",
+    "tabPolls": "Ankety",
+    "tabQna": "Otázky a odpovede",
+    "empty": "Zatiaľ žiadne ankety.",
+    "createTitle": "Vytvoriť anketu",
+    "createButton": "Vytvoriť",
+    "questionPlaceholder": "Vaša otázka",
+    "optionPlaceholder": "Možnosť {{n}}",
+    "addOption": "+ Pridať možnosť",
+    "open": "Otvoriť",
+    "closed": "Zatvorené",
+    "closePoll": "Zavrieť anketu",
+    "qnaEmpty": "Zatiaľ žiadne otázky.",
+    "qnaPlaceholder": "Položte otázku…",
+    "qnaAsk": "Opýtať sa",
+    "qnaUpvote": "Pridať hlas",
+    "qnaMarkAnswered": "Odpovedané"
+  },
+  "pip": {
+    "enter": "Obraz v obraze",
+    "exit": "Ukončiť obraz v obraze",
+    "enterTitle": "Vysunúť aktívneho rečníka do plávajúceho okna",
+    "exitTitle": "Zavrieť plávajúcu dlaždicu"
+  },
+  "shortcuts": {
+    "title": "Klávesové skratky",
+    "close": "Zavrieť",
+    "disabled": "Skratky sú momentálne zakázané v Nastavenia → Klávesnica.",
+    "editHint": "Skratky môžete zmeniť na stránke Nastavenia (sekcia Klávesnica).",
+    "mute": "Prepnúť mikrofón",
+    "camera": "Prepnúť kameru",
+    "hand": "Zdvyhnúť / položiť ruku",
+    "screenshare": "Prepnúť zdieľanie obrazovky",
+    "leave": "Opustiť stretnutie",
+    "help": "Zobraziť toto prekrytie"
+  },
+  "feedback": {
+    "title": "Ako bolo na stretnutí?",
+    "body": "Na stupnici od 0 (najhoršie) do 10 (najlepšie), ako by ste ohodnotili túto schôdzu?",
+    "commentLabel": "Ešte niečo? (voliteľné)",
+    "submit": "Odoslať",
+    "sending": "Odosiela sa…",
+    "skip": "Preskočiť",
+    "thanks": "Ďakujeme za tvoju spätnú väzbu!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Poslať plávajúcu emoji reakciu",
+    "send": "Odoslať {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Kvalita pripojenia pre {{name}} — {{band}}",
+      "title": "Kvalita pripojenia"
+    },
+    "panel": {
+      "title": "Kvalita pripojenia",
+      "self": "vaša kamera",
+      "ariaLabel": "Kvalita pripojenia pre {{name}}"
+    },
+    "band": {
+      "high": "Vysoká",
+      "medium": "Stredná",
+      "low": "Nízka",
+      "lost": "Opätovné pripájanie…",
+      "measuring": "Meria sa…"
+    },
+    "limiter": {
+      "network": "Sieť: strata paketov a jitter",
+      "publisher": "Zariadenie vydavateľa obmedzuje stream",
+      "relay": "Cesta relé: zvýšený čas spiatočnej cesty",
+      "stability": "Nestabilné pripojenie: kvalita kolíše",
+      "unknown": "Meranie pripojenia",
+      "lost": "Spojenie prerušené – automaticky sa obnovuje"
+    },
+    "tab": {
+      "overview": "Prehľad",
+      "details": "Podrobnosti",
+      "actions": "Akcie",
+      "device": "Zariadenie"
+    },
+    "quality": {
+      "low": "Nízka",
+      "medium": "Médiá",
+      "high": "Vysoká",
+      "auto": "Automaticky"
+    },
+    "overview": {
+      "score": "skóre {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitová rýchlosť",
+      "resolution": "Rozlíšenie",
+      "fps": "Frekvencia snímok",
+      "loss": "Strata paketov",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Vynechané snímky",
+      "audioLoss": "Strata zvuku (posledná min)",
+      "transport": "Transport",
+      "direct": "Priamy",
+      "relay": "Relé"
+    },
+    "details": {
+      "log": "Nedávne akcie",
+      "none": "Zatiaľ žiadne akcie",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "action": {
+      "quality": "Kvalita (simulcast vrstva)",
+      "maxBitrate": "Maximálny bitrate",
+      "compression": "Kompresia",
+      "colorDepth": "Hĺbka farieb",
+      "colorDepthUnsupported": "10-bit nie je na tomto zariadení / kodeku dostupný",
+      "audioOnly": "Iba zvuk pre túto dlaždicu",
+      "resync": "Znovu synchronizovať stream",
+      "resetAuto": "Obnoviť automaticky",
+      "reconnect": "Znovu pripojiť",
+      "reconnectConfirm": "Potvrdiť opätovné pripojenie",
+      "apply": "Použiť",
+      "export": "Exportovať správu"
+    },
+    "scope": {
+      "receive": "Platí pre to, čo prijímate — kamera vydavateľa zostáva nedotknutá",
+      "publish": "Zmeny vidia všetci v stretnutí"
+    },
+    "autotune": {
+      "test": "Otestovať optimálne nastavenia",
+      "running": "Testujem pripojenie…",
+      "observing": "Sledujem… {{seconds}} s",
+      "applied": "Použité – nastavenia zachované",
+      "rolledBack": "Vrátené — nové nastavenie bolo v tejto sieti horšie",
+      "recommended": "Odporúčané pre túto sieť",
+      "retry": "Skúsiť znova",
+      "rejected": "{{layer}} bol zamietnutý: {{reason}}",
+      "phase": {
+        "baseline": "Zbieram základnú hodnotu…",
+        "probing": "Zisťujem vrstvy…",
+        "evaluating": "Hodnotenie kandidátov…",
+        "observing": "Sledujem výsledok…",
+        "done": "Hotovo",
+        "failed": "Sonda zlyhala",
+        "idle": "Nastavenia"
+      },
+      "baseline": "Zbieram základnú hodnotu…",
+      "step": {
+        "low": "Testovanie NÍZKA…",
+        "medium": "Testovanie STREDNÉ…",
+        "high": "Testovanie VYSOKEJ…"
+      },
+      "evaluating": "Hodnotenie kandidátov…",
+      "done": "Odporúčanie je pripravené"
+    },
+    "device": {
+      "remoteNote": "Nastavenia kamery a mikrofónu patria vydavateľovi ({{name}})",
+      "camera": "Kamera",
+      "resolution": "Rozlíšenie",
+      "frameRate": "Frekvencia snímok",
+      "cameraMax": "Kamera podporuje až {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Mikrofón",
+      "channels": "Kanály",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Kvalita zvuku",
+      "voice": "Hlas",
+      "music": "Hudba",
+      "stereoWarning": "Stereo vypína potlačenie ozveny a šumu — použite slúchadlá; tiež zvyšuje prenosovú kapacitu odchádzajúcich dát",
+      "apply": "Použiť na moju kameru a mikrofón"
+    },
+    "busy": {
+      "quality": "Mení sa kvalita…",
+      "resync": "Opätovné synchronizovanie streamu…",
+      "reconnect": "Opätovné pripájanie…",
+      "maxBitrate": "Aktualizuje sa limit bitovej rýchlosti…",
+      "compression": "Aktualizuje sa kompresia…",
+      "resolution": "Mení sa rozlíšenie kamery…",
+      "frameRate": "Mení sa snímková frekvencia…",
+      "camera-device": "Prepínam kameru…",
+      "mic-device": "Prepínam mikrofón…",
+      "mic-mode": "Uplatňujú sa nastavenia mikrofónu…",
+      "audioOnly": "Aktualizujem stream…",
+      "applyTune": "Uplatňujú sa nastavenia…",
+      "probe": "Testujem pripojenie…",
+      "export": "Pripravuje sa správa…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI stretnutie",
+      "aiNotesOn": "AI poznámky zapnuté",
+      "aiNotesPaused": "Poznámky AI pozastavené",
+      "menu": {
+        "pause": "Pozastaviť prepis",
+        "resume": "Obnoviť prepis",
+        "mode": "Režim",
+        "boardToMain": "Preniesť tabuľu do hlavného okna",
+        "snapshot": "Snímka tabule",
+        "editors": "Editori…",
+        "end": "Ukončiť AI stretnutie",
+        "showBoard": "Zobraziť tabuľu",
+        "hideBoard": "Skryť tabuľu"
+      }
+    },
+    "setup": {
+      "title": "Spustiť AI stretnutie",
+      "intro": "Meet++ prepisuje stretnutie a udržiava tabuľu aktuálnu.",
+      "structure": "Štruktúra stretnutia",
+      "agendaDriven": "Agenda riadená",
+      "agendaDrivenHint": "Položky a časové bloky",
+      "goalDriven": "Cieľovo orientované",
+      "goalDrivenHint": "Cieľ → výstupy → ďalšie kroky",
+      "goalPlaceholder": "Cieľ",
+      "language": "Jazyk",
+      "mode": "AI režim",
+      "modeLead": "Vedúci",
+      "modeAssist": "Asistovať",
+      "series": "Séria stretnutí",
+      "newSeries": "Nová séria",
+      "agendaPdf": "Agenda PDF",
+      "previousNotesPdf": "PDF s predchádzajúcimi poznámkami",
+      "importedFromSeries": "Importované zo série",
+      "itemsFound": "{{count}} nájdených bodov programu",
+      "parsing": "Analyzuje sa…",
+      "start": "Spustiť",
+      "cancel": "Zrušiť",
+      "notice": "Živý prepis beží na našom serveri; text spracúva nakonfigurovaný poskytovateľ LLM na vytvorenie zápisnice.",
+      "errors": {
+        "noTextLayer": "Tento PDF vyzerá ako naskenovaný. Nahrajte textový PDF alebo zadajte program ručne.",
+        "tooLarge": "PDF je príliš veľký (max. 10 MB).",
+        "encrypted": "Tento PDF je chránený heslom.",
+        "tooManyPages": "PDF má príliš veľa strán (max. 50).",
+        "capacity": "Kapacita AI je vyťažená – skúste to neskôr."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Program",
+        "decisions": "Rozhodnutia",
+        "actions": "Akcie",
+        "attendance": "Účasť",
+        "minutes": "Minúty",
+        "attachments": "Prílohy",
+        "transcript": "Prepis",
+        "previousDecisions": "Rozhodnutia z predchádzajúcej schôdze"
+      },
+      "follow": "Sledovať",
+      "followPaused": "Pozastavené",
+      "status": {
+        "listening": "Počúvanie",
+        "thinking": "Rozmýšľam",
+        "behind": "Za {{s}}s",
+        "paused": "Pozastavené",
+        "offline": "AI nedostupná"
+      },
+      "empty": {
+        "agenda": "Zatiaľ žiadne body programu.",
+        "decisions": "Rozhodnutia sa tu budú zobrazovať hneď, ako budú prijaté.",
+        "actions": "Akcie sa tu zobrazia, keď sa na nich dohodne.",
+        "attendance": "Účasť sa zobrazí, keď sa ľudia pripoja.",
+        "minutes": "Zápis sa zobrazí pri každom bode programu.",
+        "attachments": "Zatiaľ žiadne prílohy.",
+        "transcript": "Prepis sa zobrazuje tu počas priebehu stretnutia."
+      },
+      "actions": {
+        "confirm": "Potvrdiť",
+        "edit": "Upraviť",
+        "reject": "Odmietnuť",
+        "add": "Pridať",
+        "setActive": "Spustiť",
+        "done": "Hotovo",
+        "defer": "Odložiť",
+        "previous": "Predchádzajúce (otvorené)",
+        "new": "Nové v tomto stretnutí",
+        "unassigned": "Nepriradené",
+        "ownerPrompt": "Meno alebo alias vlastníka"
+      }
+    },
+    "phases": {
+      "opening": "Otváram",
+      "previousActions": "Predchádzajúce akcie",
+      "agenda": "Program",
+      "goal": "Cieľ",
+      "discussion": "Diskusia",
+      "aob": "Iné podnikanie",
+      "nextSteps": "Ďalšie kroky",
+      "newActions": "Nové akcie",
+      "planning": "Plánovanie",
+      "closing": "Zatváram",
+      "jumpConfirm": "Prejsť na túto fázu?"
+    },
+    "proposal": {
+      "title": "Prejsť do ďalšej fázy?",
+      "moveNow": "Presunúť teraz",
+      "notYet": "Zatiaľ nie",
+      "autoIn": "Automaticky za {{s}} s"
+    },
+    "announce": {
+      "dismiss": "Zavrieť"
+    },
+    "consent": {
+      "title": "AI poznámky v tomto stretnutí",
+      "body": "Táto schôdza používa AI poznámky: váš prejav sa prepisuje na našom serveri a text spracúva {{provider}} na vytvorenie zápisnice.",
+      "continue": "Pokračovať",
+      "optOut": "Neprepisuj ma",
+      "privacyLink": "Súkromie",
+      "changeChoice": "Zmeniť moju voľbu",
+      "notTranscribed": "Netranskribované"
+    },
+    "review": {
+      "title": "Skontrolovať a zverejniť",
+      "sections": {
+        "minutes": "Minúty",
+        "decisions": "Rozhodnutia",
+        "actions": "Akcie",
+        "distribution": "Distribúcia"
+      },
+      "nextMeeting": {
+        "title": "Najbližšie stretnutie",
+        "date": "Dátum",
+        "duration": "Trvanie (min)",
+        "room": "Miestnosť",
+        "required": "Vyžaduje sa ďalšie"
+      },
+      "distribution": {
+        "minutesToAttendees": "Minúty účastníkom",
+        "invites": "Pozvánky pre povinných účastníkov"
+      },
+      "publish": "Zverejniť a odoslať",
+      "published": "Zverejnené",
+      "saveDraft": "Uložiť koncept",
+      "finalisedChanges": "Finalizácia sa zmenila",
+      "retry": "Skúsiť znova"
+    },
+    "snapshot": {
+      "toolbarButton": "Snímka do Meet++",
+      "added": "Snímka bola pridaná",
+      "failed": "Snímka zlyhala"
+    }
   }
 }

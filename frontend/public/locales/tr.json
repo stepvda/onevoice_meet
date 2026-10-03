@@ -20,7 +20,8 @@
     "account": "Hesap",
     "upgrade": "Yükselt",
     "vouchers": "Kuponlar",
-    "admin": "Yönetici"
+    "admin": "Yönetici",
+    "onDemand": "İsteğe Bağlı"
   },
   "tiCafe": {
     "title": "Kafe",
@@ -65,7 +66,10 @@
     "loading": "Yükleniyor…",
     "close": "Kapat",
     "anonymous": "anonim",
-    "requestFailed": "İstek başarısız oldu"
+    "requestFailed": "İstek başarısız oldu",
+    "on": "Açık",
+    "off": "Kapalı",
+    "dismiss": "Kapat"
   },
   "signInPrompt": {
     "button": "one.witysk.org üzerinde oturum açın",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Bekleme odası",
     "waitingRoomDesc": "Yeni katılımcılar, toplantı araç çubuğundan kabul edene kadar bekler.",
     "autoAdmitAuthenticated": "Oturum açmış kullanıcıları otomatik kabul et (çok yakında)",
-    "autoAdmitAuthenticatedDesc": "Oturum açmış one.witysk.org kullanıcıları için bekleme odasını atla. Henüz uygulanmıyor — anonim katılımcılar her zaman sıraya girer."
+    "autoAdmitAuthenticatedDesc": "Oturum açmış one.witysk.org kullanıcıları için bekleme odasını atla. Henüz uygulanmıyor — anonim katılımcılar her zaman sıraya girer.",
+    "lobbyGreeting": "Lobi karşılaması",
+    "lobbyGreetingHint": "Katılmadan önce lobideki herkese gösterilir.",
+    "lobbyGreetingPlaceholder": "Hoş geldiniz! Konuşmadığınızda lütfen mikrofonunuzu sessize alın.",
+    "schedule": "Program",
+    "scheduleHint": "Bir süre ve (isteğe bağlı olarak) bir yineleme ayarlayın, böylece takvim davetleri otomatik olarak tekrarlanır.",
+    "duration": "Süre (dakika)",
+    "recurrence": "Yineleme",
+    "recurrenceNone": "Tek seferlik (yinelenmez)",
+    "recurrenceDaily": "Günlük",
+    "recurrenceWeekly": "Haftalık",
+    "recurrenceBiweekly": "2 haftada bir",
+    "recurrenceMonthly": "Aylık"
   },
   "discover": {
     "title": "Keşfet",
     "subtitle": "— katılmaya açık toplantılar",
     "join": "Katıl",
     "maxParticipants": "maks {{n}}",
-    "hostedBy": "{{name}} tarafından barındırılıyor"
+    "hostedBy": "{{name}} tarafından barındırılıyor",
+    "view": "Görüntüle",
+    "viewTitle": "Herkese açık salt izleme yayınını izle",
+    "streamsTitle": "Herkese açık canlı yayınlar",
+    "streamsSubtitle": "— yalnızca izleme, hesap gerekmez"
   },
   "myMeetings": {
     "loading": "Toplantılarınız yükleniyor…",
@@ -269,10 +289,17 @@
     "uploadTitle": "Kendi arka plan resmini yükle",
     "uploadAria": "Bir arka plan resmi yükle",
     "tooLarge": "Görsel {{mb}} MB; maksimum 4 MB.",
-    "notImage": "Bir resim değil ({{type}})",
+    "notImage": "Görsel değil ({{type}})",
     "processorFailed": "Bu cihazda arka plan efektleri desteklenmiyor.",
     "custom": "Özel: {{name}}",
-    "customDefault": "Özel görsel"
+    "customDefault": "Özel görsel",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Okyanus dalgaları",
+    "particles": "Parçacıklar",
+    "cityscape": "Şehir ışıkları",
+    "cherryBlossoms": "Kiraz çiçekleri",
+    "fireflies": "Ateşböcekleri"
   },
   "participants": {
     "title": "Katılımcılar",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "{{name}} sunucu yap",
     "removeFromMeeting": "Toplantıdan çıkar",
     "removeName": "{{name}} kaldır",
-    "authenticatedOwner": "Kimlik doğrulaması yapılmış sahip"
+    "authenticatedOwner": "Kimlik doğrulaması yapılmış sahip",
+    "cohost": "Ortak sunucu",
+    "promoteCohost": "Ortak sunucuya yükselt",
+    "demoteCohost": "Ortak sunucuyu kaldır"
   },
   "chatPanel": {
     "title": "Sohbet",
@@ -294,7 +324,10 @@
     "send": "Gönder",
     "close": "Sohbeti kapat",
     "ariaLabel": "Toplantı sohbeti",
-    "messageAria": "Sohbet mesajı"
+    "messageAria": "Sohbet mesajı",
+    "pin": "Sabitle",
+    "unpin": "Sabitlemeyi kaldır",
+    "pinned": "Sabitlenen"
   },
   "invite": {
     "title": "E-posta ile davet et",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Kayıtlar",
     "subtitle": "Toplantılarınızın sunucu tarafındaki kayıtları. Yerel dosyalar 30 gün sonra (veya YouTube’a yayınladığınızda) otomatik olarak silinir. Yüklemeler yalnızca sahibin başlatmasıyla yapılır.",
-    "empty": "Henüz kayıt yok. Bir toplantı başlatın ve kaydetmek için <1>Kaydet</1> düğmesine tıklayın.",
+    "empty": "Henüz kayıt yok. Bir toplantı başlatın ve kaydetmek için <1>Kayıt</1> düğmesine tıklayın.",
     "loading": "Yükleniyor…",
     "signInFirst": "Önce one.witysk.org üzerinde oturum açın.",
     "signInTitle": "Kayıtlarınızı görmek için oturum açın",
@@ -932,5 +965,378 @@
     "tileBadge": "El kaldırıldı",
     "lowerOther": "Bu katılımcının elini indir",
     "lowerName": "{{name}}'nın elini indir"
+  },
+  "onDemand": {
+    "title": "İsteğe Bağlı",
+    "subtitle": "Sürmekte olan halka açık canlı yayınlardan videolar — hesap gerekmeden istediğiniz zaman izleyin.",
+    "watch": "İzle",
+    "loading": "Yükleniyor…",
+    "empty": "Şu anda isteğe bağlı içerik yok. Bir halka açık canlı yayının oynatma listesinde video olduğunda tekrar kontrol edin.",
+    "error": "On Demand şu anda yüklenemedi."
+  },
+  "devices": {
+    "toolbar": "Ses ve görüntü cihazları",
+    "toolbarTitle": "Mikrofon, kamera ve hoparlör seçin",
+    "mic": "Mikrofon",
+    "camera": "Kamera",
+    "speaker": "Konuşmacı",
+    "none": "Cihaz bulunamadı",
+    "speakerUnsupported": "Bu tarayıcıda çıkış cihazı seçimi desteklenmiyor."
+  },
+  "notes": {
+    "title": "Notlar ve beyaz tahta",
+    "toolbar": "Notlar ve beyaz tahta",
+    "toolbarTitle": "Paylaşılan notları ve beyaz tahtayı aç",
+    "close": "Notları kapat",
+    "tabNotes": "Notlar",
+    "tabBoard": "Beyaz tahta",
+    "hint": "Odadaki herkes düzenleyebilir. Otomatik kaydedilir.",
+    "placeholder": "Buraya paylaşılan notları yazın…",
+    "color": "Renk",
+    "thickness": "Kontur kalınlığı",
+    "clear": "Tahtayı temizle"
+  },
+  "polls": {
+    "title": "Anketler ve Soru-Cevap",
+    "toolbar": "Anketler ve Soru-Cevap",
+    "toolbarTitle": "Anketleri ve Soru-Cevap'ı aç",
+    "close": "Anketleri kapat",
+    "tabPolls": "Anketler",
+    "tabQna": "Soru-Cevap",
+    "empty": "Henüz anket yok.",
+    "createTitle": "Anket oluştur",
+    "createButton": "Oluştur",
+    "questionPlaceholder": "Sorunuz",
+    "optionPlaceholder": "Seçenek {{n}}",
+    "addOption": "+ Seçenek ekle",
+    "open": "Aç",
+    "closed": "Kapalı",
+    "closePoll": "Anketi kapat",
+    "qnaEmpty": "Henüz soru yok.",
+    "qnaPlaceholder": "Bir soru sor…",
+    "qnaAsk": "Sor",
+    "qnaUpvote": "Beğen",
+    "qnaMarkAnswered": "Yanıtlandı"
+  },
+  "pip": {
+    "enter": "Resim içinde resim",
+    "exit": "Resim içinde resimden çık",
+    "enterTitle": "Aktif konuşmacıyı yüzen bir kutucuğa ayır",
+    "exitTitle": "Kayan kutucuğu kapat"
+  },
+  "shortcuts": {
+    "title": "Klavye kısayolları",
+    "close": "Kapat",
+    "disabled": "Kısayollar şu anda Ayarlar → Klavye bölümünde devre dışı.",
+    "editHint": "Kısayolları Ayarlar sayfasından (Klavye bölümü) değiştirin.",
+    "mute": "Mikrofonu aç/kapat",
+    "camera": "Kamerayı aç/kapat",
+    "hand": "El kaldır / indir",
+    "screenshare": "Ekran paylaşımını aç/kapat",
+    "leave": "Toplantıdan ayrıl",
+    "help": "Bu katmanı göster"
+  },
+  "feedback": {
+    "title": "Toplantı nasıldı?",
+    "body": "Bu toplantıyı 0 (en kötü) ile 10 (en iyi) arasında nasıl değerlendirirsiniz?",
+    "commentLabel": "Başka bir şey? (isteğe bağlı)",
+    "submit": "Gönder",
+    "sending": "Gönderiliyor…",
+    "skip": "Atla",
+    "thanks": "Geri bildiriminiz için teşekkürler!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Yüzen emoji tepkisi gönder",
+    "send": "{{emoji}} gönder"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "{{name}} için bağlantı kalitesi — {{band}}",
+      "title": "Bağlantı kalitesi"
+    },
+    "panel": {
+      "title": "Bağlantı Kalitesi",
+      "self": "kameranız",
+      "ariaLabel": "{{name}} için bağlantı kalitesi"
+    },
+    "band": {
+      "high": "Yüksek",
+      "medium": "Orta",
+      "low": "Düşük",
+      "lost": "Yeniden bağlanılıyor…",
+      "measuring": "Ölçülüyor…"
+    },
+    "limiter": {
+      "network": "Ağ: paket kaybı ve titreşim",
+      "publisher": "Yayıncı cihazı akışı sınırlıyor",
+      "relay": "Aktarım yolu: yüksek gidiş-dönüş süresi",
+      "stability": "Kararsız bağlantı: kalite dalgalanıyor",
+      "unknown": "Bağlantı ölçülüyor",
+      "lost": "Bağlantı kesildi — otomatik olarak yeniden bağlanılıyor"
+    },
+    "tab": {
+      "overview": "Genel Bakış",
+      "details": "Ayrıntılar",
+      "actions": "İşlemler",
+      "device": "Cihaz"
+    },
+    "quality": {
+      "low": "Düşük",
+      "medium": "Ort",
+      "high": "Yüksek",
+      "auto": "Otomatik"
+    },
+    "overview": {
+      "score": "Puan {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bit hızı",
+      "resolution": "Çözünürlük",
+      "fps": "Kare hızı",
+      "loss": "Paket kaybı",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Atlanan kareler",
+      "audioLoss": "Son dk ses kaybı",
+      "transport": "Taşıma",
+      "direct": "Doğrudan",
+      "relay": "Aktarma"
+    },
+    "details": {
+      "log": "Son işlemler",
+      "none": "Henüz işlem yok",
+      "video": "Video",
+      "audio": "Ses"
+    },
+    "action": {
+      "quality": "Kalite (eşzamanlı yayın katmanı)",
+      "maxBitrate": "Maks. bit hızı",
+      "compression": "Sıkıştırma",
+      "colorDepth": "Renk derinliği",
+      "colorDepthUnsupported": "10-bit bu cihazda / codec'te kullanılamıyor",
+      "audioOnly": "Bu kutucuk için yalnızca ses",
+      "resync": "Akışı yeniden eşitle",
+      "resetAuto": "Otomatiğe sıfırla",
+      "reconnect": "Yeniden bağlan",
+      "reconnectConfirm": "Yeniden bağlanmayı onayla",
+      "apply": "Uygula",
+      "export": "Raporu dışa aktar"
+    },
+    "scope": {
+      "receive": "Aldığınız görüntüye uygulanır — yayıncının kamerası değişmez",
+      "publish": "Değişiklikler toplantıdaki herkes tarafından görülebilir"
+    },
+    "autotune": {
+      "test": "En iyi ayarları test et",
+      "running": "Bağlantı test ediliyor…",
+      "observing": "İzleniyor… {{seconds}} sn",
+      "applied": "Uygulandı — ayarlar korundu",
+      "rolledBack": "Geri alındı — yeni ayar bu ağda daha kötüydü",
+      "recommended": "Bu ağ için önerilir",
+      "retry": "Yeniden dene",
+      "rejected": "{{layer}} reddedildi: {{reason}}",
+      "phase": {
+        "baseline": "Temel değer toplanıyor…",
+        "probing": "Katmanlar yoklanıyor…",
+        "evaluating": "Adaylar değerlendiriliyor…",
+        "observing": "Sonuç gözlemleniyor…",
+        "done": "Tamam",
+        "failed": "Sondaj başarısız",
+        "idle": "<<<KEEP_1>>>"
+      },
+      "baseline": "Temel değer toplanıyor…",
+      "step": {
+        "low": "Düşük seviye test ediliyor…",
+        "medium": "ORTA düzey test ediliyor…",
+        "high": "Yüksek test ediliyor…"
+      },
+      "evaluating": "Adaylar değerlendiriliyor…",
+      "done": "Öneri hazır"
+    },
+    "device": {
+      "remoteNote": "Kamera ve mikrofon ayarları yayıncıya ({{name}}) aittir",
+      "camera": "Kamera",
+      "resolution": "Çözünürlük",
+      "frameRate": "Kare hızı",
+      "cameraMax": "Kamera en fazla {{width}} × {{height}} @ {{fps}} fps destekler",
+      "microphone": "Mikrofon",
+      "channels": "Kanallar",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Ses kalitesi",
+      "voice": "Ses",
+      "music": "Müzik",
+      "stereoWarning": "Stereo, yankı engelleme ve gürültü bastırmayı devre dışı bırakır — kulaklık kullanın; ayrıca yukarı akış bant genişliğini artırır",
+      "apply": "Kamerama ve mikrofona uygula"
+    },
+    "busy": {
+      "quality": "Kalite değiştiriliyor…",
+      "resync": "Yayın yeniden eşitleniyor…",
+      "reconnect": "Yeniden bağlanılıyor…",
+      "maxBitrate": "Bit hızı sınırı güncelleniyor…",
+      "compression": "Sıkıştırma güncelleniyor…",
+      "resolution": "Kamera çözünürlüğü değiştiriliyor…",
+      "frameRate": "Kare hızı değiştiriliyor…",
+      "camera-device": "Kamera değiştiriliyor…",
+      "mic-device": "Mikrofon değiştiriliyor…",
+      "mic-mode": "Mikrofon ayarları uygulanıyor…",
+      "audioOnly": "Yayın güncelleniyor…",
+      "applyTune": "Ayarlar uygulanıyor…",
+      "probe": "Bağlantı test ediliyor…",
+      "export": "Rapor hazırlanıyor…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI Toplantı",
+      "aiNotesOn": "Yapay zeka notları açık",
+      "aiNotesPaused": "AI notları duraklatıldı",
+      "menu": {
+        "pause": "Transkripsiyonu duraklat",
+        "resume": "Transkripsiyonu sürdür",
+        "mode": "Mod",
+        "boardToMain": "Panoyu ana ekrana getir",
+        "snapshot": "Beyaz tahta anlık görüntüsü",
+        "editors": "Editörler…",
+        "end": "AI toplantısını bitir",
+        "showBoard": "Panoyu göster",
+        "hideBoard": "Panoyu gizle"
+      }
+    },
+    "setup": {
+      "title": "AI Toplantısını Başlat",
+      "intro": "Meet++, toplantıyı yazıya döker ve panoyu güncel tutar.",
+      "structure": "Toplantı yapısı",
+      "agendaDriven": "Gündem odaklı",
+      "agendaDrivenHint": "Öğeler ve zaman kutuları",
+      "goalDriven": "Hedef odaklı",
+      "goalDrivenHint": "Hedef → çıktılar → sonraki adımlar",
+      "goalPlaceholder": "Hedef",
+      "language": "Dil",
+      "mode": "AI modu",
+      "modeLead": "Lider",
+      "modeAssist": "Yardım",
+      "series": "Toplantı serisi",
+      "newSeries": "Yeni seri",
+      "agendaPdf": "Gündem PDF",
+      "previousNotesPdf": "Önceki notlar PDF",
+      "importedFromSeries": "Diziden içe aktarıldı",
+      "itemsFound": "{{count}} gündem maddesi bulundu",
+      "parsing": "Ayrıştırılıyor…",
+      "start": "Başlat",
+      "cancel": "İptal",
+      "notice": "Canlı transkripsiyon sunucumuzda çalışır; metin, tutanak oluşturmak için yapılandırılmış LLM sağlayıcısı tarafından işlenir.",
+      "errors": {
+        "noTextLayer": "Bu PDF taranmış görünüyor. Bir metin PDF'i yükleyin veya gündemi manuel olarak girin.",
+        "tooLarge": "PDF çok büyük (en fazla 10 MB).",
+        "encrypted": "Bu PDF parola korumalı.",
+        "tooManyPages": "PDF çok fazla sayfa içeriyor (en fazla 50).",
+        "capacity": "Yapay zeka kapasitesi dolu — daha sonra tekrar deneyin."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Gündem",
+        "decisions": "Kararlar",
+        "actions": "İşlemler",
+        "attendance": "Katılım",
+        "minutes": "Dakika",
+        "attachments": "Ekler",
+        "transcript": "Transkript",
+        "previousDecisions": "Önceki toplantının kararları"
+      },
+      "follow": "Takip et",
+      "followPaused": "Duraklatıldı",
+      "status": {
+        "listening": "Dinliyor",
+        "thinking": "Düşünüyor",
+        "behind": "{{s}} sn arkasında",
+        "paused": "Duraklatıldı",
+        "offline": "AI kullanılamıyor"
+      },
+      "empty": {
+        "agenda": "Henüz gündem maddesi yok.",
+        "decisions": "Kararlar alındıkça burada görünecek.",
+        "actions": "Eylemler kararlaştırıldıkça burada görünecek.",
+        "attendance": "Katılım, kişiler katıldıkça görünecek.",
+        "minutes": "Tutanağı her gündem maddesi için görünecek.",
+        "attachments": "Henüz ek yok.",
+        "transcript": "Toplantı sürerken transkript burada görünür."
+      },
+      "actions": {
+        "confirm": "Onayla",
+        "edit": "Düzenle",
+        "reject": "Reddet",
+        "add": "Ekle",
+        "setActive": "Başlat",
+        "done": "Tamam",
+        "defer": "Ertele",
+        "previous": "Önceki (açık)",
+        "new": "Bu toplantıda yeni",
+        "unassigned": "Atanmamış",
+        "ownerPrompt": "Sahip adı veya takma ad"
+      }
+    },
+    "phases": {
+      "opening": "Açılıyor",
+      "previousActions": "Önceki işlemler",
+      "agenda": "Gündem",
+      "goal": "Hedef",
+      "discussion": "Sohbet",
+      "aob": "Diğer iş",
+      "nextSteps": "Sonraki adımlar",
+      "newActions": "Yeni işlemler",
+      "planning": "Planlama",
+      "closing": "Kapatılıyor",
+      "jumpConfirm": "Bu aşamaya atlansın mı?"
+    },
+    "proposal": {
+      "title": "Sonraki aşamaya geçilsin mi?",
+      "moveNow": "Şimdi taşı",
+      "notYet": "Henüz değil",
+      "autoIn": "{{s}} sn içinde otomatik"
+    },
+    "announce": {
+      "dismiss": "Kapat"
+    },
+    "consent": {
+      "title": "Bu toplantıdaki AI notları",
+      "body": "Bu toplantıda yapay zekâ notları kullanılıyor: konuşmalarınız sunucumuzda yazıya dökülür ve metin, tutanak oluşturmak için {{provider}} tarafından işlenir.",
+      "continue": "Devam et",
+      "optOut": "Beni yazıya dökme",
+      "privacyLink": "Gizlilik",
+      "changeChoice": "Seçimimi değiştir",
+      "notTranscribed": "Yazıya dökülmedi"
+    },
+    "review": {
+      "title": "İncele ve yayımla",
+      "sections": {
+        "minutes": "Dakika",
+        "decisions": "Kararlar",
+        "actions": "İşlemler",
+        "distribution": "Dağıtım"
+      },
+      "nextMeeting": {
+        "title": "Sonraki toplantı",
+        "date": "Tarih",
+        "duration": "Süre (dk)",
+        "room": "Oda",
+        "required": "Gerekli sonraki"
+      },
+      "distribution": {
+        "minutesToAttendees": "Katılımcılara dakika",
+        "invites": "Zorunlu katılımcılara davetiyeler"
+      },
+      "publish": "Yayınla ve gönder",
+      "published": "Yayınlandı",
+      "saveDraft": "Taslağı kaydet",
+      "finalisedChanges": "Sonlandırma değişti",
+      "retry": "Yeniden dene"
+    },
+    "snapshot": {
+      "toolbarButton": "Meet++'a anlık görüntü",
+      "added": "Anlık görüntü eklendi",
+      "failed": "Anlık görüntü alınamadı"
+    }
   }
 }

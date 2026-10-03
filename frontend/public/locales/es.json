@@ -20,7 +20,8 @@
     "account": "Cuenta",
     "upgrade": "Actualizar",
     "vouchers": "Vales",
-    "admin": "Administrador"
+    "admin": "Administrador",
+    "onDemand": "Bajo demanda"
   },
   "tiCafe": {
     "title": "Café",
@@ -65,7 +66,10 @@
     "loading": "Cargando…",
     "close": "Cerrar",
     "anonymous": "anónimo",
-    "requestFailed": "Solicitud fallida"
+    "requestFailed": "Solicitud fallida",
+    "on": "Activado",
+    "off": "Desactivado",
+    "dismiss": "Descartar"
   },
   "signInPrompt": {
     "button": "Inicia sesión en one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Sala de espera",
     "waitingRoomDesc": "Los nuevos participantes esperan hasta que los admitas desde la barra de herramientas de la reunión.",
     "autoAdmitAuthenticated": "Admitir automáticamente a usuarios conectados (próximamente)",
-    "autoAdmitAuthenticatedDesc": "Omitir la sala de espera para usuarios autenticados de one.witysk.org. Aún no aplicado — los que se unen de forma anónima siempre hacen cola."
+    "autoAdmitAuthenticatedDesc": "Omitir la sala de espera para usuarios autenticados de one.witysk.org. Aún no aplicado — los que se unen de forma anónima siempre hacen cola.",
+    "lobbyGreeting": "Saludo de la sala de espera",
+    "lobbyGreetingHint": "Se muestra a todos en la sala de espera antes de entrar.",
+    "lobbyGreetingPlaceholder": "¡Bienvenido! Silencia tu micrófono cuando no estés hablando.",
+    "schedule": "Programar",
+    "scheduleHint": "Establece una duración y (opcionalmente) una recurrencia para que las invitaciones de calendario se repitan automáticamente.",
+    "duration": "Duración (minutos)",
+    "recurrence": "Recurrencia",
+    "recurrenceNone": "Única vez (sin repetición)",
+    "recurrenceDaily": "Diario",
+    "recurrenceWeekly": "Semanal",
+    "recurrenceBiweekly": "Cada 2 semanas",
+    "recurrenceMonthly": "Mensual"
   },
   "discover": {
     "title": "Descubrir",
     "subtitle": "— reuniones abiertas para unirse",
     "join": "Unirse",
     "maxParticipants": "máx. {{n}}",
-    "hostedBy": "Organizado por {{name}}"
+    "hostedBy": "Organizado por {{name}}",
+    "view": "Ver",
+    "viewTitle": "Ver el stream público de solo visualización",
+    "streamsTitle": "Transmisiones públicas en directo",
+    "streamsSubtitle": "— solo ver, sin cuenta"
   },
   "myMeetings": {
     "loading": "Cargando tus reuniones…",
@@ -272,7 +292,14 @@
     "notImage": "No es una imagen ({{type}})",
     "processorFailed": "Efectos de fondo no compatibles en este dispositivo.",
     "custom": "Personalizado: {{name}}",
-    "customDefault": "Imagen personalizada"
+    "customDefault": "Imagen personalizada",
+    "aurora": "Aurora",
+    "bokeh": "Desenfoque",
+    "wavesAnim": "Olas del mar",
+    "particles": "Partículas",
+    "cityscape": "Luces de la ciudad",
+    "cherryBlossoms": "Flores de cerezo",
+    "fireflies": "Luciérnagas"
   },
   "participants": {
     "title": "Participantes",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Hacer que {{name}} sea presentador",
     "removeFromMeeting": "Eliminar de la reunión",
     "removeName": "Eliminar {{name}}",
-    "authenticatedOwner": "Propietario autenticado"
+    "authenticatedOwner": "Propietario autenticado",
+    "cohost": "Coorganizador",
+    "promoteCohost": "Ascender a copresentador",
+    "demoteCohost": "Quitar coanfitrión"
   },
   "chatPanel": {
     "title": "Charla",
@@ -294,7 +324,10 @@
     "send": "Enviar",
     "close": "Cerrar chat",
     "ariaLabel": "Chat de la reunión",
-    "messageAria": "Mensaje de chat"
+    "messageAria": "Mensaje de chat",
+    "pin": "Fijar",
+    "unpin": "Desfijar",
+    "pinned": "Fijado"
   },
   "invite": {
     "title": "Invitar por correo electrónico",
@@ -932,5 +965,378 @@
     "tileBadge": "Mano levantada",
     "lowerOther": "Bajar la mano de este participante",
     "lowerName": "Bajar la mano de {{name}}"
+  },
+  "onDemand": {
+    "title": "Bajo demanda",
+    "subtitle": "Vídeos de transmisiones públicas en curso: míralos cuando quieras, sin necesidad de cuenta.",
+    "watch": "Ver",
+    "loading": "Cargando…",
+    "empty": "No hay nada bajo demanda ahora mismo. Vuelve cuando una transmisión en vivo pública tenga videos en su lista de reproducción.",
+    "error": "No se pudo cargar On Demand en este momento."
+  },
+  "devices": {
+    "toolbar": "Dispositivos de audio y vídeo",
+    "toolbarTitle": "Elige micrófono, cámara y altavoz",
+    "mic": "Micrófono",
+    "camera": "Cámara",
+    "speaker": "Altavoz",
+    "none": "No se encontraron dispositivos",
+    "speakerUnsupported": "La selección del dispositivo de salida no es compatible con este navegador."
+  },
+  "notes": {
+    "title": "Notas y pizarra",
+    "toolbar": "Notas y pizarra",
+    "toolbarTitle": "Abrir notas compartidas y pizarra",
+    "close": "Cerrar notas",
+    "tabNotes": "Notas",
+    "tabBoard": "Pizarra",
+    "hint": "Todos en la sala pueden editar. Se guarda automáticamente.",
+    "placeholder": "Escribe notas compartidas aquí…",
+    "color": "Color",
+    "thickness": "Grosor del trazo",
+    "clear": "Borrar pizarra"
+  },
+  "polls": {
+    "title": "Encuestas y preguntas",
+    "toolbar": "Encuestas y preguntas",
+    "toolbarTitle": "Abrir encuestas y preguntas y respuestas",
+    "close": "Cerrar encuestas",
+    "tabPolls": "Encuestas",
+    "tabQna": "Preguntas y respuestas",
+    "empty": "Aún no hay encuestas.",
+    "createTitle": "Crear una encuesta",
+    "createButton": "Crear",
+    "questionPlaceholder": "Tu pregunta",
+    "optionPlaceholder": "Opción {{n}}",
+    "addOption": "+ Añadir opción",
+    "open": "Abrir",
+    "closed": "Cerrado",
+    "closePoll": "Cerrar encuesta",
+    "qnaEmpty": "Aún no hay preguntas.",
+    "qnaPlaceholder": "Haz una pregunta…",
+    "qnaAsk": "Preguntar",
+    "qnaUpvote": "Votar a favor",
+    "qnaMarkAnswered": "Respondida"
+  },
+  "pip": {
+    "enter": "Imagen en imagen",
+    "exit": "Salir de imagen en imagen",
+    "enterTitle": "Saca al orador activo a un mosaico flotante",
+    "exitTitle": "Cerrar el mosaico flotante"
+  },
+  "shortcuts": {
+    "title": "Atajos de teclado",
+    "close": "Cerrar",
+    "disabled": "Los atajos están desactivados actualmente en Ajustes → Teclado.",
+    "editHint": "Cambia los atajos en la página Ajustes (sección Teclado).",
+    "mute": "Alternar micrófono",
+    "camera": "Alternar cámara",
+    "hand": "Levantar / bajar la mano",
+    "screenshare": "Alternar compartir pantalla",
+    "leave": "Salir de la reunión",
+    "help": "Mostrar esta superposición"
+  },
+  "feedback": {
+    "title": "¿Qué tal la reunión?",
+    "body": "En una escala de 0 (peor) a 10 (mejor), ¿cómo calificarías esta reunión?",
+    "commentLabel": "¿Algo más? (opcional)",
+    "submit": "Enviar",
+    "sending": "Enviando…",
+    "skip": "Omitir",
+    "thanks": "¡Gracias por tus comentarios!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Enviar una reacción de emoji flotante",
+    "send": "Enviar {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Calidad de conexión para {{name}} — {{band}}",
+      "title": "Calidad de conexión"
+    },
+    "panel": {
+      "title": "Calidad de conexión",
+      "self": "Tu cámara",
+      "ariaLabel": "Calidad de conexión para {{name}}"
+    },
+    "band": {
+      "high": "Alta",
+      "medium": "Medio",
+      "low": "Bajo",
+      "lost": "Reconectando…",
+      "measuring": "Midiendo…"
+    },
+    "limiter": {
+      "network": "Red: pérdida de paquetes y jitter",
+      "publisher": "El dispositivo del emisor está limitando la transmisión",
+      "relay": "Ruta de retransmisión: tiempo de ida y vuelta elevado",
+      "stability": "Enlace inestable: la calidad fluctúa",
+      "unknown": "Midiendo la conexión",
+      "lost": "Conexión perdida: reconectando automáticamente"
+    },
+    "tab": {
+      "overview": "Resumen",
+      "details": "Detalles",
+      "actions": "Acciones",
+      "device": "Dispositivo"
+    },
+    "quality": {
+      "low": "Bajo",
+      "medium": "Med",
+      "high": "Alta",
+      "auto": "Auto"
+    },
+    "overview": {
+      "score": "puntuación {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitrate",
+      "resolution": "Resolución",
+      "fps": "Velocidad de fotogramas",
+      "loss": "Pérdida de paquetes",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Fotogramas omitidos",
+      "audioLoss": "Pérdida de audio (último min)",
+      "transport": "Transporte",
+      "direct": "Directo",
+      "relay": "Retransmisión"
+    },
+    "details": {
+      "log": "Acciones recientes",
+      "none": "Aún no hay acciones",
+      "video": "Vídeo",
+      "audio": "Audio"
+    },
+    "action": {
+      "quality": "Calidad (capa de simulcast)",
+      "maxBitrate": "Bitrate máximo",
+      "compression": "Compresión",
+      "colorDepth": "Profundidad de color",
+      "colorDepthUnsupported": "10 bits no está disponible en este dispositivo / códec",
+      "audioOnly": "Solo audio para este mosaico",
+      "resync": "Resincronizar transmisión",
+      "resetAuto": "Restablecer a automático",
+      "reconnect": "Reconectar",
+      "reconnectConfirm": "Confirmar reconexión",
+      "apply": "Aplicar",
+      "export": "Exportar informe"
+    },
+    "scope": {
+      "receive": "Se aplica a lo que recibes: la cámara del emisor no se modifica",
+      "publish": "Los cambios son visibles para todos en la reunión"
+    },
+    "autotune": {
+      "test": "Probar ajustes óptimos",
+      "running": "Probando la conexión…",
+      "observing": "Observando… {{seconds}} s",
+      "applied": "Aplicado — ajustes guardados",
+      "rolledBack": "Revertido: la nueva configuración funcionaba peor en esta red",
+      "recommended": "Recomendado para esta red",
+      "retry": "Reintentar",
+      "rejected": "{{layer}} fue rechazado: {{reason}}",
+      "phase": {
+        "baseline": "Recopilando línea base…",
+        "probing": "Sondeando capas…",
+        "evaluating": "Evaluando candidatos…",
+        "observing": "Observando el resultado…",
+        "done": "Hecho",
+        "failed": "Falló la sonda",
+        "idle": "<<<KEEP_0>>> <<<KEEP_1>>> <<<KEEP_2>>> <<<KEEP_3>>> <<<KEEP_4>>> <<<KEEP_5>>> <<<KEEP_6>>> <<<KEEP_7>>> <<<KEEP_8>>> <<<KEEP_9>>> <<<KEEP_10>>> <<<KEEP_11>>> <<<KEEP_12>>> <<<KEEP_13>>> <<<KEEP_14>>> <<<KEEP_15>>> <<<KEEP_16>>> <<<KEEP_17>>> <<<KEEP_18>>> <<<KEEP_19>>> <<<KEEP_20>>> <<<KEEP_21>>> <<<KEEP_22>>> <<<KEEP_23>>> <<<KEEP_24>>> <<<KEEP_25>>> <<<KEEP_26>>> <<<KEEP_27>>> <<<KEEP_28>>> <<<KEEP_29>>> <<<KEEP_30>>> <<<KEEP_31>>> <<<KEEP_32>>> <<<KEEP_33>>> <<<KEEP_34>>> <<<KEEP_35>>> <<<KEEP_36>>> <<<KEEP_37>>> <<<KEEP_38>>> <<<KEEP_39>>> <<<KEEP_40>>> <<<KEEP_41>>> <<<KEEP_42>>> <<<KEEP_43>>> <<<KEEP_44>>> <<<KEEP_45>>> <<<KEEP_46>>> <<<KEEP_47>>> <<<KEEP_48>>> <<<KEEP_49>>> <<<KEEP_50>>> <<<KEEP_51>>> <<<KEEP_52>>> <<<KEEP_53>>> <<<KEEP_54>>> <<<KEEP_55>>> <<<KEEP_56>>> <<<KEEP_57>>> <<<KEEP_58>>> <<<KEEP_59>>> <<<KEEP_60>>> <<<KEEP_61>>> <<<KEEP_62>>> <<<KEEP_63>>> <<<KEEP_64>>> <<<KEEP_65>>> <<<KEEP_66>>> <<<KEEP_67>>> <<<KEEP_68>>> <<<KEEP_69>>> <<<KEEP_70>>> <<<KEEP_71>>> <<<KEEP_72>>> <<<KEEP_73>>> <<<KEEP_74>>> <<<KEEP_75>>> <<<KEEP_76>>> <<<KEEP_77>>> <<<KEEP_78>>> <<<KEEP_79>>> <<<KEEP_80>>> <<<KEEP_81>>> <<<KEEP_82>>> <<<KEEP_83>>> <<<KEEP_84>>> <<<KEEP_"
+      },
+      "baseline": "Recopilando línea base…",
+      "step": {
+        "low": "Probando BAJO…",
+        "medium": "Probando MEDIO…",
+        "high": "Probando ALTO…"
+      },
+      "evaluating": "Evaluando candidatos…",
+      "done": "Recomendación lista"
+    },
+    "device": {
+      "remoteNote": "La configuración de cámara y micrófono pertenece al publicador ({{name}})",
+      "camera": "Cámara",
+      "resolution": "Resolución",
+      "frameRate": "Velocidad de fotogramas",
+      "cameraMax": "La cámara admite hasta {{width}} × {{height}} a {{fps}} fps",
+      "microphone": "Micrófono",
+      "channels": "Canales",
+      "mono": "Mono",
+      "stereo": "Estéreo",
+      "audioQuality": "Calidad de audio",
+      "voice": "Voz",
+      "music": "Música",
+      "stereoWarning": "El estéreo desactiva la cancelación de eco y la supresión de ruido — usa auriculares; también aumenta el ancho de banda de subida",
+      "apply": "Aplicar a mi cámara y micrófono"
+    },
+    "busy": {
+      "quality": "Cambiando la calidad…",
+      "resync": "Resincronizando la transmisión…",
+      "reconnect": "Reconectando…",
+      "maxBitrate": "Actualizando el límite de bitrate…",
+      "compression": "Actualizando compresión…",
+      "resolution": "Cambiando la resolución de la cámara…",
+      "frameRate": "Cambiando la velocidad de fotogramas…",
+      "camera-device": "Cambiando de cámara…",
+      "mic-device": "Cambiando de micrófono…",
+      "mic-mode": "Aplicando ajustes del micrófono…",
+      "audioOnly": "Actualizando la transmisión…",
+      "applyTune": "Aplicando ajustes…",
+      "probe": "Probando la conexión…",
+      "export": "Preparando el informe…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "Reunión con IA",
+      "aiNotesOn": "Notas de IA activadas",
+      "aiNotesPaused": "Notas de IA en pausa",
+      "menu": {
+        "pause": "Pausar transcripción",
+        "resume": "Reanudar transcripción",
+        "mode": "Modo",
+        "boardToMain": "Traer pizarra al principal",
+        "snapshot": "Instantánea de la pizarra",
+        "editors": "Editores…",
+        "end": "Finalizar reunión con IA",
+        "showBoard": "Mostrar pizarra",
+        "hideBoard": "Ocultar pizarra"
+      }
+    },
+    "setup": {
+      "title": "Iniciar reunión con IA",
+      "intro": "Meet++ transcribe la reunión y mantiene el tablero actualizado.",
+      "structure": "Estructura de la reunión",
+      "agendaDriven": "Con orden del día",
+      "agendaDrivenHint": "Elementos y bloques de tiempo",
+      "goalDriven": "Orientado a objetivos",
+      "goalDrivenHint": "Objetivo → entregables → próximos pasos",
+      "goalPlaceholder": "Objetivo",
+      "language": "Idioma",
+      "mode": "Modo IA",
+      "modeLead": "Líder",
+      "modeAssist": "Asistir",
+      "series": "Serie de reuniones",
+      "newSeries": "Nueva serie",
+      "agendaPdf": "Agenda PDF",
+      "previousNotesPdf": "PDF de notas anteriores",
+      "importedFromSeries": "Importado de la serie",
+      "itemsFound": "{{count}} puntos del orden del día encontrados",
+      "parsing": "Analizando…",
+      "start": "Iniciar",
+      "cancel": "Cancelar",
+      "notice": "La transcripción en vivo se ejecuta en nuestro servidor; el texto lo procesa el proveedor de LLM configurado para generar el acta.",
+      "errors": {
+        "noTextLayer": "Este PDF parece escaneado. Sube un PDF de texto o introduce el orden del día manualmente.",
+        "tooLarge": "El PDF es demasiado grande (máx. 10 MB).",
+        "encrypted": "Este PDF está protegido con contraseña.",
+        "tooManyPages": "El PDF tiene demasiadas páginas (máx. 50).",
+        "capacity": "Capacidad de IA ocupada — inténtalo más tarde."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Orden del día",
+        "decisions": "Decisiones",
+        "actions": "Acciones",
+        "attendance": "Asistencia",
+        "minutes": "Minutos",
+        "attachments": "Archivos adjuntos",
+        "transcript": "Transcripción",
+        "previousDecisions": "Decisiones de la reunión anterior"
+      },
+      "follow": "Seguir",
+      "followPaused": "En pausa",
+      "status": {
+        "listening": "Escuchando",
+        "thinking": "Pensando",
+        "behind": "Detrás de {{s}}s",
+        "paused": "En pausa",
+        "offline": "IA no disponible"
+      },
+      "empty": {
+        "agenda": "Aún no hay puntos del orden del día.",
+        "decisions": "Las decisiones aparecerán aquí a medida que se tomen.",
+        "actions": "Las acciones aparecerán aquí a medida que se acuerden.",
+        "attendance": "La asistencia aparecerá a medida que se unan las personas.",
+        "minutes": "Los minutos aparecerán por punto del orden del día.",
+        "attachments": "Aún no hay archivos adjuntos.",
+        "transcript": "La transcripción aparece aquí mientras la reunión está en curso."
+      },
+      "actions": {
+        "confirm": "Confirmar",
+        "edit": "Editar",
+        "reject": "Rechazar",
+        "add": "Añadir",
+        "setActive": "Iniciar",
+        "done": "Hecho",
+        "defer": "Aplazar",
+        "previous": "Anterior (abrir)",
+        "new": "Nuevo en esta reunión",
+        "unassigned": "Sin asignar",
+        "ownerPrompt": "Nombre o alias del propietario"
+      }
+    },
+    "phases": {
+      "opening": "Abriendo",
+      "previousActions": "Acciones anteriores",
+      "agenda": "Orden del día",
+      "goal": "Objetivo",
+      "discussion": "Debate",
+      "aob": "Otro negocio",
+      "nextSteps": "Próximos pasos",
+      "newActions": "Nuevas acciones",
+      "planning": "Planificación",
+      "closing": "Cerrando",
+      "jumpConfirm": "¿Saltar a esta fase?"
+    },
+    "proposal": {
+      "title": "¿Pasar a la siguiente fase?",
+      "moveNow": "Mover ahora",
+      "notYet": "Aún no",
+      "autoIn": "Auto en {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Descartar"
+    },
+    "consent": {
+      "title": "Notas de IA en esta reunión",
+      "body": "Esta reunión usa notas con IA: tu voz se transcribe en nuestro servidor y el texto lo procesa {{provider}} para generar el acta.",
+      "continue": "Continuar",
+      "optOut": "No me transcribas",
+      "privacyLink": "Privacidad",
+      "changeChoice": "Cambiar mi elección",
+      "notTranscribed": "Sin transcribir"
+    },
+    "review": {
+      "title": "Revisar y publicar",
+      "sections": {
+        "minutes": "Minutos",
+        "decisions": "Decisiones",
+        "actions": "Acciones",
+        "distribution": "Distribución"
+      },
+      "nextMeeting": {
+        "title": "Próxima reunión",
+        "date": "Fecha",
+        "duration": "Duración (min)",
+        "room": "Sala",
+        "required": "Siguiente obligatorio"
+      },
+      "distribution": {
+        "minutesToAttendees": "Minutos para los asistentes",
+        "invites": "Invitaciones a los asistentes obligatorios"
+      },
+      "publish": "Publicar y enviar",
+      "published": "Publicado",
+      "saveDraft": "Guardar borrador",
+      "finalisedChanges": "Finalización modificada",
+      "retry": "Reintentar"
+    },
+    "snapshot": {
+      "toolbarButton": "Captura a Meet++",
+      "added": "Instantánea añadida",
+      "failed": "Error al crear la instantánea"
+    }
   }
 }

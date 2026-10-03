@@ -11,6 +11,8 @@ from app.db import engine, lightweight_migrate
 from app.logging_config import log_event, setup_logging
 from app.models import Base
 from app.routes import admin, auth_native, billing, chat, health, meetings, moderation, on_demand_social, playback, polls, recordings, streams, ti_cafe, tokens, totp, users, vouchers, waiting_room, youtube_oauth
+from app.meetpp import routes as meetpp_routes
+from app.meetpp.runtime import runtime as meetpp_runtime
 from app.services import ip_block
 from app.webhooks import router as webhook_router
 
@@ -27,9 +29,11 @@ async def lifespan(_app: FastAPI):
     bootstrap_platform_admins()
     ip_block.reload()
     scheduler.start()
+    await meetpp_runtime.start()
     try:
         yield
     finally:
+        await meetpp_runtime.stop()
         # Persist any hits accumulated since the last admin-panel fetch so
         # block_count survives restarts.
         ip_block.flush_hits()
@@ -116,4 +120,5 @@ app.include_router(admin.router, prefix="/api")
 app.include_router(waiting_room.router, prefix="/api")
 app.include_router(polls.router, prefix="/api")
 app.include_router(youtube_oauth.router, prefix="/api")
+app.include_router(meetpp_routes.router, prefix="/api")
 app.include_router(webhook_router, prefix="/api")

@@ -180,7 +180,7 @@ function PublicViewerInner({
           (embedMode ? " no-participant-names" : "")
         }
       >
-        <PresenterSpotlight />
+        <PresenterSpotlight boardForPublicOnly />
         <RoomAudioRenderer />
         {embedMode && (
           /* Header is hidden in embed mode but the volume button still

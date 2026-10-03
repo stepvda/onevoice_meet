@@ -20,7 +20,8 @@
     "account": "Asusu",
     "upgrade": "Haɓaka",
     "vouchers": "Bauchi",
-    "admin": "Mai Gudanarwa"
+    "admin": "Mai Gudanarwa",
+    "onDemand": "Akan Bukata"
   },
   "tiCafe": {
     "title": "Kafe",
@@ -65,7 +66,10 @@
     "loading": "Ana lodi...",
     "close": "Rufe",
     "anonymous": "Ba a bayyana suna ba",
-    "requestFailed": "Buƙatar ta gaza"
+    "requestFailed": "Buƙatar ta gaza",
+    "on": "Kunna",
+    "off": "A kashe",
+    "dismiss": "Soke"
   },
   "signInPrompt": {
     "button": "Shiga a one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Dakin jira",
     "waitingRoomDesc": "Sabbin masu shiga suna jira har sai kun shigar da su daga toolbar ɗin taron.",
     "autoAdmitAuthenticated": "Shigar da masu amfani da suka shiga ta atomatik (zai zo nan ba da jimawa ba)",
-    "autoAdmitAuthenticatedDesc": "Ƙetare dakin jira ga masu amfani da one.witysk.org da suka shiga. Ba a tilasta ba tukuna — masu shiga ba tare da suna koyaushe suna layi."
+    "autoAdmitAuthenticatedDesc": "Ƙetare dakin jira ga masu amfani da one.witysk.org da suka shiga. Ba a tilasta ba tukuna — masu shiga ba tare da suna koyaushe suna layi.",
+    "lobbyGreeting": "Gaisuwar falo",
+    "lobbyGreetingHint": "Ana nuna wa kowa a cikin ɗakin jira kafin su shiga.",
+    "lobbyGreetingPlaceholder": "Barka da zuwa! Da fatan za a kashe makirufo idan ba a magana.",
+    "schedule": "Jadawali",
+    "scheduleHint": "Saita tsawon lokaci da (idan ana so) maimaitawa domin gayyatar kalanda ta maimaita kai tsaye.",
+    "duration": "Tsawon lokaci (mintuna)",
+    "recurrence": "Maimaitawa",
+    "recurrenceNone": "Sau ɗaya (ba maimaitawa)",
+    "recurrenceDaily": "Kullum",
+    "recurrenceWeekly": "Mako-mako",
+    "recurrenceBiweekly": "Kowane mako biyu",
+    "recurrenceMonthly": "Wata-wata"
   },
   "discover": {
     "title": "Gano",
     "subtitle": "— tarurruka da aka bude don shiga",
     "join": "Shiga",
     "maxParticipants": "max {{n}}",
-    "hostedBy": "Mai shiryawa {{name}}"
+    "hostedBy": "Mai shiryawa {{name}}",
+    "view": "Duba",
+    "viewTitle": "Kalli watsa shirye-shiryen jama'a na kallo kawai",
+    "streamsTitle": "Watsa shirye-shirye kai tsaye na jama'a",
+    "streamsSubtitle": "— kallo kawai, ba a buƙatar asusu"
   },
   "myMeetings": {
     "loading": "Ana loda tarurrukan ku…",
@@ -272,7 +292,14 @@
     "notImage": "Ba hoto ba ({{type}})",
     "processorFailed": "Ba a tallafawa tasirin bango a wannan na'urar.",
     "custom": "Na musamman: {{name}}",
-    "customDefault": "Hoton da aka keɓance"
+    "customDefault": "Hoton da aka keɓance",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Raƙuman teku",
+    "particles": "Barbashi",
+    "cityscape": "Hasken birni",
+    "cherryBlossoms": "Furen ceri",
+    "fireflies": "Fitilun wuta"
   },
   "participants": {
     "title": "Mahalarta",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Sanya {{name}} mai gabatarwa",
     "removeFromMeeting": "Cire daga taron",
     "removeName": "Cire {{name}}",
-    "authenticatedOwner": "Mai shi da aka tabbatar"
+    "authenticatedOwner": "Mai shi da aka tabbatar",
+    "cohost": "Mataimakin mai masaukin baki",
+    "promoteCohost": "Inganta zuwa mataimakin mai masaukin baki",
+    "demoteCohost": "Cire abokin haɗin gwiwa"
   },
   "chatPanel": {
     "title": "Hira",
@@ -294,7 +324,10 @@
     "send": "Aika",
     "close": "Rufe hira",
     "ariaLabel": "Tattaunawar taro",
-    "messageAria": "Saƙon hira"
+    "messageAria": "Saƙon hira",
+    "pin": "Sanya",
+    "unpin": "Cire fil",
+    "pinned": "An daure"
   },
   "invite": {
     "title": "Gayyato ta imel",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Rikodi",
     "subtitle": "Rikodin taron ku daga gefen uwar garken. Fayilolin gida suna gogewa kai tsaye bayan kwanaki 30 (ko lokacin da kuka buga zuwa YouTube). Ana yin lodawa ne kawai da izinin mai shi.",
-    "empty": "Babu rikodi tukuna. Fara taro sannan ka danna <1>Rikodi</1> don ɗaukar ɗaya.",
+    "empty": "Babu rikodin tukuna. Fara taro ka danna <1>Rikodi</1> don ɗaukar ɗaya.",
     "loading": "Ana lodi...",
     "signInFirst": "Da farko shiga one.witysk.org.",
     "signInTitle": "Shiga don ganin rikodin ku",
@@ -932,5 +965,378 @@
     "tileBadge": "Hannu ya tashi",
     "lowerOther": "Rage hannun wannan mahaluki",
     "lowerName": "Sauke hannun {{name}}"
+  },
+  "onDemand": {
+    "title": "Akan Buƙata",
+    "subtitle": "Bidiyoyi daga watsa shirye-shirye kai tsaye na jama'a — kalla kowane lokaci, ba a buƙatar asusu.",
+    "watch": "Kalla",
+    "loading": "Ana lodawa…",
+    "empty": "Babu wani abu da ake buƙata a yanzu. Sake dubawa idan watsa shirye-shirye kai tsaye na jama'a yana da bidiyoyi a cikin jerin waƙoƙinsa.",
+    "error": "Ba a iya loda Buƙatun Kan Lokaci a yanzu ba."
+  },
+  "devices": {
+    "toolbar": "Na'urorin sauti da bidiyo",
+    "toolbarTitle": "Zaɓi makirufo, kamara da lasifika",
+    "mic": "Makirufo",
+    "camera": "Kamara",
+    "speaker": "Mai magana",
+    "none": "Ba a sami na'urori ba",
+    "speakerUnsupported": "Zaɓin na'urar fitarwa ba a tallafa shi a wannan burauza ba."
+  },
+  "notes": {
+    "title": "Bayanai & farin allo",
+    "toolbar": "Bayanai & farin allo",
+    "toolbarTitle": "Buɗe bayanan da aka raba da farin allo",
+    "close": "Rufe bayanan",
+    "tabNotes": "Bayanai",
+    "tabBoard": "Allon fari",
+    "hint": "Kowa a ɗakin zai iya gyara. Ana adana ta atomatik.",
+    "placeholder": "Rubuta bayanan da aka raba a nan…",
+    "color": "Launi",
+    "thickness": "Kaurin layi",
+    "clear": "Share all"
+  },
+  "polls": {
+    "title": "Zaɓe & Tambayoyi",
+    "toolbar": "Zaɓe & Tambayoyi",
+    "toolbarTitle": "Buɗe zaɓe da Tambayoyi da Amsoshi",
+    "close": "Rufe zaɓe",
+    "tabPolls": "Zaɓe",
+    "tabQna": "Tambayoyi da Amsoshi",
+    "empty": "Babu zaɓe tukuna.",
+    "createTitle": "Ƙirƙiri zaɓe",
+    "createButton": "Ƙirƙira",
+    "questionPlaceholder": "Tambayarka",
+    "optionPlaceholder": "Zaɓi {{n}}",
+    "addOption": "+ Ƙara zaɓi",
+    "open": "buɗe",
+    "closed": "A rufe",
+    "closePoll": "Rufe zaɓe",
+    "qnaEmpty": "Babu tambayoyi tukuna.",
+    "qnaPlaceholder": "Yi tambaya…",
+    "qnaAsk": "Tambaya",
+    "qnaUpvote": "Ƙara ƙuri'a",
+    "qnaMarkAnswered": "An amsa"
+  },
+  "pip": {
+    "enter": "Hoto-cikin-hoto",
+    "exit": "Fita daga hoto-cikin-hoto",
+    "enterTitle": "Fitar da mai magana mai aiki cikin wani tayil mai iyo",
+    "exitTitle": "Rufe tayil ɗin da ke shawagi"
+  },
+  "shortcuts": {
+    "title": "Gajerun hanyoyin madannai",
+    "close": "Rufe",
+    "disabled": "Gajerun hanyoyi a halin yanzu an kashe su a Saituna → Maɓalli.",
+    "editHint": "Canza gajerun hanyoyi a shafin Saituna (sashen Keyboard).",
+    "mute": "<<<KEEP_0>>>",
+    "camera": "Kunna kyamara",
+    "hand": "Daga / saukar da hannu",
+    "screenshare": "<<<KEEP_0>>> raba allo",
+    "leave": "Bar taron",
+    "help": "Nuna wannan rufin"
+  },
+  "feedback": {
+    "title": "Yaya taron ya kasance?",
+    "body": "A ma'aunin 0 (mafi muni) zuwa 10 (mafi kyau), yaya za ka kimanta wannan taro?",
+    "commentLabel": "Wani abu kuma? (na zaɓi)",
+    "submit": "Aika",
+    "sending": "Ana aikawa…",
+    "skip": "Tsallake",
+    "thanks": "Na gode da ra'ayinka!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Aika martanin emoji mai shawagi",
+    "send": "Aika {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Ingancin haɗi don {{name}} — {{band}}",
+      "title": "Ingancin haɗi"
+    },
+    "panel": {
+      "title": "Ingancin Haɗi",
+      "self": "kamara",
+      "ariaLabel": "Ingancin haɗi don {{name}}"
+    },
+    "band": {
+      "high": "Babban",
+      "medium": "Matsakaici",
+      "low": "Ƙasa",
+      "lost": "Sake haɗawa…",
+      "measuring": "Ana aunawa…"
+    },
+    "limiter": {
+      "network": "Cibiyar sadarwa: asarar fakiti da jitter",
+      "publisher": "Na'urar mai wallafawa tana iyakance watsa shirye-shiryen",
+      "relay": "Hanyar wucewa: lokacin tafiya da dawowa ya ƙaru",
+      "stability": "Haɗi mara ƙarfi: inganci yana canzawa",
+      "unknown": "Ana auna haɗin",
+      "lost": "An rasa haɗi — ana sake haɗawa kai tsaye"
+    },
+    "tab": {
+      "overview": "Bayani",
+      "details": "Cikakken bayani",
+      "actions": "Ayyuka",
+      "device": "Na'ura"
+    },
+    "quality": {
+      "low": "Ƙasa",
+      "medium": "Likita",
+      "high": "Babban",
+      "auto": "Atomatik"
+    },
+    "overview": {
+      "score": "maki {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitrate",
+      "resolution": "Ƙuduri",
+      "fps": "Adadin firam",
+      "loss": "Asarar fakiti",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "An yi watsi da firam",
+      "audioLoss": "Asarar sauti (minti na ƙarshe)",
+      "transport": "Sufuri",
+      "direct": "Kai tsaye",
+      "relay": "Mai ba da sako"
+    },
+    "details": {
+      "log": "Ayyukan kwanan nan",
+      "none": "Babu wani aiki tukuna",
+      "video": "Bidiyo",
+      "audio": "Sauti"
+    },
+    "action": {
+      "quality": "Inganci (simulcast layer)",
+      "maxBitrate": "Matsakaicin bitrate",
+      "compression": "Matsawa",
+      "colorDepth": "Zurfin launi",
+      "colorDepthUnsupported": "10-bit ba ya samuwa a wannan na'urar / codec",
+      "audioOnly": "Sauti kawai don wannan tile",
+      "resync": "Sake daidaita rafi",
+      "resetAuto": "Sake saita zuwa atomatik",
+      "reconnect": "Sake haɗawa",
+      "reconnectConfirm": "Tabbatar da sake haɗawa",
+      "apply": "Aiwatar",
+      "export": "Fitar da rahoto"
+    },
+    "scope": {
+      "receive": "Ya shafi abin da kuke karɓa — kyamarar mai watsawa ba ta canzawa",
+      "publish": "Canje-canjen suna bayyane ga kowa a cikin taron"
+    },
+    "autotune": {
+      "test": "Gwada mafi kyawun saituna",
+      "running": "Ana gwada haɗin…",
+      "observing": "Ana kallo… {{seconds}} s",
+      "applied": "An yi amfani da shi — an adana saitunan",
+      "rolledBack": "An mayar da shi — sabon saitin ya fi muni a wannan hanyar sadarwa",
+      "recommended": "An ba da shawara don wannan hanyar sadarwa",
+      "retry": "Sake gwadawa",
+      "rejected": "An ƙi {{layer}}: {{reason}}",
+      "phase": {
+        "baseline": "Ana tattara tushe…",
+        "probing": "Ana bincika yadudduka…",
+        "evaluating": "Ana tantance 'yan takara…",
+        "observing": "Ana lura da sakamakon…",
+        "done": "An gama",
+        "failed": "Gwajin ya kasa",
+        "idle": ""
+      },
+      "baseline": "Ana tattara tushe…",
+      "step": {
+        "low": "Gwaji ƘASA…",
+        "medium": "Ana gwada MATSAKAICI…",
+        "high": "Ana gwada HIGH…"
+      },
+      "evaluating": "Ana tantance 'yan takara…",
+      "done": "Shawara a shirye"
+    },
+    "device": {
+      "remoteNote": "Saitunan kamara da makirufo na mai wallafawa ne ({{name}})",
+      "camera": "Kamara",
+      "resolution": "Ƙudurin hoto",
+      "frameRate": "Adadin firam",
+      "cameraMax": "Kamara tana goyan bayan har zuwa {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Makirufo",
+      "channels": "Tashoshi",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Ingancin sauti",
+      "voice": "Murya",
+      "music": "Kiɗa",
+      "stereoWarning": "Stereo yana kashe kawar da echo da danne amo — yi amfani da belun kunne; hakanan yana ƙara bandwidth ɗin hawan bayanai",
+      "apply": "Aiwatar da kyamarata & makirufo na"
+    },
+    "busy": {
+      "quality": "Ana canza inganci…",
+      "resync": "Ana sake daidaita watsa shirye-shiryen…",
+      "reconnect": "Sake haɗawa…",
+      "maxBitrate": "Ana sabunta iyakar bitrate…",
+      "compression": "Ana sabunta matsi…",
+      "resolution": "Ana canza ƙudurin kamara…",
+      "frameRate": "Ana canza ƙimar firam…",
+      "camera-device": "Ana canza kamara…",
+      "mic-device": "Ana canza makirufo…",
+      "mic-mode": "Ana amfani da saitunan makirufo…",
+      "audioOnly": "Ana sabunta watsa shirye-shiryen…",
+      "applyTune": "Ana amfani da saitunan…",
+      "probe": "Ana gwada haɗin…",
+      "export": "Ana shirya rahoton…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "Taron AI",
+      "aiNotesOn": "Bayanan AI a kunne",
+      "aiNotesPaused": "Bayanan AI a dakatar",
+      "menu": {
+        "pause": "Dakatar da rubutun magana",
+        "resume": "Ci gaba da rubutawa",
+        "mode": "Yanayi",
+        "boardToMain": "Kawo allo zuwa babban",
+        "snapshot": "Hoton allo",
+        "editors": "Editoci…",
+        "end": "Kammala taron AI",
+        "showBoard": "Nuna allo",
+        "hideBoard": "Boye allo"
+      }
+    },
+    "setup": {
+      "title": "Fara Taron AI",
+      "intro": "Meet++ na rubuta taron kuma yana sabunta allon.",
+      "structure": "Tsarin taro",
+      "agendaDriven": "Ajanda-tushen",
+      "agendaDrivenHint": "Abubuwa da akwatunan lokaci",
+      "goalDriven": "Manufa-sakamako",
+      "goalDrivenHint": "Manufa → kayan aiki → matakai na gaba",
+      "goalPlaceholder": "Manufa",
+      "language": "Harshe",
+      "mode": "Yanayin AI",
+      "modeLead": "Jagora",
+      "modeAssist": "Taimaka",
+      "series": "Jerin taro",
+      "newSeries": "Sabon jerin",
+      "agendaPdf": "PDF na Ajanda",
+      "previousNotesPdf": "PDF na bayanan da suka gabata",
+      "importedFromSeries": "An shigo da shi daga jerin",
+      "itemsFound": "An sami abubuwa {{count}} a cikin ajanda",
+      "parsing": "Ana bincike…",
+      "start": "Fara",
+      "cancel": "Soke",
+      "notice": "Rubutun kai tsaye yana gudana a uwar garkenmu; ana sarrafa rubutun ta hanyar LLM da aka saita don samar da mintuna.",
+      "errors": {
+        "noTextLayer": "Wannan PDF da alama an ɗauke shi ne. Loda PDF mai rubutu ko shigar da ajanda da hannu.",
+        "tooLarge": "Fayil ɗin PDF ɗin ya yi girma da yawa (iyakar 10 MB).",
+        "encrypted": "Wannan PDF yana da kariya ta kalmar sirri.",
+        "tooManyPages": "Fayil ɗin PDF ɗin yana da shafuka da yawa (iyakar 50).",
+        "capacity": "Ikon AI ya cika — sake gwadawa daga baya."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Ajanda",
+        "decisions": "Shawarwari",
+        "actions": "Ayyuka",
+        "attendance": "Halartar",
+        "minutes": "Mintuna",
+        "attachments": "Haɗe-haɗe",
+        "transcript": "Rubutun magana",
+        "previousDecisions": "Shawarwarin taron da ya gabata"
+      },
+      "follow": "Bi",
+      "followPaused": "An dakatar",
+      "status": {
+        "listening": "Sauraro",
+        "thinking": "Tunani",
+        "behind": "Bayan {{s}}s",
+        "paused": "An dakatar",
+        "offline": "AI babu"
+      },
+      "empty": {
+        "agenda": "Babu abubuwan ajanda tukuna.",
+        "decisions": "Shawarwari za su bayyana a nan yayin da ake yanke su.",
+        "actions": "Ayyuka za su bayyana a nan yayin da aka amince da su.",
+        "attendance": "Halartar za ta bayyana yayin da mutane suka shiga.",
+        "minutes": "Minutoci za su bayyana bisa kowane sashe na ajanda.",
+        "attachments": "Babu haɗe-haɗe tukuna.",
+        "transcript": "Rubutun yana bayyana a nan yayin da taron ke gudana."
+      },
+      "actions": {
+        "confirm": "Tabbatar",
+        "edit": "Gyara",
+        "reject": "Soke",
+        "add": "Ƙara",
+        "setActive": "Fara",
+        "done": "An gama",
+        "defer": "Jinkirta",
+        "previous": "Na baya (buɗe)",
+        "new": "Sabon a wannan taron",
+        "unassigned": "Ba a sanya ba",
+        "ownerPrompt": "Sunan mai shi ko laƙabi"
+      }
+    },
+    "phases": {
+      "opening": "Buɗewa",
+      "previousActions": "Ayyukan da suka gabata",
+      "agenda": "Ajanda",
+      "goal": "Manufa",
+      "discussion": "Tattaunawa",
+      "aob": "Wata kasuwanci",
+      "nextSteps": "Matakan gaba",
+      "newActions": "Sabbin ayyuka",
+      "planning": "Tsari",
+      "closing": "Rufewa",
+      "jumpConfirm": "Tsallaka zuwa wannan matakin?"
+    },
+    "proposal": {
+      "title": "Ci gaba zuwa mataki na gaba?",
+      "moveNow": "Matsa yanzu",
+      "notYet": "Ba tukuna ba",
+      "autoIn": "Atomatik cikin {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Kore"
+    },
+    "consent": {
+      "title": "Bayanan AI a wannan taron",
+      "body": "Wannan taro yana amfani da bayanan AI: ana rubuta maganganunka a uwar garkenmu kuma {{provider}} ne ke sarrafa rubutun don samar da taƙaitaccen bayani.",
+      "continue": "Ci gaba",
+      "optOut": "Kada a rubuta min",
+      "privacyLink": "Sirri",
+      "changeChoice": "Canza zaɓi na",
+      "notTranscribed": "Ba a rubuta ba"
+    },
+    "review": {
+      "title": "Bita kuma wallafa",
+      "sections": {
+        "minutes": "Mintuna",
+        "decisions": "Shawarwari",
+        "actions": "Ayyuka",
+        "distribution": "Rarraba"
+      },
+      "nextMeeting": {
+        "title": "Taro na gaba",
+        "date": "Kwanan wata",
+        "duration": "Tsawon lokaci (min)",
+        "room": "Ɗakin",
+        "required": "Na gaba da ake buƙata"
+      },
+      "distribution": {
+        "minutesToAttendees": "Mintuna ga mahalarta",
+        "invites": "Gayyata ga waɗanda aka buƙata su halarta"
+      },
+      "publish": "Wallafa & aika",
+      "published": "An buga",
+      "saveDraft": "Ajiye daftari",
+      "finalisedChanges": "Kammalawa ta canza",
+      "retry": "Sake gwadawa"
+    },
+    "snapshot": {
+      "toolbarButton": "Ɗaukar hoto zuwa Meet++",
+      "added": "An ƙara hoton allo",
+      "failed": "Ɗaukar hoto ya kasa"
+    }
   }
 }

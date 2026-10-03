@@ -16,6 +16,10 @@ export default {
           700: "#162C49",
           800: "#12253E",
           900: "#0E1E33",
+          // Darkest surface used by panels/modals/inputs (Meet++). Was missing,
+          // so `bg-primary-950` silently did nothing and native controls fell
+          // back to a white background with light text.
+          950: "#0A1626",
         },
         secondary: {
           500: "#2E5A8F",

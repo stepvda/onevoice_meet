@@ -20,7 +20,8 @@
     "account": "Tili",
     "upgrade": "Päivitä",
     "vouchers": "Kupongit",
-    "admin": "Ylläpitäjä"
+    "admin": "Ylläpitäjä",
+    "onDemand": "Tilauksesta"
   },
   "tiCafe": {
     "title": "Kahvila",
@@ -65,7 +66,10 @@
     "loading": "Ladataan…",
     "close": "Sulje",
     "anonymous": "anonyymi",
-    "requestFailed": "Pyyntö epäonnistui"
+    "requestFailed": "Pyyntö epäonnistui",
+    "on": "Päällä",
+    "off": "Pois",
+    "dismiss": "Sulje"
   },
   "signInPrompt": {
     "button": "Kirjaudu sisään osoitteessa one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Odotushuone",
     "waitingRoomDesc": "Uudet osallistujat odottavat, että päästät heidät sisään kokoustyökaluriviltä.",
     "autoAdmitAuthenticated": "Hyväksy kirjautuneet käyttäjät automaattisesti (tulossa pian)",
-    "autoAdmitAuthenticatedDesc": "Ohita odotushuone kirjautuneille one.witysk.org-käyttäjille. Ei vielä käytössä — anonyymit liittyjät menevät aina jonoon."
+    "autoAdmitAuthenticatedDesc": "Ohita odotushuone kirjautuneille one.witysk.org-käyttäjille. Ei vielä käytössä — anonyymit liittyjät menevät aina jonoon.",
+    "lobbyGreeting": "Aulatervehdys",
+    "lobbyGreetingHint": "Näytetään kaikille aulassa ennen liittymistä.",
+    "lobbyGreetingPlaceholder": "Tervetuloa! Mykistä mikrofonisi, kun et puhu.",
+    "schedule": "Aikataulu",
+    "scheduleHint": "Aseta kesto ja (valinnaisesti) toistuvuus, jotta kalenterikutsut toistuvat automaattisesti.",
+    "duration": "Kesto (minuuttia)",
+    "recurrence": "Toistuvuus",
+    "recurrenceNone": "Kertaluonteinen (ei toistuva)",
+    "recurrenceDaily": "Päivittäin",
+    "recurrenceWeekly": "Viikoittain",
+    "recurrenceBiweekly": "Joka 2. viikko",
+    "recurrenceMonthly": "Kuukausittain"
   },
   "discover": {
     "title": "Löydä",
     "subtitle": "— kokoukset, joihin voi liittyä",
     "join": "Liity",
     "maxParticipants": "enintään {{n}}",
-    "hostedBy": "Isännöi {{name}}"
+    "hostedBy": "Isännöi {{name}}",
+    "view": "Näytä",
+    "viewTitle": "Katso julkinen katselustriimi",
+    "streamsTitle": "Julkiset suoratoistolähetykset",
+    "streamsSubtitle": "— vain katselu, tiliä ei tarvita"
   },
   "myMeetings": {
     "loading": "Ladataan kokouksiasi…",
@@ -272,7 +292,14 @@
     "notImage": "Ei kuva ({{type}})",
     "processorFailed": "Taustatehosteet eivät ole tuettuja tällä laitteella.",
     "custom": "Mukautettu: {{name}}",
-    "customDefault": "Mukautettu kuva"
+    "customDefault": "Mukautettu kuva",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Meren aallot",
+    "particles": "Partikkelit",
+    "cityscape": "Kaupungin valot",
+    "cherryBlossoms": "Kirsikankukat",
+    "fireflies": "Tulikärpäset"
   },
   "participants": {
     "title": "Osallistujat",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Tee {{name}} esittäjäksi",
     "removeFromMeeting": "Poista kokouksesta",
     "removeName": "Poista {{name}}",
-    "authenticatedOwner": "Todennettu omistaja"
+    "authenticatedOwner": "Todennettu omistaja",
+    "cohost": "Toinen isäntä",
+    "promoteCohost": "Ylennä apujuontajaksi",
+    "demoteCohost": "Poista apujuontaja"
   },
   "chatPanel": {
     "title": "Keskustele",
@@ -294,7 +324,10 @@
     "send": "Lähetä",
     "close": "Sulje keskustelu",
     "ariaLabel": "Kokouksen keskustelu",
-    "messageAria": "Keskusteluviesti"
+    "messageAria": "Keskusteluviesti",
+    "pin": "Kiinnitä",
+    "unpin": "Poista kiinnitys",
+    "pinned": "Kiinnitetty"
   },
   "invite": {
     "title": "Kutsu sähköpostitse",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Tallenteet",
     "subtitle": "Palvelimen puolella tallennetut kokouksesi. Paikalliset tiedostot poistuvat automaattisesti 30 päivän kuluttua (tai kun julkaiset YouTubeen). Lataukset tehdään vain omistajan aloitteesta.",
-    "empty": "Ei vielä tallenteita. Aloita kokous ja klikkaa <1>Tallenna</1> tallentaaksesi yhden.",
+    "empty": "Ei vielä tallenteita. Aloita kokous ja napsauta <1>Tallenna</1> tallentaaksesi sellaisen.",
     "loading": "Ladataan…",
     "signInFirst": "Kirjaudu ensin sisään osoitteessa one.witysk.org.",
     "signInTitle": "Kirjaudu sisään nähdäksesi tallenteesi",
@@ -932,5 +965,378 @@
     "tileBadge": "Käsi ylhäällä",
     "lowerOther": "Laske tämän osallistujan käsi",
     "lowerName": "Laske {{name}} käsi"
+  },
+  "onDemand": {
+    "title": "Tilauksesta",
+    "subtitle": "Videot käynnissä olevista julkisista suoratoistoista — katso milloin tahansa, tiliä ei tarvita.",
+    "watch": "Katsele",
+    "loading": "Ladataan…",
+    "empty": "Ei mitään tilattavissa juuri nyt. Tarkista myöhemmin, kun julkisella livestriimillä on videoita soittolistallaan.",
+    "error": "On Demand -palvelua ei voitu ladata juuri nyt."
+  },
+  "devices": {
+    "toolbar": "Ääni- ja videolaitteet",
+    "toolbarTitle": "Valitse mikrofoni, kamera ja kaiutin",
+    "mic": "Mikrofoni",
+    "camera": "Kamera",
+    "speaker": "Kaiutin",
+    "none": "Laitteita ei löytynyt",
+    "speakerUnsupported": "Tulostelaitteen valintaa ei tueta tässä selaimessa."
+  },
+  "notes": {
+    "title": "Muistiinpanot ja liitutaulu",
+    "toolbar": "Muistiinpanot ja valkotaulu",
+    "toolbarTitle": "Avaa jaetut muistiinpanot ja valkotaulu",
+    "close": "Sulje muistiinpanot",
+    "tabNotes": "Muistiinpanot",
+    "tabBoard": "Valkotaulu",
+    "hint": "Kaikki huoneessa voivat muokata. Tallennetaan automaattisesti.",
+    "placeholder": "Kirjoita jaetut muistiinpanot tähän…",
+    "color": "Väri",
+    "thickness": "Viivan paksuus",
+    "clear": "Tyhjennä taulu"
+  },
+  "polls": {
+    "title": "Kyselyt ja kysymykset",
+    "toolbar": "Kyselyt ja kysymykset",
+    "toolbarTitle": "Avaa kyselyt ja kysymykset",
+    "close": "Sulje kyselyt",
+    "tabPolls": "Kyselyt",
+    "tabQna": "Kysymykset ja vastaukset",
+    "empty": "Ei vielä kyselyitä.",
+    "createTitle": "Luo kysely",
+    "createButton": "Luo",
+    "questionPlaceholder": "Kysymyksesi",
+    "optionPlaceholder": "Vaihtoehto {{n}}",
+    "addOption": "+ Lisää vaihtoehto",
+    "open": "Avaa",
+    "closed": "Suljettu",
+    "closePoll": "Sulje kysely",
+    "qnaEmpty": "Ei vielä kysymyksiä.",
+    "qnaPlaceholder": "Kysy kysymys…",
+    "qnaAsk": "Kysy",
+    "qnaUpvote": "Äänestä",
+    "qnaMarkAnswered": "Vastattu"
+  },
+  "pip": {
+    "enter": "Kuva kuvassa",
+    "exit": "Poistu kuva kuvassa -tilasta",
+    "enterTitle": "Irrota aktiivinen puhuja kelluvaksi ruuduksi",
+    "exitTitle": "Sulje kelluva ruutu"
+  },
+  "shortcuts": {
+    "title": "Pikanäppäimet",
+    "close": "Sulje",
+    "disabled": "Pikanäppäimet on tällä hetkellä poistettu käytöstä kohdassa Asetukset → Näppäimistö.",
+    "editHint": "Vaihda pikakuvakkeet Asetukset-sivulla (Näppäimistö-osiossa).",
+    "mute": "Vaihda mikrofoni",
+    "camera": "Vaihda kamera",
+    "hand": "Nosta / laske käsi",
+    "screenshare": "Näytönjaon vaihto",
+    "leave": "Poistu kokouksesta",
+    "help": "Näytä tämä peittokuva"
+  },
+  "feedback": {
+    "title": "Miten kokous sujui?",
+    "body": "Asteikolla 0 (huonoin) – 10 (paras), miten arvioisit tämän kokouksen?",
+    "commentLabel": "Vielä jotain? (valinnainen)",
+    "submit": "Lähetä",
+    "sending": "Lähetetään…",
+    "skip": "Ohita",
+    "thanks": "Kiitos palautteestasi!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Lähetä kelluva emojireaktio",
+    "send": "Lähetä {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Yhteyden laatu kohteelle {{name}} — {{band}}",
+      "title": "Yhteyden laatu"
+    },
+    "panel": {
+      "title": "Yhteyden laatu",
+      "self": "kamerasi",
+      "ariaLabel": "Yhteyden laatu: {{name}}"
+    },
+    "band": {
+      "high": "Korkea",
+      "medium": "Keskitaso",
+      "low": "Matala",
+      "lost": "Yhdistetään uudelleen…",
+      "measuring": "Mittaus…"
+    },
+    "limiter": {
+      "network": "Verkko: pakettihäviö ja viive",
+      "publisher": "Julkaisijan laite rajoittaa lähetystä",
+      "relay": "Välityspolku: kohonnut edestakainen viive",
+      "stability": "Epävakaa yhteys: laatu vaihtelee",
+      "unknown": "Mitataan yhteyttä",
+      "lost": "Yhteys katkesi — yhdistetään automaattisesti uudelleen"
+    },
+    "tab": {
+      "overview": "Yleiskatsaus",
+      "details": "Tiedot",
+      "actions": "Toiminnot",
+      "device": "Laite"
+    },
+    "quality": {
+      "low": "Matala",
+      "medium": "Keskitaso",
+      "high": "Korkea",
+      "auto": "Automaattinen"
+    },
+    "overview": {
+      "score": "Pisteet {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bittinopeus",
+      "resolution": "Tarkkuus",
+      "fps": "Kuvataajuus",
+      "loss": "Pakettihäviö",
+      "jitterRtt": "Värinä / RTT",
+      "dropped": "Ohitetut kehykset",
+      "audioLoss": "Äänen menetys (viime min)",
+      "transport": "Kuljetus",
+      "direct": "Suora",
+      "relay": "Välityspalvelin"
+    },
+    "details": {
+      "log": "Viimeisimmät toiminnot",
+      "none": "Ei vielä toimintoja",
+      "video": "Video",
+      "audio": "Ääni"
+    },
+    "action": {
+      "quality": "Laatu (simulcast-taso)",
+      "maxBitrate": "Enimmäisbitinopeus",
+      "compression": "Pakkaus",
+      "colorDepth": "Värisyvyys",
+      "colorDepthUnsupported": "10-bittisyys ei ole käytettävissä tällä laitteella / koodekilla",
+      "audioOnly": "Vain ääni tälle ruudulle",
+      "resync": "Synkronoi striimi uudelleen",
+      "resetAuto": "Palauta automaattiseksi",
+      "reconnect": "Yhdistä uudelleen",
+      "reconnectConfirm": "Vahvista yhdistäminen uudelleen",
+      "apply": "Käytä",
+      "export": "Vie raportti"
+    },
+    "scope": {
+      "receive": "Koskee sitä, mitä vastaanotat — julkaisijan kameraan ei kosketa",
+      "publish": "Muutokset näkyvät kaikille kokouksessa"
+    },
+    "autotune": {
+      "test": "Testaa optimaalisia asetuksia",
+      "running": "Testataan yhteyttä…",
+      "observing": "Tarkkaillaan… {{seconds}} s",
+      "applied": "Käytössä — asetukset säilytetty",
+      "rolledBack": "Palautettu — uusi asetus oli huonompi tässä verkossa",
+      "recommended": "Suositeltu tälle verkolle",
+      "retry": "Yritä uudelleen",
+      "rejected": "{{layer}} hylättiin: {{reason}}",
+      "phase": {
+        "baseline": "Kerätään perustasoa…",
+        "probing": "Tutkitaan kerroksia…",
+        "evaluating": "Arvioidaan ehdokkaita…",
+        "observing": "Tarkkaillaan tulosta…",
+        "done": "Valmis",
+        "failed": "Tarkistus epäonnistui",
+        "idle": "As instellingen"
+      },
+      "baseline": "Kerätään perustasoa…",
+      "step": {
+        "low": "Testataan LOW…",
+        "medium": "Testataan MEDIUM…",
+        "high": "Testataan HIGH…"
+      },
+      "evaluating": "Arvioidaan ehdokkaita…",
+      "done": "Suositus valmis"
+    },
+    "device": {
+      "remoteNote": "Kamera- ja mikrofoniasetukset kuuluvat julkaisijalle ({{name}})",
+      "camera": "Kamera",
+      "resolution": "Tarkkuus",
+      "frameRate": "Kuvataajuus",
+      "cameraMax": "Kamera tukee jopa {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Mikrofoni",
+      "channels": "Kanavat",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Äänenlaatu",
+      "voice": "Ääni",
+      "music": "Musiikki",
+      "stereoWarning": "Stereo poistaa kaikukopan ja taustamelun vaimennuksen käytöstä – käytä kuulokkeita; se myös kasvattaa lähtevän liikenteen kaistanleveyttä",
+      "apply": "Käytä kameraani ja mikrofoniini"
+    },
+    "busy": {
+      "quality": "Vaihdetaan laatua…",
+      "resync": "Synkronoidaan striimiä uudelleen…",
+      "reconnect": "Yhdistetään uudelleen…",
+      "maxBitrate": "Päivitetään bittinopeuden ylärajaa…",
+      "compression": "Päivitetään pakkausta…",
+      "resolution": "Vaihdetaan kameran tarkkuutta…",
+      "frameRate": "Vaihdetaan kuvataajuutta…",
+      "camera-device": "Vaihdetaan kameraa…",
+      "mic-device": "Vaihdetaan mikrofonia…",
+      "mic-mode": "Otetaan mikrofoniasetuksia käyttöön…",
+      "audioOnly": "Päivitetään lähetystä…",
+      "applyTune": "Otetaan asetuksia käyttöön…",
+      "probe": "Testataan yhteyttä…",
+      "export": "Valmistellaan raporttia…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "Tekoälykokous",
+      "aiNotesOn": "Tekoälymuistiinpanot päällä",
+      "aiNotesPaused": "Tekoälymuistiinpanot keskeytetty",
+      "menu": {
+        "pause": "Keskeytä litterointi",
+        "resume": "Jatka litterointia",
+        "mode": "Tila",
+        "boardToMain": "Tuo taulu pääasemaan",
+        "snapshot": "Taukutaulun tilannekuva",
+        "editors": "Muokkaajat…",
+        "end": "Lopeta AI-kokous",
+        "showBoard": "Näytä taulu",
+        "hideBoard": "Piilota taulu"
+      }
+    },
+    "setup": {
+      "title": "Aloita AI-kokous",
+      "intro": "Meet++ litteroi kokouksen ja pitää taulun ajan tasalla.",
+      "structure": "Kokousrakenne",
+      "agendaDriven": "Asialistakeskeinen",
+      "agendaDrivenHint": "Kohteet ja aikalaatikot",
+      "goalDriven": "Tavoitelähtöinen",
+      "goalDrivenHint": "Tavoite → tuotokset → seuraavat vaiheet",
+      "goalPlaceholder": "Tavoite",
+      "language": "Kieli",
+      "mode": "Tekoälytila",
+      "modeLead": "Järjestäjä",
+      "modeAssist": "Avusta",
+      "series": "Kokoussarja",
+      "newSeries": "Uusi sarja",
+      "agendaPdf": "Esityslista PDF",
+      "previousNotesPdf": "Edelliset muistiinpanot PDF",
+      "importedFromSeries": "Sarjasta tuotu",
+      "itemsFound": "{{count}} asialistan kohtaa löytyi",
+      "parsing": "Jäsennetään…",
+      "start": "Aloita",
+      "cancel": "Peruuta",
+      "notice": "Live-transkriptio toimii palvelimellamme; teksti käsitellään määritetyn LLM-tarjoajan toimesta muistion tuottamiseksi.",
+      "errors": {
+        "noTextLayer": "Tämä PDF vaikuttaa skannatulta. Lataa tekstimuotoinen PDF tai syötä esityslista manuaalisesti.",
+        "tooLarge": "PDF-tiedosto on liian suuri (enintään 10 Mt).",
+        "encrypted": "Tämä PDF on salasanasuojattu.",
+        "tooManyPages": "PDF-tiedostossa on liian monta sivua (enintään 50).",
+        "capacity": "Tekoälykapasiteetti varattu — yritä myöhemmin uudelleen."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Esityslista",
+        "decisions": "Päätökset",
+        "actions": "Toiminnot",
+        "attendance": "Osallistujat",
+        "minutes": "Minuutit",
+        "attachments": "Liitteet",
+        "transcript": "Tekstitys",
+        "previousDecisions": "Edellisen kokouksen päätökset"
+      },
+      "follow": "Seuraa",
+      "followPaused": "Keskeytetty",
+      "status": {
+        "listening": "Kuuntelen",
+        "thinking": "Ajattelee",
+        "behind": "{{s}} s kuluttua",
+        "paused": "Keskeytetty",
+        "offline": "Tekoäly ei ole käytettävissä"
+      },
+      "empty": {
+        "agenda": "Ei vielä asialistan kohtia.",
+        "decisions": "Päätökset näkyvät täällä sitä mukaa kun niitä tehdään.",
+        "actions": "Toiminnot näkyvät täällä, kun ne on sovittu.",
+        "attendance": "Osallistujat näkyvät, kun he liittyvät.",
+        "minutes": "Pöytäkirja näkyy jokaisen asialistan kohdan alla.",
+        "attachments": "Ei vielä liitteitä.",
+        "transcript": "Tekstitys näkyy tässä kokouksen aikana."
+      },
+      "actions": {
+        "confirm": "Vahvista",
+        "edit": "Muokkaa",
+        "reject": "Hylkää",
+        "add": "Lisää",
+        "setActive": "Aloita",
+        "done": "Valmis",
+        "defer": "Lykkää",
+        "previous": "Edellinen (avoin)",
+        "new": "Uutta tässä kokouksessa",
+        "unassigned": "Ei määritetty",
+        "ownerPrompt": "Omistajan nimi tai alias"
+      }
+    },
+    "phases": {
+      "opening": "Avataan",
+      "previousActions": "Aiemmat toiminnot",
+      "agenda": "Esityslista",
+      "goal": "Tavoite",
+      "discussion": "Keskustelu",
+      "aob": "Muu liiketoiminta",
+      "nextSteps": "Seuraavat vaiheet",
+      "newActions": "Uudet toiminnot",
+      "planning": "Suunnittelu",
+      "closing": "Sulkeutuu",
+      "jumpConfirm": "Siirry tähän vaiheeseen?"
+    },
+    "proposal": {
+      "title": "Siirry seuraavaan vaiheeseen?",
+      "moveNow": "Siirry nyt",
+      "notYet": "Ei vielä",
+      "autoIn": "Automaattisesti {{s}} s"
+    },
+    "announce": {
+      "dismiss": "Sulje"
+    },
+    "consent": {
+      "title": "Tekoälymuistiinpanot tässä kokouksessa",
+      "body": "Tässä kokouksessa käytetään AI-muistiinpanoja: puheesi litteroidaan palvelimellamme ja teksti käsitellään {{provider}}-palvelulla pöytäkirjan tuottamiseksi.",
+      "continue": "Jatka",
+      "optOut": "Älä litteroi minua",
+      "privacyLink": "Tietosuoja",
+      "changeChoice": "Vaihda valintani",
+      "notTranscribed": "Ei litteroitu"
+    },
+    "review": {
+      "title": "Tarkista ja julkaise",
+      "sections": {
+        "minutes": "Minuutit",
+        "decisions": "Päätökset",
+        "actions": "Toiminnot",
+        "distribution": "Jakelu"
+      },
+      "nextMeeting": {
+        "title": "Seuraava kokous",
+        "date": "Päivämäärä",
+        "duration": "Kesto (min)",
+        "room": "Huone",
+        "required": "Pakollinen seuraava"
+      },
+      "distribution": {
+        "minutesToAttendees": "Minuttia osallistujille",
+        "invites": "Kutsut pakollisille osallistujille"
+      },
+      "publish": "Julkaise ja lähetä",
+      "published": "Julkaistu",
+      "saveDraft": "Tallenna luonnos",
+      "finalisedChanges": "Viimeistely muuttui",
+      "retry": "Yritä uudelleen"
+    },
+    "snapshot": {
+      "toolbarButton": "Kuvakaappaus Meet++:aan",
+      "added": "Kuvakaappaus lisätty",
+      "failed": "Kuvakaappaus epäonnistui"
+    }
   }
 }

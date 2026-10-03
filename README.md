@@ -201,7 +201,7 @@ The reference deployment runs in production. Tests cover the meeting-api surface
 
 ## License
 
-[MIT](LICENSE). © Stéphane Vandamme. Pull requests welcome.
+[MIT](LICENSE). © Stephane van der Aa. Pull requests welcome.
 
 Upstream third-party services and licenses you should be aware of when self-hosting:
 

@@ -84,6 +84,16 @@ export default function Terms() {
           require explicit consent of every participant; the host is responsible
           for obtaining it.
         </p>
+        <p className="mt-2">
+          <b>AI meeting notes (Meet++).</b> A host may start an AI session that
+          transcribes the meeting and keeps a shared record of the agenda,
+          decisions, actions, attendance and minutes. Participants are asked for
+          consent before transcription and may opt out at any time; opted-out
+          participants can still speak and are marked "not transcribed". Meet++
+          minutes and next-meeting invitations are only sent when the host explicitly
+          publishes them. AI-produced content is a draft: the host is responsible for
+          reviewing it before it is distributed or relied upon.
+        </p>
       </Section>
 
       <Section title="7. Data and privacy">

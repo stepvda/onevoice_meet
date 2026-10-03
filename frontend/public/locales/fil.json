@@ -20,7 +20,8 @@
     "account": "Account",
     "upgrade": "Mag-upgrade",
     "vouchers": "Voucher",
-    "admin": "Admin"
+    "admin": "Admin",
+    "onDemand": "Kailangan"
   },
   "tiCafe": {
     "title": "Kapehan",
@@ -65,7 +66,10 @@
     "loading": "Naglo-load…",
     "close": "Isara",
     "anonymous": "anonymous",
-    "requestFailed": "Nabigo ang kahilingan"
+    "requestFailed": "Nabigo ang kahilingan",
+    "on": "Naka-on",
+    "off": "Naka-off",
+    "dismiss": "Isara"
   },
   "signInPrompt": {
     "button": "Mag-sign in sa one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Waiting room",
     "waitingRoomDesc": "Ang mga bagong sasali ay maghihintay hanggang tanggapin mo sila mula sa toolbar ng pulong.",
     "autoAdmitAuthenticated": "Awtomatikong i-admit ang mga naka-sign in na user (darating na)",
-    "autoAdmitAuthenticatedDesc": "Laktawan ang waiting room para sa mga naka-sign in na user ng one.witysk.org. Hindi pa ipinapatupad — laging pumipila ang mga anonymous na sumasali."
+    "autoAdmitAuthenticatedDesc": "Laktawan ang waiting room para sa mga naka-sign in na user ng one.witysk.org. Hindi pa ipinapatupad — laging pumipila ang mga anonymous na sumasali.",
+    "lobbyGreeting": "Pagbati sa lobby",
+    "lobbyGreetingHint": "Ipinapakita sa lahat ng nasa lobby bago sila sumali.",
+    "lobbyGreetingPlaceholder": "Maligayang pagdating! I-mute ang iyong mic kapag hindi nagsasalita.",
+    "schedule": "Iskedyul",
+    "scheduleHint": "Magtakda ng tagal at (opsyonal) ng pag-uulit para awtomatikong maulit ang mga imbitasyon sa kalendaryo.",
+    "duration": "Tagal (minuto)",
+    "recurrence": "Pag-ulit",
+    "recurrenceNone": "Isang beses lang (walang pag-uulit)",
+    "recurrenceDaily": "Araw-araw",
+    "recurrenceWeekly": "Lingguhan",
+    "recurrenceBiweekly": "Tuwing 2 linggo",
+    "recurrenceMonthly": "Buwanan"
   },
   "discover": {
     "title": "Tuklasin",
     "subtitle": "— mga pulong na bukas para sumali",
     "join": "Sumali",
     "maxParticipants": "max {{n}}",
-    "hostedBy": "Hino-host ni {{name}}"
+    "hostedBy": "Hino-host ni {{name}}",
+    "view": "Tingnan",
+    "viewTitle": "Panoorin ang pampublikong view-only stream",
+    "streamsTitle": "Mga pampublikong livestream",
+    "streamsSubtitle": "— panoorin lang, hindi kailangan ng account"
   },
   "myMeetings": {
     "loading": "Naglo-load ng iyong mga meeting…",
@@ -269,10 +289,17 @@
     "uploadTitle": "Mag-upload ng sarili mong background na larawan",
     "uploadAria": "Mag-upload ng background image",
     "tooLarge": "Ang imahe ay {{mb}} MB; ang maximum ay 4 MB.",
-    "notImage": "Hindi imahe ({{type}})",
+    "notImage": "Hindi larawan ({{type}})",
     "processorFailed": "Hindi sinusuportahan ng device na ito ang mga background effects.",
     "custom": "Custom: {{name}}",
-    "customDefault": "Custom na larawan"
+    "customDefault": "Custom na larawan",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Mga alon sa dagat",
+    "particles": "Mga Particle",
+    "cityscape": "Ilaw ng lungsod",
+    "cherryBlossoms": "Mga bulaklak ng cherry",
+    "fireflies": "Alitaptap"
   },
   "participants": {
     "title": "Mga Kalahok",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Gawing {{name}} tagapresenter",
     "removeFromMeeting": "Alisin mula sa meeting",
     "removeName": "Alisin ang {{name}}",
-    "authenticatedOwner": "Pinatotohanang may-ari"
+    "authenticatedOwner": "Pinatotohanang may-ari",
+    "cohost": "Co-host",
+    "promoteCohost": "I-promote bilang co-host",
+    "demoteCohost": "Alisin ang co-host"
   },
   "chatPanel": {
     "title": "Chat",
@@ -294,7 +324,10 @@
     "send": "Ipadala",
     "close": "Isara ang chat",
     "ariaLabel": "Chat sa pulong",
-    "messageAria": "Mensahe sa chat"
+    "messageAria": "Mensahe sa chat",
+    "pin": "I-pin",
+    "unpin": "I-unpin",
+    "pinned": "Naka-pin"
   },
   "invite": {
     "title": "Mag-imbita sa pamamagitan ng email",
@@ -932,5 +965,378 @@
     "tileBadge": "Itinaas ang kamay",
     "lowerOther": "Ibaba ang kamay ng kalahok na ito",
     "lowerName": "Ibaba ang kamay ni {{name}}"
+  },
+  "onDemand": {
+    "title": "Kailangan",
+    "subtitle": "Mga video mula sa mga kasalukuyang pampublikong livestream — panoorin anumang oras, hindi kailangan ng account.",
+    "watch": "Manood",
+    "loading": "Naglo-load…",
+    "empty": "Walang on demand ngayon. Bumalik kapag may mga video na sa playlist ng isang public livestream.",
+    "error": "Hindi ma-load ang On Demand ngayon."
+  },
+  "devices": {
+    "toolbar": "Mga audio at video device",
+    "toolbarTitle": "Pumili ng mikropono, camera at speaker",
+    "mic": "Mikropono",
+    "camera": "Camera",
+    "speaker": "Tagapagsalita",
+    "none": "Walang nahanap na device",
+    "speakerUnsupported": "Hindi sinusuportahan ng browser na ito ang pagpili ng output device."
+  },
+  "notes": {
+    "title": "Mga Tala at whiteboard",
+    "toolbar": "Mga tala at whiteboard",
+    "toolbarTitle": "Buksan ang mga nakabahaging tala at whiteboard",
+    "close": "Isara ang mga tala",
+    "tabNotes": "Mga Tala",
+    "tabBoard": "Whiteboard",
+    "hint": "Pwedeng i-edit ng lahat sa room. Awtomatikong nase-save.",
+    "placeholder": "Mag-type ng nakabahaging tala dito…",
+    "color": "Kulay",
+    "thickness": "Kapal ng stroke",
+    "clear": "I-clear ang board"
+  },
+  "polls": {
+    "title": "Mga Poll at Q&A",
+    "toolbar": "Mga Poll at Q&A",
+    "toolbarTitle": "Buksan ang mga poll at Q&A",
+    "close": "Isara ang mga poll",
+    "tabPolls": "Mga Poll",
+    "tabQna": "T&N",
+    "empty": "Wala pang poll.",
+    "createTitle": "Gumawa ng poll",
+    "createButton": "Gumawa",
+    "questionPlaceholder": "Ang tanong mo",
+    "optionPlaceholder": "Opsyon {{n}}",
+    "addOption": "+ Magdagdag ng opsyon",
+    "open": "Buksan",
+    "closed": "Sarado",
+    "closePoll": "Isara ang poll",
+    "qnaEmpty": "Wala pang tanong.",
+    "qnaPlaceholder": "Magtanong…",
+    "qnaAsk": "Magtanong",
+    "qnaUpvote": "I-upvote",
+    "qnaMarkAnswered": "Sinagot"
+  },
+  "pip": {
+    "enter": "Picture-in-picture",
+    "exit": "Lumabas sa picture-in-picture",
+    "enterTitle": "Ilabas ang aktibong nagsasalita sa isang lumulutang na tile",
+    "exitTitle": "Isara ang lumulutang na tile"
+  },
+  "shortcuts": {
+    "title": "Mga shortcut sa keyboard",
+    "close": "Isara",
+    "disabled": "Kasalukuyang naka-disable ang mga shortcut sa Settings → Keyboard.",
+    "editHint": "Palitan ang mga shortcut sa pahina ng Settings (seksyon ng Keyboard).",
+    "mute": "I-toggle ang mikropono",
+    "camera": "I-toggle ang camera",
+    "hand": "Itaas / ibaba ang kamay",
+    "screenshare": "I-toggle ang screenshare",
+    "leave": "Umalis sa meeting",
+    "help": "Ipakita ang overlay na ito"
+  },
+  "feedback": {
+    "title": "Kumusta ang meeting?",
+    "body": "Sa iskala na 0 (pinakamasama) hanggang 10 (pinakamahusay), paano mo i-rate ang meeting na ito?",
+    "commentLabel": "May iba pa ba? (opsyonal)",
+    "submit": "Isumite",
+    "sending": "Ipinapadala…",
+    "skip": "Laktawan",
+    "thanks": "Salamat sa iyong feedback!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Magpadala ng lumulutang na reaksyong emoji",
+    "send": "Ipadala ang {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Kalidad ng koneksyon para sa {{name}} — {{band}}",
+      "title": "Kalidad ng koneksyon"
+    },
+    "panel": {
+      "title": "Kalidad ng Koneksyon",
+      "self": "ang camera mo",
+      "ariaLabel": "Kalidad ng koneksyon para sa {{name}}"
+    },
+    "band": {
+      "high": "Mataas",
+      "medium": "Katamtaman",
+      "low": "Mababa",
+      "lost": "Muling kumokonekta…",
+      "measuring": "Sinusukat…"
+    },
+    "limiter": {
+      "network": "Network: pagkawala ng packet at jitter",
+      "publisher": "Nililimitahan ng publisher device ang stream",
+      "relay": "Daan ng relay: mataas na round-trip time",
+      "stability": "Hindi matatag na link: pabago-bago ang kalidad",
+      "unknown": "Sinusukat ang koneksyon",
+      "lost": "Nawalan ng koneksyon — awtomatikong muling kumokonekta"
+    },
+    "tab": {
+      "overview": "Pangkalahatang-tanaw",
+      "details": "Mga Detalye",
+      "actions": "Mga Aksyon",
+      "device": "Device"
+    },
+    "quality": {
+      "low": "Mababa",
+      "medium": "Med",
+      "high": "Mataas",
+      "auto": "Awtomatiko"
+    },
+    "overview": {
+      "score": "puntos {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitrate",
+      "resolution": "Resolusyon",
+      "fps": "Frame rate",
+      "loss": "Pagkawala ng packet",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Mga na-skip na frame",
+      "audioLoss": "Pagkawala ng audio (nakaraang min)",
+      "transport": "Transportasyon",
+      "direct": "Direkta",
+      "relay": "Relay"
+    },
+    "details": {
+      "log": "Mga kamakailang aksyon",
+      "none": "Wala pang aksyon",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "action": {
+      "quality": "Kalidad (simulcast layer)",
+      "maxBitrate": "Max bitrate",
+      "compression": "Compression",
+      "colorDepth": "Lalim ng kulay",
+      "colorDepthUnsupported": "Hindi available ang 10-bit sa device / codec na ito",
+      "audioOnly": "Audio lang para sa tile na ito",
+      "resync": "I-resync ang stream",
+      "resetAuto": "I-reset sa auto",
+      "reconnect": "Kumonekta muli",
+      "reconnectConfirm": "Kumpirmahin ang reconnect",
+      "apply": "Ilapat",
+      "export": "I-export ang ulat"
+    },
+    "scope": {
+      "receive": "Naaangkop sa natatanggap mo — hindi ginalaw ang camera ng publisher",
+      "publish": "Makikita ng lahat sa meeting ang mga pagbabago"
+    },
+    "autotune": {
+      "test": "Subukan ang pinakamainam na settings",
+      "running": "Sinusubukan ang koneksyon…",
+      "observing": "Nagmamasid… {{seconds}} s",
+      "applied": "Inilapat — napanatili ang mga setting",
+      "rolledBack": "Ibinalik — mas malala ang bagong setting sa network na ito",
+      "recommended": "Inirerekomenda para sa network na ito",
+      "retry": "Subukan muli",
+      "rejected": "Tinanggihan ang {{layer}}: {{reason}}",
+      "phase": {
+        "baseline": "Kinokolekta ang baseline…",
+        "probing": "Sinusuri ang mga layer…",
+        "evaluating": "Sinusuri ang mga kandidato…",
+        "observing": "Inoobserbahan ang resulta…",
+        "done": "Tapos na",
+        "failed": "Nabigo ang pag-probe",
+        "idle": ""
+      },
+      "baseline": "Kinokolekta ang baseline…",
+      "step": {
+        "low": "Pagsubok LOW…",
+        "medium": "Sinusubukan ang MEDIUM…",
+        "high": "Sinusubukan ang HIGH…"
+      },
+      "evaluating": "Sinusuri ang mga kandidato…",
+      "done": "Handa na ang rekomendasyon"
+    },
+    "device": {
+      "remoteNote": "Nasa publisher ({{name}}) ang mga setting ng camera at mikropono",
+      "camera": "Camera",
+      "resolution": "Resolusyon",
+      "frameRate": "Bilang ng frame",
+      "cameraMax": "Ang camera ay sumusuporta ng hanggang {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Mikropono",
+      "channels": "Mga Channel",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Kalidad ng audio",
+      "voice": "Tinig",
+      "music": "Musika",
+      "stereoWarning": "Ang stereo ay nag-disable ng echo cancellation at noise suppression — gumamit ng headphones; pinapataas din nito ang uplink bandwidth",
+      "apply": "Ilapat sa aking camera at mic"
+    },
+    "busy": {
+      "quality": "Binabago ang kalidad…",
+      "resync": "Sini-sync muli ang stream…",
+      "reconnect": "Muling kumokonekta…",
+      "maxBitrate": "Ina-update ang bitrate cap…",
+      "compression": "Ina-update ang compression…",
+      "resolution": "Binabago ang resolution ng camera…",
+      "frameRate": "Nagbabago ng frame rate…",
+      "camera-device": "Nagpapalit ng camera…",
+      "mic-device": "Nagpapalit ng mikropono…",
+      "mic-mode": "Inilalapat ang mga setting ng mikropono…",
+      "audioOnly": "Ina-update ang stream…",
+      "applyTune": "Inilalapat ang mga setting…",
+      "probe": "Sinusubukan ang koneksyon…",
+      "export": "Inihahanda ang ulat…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI Meeting",
+      "aiNotesOn": "Mga AI note sa",
+      "aiNotesPaused": "Naka-pause ang mga AI note",
+      "menu": {
+        "pause": "I-pause ang transkripsyon",
+        "resume": "Ipagpatuloy ang transkripsyon",
+        "mode": "Mode",
+        "boardToMain": "Dalhin ang board sa main",
+        "snapshot": "Snapshot ng whiteboard",
+        "editors": "Mga editor…",
+        "end": "Tapusin ang AI meeting",
+        "showBoard": "Ipakita ang board",
+        "hideBoard": "Itago ang board"
+      }
+    },
+    "setup": {
+      "title": "Simulan ang AI Meeting",
+      "intro": "Nagt-transcribe ang Meet++ ng pulong at ina-update ang board.",
+      "structure": "Istruktura ng pulong",
+      "agendaDriven": "Nakabatay sa agenda",
+      "agendaDrivenHint": "Mga item at timebox",
+      "goalDriven": "Nakatuon sa layunin",
+      "goalDrivenHint": "Layunin → mga deliverable → susunod na hakbang",
+      "goalPlaceholder": "Layunin",
+      "language": "Wika",
+      "mode": "AI mode",
+      "modeLead": "Nangunguna",
+      "modeAssist": "Tumulong",
+      "series": "Serye ng pulong",
+      "newSeries": "Bagong serye",
+      "agendaPdf": "PDF ng Agenda",
+      "previousNotesPdf": "PDF ng mga nakaraang tala",
+      "importedFromSeries": "Inangkat mula sa serye",
+      "itemsFound": "{{count}} mga item sa agenda ang nakita",
+      "parsing": "Pina-parse…",
+      "start": "Simulan",
+      "cancel": "Kanselahin",
+      "notice": "Live na transkripsyon ay tumatakbo sa aming server; ang teksto ay pinoproseso ng naka-configure na LLM provider para makabuo ng mga minuto.",
+      "errors": {
+        "noTextLayer": "Mukhang naka-scan ang PDF na ito. Mag-upload ng text PDF o manu-manong ilagay ang agenda.",
+        "tooLarge": "Masyadong malaki ang PDF (max 10 MB).",
+        "encrypted": "Protektado ng password ang PDF na ito.",
+        "tooManyPages": "Masyadong maraming pahina ang PDF (max 50).",
+        "capacity": "Abala ang kapasidad ng AI — subukan muli mamaya."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Agenda",
+        "decisions": "Mga Desisyon",
+        "actions": "Mga Aksyon",
+        "attendance": "Pagdalo",
+        "minutes": "Minuto",
+        "attachments": "Mga attachment",
+        "transcript": "Transcript",
+        "previousDecisions": "Mga desisyon sa nakaraang pulong"
+      },
+      "follow": "Sundan",
+      "followPaused": "Naka-pause",
+      "status": {
+        "listening": "Nakikinig",
+        "thinking": "Nag-iisip",
+        "behind": "Pagkalipas ng {{s}}s",
+        "paused": "Naka-pause",
+        "offline": "Hindi available ang AI"
+      },
+      "empty": {
+        "agenda": "Wala pang mga item sa agenda.",
+        "decisions": "Lalabas dito ang mga desisyon habang ginagawa ang mga ito.",
+        "actions": "Lalabas dito ang mga aksyon kapag napagkasunduan na.",
+        "attendance": "Lalabas ang attendance kapag may sumali.",
+        "minutes": "Lalabas ang mga minuto sa bawat item ng agenda.",
+        "attachments": "Wala pang attachment.",
+        "transcript": "Lalabas dito ang transcript habang tumatakbo ang meeting."
+      },
+      "actions": {
+        "confirm": "Kumpirmahin",
+        "edit": "I-edit",
+        "reject": "Tumanggi",
+        "add": "Magdagdag",
+        "setActive": "Simulan",
+        "done": "Tapos na",
+        "defer": "Ipagpaliban",
+        "previous": "Nakaraan (bukas)",
+        "new": "Bago sa meeting na ito",
+        "unassigned": "Hindi Nakatalaga",
+        "ownerPrompt": "Pangalan o alias ng may-ari"
+      }
+    },
+    "phases": {
+      "opening": "Nagbubukas",
+      "previousActions": "Mga nakaraang aksyon",
+      "agenda": "Agenda",
+      "goal": "Layunin",
+      "discussion": "Diskusyon",
+      "aob": "Iba pang negosyo",
+      "nextSteps": "Mga susunod na hakbang",
+      "newActions": "Mga bagong aksyon",
+      "planning": "Pagpaplano",
+      "closing": "Pagsasara",
+      "jumpConfirm": "Lumaktaw sa phase na ito?"
+    },
+    "proposal": {
+      "title": "Lumipat sa susunod na yugto?",
+      "moveNow": "Lumipat na",
+      "notYet": "Wala pa",
+      "autoIn": "Awtomatiko sa {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Isara"
+    },
+    "consent": {
+      "title": "Mga AI note sa meeting na ito",
+      "body": "Gumagamit ang meeting na ito ng AI notes: ang iyong pagsasalita ay itinatranscribe sa aming server at ang teksto ay pinoproseso ng {{provider}} upang makabuo ng mga minuto.",
+      "continue": "Magpatuloy",
+      "optOut": "Huwag akong i-transcribe",
+      "privacyLink": "Privacy",
+      "changeChoice": "Palitan ang pinili ko",
+      "notTranscribed": "Hindi na-transcribe"
+    },
+    "review": {
+      "title": "Suriin at i-publish",
+      "sections": {
+        "minutes": "Minuto",
+        "decisions": "Mga Desisyon",
+        "actions": "Mga Aksyon",
+        "distribution": "Pamamahagi"
+      },
+      "nextMeeting": {
+        "title": "Susunod na meeting",
+        "date": "Petsa",
+        "duration": "Tagal (min)",
+        "room": "Kuwarto",
+        "required": "Kinakailangan sa susunod"
+      },
+      "distribution": {
+        "minutesToAttendees": "Mga minuto sa mga dadalo",
+        "invites": "Mga imbitasyon sa mga kinakailangang dadalo"
+      },
+      "publish": "I-publish at ipadala",
+      "published": "Nai-publish",
+      "saveDraft": "I-save ang draft",
+      "finalisedChanges": "Nagbago ang pagtatapos",
+      "retry": "Subukan muli"
+    },
+    "snapshot": {
+      "toolbarButton": "I-snapshot sa Meet++",
+      "added": "Naidagdag ang snapshot",
+      "failed": "Nabigo ang snapshot"
+    }
   }
 }

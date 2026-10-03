@@ -51,6 +51,23 @@ meet.witysk.org {
         reverse_proxy host.docker.internal:7880
     }
 
+    # Meet++ internal agent endpoints must never be reachable from the edge;
+    # the agent reaches meeting-api over the Docker network directly.
+    @meetpp_internal path /api/v1/internal/meetpp/*
+    handle @meetpp_internal {
+        respond 404
+    }
+
+    # Meet++ PDF uploads: cap the request body before Starlette spools it.
+    # 12 MB allows a 10 MiB file plus multipart overhead.
+    @meetpp_api path /api/v1/meetpp/*
+    handle @meetpp_api {
+        request_body {
+            max_size 12MB
+        }
+        reverse_proxy meeting-api:8080
+    }
+
     # meeting-api (REST + webhook receiver).
     @api path /api/*
     handle @api {

@@ -169,6 +169,9 @@ export interface Preferences {
     doNotDisturbEnd: string | null;
     ignoreOwnJoins: boolean;
     chatMessageSound: boolean;
+    // Meet++: play the spoken (TTS) part of phase announcements. The text
+    // overlay is always shown; this only mutes the audio.
+    speakAnnouncements: boolean;
   };
 
   // ── Privacy & data retention ──────────────────────────────────────
@@ -331,6 +334,7 @@ export const defaults: Preferences = {
     doNotDisturbEnd: null,
     ignoreOwnJoins: true,
     chatMessageSound: true,
+    speakAnnouncements: true,
   },
   privacy: {
     secureModeByDefault: false,

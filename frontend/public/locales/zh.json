@@ -20,7 +20,8 @@
     "account": "账号",
     "upgrade": "升级",
     "vouchers": "代金券",
-    "admin": "管理员"
+    "admin": "管理员",
+    "onDemand": "点播"
   },
   "tiCafe": {
     "title": "咖啡馆",
@@ -65,7 +66,10 @@
     "loading": "加载中…",
     "close": "关闭",
     "anonymous": "匿名",
-    "requestFailed": "请求失败"
+    "requestFailed": "请求失败",
+    "on": "开启",
+    "off": "关闭",
+    "dismiss": "关闭"
   },
   "signInPrompt": {
     "button": "登录 one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "等候室",
     "waitingRoomDesc": "新成员需等待您通过会议工具栏批准加入。",
     "autoAdmitAuthenticated": "自动准入已登录用户（即将推出）",
-    "autoAdmitAuthenticatedDesc": "已登录 one.witysk.org 用户可跳过等候室。尚未强制执行——匿名加入者始终需排队。"
+    "autoAdmitAuthenticatedDesc": "已登录 one.witysk.org 用户可跳过等候室。尚未强制执行——匿名加入者始终需排队。",
+    "lobbyGreeting": "大厅问候语",
+    "lobbyGreetingHint": "在加入前向大厅中的所有人显示。",
+    "lobbyGreetingPlaceholder": "欢迎！不发言时请静音麦克风。",
+    "schedule": "日程",
+    "scheduleHint": "设置时长并（可选）设置重复，让日历邀请自动重复。",
+    "duration": "时长（分钟）",
+    "recurrence": "重复",
+    "recurrenceNone": "一次性（不重复）",
+    "recurrenceDaily": "每日",
+    "recurrenceWeekly": "每周",
+    "recurrenceBiweekly": "每 2 周",
+    "recurrenceMonthly": "每月"
   },
   "discover": {
     "title": "发现",
     "subtitle": "— 可加入的会议",
     "join": "加入",
     "maxParticipants": "最大 {{n}}",
-    "hostedBy": "主办方：{{name}}"
+    "hostedBy": "主办方：{{name}}",
+    "view": "查看",
+    "viewTitle": "观看公开只读直播流",
+    "streamsTitle": "公开直播",
+    "streamsSubtitle": "— 仅观看，无需账号"
   },
   "myMeetings": {
     "loading": "正在加载您的会议…",
@@ -269,10 +289,17 @@
     "uploadTitle": "上传您自己的背景图片",
     "uploadAria": "上传背景图片",
     "tooLarge": "图片大小为 {{mb}} MB，最大为 4 MB。",
-    "notImage": "非图片（{{type}}）",
+    "notImage": "不是图片（{{type}}）",
     "processorFailed": "此设备不支持背景效果。",
     "custom": "自定义：{{name}}",
-    "customDefault": "自定义图片"
+    "customDefault": "自定义图片",
+    "aurora": "极光",
+    "bokeh": "背景虚化",
+    "wavesAnim": "海浪",
+    "particles": "粒子",
+    "cityscape": "城市灯光",
+    "cherryBlossoms": "樱花",
+    "fireflies": "萤火虫"
   },
   "participants": {
     "title": "参与者",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "将 {{name}} 设为演示者",
     "removeFromMeeting": "从会议中移除",
     "removeName": "移除 {{name}}",
-    "authenticatedOwner": "已验证的所有者"
+    "authenticatedOwner": "已验证的所有者",
+    "cohost": "联席主持人",
+    "promoteCohost": "提升为联席主持人",
+    "demoteCohost": "移除联席主持人"
   },
   "chatPanel": {
     "title": "聊天",
@@ -294,7 +324,10 @@
     "send": "发送",
     "close": "关闭聊天",
     "ariaLabel": "会议聊天",
-    "messageAria": "聊天消息"
+    "messageAria": "聊天消息",
+    "pin": "固定",
+    "unpin": "取消固定",
+    "pinned": "已置顶"
   },
   "invite": {
     "title": "通过邮件邀请",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "录制",
     "subtitle": "会议服务端录制。本地文件30天后自动删除（或发布至YouTube后删除）。仅限会议所有者发起上传。",
-    "empty": "暂无录制内容。开始会议并点击<1>录制</1>即可捕获。",
+    "empty": "还没有录制内容。开始会议并点击<1>录制</1>即可捕获。",
     "loading": "加载中…",
     "signInFirst": "请先在 one.witysk.org 上登录。",
     "signInTitle": "登录以查看您的录制内容",
@@ -932,5 +965,378 @@
     "tileBadge": "举手",
     "lowerOther": "降低该参与者的举手",
     "lowerName": "放下 {{name}} 的手"
+  },
+  "onDemand": {
+    "title": "按需",
+    "subtitle": "来自正在进行的公开直播的视频——随时观看，无需账号。",
+    "watch": "观看",
+    "loading": "加载中…",
+    "empty": "目前没有点播内容。等公开直播的播放列表中有视频时再来看看。",
+    "error": "暂时无法加载点播内容。"
+  },
+  "devices": {
+    "toolbar": "音频和视频设备",
+    "toolbarTitle": "选择麦克风、摄像头和扬声器",
+    "mic": "麦克风",
+    "camera": "摄像头",
+    "speaker": "发言人",
+    "none": "未找到设备",
+    "speakerUnsupported": "此浏览器不支持输出设备选择。"
+  },
+  "notes": {
+    "title": "注释与白板",
+    "toolbar": "笔记与白板",
+    "toolbarTitle": "打开共享笔记和白板",
+    "close": "关闭笔记",
+    "tabNotes": "备注",
+    "tabBoard": "白板",
+    "hint": "房间内所有人都可编辑。自动保存。",
+    "placeholder": "在此输入共享笔记…",
+    "color": "颜色",
+    "thickness": "描边粗细",
+    "clear": "清空白板"
+  },
+  "polls": {
+    "title": "投票与问答",
+    "toolbar": "投票与问答",
+    "toolbarTitle": "打开投票和问答",
+    "close": "关闭投票",
+    "tabPolls": "投票",
+    "tabQna": "问答",
+    "empty": "暂无投票。",
+    "createTitle": "创建投票",
+    "createButton": "创建",
+    "questionPlaceholder": "你的问题",
+    "optionPlaceholder": "选项 {{n}}",
+    "addOption": "+ 添加选项",
+    "open": "打开",
+    "closed": "已关闭",
+    "closePoll": "关闭投票",
+    "qnaEmpty": "暂无提问。",
+    "qnaPlaceholder": "问个问题…",
+    "qnaAsk": "询问",
+    "qnaUpvote": "点赞",
+    "qnaMarkAnswered": "已回答"
+  },
+  "pip": {
+    "enter": "画中画",
+    "exit": "退出画中画",
+    "enterTitle": "将当前发言者弹出为浮动窗口",
+    "exitTitle": "关闭浮动窗口"
+  },
+  "shortcuts": {
+    "title": "键盘快捷键",
+    "close": "关闭",
+    "disabled": "快捷键当前已在设置 → 键盘中禁用。",
+    "editHint": "在设置页面（键盘部分）更改快捷键。",
+    "mute": "切换麦克风",
+    "camera": "切换摄像头",
+    "hand": "举手 / 放手",
+    "screenshare": "切换屏幕共享",
+    "leave": "离开会议",
+    "help": "显示此叠加层"
+  },
+  "feedback": {
+    "title": "会议怎么样？",
+    "body": "从0（最差）到10（最好），您如何评价这次会议？",
+    "commentLabel": "还有其他要补充的吗？（可选）",
+    "submit": "提交",
+    "sending": "发送中…",
+    "skip": "跳过",
+    "thanks": "感谢您的反馈！"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "发送浮动表情回应",
+    "send": "发送 {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "{{name}} 的连接质量 — {{band}}",
+      "title": "连接质量"
+    },
+    "panel": {
+      "title": "连接质量",
+      "self": "你的摄像头",
+      "ariaLabel": "{{name}} 的连接质量"
+    },
+    "band": {
+      "high": "高",
+      "medium": "中",
+      "low": "低",
+      "lost": "正在重新连接…",
+      "measuring": "测量中…"
+    },
+    "limiter": {
+      "network": "网络：丢包和抖动",
+      "publisher": "发布者设备正在限制流",
+      "relay": "中继路径：往返时间偏高",
+      "stability": "连接不稳定：画质波动",
+      "unknown": "正在测量连接",
+      "lost": "连接已断开——正在自动重连"
+    },
+    "tab": {
+      "overview": "概览",
+      "details": "详情",
+      "actions": "操作",
+      "device": "设备"
+    },
+    "quality": {
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "auto": "自动"
+    },
+    "overview": {
+      "score": "得分 {{score}}"
+    },
+    "metric": {
+      "bitrate": "比特率",
+      "resolution": "分辨率",
+      "fps": "帧率",
+      "loss": "丢包",
+      "jitterRtt": "抖动 / RTT",
+      "dropped": "丢帧",
+      "audioLoss": "音频丢失（最近1分钟）",
+      "transport": "传输",
+      "direct": "直接",
+      "relay": "中继"
+    },
+    "details": {
+      "log": "最近操作",
+      "none": "暂无操作",
+      "video": "视频",
+      "audio": "音频"
+    },
+    "action": {
+      "quality": "画质（联播层）",
+      "maxBitrate": "最大比特率",
+      "compression": "压缩",
+      "colorDepth": "色彩深度",
+      "colorDepthUnsupported": "此设备/编解码器不支持10位",
+      "audioOnly": "仅此图块音频",
+      "resync": "重新同步流",
+      "resetAuto": "重置为自动",
+      "reconnect": "重新连接",
+      "reconnectConfirm": "确认重新连接",
+      "apply": "应用",
+      "export": "导出报告"
+    },
+    "scope": {
+      "receive": "仅影响你接收的画面——发布者的摄像头不受影响",
+      "publish": "更改对会议中的所有人可见"
+    },
+    "autotune": {
+      "test": "测试最佳设置",
+      "running": "正在测试连接…",
+      "observing": "正在观察… {{seconds}} 秒",
+      "applied": "已应用 — 设置已保留",
+      "rolledBack": "已还原——新设置在此网络上效果更差",
+      "recommended": "推荐用于此网络",
+      "retry": "重试",
+      "rejected": "{{layer}} 被拒绝：{{reason}}",
+      "phase": {
+        "baseline": "正在收集基线…",
+        "probing": "正在探测层级…",
+        "evaluating": "正在评估候选方案…",
+        "observing": "正在观察结果…",
+        "done": "完成",
+        "failed": "探测失败",
+        "idle": "会议已结束"
+      },
+      "baseline": "正在收集基线…",
+      "step": {
+        "low": "正在测试低…",
+        "medium": "正在测试 MEDIUM…",
+        "high": "正在测试 HIGH…"
+      },
+      "evaluating": "正在评估候选连接…",
+      "done": "推荐已就绪"
+    },
+    "device": {
+      "remoteNote": "摄像头和麦克风设置属于发布者（{{name}}）",
+      "camera": "摄像头",
+      "resolution": "分辨率",
+      "frameRate": "帧率",
+      "cameraMax": "摄像头最高支持 {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "麦克风",
+      "channels": "频道",
+      "mono": "单声道",
+      "stereo": "立体声",
+      "audioQuality": "音频质量",
+      "voice": "语音",
+      "music": "音乐",
+      "stereoWarning": "立体声会禁用回声消除和噪声抑制——请使用耳机；同时会提高上行带宽",
+      "apply": "应用到我的摄像头和麦克风"
+    },
+    "busy": {
+      "quality": "正在切换画质…",
+      "resync": "正在重新同步流…",
+      "reconnect": "正在重新连接…",
+      "maxBitrate": "正在更新比特率上限…",
+      "compression": "正在更新压缩设置…",
+      "resolution": "正在更改摄像头分辨率…",
+      "frameRate": "正在更改帧率…",
+      "camera-device": "正在切换摄像头…",
+      "mic-device": "正在切换麦克风…",
+      "mic-mode": "正在应用麦克风设置…",
+      "audioOnly": "正在更新直播…",
+      "applyTune": "正在应用设置…",
+      "probe": "正在测试连接…",
+      "export": "正在准备报告…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI 会议",
+      "aiNotesOn": "AI 笔记已开启",
+      "aiNotesPaused": "AI 笔记已暂停",
+      "menu": {
+        "pause": "暂停转录",
+        "resume": "恢复转录",
+        "mode": "模式",
+        "boardToMain": "将白板移至主界面",
+        "snapshot": "白板快照",
+        "editors": "编辑…",
+        "end": "结束 AI 会议",
+        "showBoard": "显示白板",
+        "hideBoard": "隐藏白板"
+      }
+    },
+    "setup": {
+      "title": "开始 AI 会议",
+      "intro": "Meet++ 会转录会议内容并保持白板实时更新。",
+      "structure": "会议结构",
+      "agendaDriven": "议程驱动",
+      "agendaDrivenHint": "项目和时限",
+      "goalDriven": "目标驱动",
+      "goalDrivenHint": "目标 → 交付成果 → 后续步骤",
+      "goalPlaceholder": "目标",
+      "language": "语言",
+      "mode": "AI 模式",
+      "modeLead": "主持人",
+      "modeAssist": "辅助",
+      "series": "会议系列",
+      "newSeries": "新系列",
+      "agendaPdf": "议程 PDF",
+      "previousNotesPdf": "之前的笔记 PDF",
+      "importedFromSeries": "从系列导入",
+      "itemsFound": "找到 {{count}} 个议程项",
+      "parsing": "解析中…",
+      "start": "开始",
+      "cancel": "取消",
+      "notice": "实时转录在我们的服务器上运行；文本由配置的 LLM 提供商处理以生成会议纪要。",
+      "errors": {
+        "noTextLayer": "这个 PDF 看起来是扫描件。请上传文本 PDF 或手动输入议程。",
+        "tooLarge": "PDF 文件过大（最大 10 MB）。",
+        "encrypted": "此 PDF 受密码保护。",
+        "tooManyPages": "PDF 页数过多（最多 50 页）。",
+        "capacity": "AI 容量繁忙 — 请稍后重试。"
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "议程",
+        "decisions": "决策",
+        "actions": "操作",
+        "attendance": "出勤",
+        "minutes": "分钟",
+        "attachments": "附件",
+        "transcript": "转录文本",
+        "previousDecisions": "上次会议的决定"
+      },
+      "follow": "关注",
+      "followPaused": "已暂停",
+      "status": {
+        "listening": "正在收听",
+        "thinking": "思考中",
+        "behind": "{{s}}秒后",
+        "paused": "已暂停",
+        "offline": "AI 不可用"
+      },
+      "empty": {
+        "agenda": "暂无议程项。",
+        "decisions": "决策做出后将显示在此处。",
+        "actions": "操作达成一致后会显示在这里。",
+        "attendance": "参会者加入后，出席情况将在此显示。",
+        "minutes": "会议纪要会按议程项显示。",
+        "attachments": "暂无附件。",
+        "transcript": "会议进行时，转写内容会显示在这里。"
+      },
+      "actions": {
+        "confirm": "确认",
+        "edit": "编辑",
+        "reject": "拒绝",
+        "add": "添加",
+        "setActive": "开始",
+        "done": "完成",
+        "defer": "推迟",
+        "previous": "上一个（打开）",
+        "new": "本次会议新增",
+        "unassigned": "未分配",
+        "ownerPrompt": "所有者姓名或别名"
+      }
+    },
+    "phases": {
+      "opening": "正在打开",
+      "previousActions": "之前的操作",
+      "agenda": "议程",
+      "goal": "目标",
+      "discussion": "讨论",
+      "aob": "其他业务",
+      "nextSteps": "后续步骤",
+      "newActions": "新操作",
+      "planning": "规划",
+      "closing": "关闭",
+      "jumpConfirm": "跳转到此阶段？"
+    },
+    "proposal": {
+      "title": "进入下一阶段？",
+      "moveNow": "立即移动",
+      "notYet": "尚未",
+      "autoIn": "{{s}}秒后自动"
+    },
+    "announce": {
+      "dismiss": "忽略"
+    },
+    "consent": {
+      "title": "本次会议的 AI 笔记",
+      "body": "本次会议使用 AI 笔记：你的语音会在我们的服务器上转写，文本由 {{provider}} 处理以生成会议纪要。",
+      "continue": "继续",
+      "optOut": "不要转录我",
+      "privacyLink": "隐私",
+      "changeChoice": "更改我的选择",
+      "notTranscribed": "未转录"
+    },
+    "review": {
+      "title": "审核并发布",
+      "sections": {
+        "minutes": "分钟",
+        "decisions": "决策",
+        "actions": "操作",
+        "distribution": "分发"
+      },
+      "nextMeeting": {
+        "title": "下一场会议",
+        "date": "日期",
+        "duration": "时长（分钟）",
+        "room": "房间",
+        "required": "下一步必需"
+      },
+      "distribution": {
+        "minutesToAttendees": "与会者分钟数",
+        "invites": "必选参会者的邀请"
+      },
+      "publish": "发布并发送",
+      "published": "已发布",
+      "saveDraft": "保存草稿",
+      "finalisedChanges": "最终确定已更改",
+      "retry": "重试"
+    },
+    "snapshot": {
+      "toolbarButton": "截图到 Meet++",
+      "added": "已添加快照",
+      "failed": "快照失败"
+    }
   }
 }

@@ -237,3 +237,52 @@ A broadcast-style 35-second slide inserted before any playlist item over 5 minut
 ### Intrusion detection + IP blocking
 
 [`intrusion_detector.py`](../meeting-api/app/services/intrusion_detector.py) tracks auth failures, 2FA failures, and 404 scans per-IP in sliding windows; auto-temp-blocks (default 30 min) when thresholds are crossed. Persistent blocks live in `blocked_ips` and are managed from the admin panel. The [`IPBlockMiddleware`](../meeting-api/app/services/ip_block.py) sits outermost in the FastAPI middleware stack so blocked addresses never hit auth or DB.
+
+## Meet++ — AI meeting organiser
+
+Owners and co-hosts see an **AI Meeting** button in the room top bar. One
+click starts an AI session that:
+
+- transcribes each consenting speaker live (captions + Transcript tab);
+- keeps a shared board current — Agenda, Decisions, Actions, Attendance,
+  Minutes, Attachments, Transcript;
+- steers the meeting through phases (opening → previous actions → agenda or
+  goal → discussion → other business → new actions → closing), with big-text
+  and spoken announcements (Lead mode auto-advances after an 8 s cancel
+  window; Assist asks the chair);
+- imports previous open actions from the meeting series automatically and
+  supports an optional agenda PDF and previous-notes PDF;
+- takes whiteboard snapshots into the session;
+- after the meeting, produces reviewable minutes and a next-meeting agenda,
+  then e-mails minutes to attendees and invitations (.ics) to the people
+  required next time — nothing is sent until the chair publishes.
+
+Participants can opt out of transcription at any time; opted-out participants
+can still speak and are marked "not transcribed" in the minutes. Captions,
+the board and manual editing keep working when the STT agent or the LLM is
+unavailable.
+
+### Meet++ board operations (chair / editors)
+
+The board is editable from the chair drawer (right-hand panel) and matches the
+FDD mockup: phase pills with a jump-to-phase control, an **Item n • mm:ss /
+timebox** timer, a **Next** button that advances the phase or the current
+agenda item, follow-mode toggle, tab counters, per-row confirm/edit/reject,
+provenance (`AI · A-12` / `prev. meeting`), NEW/UPDATE highlights and an
+`AI updated Xs ago · state vN` footer.
+
+Chair/editor actions available per tab: add, edit, reorder and set the active
+agenda item; add/confirm/edit/reject decisions; add/update actions (owner,
+due, status); mark apologies and edit attendee name/e-mail; regenerate one
+item's minutes; rename or delete attachments; search the transcript.
+
+### Meet++ operator controls
+
+- **Lobby** shows a purple "AI notes on" notice when a session is active.
+- **Admin → Meet++** shows enabled state, LLM breaker, tokens today, agent
+  health, active sessions with a graceful **End** kill switch, and the last 50
+  rejected operations.
+- Structured `MEETPP_SESSION`, `MEETPP_TICK`, `MEETPP_PROPOSAL` and
+  `MEETPP_OUTPUT` lines are written to `app.log`.
+- `meeting-api/tools/meetpp_eval.py` replays a recorded session through the
+  live prompt/provider and reports JSON validity, ops and token usage.

@@ -1185,5 +1185,158 @@
       "probe": "Testing the connection…",
       "export": "Preparing the report…"
     }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI Meeting",
+      "aiNotesOn": "AI notes on",
+      "aiNotesPaused": "AI notes paused",
+      "menu": {
+        "pause": "Pause transcription",
+        "resume": "Resume transcription",
+        "mode": "Mode",
+        "boardToMain": "Bring board to main",
+        "snapshot": "Whiteboard snapshot",
+        "editors": "Editors…",
+        "end": "End AI meeting",
+        "showBoard": "Show board",
+        "hideBoard": "Hide board"
+      }
+    },
+    "setup": {
+      "title": "Start AI Meeting",
+      "intro": "Meet++ transcribes the meeting and keeps the board up to date.",
+      "structure": "Meeting structure",
+      "agendaDriven": "Agenda-driven",
+      "agendaDrivenHint": "Items and timeboxes",
+      "goalDriven": "Goal-driven",
+      "goalDrivenHint": "Goal → deliverables → next steps",
+      "goalPlaceholder": "Goal",
+      "language": "Language",
+      "mode": "AI mode",
+      "modeLead": "Lead",
+      "modeAssist": "Assist",
+      "series": "Meeting series",
+      "newSeries": "New series",
+      "agendaPdf": "Agenda PDF",
+      "previousNotesPdf": "Previous notes PDF",
+      "importedFromSeries": "Imported from series",
+      "itemsFound": "{{count}} agenda items found",
+      "parsing": "Parsing…",
+      "start": "Start",
+      "cancel": "Cancel",
+      "notice": "Live transcription runs on our server; the text is processed by the configured LLM provider to produce minutes.",
+      "errors": {
+        "noTextLayer": "This PDF looks scanned. Upload a text PDF or enter the agenda manually.",
+        "tooLarge": "The PDF is too large (max 10 MB).",
+        "encrypted": "This PDF is password-protected.",
+        "tooManyPages": "The PDF has too many pages (max 50).",
+        "capacity": "AI capacity busy — try again later."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Agenda",
+        "decisions": "Decisions",
+        "actions": "Actions",
+        "attendance": "Attendance",
+        "minutes": "Minutes",
+        "attachments": "Attachments",
+        "transcript": "Transcript",
+        "previousDecisions": "Previous meeting's decisions"
+      },
+      "follow": "Follow",
+      "followPaused": "Paused",
+      "status": {
+        "listening": "Listening",
+        "thinking": "Thinking",
+        "behind": "Behind {{s}}s",
+        "paused": "Paused",
+        "offline": "AI unavailable"
+      },
+      "empty": {
+        "agenda": "No agenda items yet.",
+        "decisions": "Decisions will appear here as they are made.",
+        "actions": "Actions will appear here as they are agreed.",
+        "attendance": "Attendance will appear as people join.",
+        "minutes": "Minutes will appear per agenda item.",
+        "attachments": "No attachments yet.",
+        "transcript": "The transcript appears here while the meeting runs."
+      },
+      "actions": {
+        "confirm": "Confirm",
+        "edit": "Edit",
+        "reject": "Reject",
+        "add": "Add",
+        "setActive": "Start",
+        "done": "Done",
+        "defer": "Defer",
+        "previous": "Previous (open)",
+        "new": "New this meeting",
+        "unassigned": "Unassigned",
+        "ownerPrompt": "Owner name or alias"
+      }
+    },
+    "phases": {
+      "opening": "Opening",
+      "previousActions": "Previous actions",
+      "agenda": "Agenda",
+      "goal": "Goal",
+      "discussion": "Discussion",
+      "aob": "Other business",
+      "nextSteps": "Next steps",
+      "newActions": "New actions",
+      "planning": "Planning",
+      "closing": "Closing",
+      "jumpConfirm": "Jump to this phase?"
+    },
+    "proposal": {
+      "title": "Move to the next phase?",
+      "moveNow": "Move now",
+      "notYet": "Not yet",
+      "autoIn": "Auto in {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Dismiss"
+    },
+    "consent": {
+      "title": "AI notes in this meeting",
+      "body": "This meeting uses AI notes: your speech is transcribed on our server and the text is processed by {{provider}} to produce minutes.",
+      "continue": "Continue",
+      "optOut": "Don't transcribe me",
+      "privacyLink": "Privacy",
+      "changeChoice": "Change my choice",
+      "notTranscribed": "Not transcribed"
+    },
+    "review": {
+      "title": "Review and publish",
+      "sections": {
+        "minutes": "Minutes",
+        "decisions": "Decisions",
+        "actions": "Actions",
+        "distribution": "Distribution"
+      },
+      "nextMeeting": {
+        "title": "Next meeting",
+        "date": "Date",
+        "duration": "Duration (min)",
+        "room": "Room",
+        "required": "Required next"
+      },
+      "distribution": {
+        "minutesToAttendees": "Minutes to attendees",
+        "invites": "Invitations to required attendees"
+      },
+      "publish": "Publish & send",
+      "published": "Published",
+      "saveDraft": "Save draft",
+      "finalisedChanges": "Finalisation changed",
+      "retry": "Retry"
+    },
+    "snapshot": {
+      "toolbarButton": "Snapshot to Meet++",
+      "added": "Snapshot added",
+      "failed": "Snapshot failed"
+    }
   }
 }

@@ -20,7 +20,8 @@
     "account": "Akaunti",
     "upgrade": "Boresha",
     "vouchers": "Vocha",
-    "admin": "Msimamizi"
+    "admin": "Msimamizi",
+    "onDemand": "Kwa Ombi"
   },
   "tiCafe": {
     "title": "Kahawa",
@@ -65,7 +66,10 @@
     "loading": "Inapakia…",
     "close": "Funga",
     "anonymous": "wasiojulikana",
-    "requestFailed": "Ombi halikufaulu"
+    "requestFailed": "Ombi halikufaulu",
+    "on": "Imewashwa",
+    "off": "Zima",
+    "dismiss": "Ondoa"
   },
   "signInPrompt": {
     "button": "Ingia kwenye one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Chumba cha kusubiri",
     "waitingRoomDesc": "Wageni wapya wasubiri hadi utakapowakubali kutoka kwenye upau wa zana wa mkutano.",
     "autoAdmitAuthenticated": "Wakubali watumiaji walioingia kiotomatiki (inakuja hivi karibuni)",
-    "autoAdmitAuthenticatedDesc": "Ruka chumba cha kusubiri kwa watumiaji walioingia kwenye one.witysk.org. Bado haijatekelezwa — wanaojiunga bila kujulikana wanapanga foleni kila wakati."
+    "autoAdmitAuthenticatedDesc": "Ruka chumba cha kusubiri kwa watumiaji walioingia kwenye one.witysk.org. Bado haijatekelezwa — wanaojiunga bila kujulikana wanapanga foleni kila wakati.",
+    "lobbyGreeting": "Salamu ya ukumbi",
+    "lobbyGreetingHint": "Huonyeshwa kwa kila mtu kwenye ukumbi kabla ya kujiunga.",
+    "lobbyGreetingPlaceholder": "Karibu! Tafadhali zima maikrofoni yako usipokuwa ukizungumza.",
+    "schedule": "Ratiba",
+    "scheduleHint": "Weka muda na (kwa hiari) mzunguko ili mialiko ya kalenda irudiwe kiotomatiki.",
+    "duration": "Muda (dakika)",
+    "recurrence": "Urejeshaji",
+    "recurrenceNone": "Mara moja (bila kurudiwa)",
+    "recurrenceDaily": "Kila siku",
+    "recurrenceWeekly": "Kila wiki",
+    "recurrenceBiweekly": "Kila baada ya wiki 2",
+    "recurrenceMonthly": "Kila mwezi"
   },
   "discover": {
     "title": "Gundua",
     "subtitle": "— mikutano iliyo wazi kujiunga",
     "join": "Jiunga",
     "maxParticipants": "kiwango cha juu {{n}}",
-    "hostedBy": "Inaendeshwa na {{name}}"
+    "hostedBy": "Inaendeshwa na {{name}}",
+    "view": "Angalia",
+    "viewTitle": "Tazama mtiririko wa umma wa kuona pekee",
+    "streamsTitle": "Matangazo ya moja kwa moja ya umma",
+    "streamsSubtitle": "— kutazama tu, hakuna akaunti inayohitajika"
   },
   "myMeetings": {
     "loading": "Inapakia mikutano yako…",
@@ -272,7 +292,14 @@
     "notImage": "Sio picha ({{type}})",
     "processorFailed": "Madoido ya usuli hayawezi kutumika kwenye kifaa hiki.",
     "custom": "Maalum: {{name}}",
-    "customDefault": "Picha maalum"
+    "customDefault": "Picha maalum",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Mawimbi ya bahari",
+    "particles": "Chembe",
+    "cityscape": "Taa za jiji",
+    "cherryBlossoms": "Maua ya cheri",
+    "fireflies": "Fireflies"
   },
   "participants": {
     "title": "Washiriki",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Fanya {{name}} mwasilishaji",
     "removeFromMeeting": "Ondoa kutoka kwenye mkutano",
     "removeName": "Ondoa {{name}}",
-    "authenticatedOwner": "Mmiliki aliyeidhinishwa"
+    "authenticatedOwner": "Mmiliki aliyeidhinishwa",
+    "cohost": "Mwenyeji mwenza",
+    "promoteCohost": "Pandisha kuwa mwenyeji mwenza",
+    "demoteCohost": "Ondoa mwenyeji mwenza"
   },
   "chatPanel": {
     "title": "Ongea",
@@ -294,7 +324,10 @@
     "send": "Tuma",
     "close": "Funga mazungumzo",
     "ariaLabel": "Soga la mkutano",
-    "messageAria": "Ujumbe wa mazungumzo"
+    "messageAria": "Ujumbe wa mazungumzo",
+    "pin": "Bandika",
+    "unpin": "Ondoa",
+    "pinned": "Imebandikwa"
   },
   "invite": {
     "title": "Alika kwa barua pepe",
@@ -932,5 +965,378 @@
     "tileBadge": "Mkono umeinuliwa",
     "lowerOther": "Punguza mkono wa mshiriki huyu",
     "lowerName": "Punguza mkono wa {{name}}"
+  },
+  "onDemand": {
+    "title": "Kwa Mahitaji",
+    "subtitle": "Video kutoka kwa matangazo ya moja kwa moja ya umma yanayoendelea — tazama wakati wowote, hakuna akaunti inayohitajika.",
+    "watch": "Tazama",
+    "loading": "Inapakia…",
+    "empty": "Hakuna kitu kwa mahitaji sasa hivi. Angalia tena wakati livestream ya umma ina video kwenye orodha yake ya kucheza.",
+    "error": "Imeshindwa kupakia On Demand kwa sasa."
+  },
+  "devices": {
+    "toolbar": "Vifaa vya sauti na video",
+    "toolbarTitle": "Chagua maikrofoni, kamera na spika",
+    "mic": "Kipaza sauti",
+    "camera": "Kamera",
+    "speaker": "Spika",
+    "none": "Hakuna kifaa kilichopatikana",
+    "speakerUnsupported": "Uteuzi wa kifaa cha kutoa sauti hautumiki katika kivinjari hiki."
+  },
+  "notes": {
+    "title": "Vidokezo na ubao mweupe",
+    "toolbar": "Vidokezo na ubao mweupe",
+    "toolbarTitle": "Fungua madokezo yaliyoshirikiwa na ubao mweupe",
+    "close": "Funga madokezo",
+    "tabNotes": "Vidokezo",
+    "tabBoard": "Ubao mweupe",
+    "hint": "Kila mtu kwenye chumba anaweza kuhariri. Huhifadhiwa kiotomatiki.",
+    "placeholder": "Andika madokezo yanayoshirikiwa hapa…",
+    "color": "Rangi",
+    "thickness": "Unene wa mstari",
+    "clear": "Safisha ubao"
+  },
+  "polls": {
+    "title": "Kura & Maswali na Majibu",
+    "toolbar": "Kura & Maswali",
+    "toolbarTitle": "Fungua kura na Maswali na Majibu",
+    "close": "Funga kura",
+    "tabPolls": "Kura",
+    "tabQna": "Maswali na Majibu",
+    "empty": "Hakuna kura bado.",
+    "createTitle": "Unda kura",
+    "createButton": "Unda",
+    "questionPlaceholder": "Swali lako",
+    "optionPlaceholder": "Chaguo {{n}}",
+    "addOption": "+ Ongeza chaguo",
+    "open": "Fungua",
+    "closed": "Imefungwa",
+    "closePoll": "Funga kura",
+    "qnaEmpty": "Hakuna maswali bado.",
+    "qnaPlaceholder": "Uliza swali…",
+    "qnaAsk": "Uliza",
+    "qnaUpvote": "Piga kura ya kupenda",
+    "qnaMarkAnswered": "Amejibu"
+  },
+  "pip": {
+    "enter": "Picha ndani ya picha",
+    "exit": "Toka kwenye picha-ndani-ya-picha",
+    "enterTitle": "Toa mzungumzaji anayetumika kwenye kigae kinachoelea",
+    "exitTitle": "Funga kigae kinachoelea"
+  },
+  "shortcuts": {
+    "title": "Njia za mkato za kibodi",
+    "close": "Funga",
+    "disabled": "Njia za mkato kwa sasa zimezimwa katika Mipangilio → Kibodi.",
+    "editHint": "Badilisha njia za mkato kwenye ukurasa wa Mipangilio (sehemu ya Kibodi).",
+    "mute": "Badili maikrofoni",
+    "camera": "Badilisha kamera",
+    "hand": "Inua / shusha mkono",
+    "screenshare": "Badili kushiriki skrini",
+    "leave": "Ondoka kwenye mkutano",
+    "help": "Onyesha kifuniko hiki"
+  },
+  "feedback": {
+    "title": "Ulikuwaje kwenye mkutano?",
+    "body": "Kwa kipimo cha 0 (mbaya zaidi) hadi 10 (bora zaidi), ungeipima vipi mkutano huu?",
+    "commentLabel": "Kitu kingine chochote? (si lazima)",
+    "submit": "Tuma",
+    "sending": "Inatuma…",
+    "skip": "Ruka",
+    "thanks": "Asante kwa maoni yako!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Tuma emoji inayoelea kama majibu",
+    "send": "Tuma {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Ubora wa muunganisho kwa {{name}} — {{band}}",
+      "title": "Ubora wa muunganisho"
+    },
+    "panel": {
+      "title": "Ubora wa Muunganisho",
+      "self": "kamera yako",
+      "ariaLabel": "Ubora wa muunganisho kwa {{name}}"
+    },
+    "band": {
+      "high": "Juu",
+      "medium": "Wastani",
+      "low": "Chini",
+      "lost": "Inaunganisha tena…",
+      "measuring": "Inapima…"
+    },
+    "limiter": {
+      "network": "Mtandao: upotevu wa pakiti na mshindo",
+      "publisher": "Kifaa cha mchapishaji kinapunguza mkondo",
+      "relay": "Njia ya upeanuzi: muda wa juu wa kwenda na kurudi",
+      "stability": "Kiungo kisicho imara: ubora unabadilikabadilika",
+      "unknown": "Kupima muunganisho",
+      "lost": "Muunganisho umepotea — inaunganisha tena kiotomatiki"
+    },
+    "tab": {
+      "overview": "Muhtasari",
+      "details": "Maelezo",
+      "actions": "Vitendo",
+      "device": "Kifaa"
+    },
+    "quality": {
+      "low": "Chini",
+      "medium": "Kati",
+      "high": "Juu",
+      "auto": "Otomatiki"
+    },
+    "overview": {
+      "score": "Alama {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitrate",
+      "resolution": "Azimio",
+      "fps": "Kiwango cha fremu",
+      "loss": "Upotevu wa pakiti",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Fremu zilizorukwa",
+      "audioLoss": "Upotevu wa sauti (dakika ya mwisho)",
+      "transport": "Usafirishaji",
+      "direct": "Moja kwa moja",
+      "relay": "Relay"
+    },
+    "details": {
+      "log": "Vitendo vya hivi karibuni",
+      "none": "Hakuna vitendo bado",
+      "video": "Video",
+      "audio": "Sauti"
+    },
+    "action": {
+      "quality": "Ubora (safu ya simulcast)",
+      "maxBitrate": "Kiwango cha juu cha biti",
+      "compression": "Ukandamizaji",
+      "colorDepth": "Kina cha rangi",
+      "colorDepthUnsupported": "10-bit haipatikani kwenye kifaa hiki / kodeki",
+      "audioOnly": "Sauti pekee kwa kigae hiki",
+      "resync": "Sawazisha mtiririko upya",
+      "resetAuto": "Weka upya kwa otomatiki",
+      "reconnect": "Unganisha tena",
+      "reconnectConfirm": "Thibitisha kuunganisha tena",
+      "apply": "Tumia",
+      "export": "Hamisha ripoti"
+    },
+    "scope": {
+      "receive": "Inatumika kwa unachopokea — kamera ya mtangazaji haibadiliki",
+      "publish": "Mabadiliko yanaonekana kwa kila mtu kwenye mkutano"
+    },
+    "autotune": {
+      "test": "Jaribu mipangilio bora",
+      "running": "Inajaribu muunganisho…",
+      "observing": "Inaangalia… sekunde {{seconds}}",
+      "applied": "Imetumika — mipangilio imehifadhiwa",
+      "rolledBack": "Imerejeshwa — mpangilio mpya ulikuwa mbaya zaidi kwenye mtandao huu",
+      "recommended": "Inapendekezwa kwa mtandao huu",
+      "retry": "Jaribu tena",
+      "rejected": "{{layer}} ilikataliwa: {{reason}}",
+      "phase": {
+        "baseline": "Inakusanya msingi…",
+        "probing": "Inachunguza tabaka…",
+        "evaluating": "Inatathmini watahiniwa…",
+        "observing": "Inaangalia matokeo…",
+        "done": "Imekamilika",
+        "failed": "Uchunguzi umeshindwa",
+        "idle": "Kikomo cha muda wa kikao (dakika)"
+      },
+      "baseline": "Inakusanya msingi…",
+      "step": {
+        "low": "Inajaribu CHINI…",
+        "medium": "Inajaribu MEDIUM…",
+        "high": "Inajaribu HIGH…"
+      },
+      "evaluating": "Inatathmini watahiniwa…",
+      "done": "Pendekezo liko tayari"
+    },
+    "device": {
+      "remoteNote": "Mipangilio ya kamera na maikrofoni ni mali ya mchapishaji ({{name}})",
+      "camera": "Kamera",
+      "resolution": "Azimio",
+      "frameRate": "Kiwango cha fremu",
+      "cameraMax": "Kamera inaweza kufikia hadi {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Kipaza sauti",
+      "channels": "Njia",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Ubora wa sauti",
+      "voice": "Sauti",
+      "music": "Muziki",
+      "stereoWarning": "Stereo huzima ufutaji wa mwangwi na ukandamizaji wa kelele — tumia vipokea sauti; pia huongeza kipimo data cha kupandisha",
+      "apply": "Tumia kwa kamera na maikrofoni yangu"
+    },
+    "busy": {
+      "quality": "Inabadilisha ubora…",
+      "resync": "Inasawazisha mto tena…",
+      "reconnect": "Inaunganisha tena…",
+      "maxBitrate": "Inasasisha kikomo cha bitrate…",
+      "compression": "Inasasisha ukandamizaji…",
+      "resolution": "Inabadilisha ubora wa kamera…",
+      "frameRate": "Inabadilisha kasi ya fremu…",
+      "camera-device": "Inabadilisha kamera…",
+      "mic-device": "Inabadilisha maikrofoni…",
+      "mic-mode": "Inatumia mipangilio ya maikrofoni…",
+      "audioOnly": "Inasasisha utiririshaji…",
+      "applyTune": "Inatumia mipangilio…",
+      "probe": "Inajaribu muunganisho…",
+      "export": "Inaandaa ripoti…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI Mkutano",
+      "aiNotesOn": "Maelezo ya AI yamewashwa",
+      "aiNotesPaused": "Vidokezo vya AI vimesimamishwa",
+      "menu": {
+        "pause": "Sitisha unukuzi",
+        "resume": "Endeleza unukuzi",
+        "mode": "Hali",
+        "boardToMain": "Kuleta ubao kwenye skrini kuu",
+        "snapshot": "Picha ya ubao mweupe",
+        "editors": "Wahariri…",
+        "end": "Maliza mkutano wa AI",
+        "showBoard": "Onyesha ubao",
+        "hideBoard": "Ficha ubao"
+      }
+    },
+    "setup": {
+      "title": "Anza Mkutano wa AI",
+      "intro": "Meet++ hunakili mkutano na huweka ubao ukiwa umesasishwa.",
+      "structure": "Muundo wa mkutano",
+      "agendaDriven": "Ajenda-inaongozwa",
+      "agendaDrivenHint": "Vipengee na visanduku vya muda",
+      "goalDriven": "Inayolengwa",
+      "goalDrivenHint": "Lengo → matokeo → hatua zinazofuata",
+      "goalPlaceholder": "Lengo",
+      "language": "Lugha",
+      "mode": "Hali ya AI",
+      "modeLead": "Onesha",
+      "modeAssist": "Saidia",
+      "series": "Mfululizo wa mikutano",
+      "newSeries": "Mfululizo mpya",
+      "agendaPdf": "Ajenda PDF",
+      "previousNotesPdf": "PDF ya madokezo ya awali",
+      "importedFromSeries": "Imeingizwa kutoka mfululizo",
+      "itemsFound": "{{count}} ajenda zimepatikana",
+      "parsing": "Inachanganua…",
+      "start": "Anza",
+      "cancel": "Ghairi",
+      "notice": "Unukuzi wa moja kwa moja hufanya kazi kwenye seva yetu; maandishi huchakatwa na mtoa huduma wa LLM aliyesanidiwa ili kutoa muhtasari.",
+      "errors": {
+        "noTextLayer": "PDF hii inaonekana kama imeskaniwa. Pakia PDF ya maandishi au weka ajenda mwenyewe.",
+        "tooLarge": "PDF ni kubwa mno (kiwango cha juu ni 10 MB).",
+        "encrypted": "PDF hii inalindwa kwa nenosiri.",
+        "tooManyPages": "PDF ina kurasa nyingi mno (kiwango cha juu ni 50).",
+        "capacity": "Uwezo wa AI umejaa — jaribu tena baadaye."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Ajenda",
+        "decisions": "Maamuzi",
+        "actions": "Vitendo",
+        "attendance": "Mahudhurio",
+        "minutes": "Dakika",
+        "attachments": "Viambatisho",
+        "transcript": "Nakala",
+        "previousDecisions": "Maamuzi ya mkutano uliopita"
+      },
+      "follow": "Fuata",
+      "followPaused": "Imesitishwa",
+      "status": {
+        "listening": "Inasikiliza",
+        "thinking": "Inafikiri",
+        "behind": "Baada ya {{s}}s",
+        "paused": "Imesitishwa",
+        "offline": "AI haipatikani"
+      },
+      "empty": {
+        "agenda": "Hakuna ajenda bado.",
+        "decisions": "Maamuzi yataonekana hapa yanapofanywa.",
+        "actions": "Vitendo vitaonekana hapa kadri yanavyokubaliwa.",
+        "attendance": "Mahudhurio yataonekana watu wanapoingia.",
+        "minutes": "Dakika zitaonekana kwa kila kipengele cha ajenda.",
+        "attachments": "Hakuna viambatisho bado.",
+        "transcript": "Nakala ya maandishi inaonekana hapa wakati mkutano unaendelea."
+      },
+      "actions": {
+        "confirm": "Thibitisha",
+        "edit": "Hariri",
+        "reject": "Kataa",
+        "add": "Ongeza",
+        "setActive": "Anza",
+        "done": "Imekamilika",
+        "defer": "Ahirisha",
+        "previous": "Iliyotangulia (wazi)",
+        "new": "Mpya kwenye mkutano huu",
+        "unassigned": "Haijapangiwa",
+        "ownerPrompt": "Jina la mmiliki au jina la utani"
+      }
+    },
+    "phases": {
+      "opening": "Inafungua",
+      "previousActions": "Vitendo vilivyotangulia",
+      "agenda": "Ajenda",
+      "goal": "Lengo",
+      "discussion": "Majadiliano",
+      "aob": "Biashara nyingine",
+      "nextSteps": "Hatua zinazofuata",
+      "newActions": "Vitendo vipya",
+      "planning": "Kupanga",
+      "closing": "Inafunga",
+      "jumpConfirm": "Ruka hadi awamu hii?"
+    },
+    "proposal": {
+      "title": "Hamishia kwenye awamu inayofuata?",
+      "moveNow": "Hamia sasa",
+      "notYet": "Bado",
+      "autoIn": "Otomatiki baada ya {{s}}s"
+    },
+    "announce": {
+      "dismiss": "Ondoa"
+    },
+    "consent": {
+      "title": "Maelezo ya AI katika mkutano huu",
+      "body": "Mkutano huu unatumia madokezo ya AI: usemi wako unanakiliwa kwenye seva yetu na maandishi yanachakatwa na {{provider}} ili kutoa kumbukumbu.",
+      "continue": "Endelea",
+      "optOut": "Usinikili",
+      "privacyLink": "Faragha",
+      "changeChoice": "Badilisha chaguo langu",
+      "notTranscribed": "Haijanakiliwa"
+    },
+    "review": {
+      "title": "Kagua na uchapisha",
+      "sections": {
+        "minutes": "Dakika",
+        "decisions": "Maamuzi",
+        "actions": "Vitendo",
+        "distribution": "Usambazaji"
+      },
+      "nextMeeting": {
+        "title": "Mkutano unaofuata",
+        "date": "Tarehe",
+        "duration": "Muda (dak)",
+        "room": "Chumba",
+        "required": "Inayofuata inahitajika"
+      },
+      "distribution": {
+        "minutesToAttendees": "Dakika kwa washiriki",
+        "invites": "Mialiko kwa washiriki wanaohitajika"
+      },
+      "publish": "Chapisha na tuma",
+      "published": "Imetolewa",
+      "saveDraft": "Hifadhi rasimu",
+      "finalisedChanges": "Ukamilishaji umebadilika",
+      "retry": "Jaribu tena"
+    },
+    "snapshot": {
+      "toolbarButton": "Piga picha kwenda Meet++",
+      "added": "Picha imeongezwa",
+      "failed": "Upigaji picha umeshindwa"
+    }
   }
 }

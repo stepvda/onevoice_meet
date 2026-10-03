@@ -30,10 +30,24 @@ def _utc_stamp(dt: datetime) -> str:
 
 
 def _fold(line: str) -> str:
-    if len(line) <= 75:
+    """RFC 5545 §3.1: fold so no line exceeds 75 octets (UTF-8 bytes), not
+    characters. Continuation lines begin with a single space."""
+    raw = line.encode("utf-8")
+    if len(raw) <= 75:
         return line
-    chunks = [line[i : i + 73] for i in range(0, len(line), 73)]
-    return chunks[0] + "".join("\r\n " + c for c in chunks[1:])
+    chunks: list[bytes] = []
+    start = 0
+    # First line: 75 octets; continuations: 74 octets + leading space.
+    limit = 75
+    while start < len(raw):
+        end = min(start + limit, len(raw))
+        # Don't split a multi-byte UTF-8 sequence.
+        while end > start and end < len(raw) and (raw[end] & 0xC0) == 0x80:
+            end -= 1
+        chunks.append(raw[start:end])
+        start = end
+        limit = 74
+    return chunks[0].decode("utf-8") + "".join("\r\n " + c.decode("utf-8") for c in chunks[1:])
 
 
 def ics_for_meeting(m: Meeting) -> str:
@@ -72,6 +86,65 @@ def ics_for_meeting(m: Meeting) -> str:
         "END:VEVENT",
         "END:VCALENDAR",
     ]
+    return "\r\n".join(_fold(line) for line in lines) + "\r\n"
+
+
+def ics_invite(
+    *,
+    uid: str,
+    sequence: int,
+    summary: str,
+    join_url: str,
+    dtstart: datetime,
+    dtend: datetime,
+    organizer_name: str | None,
+    organizer_email: str | None,
+    attendees: list[dict],
+    description_text: str = "",
+    description_html: str = "",
+    recurrence_id: datetime | None = None,
+    location: str | None = None,
+) -> str:
+    """A real meeting invitation (METHOD:REQUEST) with ORGANIZER and one
+    ATTENDEE per required person, matching Appendix D. Times are UTC, so no
+    VTIMEZONE is needed."""
+    now = datetime.now(timezone.utc)
+    desc = description_text or f"Join: {join_url}"
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//witysk//Meet++//EN",
+        "METHOD:REQUEST",
+        "CALSCALE:GREGORIAN",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"SEQUENCE:{sequence}",
+        f"DTSTAMP:{_utc_stamp(now)}",
+        f"DTSTART:{_utc_stamp(dtstart)}",
+        f"DTEND:{_utc_stamp(dtend)}",
+        f"SUMMARY:{_ics_escape(summary)}",
+    ]
+    if recurrence_id is not None:
+        lines.append(f"RECURRENCE-ID:{_utc_stamp(recurrence_id)}")
+    if organizer_email:
+        cn = f";CN={_ics_escape(organizer_name)}" if organizer_name else ""
+        lines.append(f"ORGANIZER{cn}:mailto:{organizer_email}")
+    for a in attendees:
+        email = (a or {}).get("email")
+        if not email:
+            continue
+        cn = f";CN={_ics_escape(a.get('name') or email)}"
+        lines.append(
+            f"ATTENDEE{cn};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:{email}"
+        )
+    lines += [
+        f"LOCATION:{_ics_escape(location or join_url)}",
+        f"URL:{_ics_escape(join_url)}",
+        f"DESCRIPTION:{_ics_escape(desc)}",
+    ]
+    if description_html:
+        lines.append(f"X-ALT-DESC;FMTTYPE=text/html:{description_html}")
+    lines += ["END:VEVENT", "END:VCALENDAR"]
     return "\r\n".join(_fold(line) for line in lines) + "\r\n"
 
 

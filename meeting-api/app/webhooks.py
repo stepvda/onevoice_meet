@@ -37,6 +37,50 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _write_meetpp_transcript(db, rec: Recording) -> bool:
+    """If a finished Meet++ session covers this recording, write its
+    speaker-attributed transcript next to the MP4 and return True. The batch
+    whisper job is then skipped."""
+    try:
+        from app.meetpp.models import MeetppSegment, MeetppSession
+
+        session = (
+            db.query(MeetppSession)
+            .filter(
+                MeetppSession.meeting_id == rec.meeting_id,
+                MeetppSession.status.in_(("finalising", "review", "published")),
+            )
+            .order_by(MeetppSession.ended_at.desc())
+            .first()
+        )
+        if session is None:
+            return False
+        segs = (
+            db.query(MeetppSegment)
+            .filter_by(session_id=session.id)
+            .order_by(MeetppSegment.seq)
+            .all()
+        )
+        if not segs:
+            return False
+        lines = []
+        for s in segs:
+            stamp = s.t_start.strftime("%H:%M:%S") if s.t_start else ""
+            lines.append(f"[{stamp}] {s.name or s.identity}: {s.text}")
+        if not rec.file_path:
+            return False
+        txt_path = rec.file_path.rsplit(".", 1)[0] + ".txt"
+        with open(txt_path, "w", encoding="utf-8") as fh:
+            fh.write("\n".join(lines))
+        rec.transcript_path = txt_path
+        rec.transcript_status = "completed"
+        rec.transcript_summary = "\n".join(lines)[:2000]
+        return True
+    except Exception:  # noqa: BLE001
+        log.exception("meetpp: writing transcript for recording %s failed", rec.id)
+        return False
+
+
 def _update_destination_states(db, info, etype: str) -> None:
     """Walk the egress_info.stream_results entries and write a status row
     per (meeting_id, platform_id). Idempotent — runs on every
@@ -335,6 +379,22 @@ async def livekit_webhook(
                 log.exception(
                     "room_finished: playback teardown failed for %s", m.id
                 )
+        # Meet++: a room closing ends any active session (finalisation runs
+        # in the background so the webhook acks fast).
+        if m:
+            from app.meetpp.models import MeetppSession
+            from app.meetpp.runtime import runtime as meetpp_runtime
+
+            active = (
+                db.query(MeetppSession)
+                .filter(
+                    MeetppSession.meeting_id == m.id,
+                    MeetppSession.status.in_(("setup", "running", "paused")),
+                )
+                .first()
+            )
+            if active is not None:
+                background.add_task(meetpp_runtime.end_session, active.id)
 
     elif etype in ("egress_started", "egress_updated", "egress_ended") and event.egress_info:
         info = event.egress_info
@@ -402,10 +462,15 @@ async def livekit_webhook(
                 # Kick off the whisper.cpp transcript in the background once
                 # the MP4 has finalised on disk. Marked `pending` so the UI
                 # can show "transcribing…" while the job runs.
-                if rec.status == "completed" and settings.whisper_url:
-                    rec.transcript_status = "pending"
-                    from app.services.transcription import transcribe_recording
-                    background.add_task(transcribe_recording, rec.id)
+                if rec.status == "completed":
+                    # When a Meet++ session already covers this recording, write
+                    # its speaker-attributed transcript instead of queuing the
+                    # batch whisper job (saves CPU; better output).
+                    covered = _write_meetpp_transcript(db, rec)
+                    if not covered and settings.whisper_url:
+                        rec.transcript_status = "pending"
+                        from app.services.transcription import transcribe_recording
+                        background.add_task(transcribe_recording, rec.id)
             db.commit()
 
     elif etype in ("ingress_started", "ingress_updated", "ingress_ended") and event.ingress_info:

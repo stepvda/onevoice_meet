@@ -1,0 +1,16 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+httpx==0.27.2
+# huggingface_hub (used by faster-whisper to fetch models) imports requests.
+requests==2.32.3
+numpy==2.1.3
+# LiveKit Python RTC SDK (joins hidden, subscribes to microphone tracks) +
+# server API (mint tokens is done by meeting-api; the agent only needs rtc).
+livekit>=1.0,<2.0
+livekit-api>=1.0,<2.0
+# STT: CTranslate2-based faster-whisper (small int8 multilingual).
+faster-whisper==1.0.3
+# Silero VAD via ONNX Runtime.
+onnxruntime==1.19.2
+# TTS: Piper. Optional at runtime — if voices are unavailable the agent
+# returns no clip and clients fall back to browser speechSynthesis.

@@ -20,7 +20,8 @@
     "account": "Hisob",
     "upgrade": "Yangilash",
     "vouchers": "Vaucherlar",
-    "admin": "Admin"
+    "admin": "Admin",
+    "onDemand": "Talab bo'yicha"
   },
   "tiCafe": {
     "title": "Kafe",
@@ -65,7 +66,10 @@
     "loading": "Yuklanmoqda…",
     "close": "Yopish",
     "anonymous": "Anonim",
-    "requestFailed": "So‘rov muvaffaqiyatsiz tugadi"
+    "requestFailed": "So‘rov muvaffaqiyatsiz tugadi",
+    "on": "Yoniq",
+    "off": "O‘chiq",
+    "dismiss": "Yopish"
   },
   "signInPrompt": {
     "button": "one.witysk.org saytiga kiring",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Kutish xonasi",
     "waitingRoomDesc": "Yangi qatnashchilar siz ularni uchrashuv panelidan qabul qilguningizcha kutadi.",
     "autoAdmitAuthenticated": "Tizimga kirgan foydalanuvchilarni avtomatik qabul qilish (tez orada)",
-    "autoAdmitAuthenticatedDesc": "Tizimga kirgan one.witysk.org foydalanuvchilari uchun kutish xonasini chetlab o‘tish. Hozircha qo‘llanilmayapti — anonim qo‘shiluvchilar har doim navbatda turadi."
+    "autoAdmitAuthenticatedDesc": "Tizimga kirgan one.witysk.org foydalanuvchilari uchun kutish xonasini chetlab o‘tish. Hozircha qo‘llanilmayapti — anonim qo‘shiluvchilar har doim navbatda turadi.",
+    "lobbyGreeting": "Lobbidagi salomlashuv",
+    "lobbyGreetingHint": "Qo‘shilishdan oldin qabulxonadagi hammaga ko‘rsatiladi.",
+    "lobbyGreetingPlaceholder": "Xush kelibsiz! Gapirmayotganingizda mikrofoningizni o‘chirib turing.",
+    "schedule": "Reja",
+    "scheduleHint": "Davomiylikni va (ixtiyoriy) takrorlanishni belgilang, shunda kalendar takliflari avtomatik takrorlanadi.",
+    "duration": "Davomiyligi (daqiqa)",
+    "recurrence": "Takrorlanish",
+    "recurrenceNone": "Bir martalik (takrorlanmaydi)",
+    "recurrenceDaily": "Kunlik",
+    "recurrenceWeekly": "Haftalik",
+    "recurrenceBiweekly": "Har 2 haftada",
+    "recurrenceMonthly": "Oylik"
   },
   "discover": {
     "title": "Kashf et",
     "subtitle": "— uchrashuvlar qo‘shilish uchun ochiq",
     "join": "Qo‘shilish",
     "maxParticipants": "maks {{n}}",
-    "hostedBy": "Tomonidan o‘tkazilmoqda {{name}}"
+    "hostedBy": "Tomonidan o‘tkazilmoqda {{name}}",
+    "view": "Ko‘rish",
+    "viewTitle": "Ommaviy faqat ko‘rish uchun oqimni tomosha qiling",
+    "streamsTitle": "Ommaviy jonli translatsiyalar",
+    "streamsSubtitle": "— faqat tomosha, akkaunt shart emas"
   },
   "myMeetings": {
     "loading": "Uchrashuvlaringiz yuklanmoqda…",
@@ -272,7 +292,14 @@
     "notImage": "Rasm emas ({{type}})",
     "processorFailed": "Bu qurilmada fon effektlari qo‘llab-quvvatlanmaydi.",
     "custom": "Maxsus: {{name}}",
-    "customDefault": "Maxsus rasm"
+    "customDefault": "Maxsus rasm",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Okean to‘lqinlari",
+    "particles": "Zarrachalar",
+    "cityscape": "Shahar chiroqlari",
+    "cherryBlossoms": "Gilos gullari",
+    "fireflies": "Yorqin qo‘ng‘izlar"
   },
   "participants": {
     "title": "Ishtirokchilar",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "{{name}} ni taqdimotchi qilish",
     "removeFromMeeting": "Uchrashuvdan olib tashlash",
     "removeName": "{{name}} ni olib tashlash",
-    "authenticatedOwner": "Tasdiqlangan egasi"
+    "authenticatedOwner": "Tasdiqlangan egasi",
+    "cohost": "Hammuallif",
+    "promoteCohost": "Hamkor boshlovchi qilib tayinlash",
+    "demoteCohost": "Hamkorlikchi olib tashlash"
   },
   "chatPanel": {
     "title": "Suhbat",
@@ -294,7 +324,10 @@
     "send": "Yuborish",
     "close": "Chatni yopish",
     "ariaLabel": "Suhbat xonasi",
-    "messageAria": "Chat xabari"
+    "messageAria": "Chat xabari",
+    "pin": "Mahkamlash",
+    "unpin": "Yechish",
+    "pinned": "Qadalgan"
   },
   "invite": {
     "title": "Elektron pochta orqali taklif qilish",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Yozuvlar",
     "subtitle": "Uchrashuvlaringizning server tomonidan yozilgan nusxalari. Mahalliy fayllar 30 kundan keyin (yoki YouTube’ga joylaganingizda) avtomatik o‘chiriladi. Yuklashlar faqat egasi tomonidan boshlanadi.",
-    "empty": "Hozircha yozib olinganlar yo‘q. Uchrashuvni boshlang va yozib olish uchun <1>Yozib olish</1> tugmasini bosing.",
+    "empty": "Hozircha yozuvlar yo'q. Uchrashuvni boshlang va yozib olish uchun <1>Record</1> tugmasini bosing.",
     "loading": "Yuklanmoqda…",
     "signInFirst": "Avval one.witysk.org saytiga kiring.",
     "signInTitle": "Yozuvlaringizni ko‘rish uchun tizimga kiring",
@@ -932,5 +965,378 @@
     "tileBadge": "Qo‘l ko‘tarildi",
     "lowerOther": "Bu ishtirokchining qo‘lini tushiring",
     "lowerName": "{{name}}ning qo‘lini tushirish"
+  },
+  "onDemand": {
+    "title": "Talab bo'yicha",
+    "subtitle": "Davom etayotgan ommaviy jonli translatsiyalardan videolar — istalgan vaqtda tomosha qiling, akkaunt shart emas.",
+    "watch": "Tomosha qilish",
+    "loading": "Yuklanmoqda…",
+    "empty": "Hozircha talab bo‘yicha hech narsa yo‘q. Ommaviy jonli translatsiyaning pleylistida videolar paydo bo‘lganda qayta tekshiring.",
+    "error": "On Demand hozir yuklanmadi."
+  },
+  "devices": {
+    "toolbar": "Audio va video qurilmalar",
+    "toolbarTitle": "Mikrofon, kamera va dinamikni tanlang",
+    "mic": "Mikrofon",
+    "camera": "Kamera",
+    "speaker": "Karnay",
+    "none": "Qurilmalar topilmadi",
+    "speakerUnsupported": "Bu brauzerda chiqish qurilmasini tanlash qo‘llab-quvvatlanmaydi."
+  },
+  "notes": {
+    "title": "Eslatmalar va doska",
+    "toolbar": "Eslatmalar va doska",
+    "toolbarTitle": "Umumiy eslatmalar va doskani ochish",
+    "close": "Eslatmalarni yopish",
+    "tabNotes": "Eslatmalar",
+    "tabBoard": "Doska",
+    "hint": "Xonadagi hamma tahrirlashi mumkin. Avtomatik saqlanadi.",
+    "placeholder": "Umumiy eslatmalarni shu yerga yozing…",
+    "color": "Rang",
+    "thickness": "Chiziq qalinligi",
+    "clear": "Doskani tozalash"
+  },
+  "polls": {
+    "title": "So‘rovlar va savol-javob",
+    "toolbar": "So‘rovlar va savol-javob",
+    "toolbarTitle": "So‘rovlar va savol-javoblarni ochish",
+    "close": "So‘rovlarni yopish",
+    "tabPolls": "So'rovnomalar",
+    "tabQna": "Savol-javob",
+    "empty": "Hozircha so‘rovnomalar yo‘q.",
+    "createTitle": "So‘rovnoma yaratish",
+    "createButton": "Yaratish",
+    "questionPlaceholder": "Savolingiz",
+    "optionPlaceholder": "Variant {{n}}",
+    "addOption": "+ Variant qo‘shish",
+    "open": "ochish",
+    "closed": "Yopilgan",
+    "closePoll": "So‘rovni yopish",
+    "qnaEmpty": "Hozircha savollar yo'q.",
+    "qnaPlaceholder": "Savol bering…",
+    "qnaAsk": "So‘rash",
+    "qnaUpvote": "Ovoz berish",
+    "qnaMarkAnswered": "Javob berildi"
+  },
+  "pip": {
+    "enter": "Rasm ichida rasm",
+    "exit": "Tasvirdan rasm ichida chiqish",
+    "enterTitle": "Faol ma’ruzachini suzuvchi oynada ochish",
+    "exitTitle": "Suzib yuruvchi plitkani yopish"
+  },
+  "shortcuts": {
+    "title": "Klaviatura yorliqlari",
+    "close": "Yopish",
+    "disabled": "Yorliqlar hozirda Sozlamalar → Klaviatura bo‘limida o‘chirilgan.",
+    "editHint": "Klaviatura yorliqlarini Sozlamalar sahifasida (Klaviatura bo‘limi) o‘zgartiring.",
+    "mute": "Mikrofonni yoqish/o‘chirish",
+    "camera": "Kamerani yoqish/o‘chirish",
+    "hand": "Qo‘lni ko‘tarish / tushirish",
+    "screenshare": "Ekran almashishni yoqish",
+    "leave": "Uchrashuvdan chiqish",
+    "help": "Ushbu qatlamni ko'rsatish"
+  },
+  "feedback": {
+    "title": "Uchrashuv qanday o'tdi?",
+    "body": "Ushbu uchrashuvni 0 (eng yomon) dan 10 (eng yaxshi) gacha bo‘lgan shkalada qanday baholaysiz?",
+    "commentLabel": "Yana biror narsa? (ixtiyoriy)",
+    "submit": "Yuborish",
+    "sending": "Yuborilmoqda…",
+    "skip": "O‘tkazib yuborish",
+    "thanks": "Fikringiz uchun rahmat!"
+  },
+  "reactions": {
+    "toolbar": "Reaksiya",
+    "toolbarTitle": "Suzuvchi emoji reaksiyasini yuboring",
+    "send": "{{emoji}} yuborish"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "{{name}} uchun ulanish sifati — {{band}}",
+      "title": "Ulanish sifati"
+    },
+    "panel": {
+      "title": "Ulanish sifati",
+      "self": "kamerangiz",
+      "ariaLabel": "{{name}} uchun ulanish sifati"
+    },
+    "band": {
+      "high": "Yuqori",
+      "medium": "O‘rta",
+      "low": "Past",
+      "lost": "Qayta ulanmoqda…",
+      "measuring": "O‘lchanmoqda…"
+    },
+    "limiter": {
+      "network": "Tarmoq: paket yo‘qolishi va jitter",
+      "publisher": "Efirga uzatuvchi qurilma oqimni cheklayapti",
+      "relay": "Relay yo‘li: aylanma vaqt oshgan",
+      "stability": "Beqaror aloqa: sifat o‘zgarib turadi",
+      "unknown": "Ulanish o‘lchanmoqda",
+      "lost": "Aloqa uzildi — avtomatik qayta ulanmoqda"
+    },
+    "tab": {
+      "overview": "Umumiy ma'lumot",
+      "details": "Tafsilotlar",
+      "actions": "Amallar",
+      "device": "Qurilma"
+    },
+    "quality": {
+      "low": "Past",
+      "medium": "Med",
+      "high": "Yuqori",
+      "auto": "Avtomatik"
+    },
+    "overview": {
+      "score": "ball {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bit tezligi",
+      "resolution": "O‘lcham",
+      "fps": "Kadr chastotasi",
+      "loss": "Paket yo‘qolishi",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "O‘tkazib yuborilgan kadrlar",
+      "audioLoss": "Audio yo‘qolishi (oxirgi daqiqa)",
+      "transport": "Transport",
+      "direct": "To'g'ridan-to'g'ri",
+      "relay": "Reley"
+    },
+    "details": {
+      "log": "So'nggi amallar",
+      "none": "Hozircha amallar yo'q",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "action": {
+      "quality": "Sifat (simulcast qatlami)",
+      "maxBitrate": "Maksimal bit tezligi",
+      "compression": "Siqish",
+      "colorDepth": "Rang chuqurligi",
+      "colorDepthUnsupported": "10-bit bu qurilma / kodekda mavjud emas",
+      "audioOnly": "Faqat shu plitka uchun audio",
+      "resync": "Oqimni qayta sinxronlash",
+      "resetAuto": "Avtomatikga qaytarish",
+      "reconnect": "Qayta ulanish",
+      "reconnectConfirm": "Qayta ulanishni tasdiqlang",
+      "apply": "Qo'llash",
+      "export": "Hisobotni eksport qilish"
+    },
+    "scope": {
+      "receive": "Siz qabul qiladigan narsaga taalluqli — translyatorning kamerasi o‘zgarmaydi",
+      "publish": "O‘zgarishlar uchrashuvdagi barchaga ko‘rinadi"
+    },
+    "autotune": {
+      "test": "Optimal sozlamalarni sinab ko‘ring",
+      "running": "Ulanish tekshirilmoqda…",
+      "observing": "Kuzatilmoqda… {{seconds}} s",
+      "applied": "Qo‘llandi — sozlamalar saqlandi",
+      "rolledBack": "Qaytarildi — yangi sozlama bu tarmoqda yomonroq ishladi",
+      "recommended": "Bu tarmoq uchun tavsiya etiladi",
+      "retry": "Qayta urinish",
+      "rejected": "{{layer}} rad etildi: {{reason}}",
+      "phase": {
+        "baseline": "Boshlang‘ich holat yig‘ilmoqda…",
+        "probing": "Qatlamlar tekshirilmoqda…",
+        "evaluating": "Nomzodlar baholanmoqda…",
+        "observing": "Natijani kuzatish…",
+        "done": "Tayyor",
+        "failed": "Tekshirish muvaffaqiyatsiz tugadi",
+        "idle": "<<<KEEP_0>>>"
+      },
+      "baseline": "Boshlang‘ich holat yig‘ilmoqda…",
+      "step": {
+        "low": "Past tekshirilmoqda…",
+        "medium": "O‘RTA tekshirilmoqda…",
+        "high": "Yuqori sifat sinovdan o‘tkazilmoqda…"
+      },
+      "evaluating": "Nomzodlar baholanmoqda…",
+      "done": "Tavsiya tayyor"
+    },
+    "device": {
+      "remoteNote": "Kamera va mikrofon sozlamalari nashriyotchiga tegishli ({{name}})",
+      "camera": "Kamera",
+      "resolution": "Rezolyutsiya",
+      "frameRate": "Kadr chastotasi",
+      "cameraMax": "Kamera {{width}} × {{height}} @ {{fps}} fps gacha qo‘llab-quvvatlaydi",
+      "microphone": "Mikrofon",
+      "channels": "Kanallar",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Audio sifati",
+      "voice": "Ovoz",
+      "music": "Musiqa",
+      "stereoWarning": "Stereo aks-sado o‘chirish va shovqinni bostirishni o‘chirib qo‘yadi — quloqchinlardan foydalaning; u yuklash kanali kengligini ham oshiradi",
+      "apply": "Kameram va mikrofonimga qo‘llash"
+    },
+    "busy": {
+      "quality": "Sifat o‘zgartirilmoqda…",
+      "resync": "Oqim qayta sinxronlanmoqda…",
+      "reconnect": "Qayta ulanmoqda…",
+      "maxBitrate": "Bitrate chegarasi yangilanmoqda…",
+      "compression": "Siqish yangilanmoqda…",
+      "resolution": "Kamera ruxsati o‘zgartirilmoqda…",
+      "frameRate": "Kadr tezligi o‘zgartirilmoqda…",
+      "camera-device": "Kamera almashtirilmoqda…",
+      "mic-device": "Mikrofon almashtirilmoqda…",
+      "mic-mode": "Mikrofon sozlamalari qo‘llanmoqda…",
+      "audioOnly": "Oqim yangilanmoqda…",
+      "applyTune": "Sozlamalar qo‘llanmoqda…",
+      "probe": "Ulanish tekshirilmoqda…",
+      "export": "Hisobot tayyorlanmoqda…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "AI uchrashuv",
+      "aiNotesOn": "AI eslatmalari yoniq",
+      "aiNotesPaused": "AI eslatmalari to‘xtatildi",
+      "menu": {
+        "pause": "Transkripsiyani to‘xtatib turish",
+        "resume": "Transkripsiyani davom ettirish",
+        "mode": "Rejim",
+        "boardToMain": "Doskani asosiy qismga olib kelish",
+        "snapshot": "Doska surati",
+        "editors": "Tahrirlovchilar…",
+        "end": "AI uchrashuvini tugatish",
+        "showBoard": "Doskani ko‘rsatish",
+        "hideBoard": "Doskani yashirish"
+      }
+    },
+    "setup": {
+      "title": "AI uchrashuvini boshlash",
+      "intro": "Meet++ uchrashuvni transkripsiya qiladi va doskani yangilab turadi.",
+      "structure": "Uchrashuv tuzilmasi",
+      "agendaDriven": "Kun tartibiga asoslangan",
+      "agendaDrivenHint": "Elementlar va vaqt bloklari",
+      "goalDriven": "Maqsadga asoslangan",
+      "goalDrivenHint": "Maqsad → natijalar → keyingi qadamlar",
+      "goalPlaceholder": "Maqsad",
+      "language": "Til",
+      "mode": "AI rejimi",
+      "modeLead": "Rahbar",
+      "modeAssist": "Yordam",
+      "series": "Uchrashuvlar seriyasi",
+      "newSeries": "Yangi seriya",
+      "agendaPdf": "Kun tartibi PDF",
+      "previousNotesPdf": "Oldingi eslatmalar PDF",
+      "importedFromSeries": "Seriyadan import qilindi",
+      "itemsFound": "{{count}} kun tartibi bandi topildi",
+      "parsing": "Tahlil qilinmoqda…",
+      "start": "Boshlash",
+      "cancel": "Bekor qilish",
+      "notice": "Jonli transkripsiya bizning serverimizda ishlaydi; matn bayonnoma yaratish uchun sozlangan LLM provayderi tomonidan qayta ishlanadi.",
+      "errors": {
+        "noTextLayer": "Bu PDF skanerlanganga o'xshaydi. Matnli PDF yuklang yoki kun tartibini qo'lda kiriting.",
+        "tooLarge": "PDF juda katta (maks. 10 MB).",
+        "encrypted": "Bu PDF parol bilan himoyalangan.",
+        "tooManyPages": "PDFda sahifalar juda ko‘p (maksimal 50 ta).",
+        "capacity": "AI quvvati band — keyinroq qayta urinib ko‘ring."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Kun tartibi",
+        "decisions": "Qarorlar",
+        "actions": "Amallar",
+        "attendance": "Davomat",
+        "minutes": "Daqiqalar",
+        "attachments": "Biriktirmalar",
+        "transcript": "Transkript",
+        "previousDecisions": "Oldingi uchrashuv qarorlari"
+      },
+      "follow": "Kuzatish",
+      "followPaused": "To‘xtatildi",
+      "status": {
+        "listening": "Tinglash",
+        "thinking": "O‘ylanmoqda",
+        "behind": "{{s}} soniyadan keyin",
+        "paused": "To‘xtatildi",
+        "offline": "AI mavjud emas"
+      },
+      "empty": {
+        "agenda": "Hozircha kun tartibi bandlari yo'q.",
+        "decisions": "Qarorlar qabul qilinganda shu yerda ko‘rinadi.",
+        "actions": "Amallar kelishilgach shu yerda ko‘rinadi.",
+        "attendance": "Davomat odamlar qo‘shilganda ko‘rinadi.",
+        "minutes": "Daqiqalar har bir kun tartibi bandi uchun ko‘rsatiladi.",
+        "attachments": "Hozircha qo‘shimchalar yo‘q.",
+        "transcript": "Transkript uchrashuv davomida shu yerda ko‘rinadi."
+      },
+      "actions": {
+        "confirm": "Tasdiqlash",
+        "edit": "Tahrirlash",
+        "reject": "Rad etish",
+        "add": "Qo'shish",
+        "setActive": "Boshlash",
+        "done": "Tayyor",
+        "defer": "Kechiktirish",
+        "previous": "Oldingi (ochiq)",
+        "new": "Bu uchrashuvda yangi",
+        "unassigned": "Tayinlanmagan",
+        "ownerPrompt": "Egasi ismi yoki taxallusi"
+      }
+    },
+    "phases": {
+      "opening": "Ochilmoqda",
+      "previousActions": "Oldingi amallar",
+      "agenda": "Kun tartibi",
+      "goal": "Maqsad",
+      "discussion": "Muhokama",
+      "aob": "Boshqa biznes",
+      "nextSteps": "Keyingi qadamlar",
+      "newActions": "Yangi amallar",
+      "planning": "Rejalashtirish",
+      "closing": "Yopilmoqda",
+      "jumpConfirm": "Bu bosqichga o‘tilsinmi?"
+    },
+    "proposal": {
+      "title": "Keyingi bosqichga o‘tilsinmi?",
+      "moveNow": "Hozir o‘tish",
+      "notYet": "Hali emas",
+      "autoIn": "{{s}} soniyadan keyin avtomatik"
+    },
+    "announce": {
+      "dismiss": "Yopish"
+    },
+    "consent": {
+      "title": "Ushbu uchrashuvdagi AI eslatmalari",
+      "body": "Bu uchrashuvda AI eslatmalari ishlatiladi: nutqingiz serverimizda matnga aylantiriladi va matn bayonnoma yaratish uchun {{provider}} tomonidan qayta ishlanadi.",
+      "continue": "Davom etish",
+      "optOut": "Meni transkripsiya qilmang",
+      "privacyLink": "Maxfiylik",
+      "changeChoice": "Tanlovimni o‘zgartirish",
+      "notTranscribed": "Transkripsiya qilinmagan"
+    },
+    "review": {
+      "title": "Ko‘rib chiqish va nashr etish",
+      "sections": {
+        "minutes": "Daqiqalar",
+        "decisions": "Qarorlar",
+        "actions": "Amallar",
+        "distribution": "Tarqatish"
+      },
+      "nextMeeting": {
+        "title": "Keyingi uchrashuv",
+        "date": "Sana",
+        "duration": "Davomiyligi (daq)",
+        "room": "Xona",
+        "required": "Keyingi talab qilinadi"
+      },
+      "distribution": {
+        "minutesToAttendees": "Daqiqalar ishtirokchilarga",
+        "invites": "Majburiy ishtirokchilarga taklifnomalar"
+      },
+      "publish": "E’lon qilish va yuborish",
+      "published": "E’lon qilindi",
+      "saveDraft": "Qoralamani saqlash",
+      "finalisedChanges": "Yakunlash o‘zgardi",
+      "retry": "Qayta urinish"
+    },
+    "snapshot": {
+      "toolbarButton": "Meet++ ga suratga olish",
+      "added": "Snapshot qo‘shildi",
+      "failed": "Snapshot amalga oshmadi"
+    }
   }
 }

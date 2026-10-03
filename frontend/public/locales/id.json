@@ -20,7 +20,8 @@
     "account": "Akun",
     "upgrade": "Tingkatkan",
     "vouchers": "Voucher",
-    "admin": "Admin"
+    "admin": "Admin",
+    "onDemand": "Sesuai Permintaan"
   },
   "tiCafe": {
     "title": "Kafe",
@@ -65,7 +66,10 @@
     "loading": "Memuat…",
     "close": "Tutup",
     "anonymous": "anonim",
-    "requestFailed": "Permintaan gagal"
+    "requestFailed": "Permintaan gagal",
+    "on": "Aktif",
+    "off": "Nonaktif",
+    "dismiss": "Tutup"
   },
   "signInPrompt": {
     "button": "Masuk di one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "Ruang tunggu",
     "waitingRoomDesc": "Pendatang baru menunggu hingga Anda menerima mereka dari bilah alat rapat.",
     "autoAdmitAuthenticated": "Izinkan otomatis pengguna yang sudah masuk (segera hadir)",
-    "autoAdmitAuthenticatedDesc": "Lewati ruang tunggu untuk pengguna one.witysk.org yang sudah masuk. Belum diterapkan — pengguna anonim selalu masuk antrean."
+    "autoAdmitAuthenticatedDesc": "Lewati ruang tunggu untuk pengguna one.witysk.org yang sudah masuk. Belum diterapkan — pengguna anonim selalu masuk antrean.",
+    "lobbyGreeting": "Sapaan lobi",
+    "lobbyGreetingHint": "Ditampilkan ke semua orang di lobi sebelum mereka bergabung.",
+    "lobbyGreetingPlaceholder": "Selamat datang! Harap matikan mikrofon Anda saat tidak berbicara.",
+    "schedule": "Jadwal",
+    "scheduleHint": "Tetapkan durasi dan (opsional) pengulangan agar undangan kalender berulang secara otomatis.",
+    "duration": "Durasi (menit)",
+    "recurrence": "Pengulangan",
+    "recurrenceNone": "Sekali saja (tanpa pengulangan)",
+    "recurrenceDaily": "Harian",
+    "recurrenceWeekly": "Mingguan",
+    "recurrenceBiweekly": "Setiap 2 minggu",
+    "recurrenceMonthly": "Bulanan"
   },
   "discover": {
     "title": "Temukan",
     "subtitle": "— rapat yang terbuka untuk bergabung",
     "join": "Bergabung",
     "maxParticipants": "maks {{n}}",
-    "hostedBy": "Diselenggarakan oleh {{name}}"
+    "hostedBy": "Diselenggarakan oleh {{name}}",
+    "view": "Lihat",
+    "viewTitle": "Tonton siaran publik hanya-lihat",
+    "streamsTitle": "Livestream publik",
+    "streamsSubtitle": "— hanya menonton, tanpa perlu akun"
   },
   "myMeetings": {
     "loading": "Memuat rapat Anda…",
@@ -272,7 +292,14 @@
     "notImage": "Bukan gambar ({{type}})",
     "processorFailed": "Efek latar belakang tidak didukung di perangkat ini.",
     "custom": "Kustom: {{name}}",
-    "customDefault": "Gambar kustom"
+    "customDefault": "Gambar kustom",
+    "aurora": "Aurora",
+    "bokeh": "Bokeh",
+    "wavesAnim": "Ombak laut",
+    "particles": "Partikel",
+    "cityscape": "Lampu kota",
+    "cherryBlossoms": "Bunga sakura",
+    "fireflies": "Fireflies"
   },
   "participants": {
     "title": "Peserta",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "Jadikan {{name}} presenter",
     "removeFromMeeting": "Hapus dari rapat",
     "removeName": "Hapus {{name}}",
-    "authenticatedOwner": "Pemilik yang terautentikasi"
+    "authenticatedOwner": "Pemilik yang terautentikasi",
+    "cohost": "Co-host",
+    "promoteCohost": "Jadikan co-host",
+    "demoteCohost": "Hapus co-host"
   },
   "chatPanel": {
     "title": "Obrolan",
@@ -294,7 +324,10 @@
     "send": "Kirim",
     "close": "Tutup obrolan",
     "ariaLabel": "Obrolan rapat",
-    "messageAria": "Pesan obrolan"
+    "messageAria": "Pesan obrolan",
+    "pin": "Sematkan",
+    "unpin": "Lepas sematan",
+    "pinned": "Disematkan"
   },
   "invite": {
     "title": "Undang melalui email",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "Rekaman",
     "subtitle": "Rekaman rapat dari sisi server. File lokal akan otomatis terhapus setelah 30 hari (atau saat Anda mempublikasikan ke YouTube). Unggahan hanya dapat dimulai oleh pemilik.",
-    "empty": "Belum ada rekaman. Mulai rapat dan klik <1>Rekam</1> untuk menangkapnya.",
+    "empty": "Belum ada rekaman. Mulai rapat dan klik <1>Rekam</1> untuk membuat rekaman.",
     "loading": "Memuat…",
     "signInFirst": "Masuk dulu di one.witysk.org.",
     "signInTitle": "Masuk untuk melihat rekaman Anda",
@@ -932,5 +965,378 @@
     "tileBadge": "Tangan terangkat",
     "lowerOther": "Turunkan tangan peserta ini",
     "lowerName": "Turunkan tangan {{name}}"
+  },
+  "onDemand": {
+    "title": "Sesuai Permintaan",
+    "subtitle": "Video dari siaran langsung publik yang sedang berlangsung — tonton kapan saja, tanpa perlu akun.",
+    "watch": "Tonton",
+    "loading": "Memuat…",
+    "empty": "Tidak ada yang sesuai permintaan saat ini. Periksa kembali saat livestream publik memiliki video di playlist-nya.",
+    "error": "Tidak dapat memuat On Demand saat ini."
+  },
+  "devices": {
+    "toolbar": "Perangkat audio & video",
+    "toolbarTitle": "Pilih mikrofon, kamera, dan speaker",
+    "mic": "Mikrofon",
+    "camera": "Kamera",
+    "speaker": "Pembicara",
+    "none": "Tidak ada perangkat ditemukan",
+    "speakerUnsupported": "Pemilihan perangkat keluaran tidak didukung di browser ini."
+  },
+  "notes": {
+    "title": "Catatan & papan tulis",
+    "toolbar": "Catatan & papan tulis",
+    "toolbarTitle": "Buka catatan bersama dan papan tulis",
+    "close": "Tutup catatan",
+    "tabNotes": "Catatan",
+    "tabBoard": "Papan tulis",
+    "hint": "Semua orang di ruangan dapat mengedit. Tersimpan otomatis.",
+    "placeholder": "Ketik catatan bersama di sini…",
+    "color": "Warna",
+    "thickness": "Ketebalan garis",
+    "clear": "Bersihkan papan"
+  },
+  "polls": {
+    "title": "Jajak Pendapat & Tanya Jawab",
+    "toolbar": "Jajak Pendapat & Tanya Jawab",
+    "toolbarTitle": "Buka polling dan Q&A",
+    "close": "Tutup polling",
+    "tabPolls": "Jajak Pendapat",
+    "tabQna": "Tanya Jawab",
+    "empty": "Belum ada polling.",
+    "createTitle": "Buat polling",
+    "createButton": "Buat",
+    "questionPlaceholder": "Pertanyaan Anda",
+    "optionPlaceholder": "Opsi {{n}}",
+    "addOption": "+ Tambah opsi",
+    "open": "Buka",
+    "closed": "Tertutup",
+    "closePoll": "Tutup polling",
+    "qnaEmpty": "Belum ada pertanyaan.",
+    "qnaPlaceholder": "Ajukan pertanyaan…",
+    "qnaAsk": "Minta",
+    "qnaUpvote": "Beri suara",
+    "qnaMarkAnswered": "Terjawab"
+  },
+  "pip": {
+    "enter": "Gambar-dalam-gambar",
+    "exit": "Keluar dari picture-in-picture",
+    "enterTitle": "Keluarkan pembicara aktif ke ubin mengambang",
+    "exitTitle": "Tutup ubin mengambang"
+  },
+  "shortcuts": {
+    "title": "Pintasan keyboard",
+    "close": "Tutup",
+    "disabled": "Pintasan saat ini dinonaktifkan di Pengaturan → Papan Ketik.",
+    "editHint": "Ubah pintasan di halaman Pengaturan (bagian Papan Ketik).",
+    "mute": "Alihkan mikrofon",
+    "camera": "Alihkan kamera",
+    "hand": "Angkat / turunkan tangan",
+    "screenshare": "Alihkan berbagi layar",
+    "leave": "Keluar dari rapat",
+    "help": "Tampilkan overlay ini"
+  },
+  "feedback": {
+    "title": "Bagaimana rapatnya?",
+    "body": "Dalam skala 0 (terburuk) hingga 10 (terbaik), bagaimana Anda menilai rapat ini?",
+    "commentLabel": "Ada lagi? (opsional)",
+    "submit": "Kirim",
+    "sending": "Mengirim…",
+    "skip": "Lewati",
+    "thanks": "Terima kasih atas masukannya!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "Kirim reaksi emoji mengambang",
+    "send": "Kirim {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "Kualitas koneksi untuk {{name}} — {{band}}",
+      "title": "Kualitas koneksi"
+    },
+    "panel": {
+      "title": "Kualitas Koneksi",
+      "self": "kamera Anda",
+      "ariaLabel": "Kualitas koneksi untuk {{name}}"
+    },
+    "band": {
+      "high": "Tinggi",
+      "medium": "Sedang",
+      "low": "Rendah",
+      "lost": "Menghubungkan ulang…",
+      "measuring": "Mengukur…"
+    },
+    "limiter": {
+      "network": "Jaringan: packet loss dan jitter",
+      "publisher": "Perangkat penerbit membatasi stream",
+      "relay": "Jalur relay: waktu pulang-pergi meningkat",
+      "stability": "Koneksi tidak stabil: kualitas naik-turun",
+      "unknown": "Mengukur koneksi",
+      "lost": "Koneksi terputus — menyambung ulang otomatis"
+    },
+    "tab": {
+      "overview": "Ringkasan",
+      "details": "Detail",
+      "actions": "Tindakan",
+      "device": "Perangkat"
+    },
+    "quality": {
+      "low": "Rendah",
+      "medium": "Med",
+      "high": "Tinggi",
+      "auto": "Otomatis"
+    },
+    "overview": {
+      "score": "skor {{score}}"
+    },
+    "metric": {
+      "bitrate": "Bitrate",
+      "resolution": "Resolusi",
+      "fps": "Tingkat bingkai",
+      "loss": "Kehilangan paket",
+      "jitterRtt": "Jitter / RTT",
+      "dropped": "Bingkai dilewati",
+      "audioLoss": "Kehilangan audio (1 mnt terakhir)",
+      "transport": "Transport",
+      "direct": "Langsung",
+      "relay": "Relai"
+    },
+    "details": {
+      "log": "Tindakan terbaru",
+      "none": "Belum ada tindakan",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "action": {
+      "quality": "Kualitas (lapisan simulcast)",
+      "maxBitrate": "Bitrate maks",
+      "compression": "Kompresi",
+      "colorDepth": "Kedalaman warna",
+      "colorDepthUnsupported": "10-bit tidak tersedia di perangkat / codec ini",
+      "audioOnly": "Hanya audio untuk tile ini",
+      "resync": "Sinkronkan ulang stream",
+      "resetAuto": "Atur ulang ke otomatis",
+      "reconnect": "Sambungkan ulang",
+      "reconnectConfirm": "Konfirmasi sambung ulang",
+      "apply": "Terapkan",
+      "export": "Ekspor laporan"
+    },
+    "scope": {
+      "receive": "Berlaku untuk yang Anda terima — kamera penerbit tidak diubah",
+      "publish": "Perubahan terlihat oleh semua orang di rapat"
+    },
+    "autotune": {
+      "test": "Uji pengaturan optimal",
+      "running": "Menguji koneksi…",
+      "observing": "Mengamati… {{seconds}} dtk",
+      "applied": "Diterapkan — pengaturan disimpan",
+      "rolledBack": "Dikembalikan — pengaturan baru lebih buruk di jaringan ini",
+      "recommended": "Direkomendasikan untuk jaringan ini",
+      "retry": "Coba lagi",
+      "rejected": "{{layer}} ditolak: {{reason}}",
+      "phase": {
+        "baseline": "Mengumpulkan baseline…",
+        "probing": "Memeriksa lapisan…",
+        "evaluating": "Menilai kandidat…",
+        "observing": "Mengamati hasilnya…",
+        "done": "Selesai",
+        "failed": "Pemeriksaan gagal",
+        "idle": "<<<KEEP_1>>>"
+      },
+      "baseline": "Mengumpulkan baseline…",
+      "step": {
+        "low": "Menguji RENDAH…",
+        "medium": "Menguji MEDIUM…",
+        "high": "Menguji TINGGI…"
+      },
+      "evaluating": "Menilai kandidat…",
+      "done": "Rekomendasi siap"
+    },
+    "device": {
+      "remoteNote": "Pengaturan kamera dan mikrofon milik publisher ({{name}})",
+      "camera": "Kamera",
+      "resolution": "Resolusi",
+      "frameRate": "Tingkat bingkai",
+      "cameraMax": "Kamera mendukung hingga {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "Mikrofon",
+      "channels": "Saluran",
+      "mono": "Mono",
+      "stereo": "Stereo",
+      "audioQuality": "Kualitas audio",
+      "voice": "Suara",
+      "music": "Musik",
+      "stereoWarning": "Stereo menonaktifkan pembatalan gema dan penekanan derau — gunakan headphone; ini juga meningkatkan bandwidth uplink",
+      "apply": "Terapkan ke kamera & mic saya"
+    },
+    "busy": {
+      "quality": "Mengubah kualitas…",
+      "resync": "Menyinkronkan ulang streaming…",
+      "reconnect": "Menghubungkan ulang…",
+      "maxBitrate": "Memperbarui batas bitrate…",
+      "compression": "Memperbarui kompresi…",
+      "resolution": "Mengubah resolusi kamera…",
+      "frameRate": "Mengubah kecepatan bingkai…",
+      "camera-device": "Beralih kamera…",
+      "mic-device": "Mengganti mikrofon…",
+      "mic-mode": "Menerapkan pengaturan mikrofon…",
+      "audioOnly": "Memperbarui stream…",
+      "applyTune": "Menerapkan pengaturan…",
+      "probe": "Menguji koneksi…",
+      "export": "Menyiapkan laporan…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "Rapat AI",
+      "aiNotesOn": "Catatan AI aktif",
+      "aiNotesPaused": "Catatan AI dijeda",
+      "menu": {
+        "pause": "Jeda transkripsi",
+        "resume": "Lanjutkan transkripsi",
+        "mode": "Mode",
+        "boardToMain": "Bawa papan ke utama",
+        "snapshot": "Snapshot papan tulis",
+        "editors": "Editor…",
+        "end": "Akhiri rapat AI",
+        "showBoard": "Tampilkan papan",
+        "hideBoard": "Sembunyikan papan"
+      }
+    },
+    "setup": {
+      "title": "Mulai Rapat AI",
+      "intro": "Meet++ mentranskripsikan rapat dan menjaga papan tetap mutakhir.",
+      "structure": "Struktur rapat",
+      "agendaDriven": "Berbasis agenda",
+      "agendaDrivenHint": "Item dan timebox",
+      "goalDriven": "Berbasis tujuan",
+      "goalDrivenHint": "Tujuan → hasil → langkah berikutnya",
+      "goalPlaceholder": "Tujuan",
+      "language": "Bahasa",
+      "mode": "Mode AI",
+      "modeLead": "Pimpin",
+      "modeAssist": "Bantu",
+      "series": "Rangkaian rapat",
+      "newSeries": "Seri baru",
+      "agendaPdf": "Agenda PDF",
+      "previousNotesPdf": "PDF catatan sebelumnya",
+      "importedFromSeries": "Diimpor dari seri",
+      "itemsFound": "{{count}} item agenda ditemukan",
+      "parsing": "Mengurai…",
+      "start": "Mulai",
+      "cancel": "Batal",
+      "notice": "Transkripsi langsung berjalan di server kami; teks diproses oleh penyedia LLM yang dikonfigurasi untuk menghasilkan notulen.",
+      "errors": {
+        "noTextLayer": "PDF ini tampak hasil pindaian. Unggah PDF teks atau masukkan agenda secara manual.",
+        "tooLarge": "PDF terlalu besar (maks 10 MB).",
+        "encrypted": "PDF ini dilindungi kata sandi.",
+        "tooManyPages": "PDF memiliki terlalu banyak halaman (maks 50).",
+        "capacity": "Kapasitas AI sibuk — coba lagi nanti."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "Agenda",
+        "decisions": "Keputusan",
+        "actions": "Tindakan",
+        "attendance": "Kehadiran",
+        "minutes": "Menit",
+        "attachments": "Lampiran",
+        "transcript": "Transkrip",
+        "previousDecisions": "Keputusan rapat sebelumnya"
+      },
+      "follow": "Ikuti",
+      "followPaused": "Dijeda",
+      "status": {
+        "listening": "Mendengarkan",
+        "thinking": "Berpikir",
+        "behind": "Di belakang {{s}}s",
+        "paused": "Dijeda",
+        "offline": "AI tidak tersedia"
+      },
+      "empty": {
+        "agenda": "Belum ada item agenda.",
+        "decisions": "Keputusan akan muncul di sini saat dibuat.",
+        "actions": "Tindakan akan muncul di sini setelah disepakati.",
+        "attendance": "Kehadiran akan muncul saat orang bergabung.",
+        "minutes": "Notulen akan muncul per item agenda.",
+        "attachments": "Belum ada lampiran.",
+        "transcript": "Transkrip muncul di sini selama rapat berlangsung."
+      },
+      "actions": {
+        "confirm": "Konfirmasi",
+        "edit": "Edit",
+        "reject": "Tolak",
+        "add": "Tambah",
+        "setActive": "Mulai",
+        "done": "Selesai",
+        "defer": "Tunda",
+        "previous": "Sebelumnya (terbuka)",
+        "new": "Baru di rapat ini",
+        "unassigned": "Belum ditetapkan",
+        "ownerPrompt": "Nama atau alias pemilik"
+      }
+    },
+    "phases": {
+      "opening": "Membuka",
+      "previousActions": "Tindakan sebelumnya",
+      "agenda": "Agenda",
+      "goal": "Tujuan",
+      "discussion": "Diskusi",
+      "aob": "Bisnis lainnya",
+      "nextSteps": "Langkah selanjutnya",
+      "newActions": "Tindakan baru",
+      "planning": "Perencanaan",
+      "closing": "Menutup",
+      "jumpConfirm": "Lompat ke fase ini?"
+    },
+    "proposal": {
+      "title": "Pindah ke fase berikutnya?",
+      "moveNow": "Pindah sekarang",
+      "notYet": "Belum",
+      "autoIn": "Otomatis dalam {{s}}d"
+    },
+    "announce": {
+      "dismiss": "Tutup"
+    },
+    "consent": {
+      "title": "Catatan AI dalam rapat ini",
+      "body": "Rapat ini menggunakan catatan AI: ucapan Anda ditranskripsikan di server kami dan teksnya diproses oleh {{provider}} untuk menghasilkan notulen.",
+      "continue": "Lanjutkan",
+      "optOut": "Jangan transkripsikan saya",
+      "privacyLink": "Privasi",
+      "changeChoice": "Ubah pilihan saya",
+      "notTranscribed": "Tidak ditranskripsikan"
+    },
+    "review": {
+      "title": "Tinjau dan publikasikan",
+      "sections": {
+        "minutes": "Menit",
+        "decisions": "Keputusan",
+        "actions": "Tindakan",
+        "distribution": "Distribusi"
+      },
+      "nextMeeting": {
+        "title": "Rapat berikutnya",
+        "date": "Tanggal",
+        "duration": "Durasi (mnt)",
+        "room": "Ruang",
+        "required": "Berikutnya wajib"
+      },
+      "distribution": {
+        "minutesToAttendees": "Menit untuk peserta",
+        "invites": "Undangan untuk peserta wajib"
+      },
+      "publish": "Terbitkan & kirim",
+      "published": "Diterbitkan",
+      "saveDraft": "Simpan draf",
+      "finalisedChanges": "Finalisasi diubah",
+      "retry": "Coba lagi"
+    },
+    "snapshot": {
+      "toolbarButton": "Snapshot ke Meet++",
+      "added": "Snapshot ditambahkan",
+      "failed": "Snapshot gagal"
+    }
   }
 }

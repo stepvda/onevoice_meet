@@ -8,6 +8,7 @@ import {
 import { RoomEvent, Track } from "livekit-client";
 import type { TrackReferenceOrPlaceholder } from "@livekit/components-react";
 import FlippableTile from "./FlippableTile";
+import MeetppBoard from "./meetpp/MeetppBoard";
 import { usePreferences } from "../lib/preferences";
 import { useIsMobile } from "../lib/useIsMobile";
 import { GridStageContext, GridFocusContext } from "../lib/gridStage";
@@ -54,7 +55,7 @@ function parseRoomLayout(v: unknown): RoomLayout | null {
     : null;
 }
 
-export default function PresenterSpotlight() {
+export default function PresenterSpotlight({ boardForPublicOnly = false }: { boardForPublicOnly?: boolean } = {}) {
   const room = useRoomContext();
   const display = usePreferences((s) => s.display);
   const [roomLayout, setRoomLayout] = useState<RoomLayout>("grid");
@@ -66,6 +67,14 @@ export default function PresenterSpotlight() {
   const [pipOverlayIdentity, setPipOverlayIdentity] = useState<string | null>(
     null,
   );
+  // Meet++ board metadata: when a session is active and the board is main,
+  // the board becomes a virtual stage tile (Part 5.4 / ADR-5). A human
+  // screenshare, playback or a pinned person always takes over.
+  const [meetpp, setMeetpp] = useState<{
+    active: boolean;
+    board_main: boolean;
+    public: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const apply = () => {
@@ -84,6 +93,12 @@ export default function PresenterSpotlight() {
       setPipOverlayIdentity(
         typeof md.pip_overlay_identity === "string"
           ? md.pip_overlay_identity
+          : null,
+      );
+      const mp = md.meetpp as { active?: boolean; board_main?: boolean; public?: boolean } | undefined;
+      setMeetpp(
+        mp && typeof mp === "object"
+          ? { active: !!mp.active, board_main: mp.board_main !== false, public: mp.public === true }
           : null,
       );
     };
@@ -242,6 +257,61 @@ export default function PresenterSpotlight() {
   // ── 1. Server composite always wins ─────────────────────────────────
   if (compositeTrack) {
     return <FullBleed track={compositeTrack} />;
+  }
+
+  // ── 1b. Meet++ board as main stage tile. A human screenshare, playback
+  //       or a pinned person takes over; otherwise the board owns the
+  //       main slot while a session is active.
+  const meetppScreenshare = tracks.some(
+    (t) => t.source === Track.Source.ScreenShare,
+  );
+  const meetppPinnedPerson = presenterId
+    ? tracks.find(
+        (t) =>
+          t.participant.identity === presenterId &&
+          t.source === Track.Source.Camera,
+      )
+    : null;
+  const showMeetppBoard =
+    !!meetpp?.active &&
+    meetpp.board_main &&
+    (!boardForPublicOnly || meetpp.public) &&
+    !meetppScreenshare &&
+    !playbackTrack &&
+    !meetppPinnedPerson;
+  if (showMeetppBoard) {
+    // Board owns the main area; keep the webcams visible in a bottom band so
+    // people can still see each other in AI Meeting mode.
+    const camTracks = tracks.filter(
+      (t) =>
+        t.source === Track.Source.Camera &&
+        !t.participant.identity.startsWith("meetpp-") &&
+        t.participant.identity !== "playback",
+    );
+    return (
+      <div className="flex h-full flex-col bg-slate-900">
+        <div className="min-h-0 flex-1 p-2">
+          <MeetppBoard readOnly canEdit={false} className="h-full w-full" />
+        </div>
+        {camTracks.length > 0 && (
+          <div
+            data-testid="meetpp-cam-strip"
+            className="h-[18%] min-h-[110px] flex justify-center items-stretch gap-2 px-3 py-2 bg-black/50 overflow-x-auto"
+          >
+            {camTracks.map((t) => (
+              <div
+                key={`${t.participant.identity}-${t.source}`}
+                className="aspect-video h-full flex-shrink-0 rounded-md overflow-hidden bg-primary-900"
+              >
+                <TrackRefContext.Provider value={t}>
+                  <FlippableTile />
+                </TrackRefContext.Provider>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   }
 
   // ── 2. Client-side PiP fallback (active when pip_enabled but the

@@ -67,6 +67,14 @@ export default function Legal() {
           indicator while a recording is in progress, but this does not by itself
           constitute legal consent.
         </p>
+        <p className="mt-2">
+          The same applies to <b>AI meeting notes (Meet++)</b>: continuous
+          transcription of what is said is treated like a recording. When a chair
+          starts an AI session, every participant is shown a consent dialog and can
+          choose "Don't transcribe me"; their audio is then never sent for
+          transcription. The "AI notes on" indicator is always visible and cannot be
+          hidden by the chair.
+        </p>
       </Section>
 
       <Section title="Intellectual property">

@@ -20,7 +20,8 @@
     "account": "חשבון",
     "upgrade": "שדרוג",
     "vouchers": "שוברים",
-    "admin": "מנהל"
+    "admin": "מנהל",
+    "onDemand": "לפי דרישה"
   },
   "tiCafe": {
     "title": "קפה",
@@ -65,7 +66,10 @@
     "loading": "טוען…",
     "close": "סגור",
     "anonymous": "אנונימי",
-    "requestFailed": "הבקשה נכשלה"
+    "requestFailed": "הבקשה נכשלה",
+    "on": "פועל",
+    "off": "כבוי",
+    "dismiss": "סגור"
   },
   "signInPrompt": {
     "button": "היכנס ב-one.witysk.org",
@@ -114,14 +118,30 @@
     "waitingRoomEnabled": "חדר המתנה",
     "waitingRoomDesc": "מצטרפים חדשים ממתינים עד שתאשרו אותם מסרגל הכלים של הפגישה.",
     "autoAdmitAuthenticated": "אישור אוטומטי למשתמשים מחוברים (בקרוב)",
-    "autoAdmitAuthenticatedDesc": "דלג על חדר ההמתנה למשתמשים מחוברים של one.witysk.org. עדיין לא נאכף — מצטרפים אנונימיים תמיד ממתינים בתור."
+    "autoAdmitAuthenticatedDesc": "דלג על חדר ההמתנה למשתמשים מחוברים של one.witysk.org. עדיין לא נאכף — מצטרפים אנונימיים תמיד ממתינים בתור.",
+    "lobbyGreeting": "ברכת מבואה",
+    "lobbyGreetingHint": "מוצג לכולם בלובי לפני שהם מצטרפים.",
+    "lobbyGreetingPlaceholder": "ברוכים הבאים! אנא השתיקו את המיקרופון כשאתם לא מדברים.",
+    "schedule": "לוח זמנים",
+    "scheduleHint": "הגדר משך זמן ו(אופציונלית) חזרה כך שהזמנות ליומן יחזרו על עצמן אוטומטית.",
+    "duration": "משך (דקות)",
+    "recurrence": "חזרתיות",
+    "recurrenceNone": "חד-פעמי (ללא חזרה)",
+    "recurrenceDaily": "יומי",
+    "recurrenceWeekly": "שבועי",
+    "recurrenceBiweekly": "כל שבועיים",
+    "recurrenceMonthly": "חודשי"
   },
   "discover": {
     "title": "גלה",
     "subtitle": "— פגישות פתוחות להצטרפות",
     "join": "הצטרף",
     "maxParticipants": "מקסימום {{n}}",
-    "hostedBy": "מארח: {{name}}"
+    "hostedBy": "מארח: {{name}}",
+    "view": "תצוגה",
+    "viewTitle": "צפו בשידור הציבורי לצפייה בלבד",
+    "streamsTitle": "שידורים חיים ציבוריים",
+    "streamsSubtitle": "— לצפייה בלבד, ללא צורך בחשבון"
   },
   "myMeetings": {
     "loading": "טוען את הפגישות שלך…",
@@ -272,7 +292,14 @@
     "notImage": "לא תמונה ({{type}})",
     "processorFailed": "אפקטי רקע אינם נתמכים במכשיר זה.",
     "custom": "מותאם אישית: {{name}}",
-    "customDefault": "תמונה מותאמת אישית"
+    "customDefault": "תמונה מותאמת אישית",
+    "aurora": "אורורה",
+    "bokeh": "טשטוש רקע",
+    "wavesAnim": "גלי ים",
+    "particles": "חלקיקים",
+    "cityscape": "אורות העיר",
+    "cherryBlossoms": "פריחת דובדבן",
+    "fireflies": "גחליליות"
   },
   "participants": {
     "title": "משתתפים",
@@ -285,7 +312,10 @@
     "makeNamePresenter": "הפוך את {{name}} למציג",
     "removeFromMeeting": "הסר מהפגישה",
     "removeName": "הסר את {{name}}",
-    "authenticatedOwner": "בעלים מאומתים"
+    "authenticatedOwner": "בעלים מאומתים",
+    "cohost": "מנחה שותף",
+    "promoteCohost": "קדם למנחה שותף",
+    "demoteCohost": "הסר מארח שותף"
   },
   "chatPanel": {
     "title": "צ'אט",
@@ -294,7 +324,10 @@
     "send": "שלח",
     "close": "סגור צ׳אט",
     "ariaLabel": "צ'אט הפגישה",
-    "messageAria": "הודעת צ'אט"
+    "messageAria": "הודעת צ'אט",
+    "pin": "הצמד",
+    "unpin": "בטל נעיצה",
+    "pinned": "מוצמד"
   },
   "invite": {
     "title": "הזמנה במייל",
@@ -319,7 +352,7 @@
   "recordings": {
     "title": "הקלטות",
     "subtitle": "הקלטות מצד השרת של הפגישות שלך. קבצים מקומיים נמחקים אוטומטית לאחר 30 יום (או כשאתה מפרסם ליוטיוב). העלאות מבוצעות ביוזמת הבעלים בלבד.",
-    "empty": "עדיין אין הקלטות. התחל פגישה ולחץ על <1>הקלט</1> כדי ללכוד אחת.",
+    "empty": "אין הקלטות עדיין. התחל פגישה ולחץ על <1>הקלט</1> כדי להקליט.",
     "loading": "טוען…",
     "signInFirst": "תחילה התחבר/י ב-one.witysk.org.",
     "signInTitle": "היכנס כדי לראות את ההקלטות שלך",
@@ -932,5 +965,378 @@
     "tileBadge": "יד הורמה",
     "lowerOther": "הורד את היד של משתתף זה",
     "lowerName": "הורד את היד של {{name}}"
+  },
+  "onDemand": {
+    "title": "לפי דרישה",
+    "subtitle": "סרטונים מסטרימים ציבוריים פעילים — צפו בכל עת, ללא צורך בחשבון.",
+    "watch": "צפייה",
+    "loading": "טוען…",
+    "empty": "אין כרגע תוכן לפי דרישה. חזרו כשיהיו סרטונים ברשימת ההשמעה של שידור ציבורי.",
+    "error": "לא ניתן לטעון On Demand כרגע."
+  },
+  "devices": {
+    "toolbar": "התקני שמע ווידאו",
+    "toolbarTitle": "בחר מיקרופון, מצלמה ורמקול",
+    "mic": "מיקרופון",
+    "camera": "מצלמה",
+    "speaker": "דובר",
+    "none": "לא נמצאו התקנים",
+    "speakerUnsupported": "בחירת התקן פלט אינה נתמכת בדפדפן זה."
+  },
+  "notes": {
+    "title": "הערות ולוח",
+    "toolbar": "הערות ולוח",
+    "toolbarTitle": "פתח הערות משותפות ולוח לבן",
+    "close": "סגור הערות",
+    "tabNotes": "הערות",
+    "tabBoard": "לוח ציור",
+    "hint": "כל מי בחדר יכול לערוך. נשמר אוטומטית.",
+    "placeholder": "הקלד כאן הערות משותפות…",
+    "color": "צבע",
+    "thickness": "עובי קו",
+    "clear": "נקה לוח"
+  },
+  "polls": {
+    "title": "סקרים ושאלות ותשובות",
+    "toolbar": "סקרים ושאלות ותשובות",
+    "toolbarTitle": "פתח סקרים ושאלות ותשובות",
+    "close": "סגירת סקרים",
+    "tabPolls": "סקרים",
+    "tabQna": "שו\"ת",
+    "empty": "אין עדיין סקרים.",
+    "createTitle": "צור סקר",
+    "createButton": "יצירה",
+    "questionPlaceholder": "השאלה שלך",
+    "optionPlaceholder": "אפשרות {{n}}",
+    "addOption": "+ הוסף אפשרות",
+    "open": "פתח",
+    "closed": "סגור",
+    "closePoll": "סגור סקר",
+    "qnaEmpty": "אין עדיין שאלות.",
+    "qnaPlaceholder": "שאל שאלה…",
+    "qnaAsk": "בקש",
+    "qnaUpvote": "הצבע בעד",
+    "qnaMarkAnswered": "נענה"
+  },
+  "pip": {
+    "enter": "תמונה בתוך תמונה",
+    "exit": "יציאה מתמונה בתוך תמונה",
+    "enterTitle": "שלח את הדובר הפעיל לאריח צף",
+    "exitTitle": "סגור את האריח הצף"
+  },
+  "shortcuts": {
+    "title": "קיצורי מקלדת",
+    "close": "סגור",
+    "disabled": "קיצורי דרך מושבתים כעת בהגדרות → מקלדת.",
+    "editHint": "שנה קיצורי דרך בעמוד ההגדרות (מקטע מקלדת).",
+    "mute": "הפעל/כבה מיקרופון",
+    "camera": "הפעל/כבה מצלמה",
+    "hand": "הרמת / הורדת יד",
+    "screenshare": "הפעל/כבה שיתוף מסך",
+    "leave": "עזוב את הפגישה",
+    "help": "הצג שכבת-על זו"
+  },
+  "feedback": {
+    "title": "איך הייתה הפגישה?",
+    "body": "על סולם מ-0 (הגרוע ביותר) עד 10 (הטוב ביותר), איך היית מדרג את הפגישה הזו?",
+    "commentLabel": "משהו נוסף? (אופציונלי)",
+    "submit": "שלח",
+    "sending": "שולח…",
+    "skip": "דלג",
+    "thanks": "תודה על המשוב!"
+  },
+  "reactions": {
+    "toolbar": "React",
+    "toolbarTitle": "שלח תגובת אמוג'י צפה",
+    "send": "שלח {{emoji}}"
+  },
+  "cq": {
+    "button": {
+      "ariaLabel": "איכות החיבור עבור {{name}} — {{band}}",
+      "title": "איכות חיבור"
+    },
+    "panel": {
+      "title": "איכות חיבור",
+      "self": "המצלמה שלך",
+      "ariaLabel": "איכות החיבור עבור {{name}}"
+    },
+    "band": {
+      "high": "גבוה",
+      "medium": "בינוני",
+      "low": "נמוכה",
+      "lost": "מתחבר מחדש…",
+      "measuring": "מבצע מדידה…"
+    },
+    "limiter": {
+      "network": "רשת: אובדן מנות וג'יטר",
+      "publisher": "המכשיר של המפרסם מגביל את השידור",
+      "relay": "נתיב ממסר: זמן הלוך ושוב מוגבר",
+      "stability": "חיבור לא יציב: האיכות משתנה",
+      "unknown": "בודק את החיבור",
+      "lost": "החיבור אבד — מתחבר מחדש אוטומטית"
+    },
+    "tab": {
+      "overview": "סקירה כללית",
+      "details": "פרטים",
+      "actions": "פעולות",
+      "device": "התקן"
+    },
+    "quality": {
+      "low": "נמוכה",
+      "medium": "עמ'",
+      "high": "גבוה",
+      "auto": "אוטומטי"
+    },
+    "overview": {
+      "score": "ניקוד {{score}}"
+    },
+    "metric": {
+      "bitrate": "קצב סיביות",
+      "resolution": "רזולוציה",
+      "fps": "קצב פריימים",
+      "loss": "אובדן חבילות",
+      "jitterRtt": "ג'יטר / RTT",
+      "dropped": "פריימים שדולגו",
+      "audioLoss": "אובדן שמע (דקה אחרונה)",
+      "transport": "תעבורה",
+      "direct": "ישיר",
+      "relay": "ממסר"
+    },
+    "details": {
+      "log": "פעולות אחרונות",
+      "none": "אין פעולות עדיין",
+      "video": "וידאו",
+      "audio": "שמע"
+    },
+    "action": {
+      "quality": "איכות (שכבת שידור מרובה)",
+      "maxBitrate": "קצב סיביות מקסימלי",
+      "compression": "דחיסה",
+      "colorDepth": "עומק צבע",
+      "colorDepthUnsupported": "10-bit אינו זמין במכשיר / קודק זה",
+      "audioOnly": "שמע בלבד עבור אריח זה",
+      "resync": "סנכרן מחדש את השידור",
+      "resetAuto": "איפוס לאוטומטי",
+      "reconnect": "התחבר מחדש",
+      "reconnectConfirm": "אישור התחברות מחדש",
+      "apply": "החל",
+      "export": "ייצוא דוח"
+    },
+    "scope": {
+      "receive": "חל על מה שאתה מקבל — המצלמה של המפרסם נשארת ללא שינוי",
+      "publish": "השינויים גלויים לכל המשתתפים בפגישה"
+    },
+    "autotune": {
+      "test": "בדיקת הגדרות אופטימליות",
+      "running": "בודק את החיבור…",
+      "observing": "צופה… {{seconds}} שניות",
+      "applied": "הוחל — ההגדרות נשמרו",
+      "rolledBack": "בוטל — ההגדרה החדשה הייתה גרועה יותר ברשת הזו",
+      "recommended": "מומלץ עבור רשת זו",
+      "retry": "נסה שוב",
+      "rejected": "{{layer}} נדחה: {{reason}}",
+      "phase": {
+        "baseline": "אוסף נתוני בסיס…",
+        "probing": "בודק שכבות…",
+        "evaluating": "מעריך מועמדים…",
+        "observing": "צופה בתוצאה…",
+        "done": "בוצע",
+        "failed": "הבדיקה נכשלה",
+        "idle": "הגדרות"
+      },
+      "baseline": "אוסף נתוני בסיס…",
+      "step": {
+        "low": "בודק LOW…",
+        "medium": "בודק MEDIUM…",
+        "high": "בודק HIGH…"
+      },
+      "evaluating": "מעריך מועמדים…",
+      "done": "ההמלצה מוכנה"
+    },
+    "device": {
+      "remoteNote": "הגדרות המצלמה והמיקרופון שייכות למפרסם ({{name}})",
+      "camera": "מצלמה",
+      "resolution": "רזולוציה",
+      "frameRate": "קצב פריימים",
+      "cameraMax": "המצלמה תומכת עד {{width}} × {{height}} @ {{fps}} fps",
+      "microphone": "מיקרופון",
+      "channels": "ערוצים",
+      "mono": "מונו",
+      "stereo": "סטריאו",
+      "audioQuality": "איכות שמע",
+      "voice": "קול",
+      "music": "מוזיקה",
+      "stereoWarning": "סטריאו מבטל ביטול הד ורעש — השתמש באוזניות; הוא גם מעלה את רוחב הפס של הקליטה",
+      "apply": "החל על המצלמה והמיקרופון שלי"
+    },
+    "busy": {
+      "quality": "משנה איכות…",
+      "resync": "מסנכרן מחדש את השידור…",
+      "reconnect": "מתחבר מחדש…",
+      "maxBitrate": "מעדכן את מגבלת קצב הסיביות…",
+      "compression": "מעדכן דחיסה…",
+      "resolution": "משנה רזולוציית מצלמה…",
+      "frameRate": "משנה קצב פריימים…",
+      "camera-device": "מחליף מצלמה…",
+      "mic-device": "מחליף מיקרופון…",
+      "mic-mode": "מחיל הגדרות מיקרופון…",
+      "audioOnly": "מעדכן את השידור…",
+      "applyTune": "מחיל הגדרות…",
+      "probe": "בודק את החיבור…",
+      "export": "מכין את הדוח…"
+    }
+  },
+  "meetpp": {
+    "button": {
+      "aiMeeting": "פגישה עם AI",
+      "aiNotesOn": "הערות AI פועלות",
+      "aiNotesPaused": "הערות AI הושהו",
+      "menu": {
+        "pause": "השהה תמלול",
+        "resume": "המשך תמלול",
+        "mode": "מצב",
+        "boardToMain": "הבא לוח למסך הראשי",
+        "snapshot": "תמונת לוח",
+        "editors": "עורכים…",
+        "end": "סיים פגישת AI",
+        "showBoard": "הצג לוח",
+        "hideBoard": "הסתר לוח"
+      }
+    },
+    "setup": {
+      "title": "התחל פגישת AI",
+      "intro": "Meet++ מתמלל את הפגישה ושומר על הלוח מעודכן.",
+      "structure": "מבנה הפגישה",
+      "agendaDriven": "מונחה סדר יום",
+      "agendaDrivenHint": "פריטים ותיבות זמן",
+      "goalDriven": "מונחה מטרה",
+      "goalDrivenHint": "מטרה → תוצרים → צעדים הבאים",
+      "goalPlaceholder": "יעד",
+      "language": "שפה",
+      "mode": "מצב AI",
+      "modeLead": "מוביל",
+      "modeAssist": "סיוע",
+      "series": "סדרת פגישות",
+      "newSeries": "סדרה חדשה",
+      "agendaPdf": "סדר יום PDF",
+      "previousNotesPdf": "PDF של הערות קודמות",
+      "importedFromSeries": "יובא מסדרה",
+      "itemsFound": "נמצאו {{count}} נושאים בסדר היום",
+      "parsing": "מנתח…",
+      "start": "התחל",
+      "cancel": "ביטול",
+      "notice": "תמלול חי פועל בשרת שלנו; הטקסט מעובד על ידי ספק ה-LLM המוגדר כדי להפיק פרוטוקול.",
+      "errors": {
+        "noTextLayer": "נראה שה-PDF הזה סרוק. העלו PDF טקסטואלי או הזינו את סדר היום ידנית.",
+        "tooLarge": "קובץ ה-PDF גדול מדי (מקסימום 10 MB).",
+        "encrypted": "קובץ PDF זה מוגן בסיסמה.",
+        "tooManyPages": "ל-PDF יש יותר מדי עמודים (מקסימום 50).",
+        "capacity": "קיבולת ה-AI עמוסה — נסו שוב מאוחר יותר."
+      }
+    },
+    "board": {
+      "tabs": {
+        "agenda": "סדר יום",
+        "decisions": "החלטות",
+        "actions": "פעולות",
+        "attendance": "נוכחות",
+        "minutes": "דקות",
+        "attachments": "קבצים מצורפים",
+        "transcript": "תמלול",
+        "previousDecisions": "החלטות הישיבה הקודמת"
+      },
+      "follow": "עקוב",
+      "followPaused": "מושהה",
+      "status": {
+        "listening": "מקשיב",
+        "thinking": "חושב",
+        "behind": "מאחורי {{s}} שניות",
+        "paused": "מושהה",
+        "offline": "AI לא זמין"
+      },
+      "empty": {
+        "agenda": "אין עדיין פריטי סדר יום.",
+        "decisions": "ההחלטות יופיעו כאן ככל שתתקבלנה.",
+        "actions": "פעולות יופיעו כאן ככל שיסוכמו.",
+        "attendance": "נוכחות תופיע כשמצטרפים.",
+        "minutes": "הפרוטוקול יופיע עבור כל סעיף בסדר היום.",
+        "attachments": "אין קבצים מצורפים עדיין.",
+        "transcript": "התמלול מופיע כאן בזמן שהפגישה מתנהלת."
+      },
+      "actions": {
+        "confirm": "אישור",
+        "edit": "עריכה",
+        "reject": "דחה",
+        "add": "הוסף",
+        "setActive": "התחל",
+        "done": "בוצע",
+        "defer": "דחה",
+        "previous": "הקודם (פתוח)",
+        "new": "חדש בפגישה זו",
+        "unassigned": "לא מוקצה",
+        "ownerPrompt": "שם או כינוי של הבעלים"
+      }
+    },
+    "phases": {
+      "opening": "פותח",
+      "previousActions": "פעולות קודמות",
+      "agenda": "סדר יום",
+      "goal": "יעד",
+      "discussion": "דיון",
+      "aob": "עסקים אחרים",
+      "nextSteps": "השלבים הבאים",
+      "newActions": "פעולות חדשות",
+      "planning": "תכנון",
+      "closing": "סוגר",
+      "jumpConfirm": "לעבור לשלב הזה?"
+    },
+    "proposal": {
+      "title": "לעבור לשלב הבא?",
+      "moveNow": "עבור עכשיו",
+      "notYet": "עדיין לא",
+      "autoIn": "אוטומטי בעוד {{s}} שניות"
+    },
+    "announce": {
+      "dismiss": "סגור"
+    },
+    "consent": {
+      "title": "הערות AI בפגישה זו",
+      "body": "פגישה זו משתמשת בהערות AI: הדיבור שלך מתומלל בשרת שלנו והטקסט מעובד על ידי {{provider}} להפקת פרוטוקול.",
+      "continue": "המשך",
+      "optOut": "אל תתמלל אותי",
+      "privacyLink": "פרטיות",
+      "changeChoice": "שינוי הבחירה שלי",
+      "notTranscribed": "לא תומלל"
+    },
+    "review": {
+      "title": "סקירה ופרסום",
+      "sections": {
+        "minutes": "דקות",
+        "decisions": "החלטות",
+        "actions": "פעולות",
+        "distribution": "הפצה"
+      },
+      "nextMeeting": {
+        "title": "פגישה הבאה",
+        "date": "תאריך",
+        "duration": "משך (דק')",
+        "room": "חדר",
+        "required": "נדרש הבא"
+      },
+      "distribution": {
+        "minutesToAttendees": "דקות למשתתפים",
+        "invites": "הזמנות למשתתפים נדרשים"
+      },
+      "publish": "פרסם ושלח",
+      "published": "פורסם",
+      "saveDraft": "שמור טיוטה",
+      "finalisedChanges": "ההשלמה השתנתה",
+      "retry": "נסה שוב"
+    },
+    "snapshot": {
+      "toolbarButton": "צילום מסך אל Meet++",
+      "added": "התמונה צורפה",
+      "failed": "יצירת התמונות המהירות נכשלה"
+    }
   }
 }
