@@ -1458,6 +1458,8 @@ async def _job_final(session_id: str) -> None:
     await compose.reconcile_previous_actions(session_id)
     # …and previous actions the AI closed must be confirmed by the transcript.
     await compose.verify_closed_previous_actions(session_id)
+    # …and so must the decisions the AI recorded as taken.
+    await compose.verify_ai_decisions(session_id)
     await compose.compose_final(session_id)
     await _set_job(session_id, "final", status="done", error=None)
 

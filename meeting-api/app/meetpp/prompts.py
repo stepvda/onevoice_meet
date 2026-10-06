@@ -288,6 +288,20 @@ def build_verify_closed_messages(*, actions: list[str], transcript: str) -> list
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
+def build_verify_decisions_messages(*, decisions: list[str], transcript: str) -> list[dict]:
+    """Decisions recorded as taken during a meeting, checked against the transcript."""
+    system = (
+        "These decisions were recorded as adopted or rejected during a meeting. For each one, find the line of the "
+        "transcript where the meeting takes it: the members agree to it, vote on it or assent to it, or the chair states "
+        "that it is decided or rejected. Copy that line's words into \"quote\" exactly. A proposal, a suggestion, an "
+        "opinion, a grievance or a point read out from the agenda is not a decision; neither is a plan to decide later. "
+        "Leave out every decision with no such line. Return json only: {\"confirmed\": [{\"ref\": \"D-2\", "
+        "\"quote\": \"...\"}]}."
+    )
+    user = "DECISIONS RECORDED:\n" + "\n".join(decisions) + "\n\nTRANSCRIPT:\n" + transcript
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
 # ─── Final composition (C.3) ───────────────────────────────────────────────
 
 FINAL_EXAMPLE = {

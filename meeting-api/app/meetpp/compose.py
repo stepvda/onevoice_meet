@@ -463,14 +463,12 @@ async def reconcile_previous_actions(session_id: str) -> int:
             return 0
         changes = ops.Changes()
         count = 0
-        flat = util.normalize_text(minutes)
         for r in parsed.get("reports") or []:
             if not isinstance(r, dict) or r.get("ref") not in by_ref:
                 continue
             note = util.truncate(str(r.get("note") or "").strip(), 600)
-            quote = util.normalize_text(str(r.get("quote") or ""))
             # Only what the minutes say: the quoted sentence must be in them.
-            if not note or len(quote) < 20 or quote not in flat:
+            if not note or not util.quote_in(str(r.get("quote") or ""), minutes):
                 log.info("MEETPP_RECONCILE sid=%s dropped %s (quote not in the minutes)", session.id, r.get("ref"))
                 continue
             a = by_ref[r["ref"]]
@@ -525,13 +523,7 @@ async def verify_closed_previous_actions(session_id: str) -> int:
         ]
         if not closed:
             return 0
-        segs = (
-            db.query(MeetppSegment)
-            .filter(MeetppSegment.session_id == session.id, MeetppSegment.is_gap.is_(False))
-            .order_by(MeetppSegment.seq)
-            .all()
-        )
-        transcript = "\n".join(f"{s.name or 'Unknown'}: {s.best_text}" for s in segs)[-VERIFY_MAX_TRANSCRIPT_CHARS:]
+        transcript = _transcript_text(db, session)
         if not transcript.strip():
             return 0
         by_ref = {a.ref: a for a in closed}
@@ -545,13 +537,10 @@ async def verify_closed_previous_actions(session_id: str) -> int:
         except llm.LLMError as exc:
             log.info("MEETPP_VERIFY sid=%s failed, closures kept: %s", session.id, exc)
             return 0
-        flat = util.normalize_text(transcript)
-        confirmed = set()
-        for c in parsed.get("confirmed") or []:
-            if isinstance(c, dict) and c.get("ref") in by_ref:
-                quote = util.normalize_text(str(c.get("quote") or ""))
-                if len(quote) >= 15 and quote in flat:
-                    confirmed.add(c["ref"])
+        confirmed = {
+            c["ref"] for c in parsed.get("confirmed") or []
+            if isinstance(c, dict) and c.get("ref") in by_ref and util.quote_in(str(c.get("quote") or ""), transcript)
+        }
         changes = ops.Changes()
         reopened = 0
         for ref, a in by_ref.items():
@@ -570,6 +559,87 @@ async def verify_closed_previous_actions(session_id: str) -> int:
         return reopened
     except Exception:  # noqa: BLE001 — finalisation goes on without it
         log.exception("meetpp: verifying closed actions failed for %s", session_id)
+        db.rollback()
+        return 0
+    finally:
+        db.close()
+
+
+def _transcript_text(db: Session, session: MeetppSession) -> str:
+    segs = (
+        db.query(MeetppSegment)
+        .filter(MeetppSegment.session_id == session.id, MeetppSegment.is_gap.is_(False))
+        .order_by(MeetppSegment.seq)
+        .all()
+    )
+    return "\n".join(f"{s.name or 'Unknown'}: {s.best_text}" for s in segs)[-VERIFY_MAX_TRANSCRIPT_CHARS:]
+
+
+async def verify_ai_decisions(session_id: str) -> int:
+    """At finalisation: every decision the AI recorded as adopted or rejected
+    (not confirmed by a person) is checked for a transcript line where the
+    meeting takes it — agreement, a vote, assent, the chair declaring it. A
+    decision without one is not changed but put on the minutes' list of items
+    to verify, for the chair in review: with the local model the check both
+    missed an invented decision and failed real ones, so it may not decide on
+    its own. Returns the number of decisions flagged. Never raises."""
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None or not llm.llm_configured():
+            return 0
+        taken = (
+            db.query(MeetppDecision)
+            .filter(
+                MeetppDecision.session_id == session.id,
+                MeetppDecision.status.in_(("adopted", "rejected")),
+                MeetppDecision.confirmed.is_(False),
+                MeetppDecision.locked.is_(False),
+            )
+            .all()
+        )
+        if not taken:
+            return 0
+        transcript = _transcript_text(db, session)
+        if not transcript.strip():
+            return 0
+        by_ref = {d.ref: d for d in taken}
+        lines = [f"{d.ref} · {d.status} · {d.title}" + (f" — {d.resolution}" if d.resolution else "") for d in taken]
+        try:
+            parsed, _ = await llm.complete_parsed(
+                db=db, purpose="compose_decisions", session_id=session.id, temperature=0.0, max_tokens=2000,
+                messages=prompts.build_verify_decisions_messages(decisions=lines, transcript=transcript),
+                validate=lambda p: None if isinstance(p.get("confirmed"), list) else "confirmed must be a list",
+            )
+        except llm.LLMError as exc:
+            log.info("MEETPP_VERIFY sid=%s decisions not checked: %s", session.id, exc)
+            return 0
+        confirmed = {
+            c["ref"] for c in parsed.get("confirmed") or []
+            if isinstance(c, dict) and c.get("ref") in by_ref and util.quote_in(str(c.get("quote") or ""), transcript)
+        }
+        o = outline_mod.load(db, session.id)
+        changes = ops.Changes()
+        flagged = 0
+        for ref, d in by_ref.items():
+            if ref in confirmed:
+                continue
+            section = o.by_id.get(d.section_id or "")
+            if section is None:
+                continue
+            minute = outline_mod.minute_for(db, session, o.top(section).id)
+            items = util.loads(minute.verify_json, [])
+            item = f"{d.ref} “{util.truncate(d.title, 80)}”: no line of the transcript shows the meeting taking this decision — confirm it, or set it to proposed"
+            if item not in items:
+                minute.verify_json = util.dumps(items + [item])
+                changes.minutes.add(minute.id)
+            flagged += 1
+        db.flush()
+        await bus.publish_changes(db, session, changes)
+        log.info("MEETPP_VERIFY sid=%s decisions=%s confirmed=%s flagged=%s", session.id, len(taken), len(confirmed), flagged)
+        return flagged
+    except Exception:  # noqa: BLE001 — finalisation goes on without it
+        log.exception("meetpp: verifying decisions failed for %s", session_id)
         db.rollback()
         return 0
     finally:

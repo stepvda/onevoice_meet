@@ -303,3 +303,37 @@ async def test_closures_not_confirmed_by_the_transcript_are_reopened(fakes):
     rows = {a.ref: a for a in query(lambda db: db.query(MeetppAction).filter_by(session_id=sid).all())}
     assert rows["A-1"].status == "done" and rows["A-2"].status == "open" and rows["A-2"].completed_at is None
     assert rows["A-3"].status == "done"  # the chair's own change stands
+
+
+async def test_ai_decisions_not_taken_in_the_transcript_are_flagged_for_the_chair(fakes):
+    from app.meetpp.models import MeetppDecision
+
+    sid = await _meeting_with_decision(fakes)  # D-1: "Approve the minutes of meeting #8", adopted by the AI
+    ids = sids(sid)
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, sid)
+        for ref, title, confirmed in (("D-2", "No AI drafting of the charter", False), ("D-3", "Hall booked for Tuesdays", True)):
+            db.add(MeetppDecision(id=util.ulid(), session_id=sid, series_id=session.series_id, ref=ref,
+                                  section_id=ids["Approval of the minutes"], title=title, resolution=f"that {title.lower()}",
+                                  status="adopted", confirmed=confirmed, origin="ai", evidence_json="[]"))
+        db.commit()
+    finally:
+        db.close()
+    fakes.llm.add("compose_decisions", {"confirmed": [
+        # Not word for word, but the same line.
+        {"ref": "D-1", "quote": "shall we approve the minutes of meeting 8, agreed by both"},
+        {"ref": "D-2", "quote": "We all agree: no AI drafting."},  # not in the transcript
+    ]})
+    assert await compose.verify_ai_decisions(sid) == 1
+    rows = {d.ref: d for d in query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid).all())}
+    assert {r.status for r in rows.values()} == {"adopted"}  # nothing is changed
+    items = util.loads(_minute(sid, ids["Approval of the minutes"]).verify_json, [])
+    assert len(items) == 1 and items[0].startswith("D-2 “No AI drafting of the charter”")
+
+
+def test_quote_in_tolerates_small_differences():
+    text = "Noam Grunes: All right. So we're agreed on all of that.\nStephane van der Aa: Yes, I can keep the GLM backups."
+    assert util.quote_in("So we're agreed on all of that.", text)
+    assert util.quote_in("yes I can keep the GLM model backups", text)
+    assert not util.quote_in("We decided that AI may never draft the Declaration.", text)

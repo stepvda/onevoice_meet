@@ -142,3 +142,28 @@ def normalize_text(text: str | None) -> str:
     """Lower case, typographic quotes and dashes folded, Markdown marks and
     runs of whitespace removed: for checking that a quote is in a text."""
     return re.sub(r"\s+", " ", (text or "").translate(_NORM_TRANS).lower()).strip().strip(".")
+
+
+def quote_in(quote: str | None, text: str | None, min_ratio: float = 0.8) -> bool:
+    """Whether a quote is in a text: word for word, or — since models do not
+    copy exactly — with at least `min_ratio` of its words found together in one
+    stretch of the text of about the same length."""
+    q = normalize_text(quote)
+    t = normalize_text(text)
+    if len(q) < 10 or not t:
+        return False
+    if q in t:
+        return True
+    qwords = re.findall(r"[\w']+", q)
+    words = re.findall(r"[\w']+", t)
+    if len(qwords) < 4 or not words:
+        return False
+    need = set(qwords)
+    width = len(qwords) + 6
+    for i in range(0, max(1, len(words) - len(qwords) + 1)):
+        window = set(words[i:i + width])
+        if qwords[0] not in window and qwords[-1] not in window:
+            continue
+        if len(need & window) / len(need) >= min_ratio:
+            return True
+    return False
