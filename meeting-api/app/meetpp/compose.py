@@ -22,6 +22,7 @@ from app.db import SessionLocal
 from app.meetpp import bus, governance, llm, ops, outline as outline_mod, prompts, util
 from app.meetpp.models import (
     MeetppAction,
+    MeetppActionReport,
     MeetppAttendee,
     MeetppDecision,
     MeetppMinute,
@@ -131,6 +132,16 @@ def _matches(block: str, d: MeetppDecision) -> bool:
         if util.jaccard(block, cand) >= 0.45:
             return True
     return False
+
+
+def markdown_of(parsed: dict) -> str:
+    """The minutes text of a reply: its "markdown", or — when a model garbles the
+    key ({": ": "### 7.1 …"}, seen with the local model) — its one long text."""
+    value = parsed.get("markdown")
+    if isinstance(value, str) and value.strip():
+        return value
+    texts = [v for v in parsed.values() if isinstance(v, str) and len(v) > 40]
+    return texts[0] if len(texts) == 1 else ""
 
 
 def validate_section(markdown: str, adopted: list[MeetppDecision], substantial: bool) -> str | None:
@@ -308,7 +319,7 @@ async def _compose_section(session_id: str, section_id: str, *, force: bool) -> 
         )
 
         def _validate(parsed: dict) -> str | None:
-            return validate_section(str(parsed.get("markdown") or ""), adopted, substantial)
+            return validate_section(markdown_of(parsed), adopted, substantial)
 
         try:
             parsed, _result = await llm.complete_parsed(
@@ -323,7 +334,7 @@ async def _compose_section(session_id: str, section_id: str, *, force: bool) -> 
         except llm.LLMError as exc:
             log.warning("MEETPP_COMPOSE sid=%s section=%s status=failed error=%s", session.id, top.id, exc)
             return await _store(db, session, top.id, None, [], tier, str(exc)[:300], force)
-        markdown = finish_markdown(str(parsed.get("markdown") or ""), adopted, kind=top.kind)
+        markdown = finish_markdown(markdown_of(parsed), adopted, kind=top.kind)
         if util.word_count(markdown) > max(TARGET_SLACK * target_words, target_words + TARGET_SLACK_WORDS):
             shorter = await _condense(db, session, series, markdown, target_words, adopted, substantial)
             if shorter:
@@ -357,10 +368,12 @@ async def _condense(
         points = parsed.get("points")
         if not isinstance(points, list) or not [x for x in points if str(x).strip()]:
             return "no key points"
+        if len(points) > round(max_points * 1.3) + 2:
+            return f"{len(points)} points; merge related points into at most {max_points}, one short sentence each"
         return None
 
     def _valid_minutes(parsed: dict) -> str | None:
-        md = str(parsed.get("markdown") or "")
+        md = markdown_of(parsed)
         error = validate_section(md, adopted, substantial)
         if error:
             return error
@@ -375,7 +388,7 @@ async def _condense(
 
     try:
         parsed, _ = await llm.complete_parsed(
-            db=db, purpose="compose_condense", session_id=session.id, temperature=0.2, max_tokens=4000,
+            db=db, purpose="compose_condense", session_id=session.id, temperature=0.2, max_tokens=6000,
             messages=prompts.build_condense_points_messages(markdown=markdown, max_points=max_points),
             validate=_valid_points,
         )
@@ -391,7 +404,104 @@ async def _condense(
     except llm.LLMError as exc:
         log.info("MEETPP_COMPOSE sid=%s condense failed, keeping the draft: %s", session.id, exc)
         return None
-    return str(parsed.get("markdown") or "") or None
+    return markdown_of(parsed) or None
+
+
+RECONCILE_MAX_MINUTES_CHARS = 60000
+
+
+async def reconcile_previous_actions(session_id: str) -> int:
+    """At finalisation: previous actions that got no report during the meeting
+    are checked against the composed minutes, and what the minutes say about
+    them (status, a "reported at this meeting" note) is recorded. During the
+    meeting a report is only taken when an action is named explicitly; in a
+    meeting without an actions review the actions come up inside the agenda
+    points (FDD v3.2, §8.5). Returns the number of actions reported. Never
+    raises."""
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None or not llm.llm_configured():
+            return 0
+        series = db.get(MeetppSeries, session.series_id)
+        reported = {
+            r.action_id for r in db.query(MeetppActionReport).filter_by(session_id=session.id).all() if (r.note or "").strip()
+        }
+        candidates = [
+            a for a in ops.session_actions(db, session)
+            if ops.is_previous_action(a, session) and a.id not in reported and not a.locked
+        ]
+        if not candidates:
+            return 0
+        minutes = minutes_markdown(db, session, sections_only=True)[:RECONCILE_MAX_MINUTES_CHARS]
+        if not minutes.strip():
+            return 0
+        by_ref = {a.ref: a for a in candidates}
+        lines = []
+        for a in candidates:
+            who = ", ".join(x.get("name", "") for x in util.loads(a.assignees_json, []) if isinstance(x, dict))
+            lines.append(
+                f"{a.ref} · {a.title}" + (f" · {who}" if who else "") + f" · {a.status}"
+                + (f" — {util.truncate(a.description, 240)}" if a.description else "")
+            )
+
+        def _validate(parsed: dict) -> str | None:
+            reports = parsed.get("reports")
+            if not isinstance(reports, list):
+                return "reports must be a list"
+            unknown = [r.get("ref") for r in reports if isinstance(r, dict) and r.get("ref") not in by_ref]
+            if unknown:
+                return f"unknown refs {unknown[:5]}; use only the refs listed"
+            return None
+
+        try:
+            parsed, _ = await llm.complete_parsed(
+                db=db, purpose="compose_actions", session_id=session.id, temperature=0.1, max_tokens=4000,
+                messages=prompts.build_reconcile_messages(
+                    org=settings.meetpp_org_name, meeting_type_label=_type_label(series), actions=lines, minutes=minutes,
+                ),
+                validate=_validate,
+            )
+        except llm.LLMError as exc:
+            log.info("MEETPP_RECONCILE sid=%s failed: %s", session.id, exc)
+            return 0
+        changes = ops.Changes()
+        count = 0
+        flat = util.normalize_text(minutes)
+        for r in parsed.get("reports") or []:
+            if not isinstance(r, dict) or r.get("ref") not in by_ref:
+                continue
+            note = util.truncate(str(r.get("note") or "").strip(), 600)
+            quote = util.normalize_text(str(r.get("quote") or ""))
+            # Only what the minutes say: the quoted sentence must be in them.
+            if not note or len(quote) < 20 or quote not in flat:
+                log.info("MEETPP_RECONCILE sid=%s dropped %s (quote not in the minutes)", session.id, r.get("ref"))
+                continue
+            a = by_ref[r["ref"]]
+            status = str(r.get("status") or "").strip().lower().replace(" ", "_")
+            if status in ("open", "in_progress", "done", "cancelled") and status != a.status:
+                a.status = status
+                if status == "done":
+                    a.completed_at = a.completed_at or util.now()
+                    a.completion_note = a.completion_note or note
+            report = db.query(MeetppActionReport).filter_by(action_id=a.id, session_id=session.id).first()
+            if report is None:
+                report = MeetppActionReport(action_id=a.id, session_id=session.id, note="", evidence_json="[]")
+                db.add(report)
+            report.note = note
+            report.status_at_report = a.status
+            changes.actions.add(a.id)
+            count += 1
+        db.flush()
+        await bus.publish_changes(db, session, changes)
+        log.info("MEETPP_RECONCILE sid=%s candidates=%s reported=%s", session.id, len(candidates), count)
+        return count
+    except Exception:  # noqa: BLE001 — finalisation goes on without it
+        log.exception("meetpp: reconciling previous actions failed for %s", session_id)
+        db.rollback()
+        return 0
+    finally:
+        db.close()
 
 
 async def _store(

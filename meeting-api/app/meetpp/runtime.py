@@ -1453,6 +1453,9 @@ async def _job_final(session_id: str) -> None:
         await bus.publish_changes(db, session, ops.Changes(attendees=changed, quorum=True))
     finally:
         db.close()
+    # Previous actions that came up inside the agenda points (no report taken
+    # live) are reported from the composed minutes before the final document.
+    await compose.reconcile_previous_actions(session_id)
     await compose.compose_final(session_id)
     await _set_job(session_id, "final", status="done", error=None)
 

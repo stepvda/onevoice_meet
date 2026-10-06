@@ -133,3 +133,12 @@ def truncate(value: Any, limit: int) -> str | None:
 
 def word_count(text: str | None) -> int:
     return len(re.findall(r"\w+", text or ""))
+
+
+_NORM_TRANS = str.maketrans({"’": "'", "‘": "'", "“": '"', "”": '"', "—": "-", "–": "-", "*": " ", "_": " ", "#": " ", ">": " "})
+
+
+def normalize_text(text: str | None) -> str:
+    """Lower case, typographic quotes and dashes folded, Markdown marks and
+    runs of whitespace removed: for checking that a quote is in a text."""
+    return re.sub(r"\s+", " ", (text or "").translate(_NORM_TRANS).lower()).strip().strip(".")

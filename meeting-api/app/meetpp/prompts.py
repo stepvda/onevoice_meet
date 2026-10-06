@@ -258,6 +258,23 @@ def build_condense_write_messages(
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
+def build_reconcile_messages(*, org: str, meeting_type_label: str, actions: list[str], minutes: str) -> list[dict]:
+    """Previous actions against the minutes of this meeting (finalisation)."""
+    system = (
+        f"You check the follow-up actions of earlier meetings of {org} against the minutes of this "
+        f"{meeting_type_label.lower()}. For each action listed, decide whether the minutes report anything about it — "
+        "progress, completion, a change of plan, or that it stays open for a stated reason. When they do, give its status "
+        "now (open, in_progress, done or cancelled) and a short note for the report's “reported at this meeting”, one or "
+        "two sentences, third person, past tense, names as given, based only on the minutes. An action is done only when "
+        "the minutes say that this work is finished; a general remark does not close a specific action. Report an "
+        "action only when the minutes clearly refer to that same work, and copy into \"quote\" the sentence of the "
+        "minutes that does so, word for word. When in doubt, leave it out: no report is better than a wrong one. Return "
+        "json only: {\"reports\": [{\"ref\": \"A-7\", \"status\": \"done\", \"note\": \"...\", \"quote\": \"...\"}]}."
+    )
+    user = "ACTIONS:\n" + "\n".join(actions) + "\n\nMINUTES OF THIS MEETING:\n" + minutes
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
 # ─── Final composition (C.3) ───────────────────────────────────────────────
 
 FINAL_EXAMPLE = {

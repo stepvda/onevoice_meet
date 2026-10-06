@@ -241,3 +241,39 @@ def test_resolved_blocks_parsing():
     assert compose.validate_section("", [], False) == "the markdown is empty"
     assert "too short" in compose.validate_section("Short.", [], True)
     _ = outline
+
+
+def test_markdown_of_reads_a_garbled_key():
+    assert compose.markdown_of({"markdown": "Text."}) == "Text."
+    long = "### 7.1 Separate documents\n\nThe directors agreed to separate the documents."
+    assert compose.markdown_of({": ": long}) == long
+    assert compose.markdown_of({"a": long, "b": long}) == ""
+
+
+async def test_reconcile_reports_previous_actions_only_from_quoted_minutes(fakes):
+    from app.meetpp.models import MeetppAction, MeetppActionReport
+
+    sid = await _meeting_with_decision(fakes)
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, sid)
+        for ref, title in (("A-1", "Ask two suppliers for a tank quote"), ("A-2", "Repaint the shed")):
+            db.add(MeetppAction(id=util.ulid(), series_id=session.series_id, session_id=sid, ref=ref, title=title,
+                                status="open", origin="pdf"))
+        minute = outline.minute_for(db, session, sids(sid)["Approval of the minutes"])
+        minute.narrative_md = "The chair reported that both tank quotes had been received and the order was placed."
+        db.commit()
+    finally:
+        db.close()
+    fakes.llm.add("compose_actions", {"reports": [
+        {"ref": "A-1", "status": "done", "note": "Both quotes were received; the tank was ordered.",
+         "quote": "The chair reported that both tank quotes had been received and the order was placed."},
+        # Not in the minutes: dropped.
+        {"ref": "A-2", "status": "done", "note": "The shed was repainted.", "quote": "The shed was repainted last week."},
+    ]})
+    assert await compose.reconcile_previous_actions(sid) == 1
+    rows = {a.ref: a for a in query(lambda db: db.query(MeetppAction).filter_by(session_id=sid).all())}
+    assert rows["A-1"].status == "done" and rows["A-2"].status == "open"
+    note = query(lambda db: db.query(MeetppActionReport).filter_by(action_id=rows["A-1"].id).one().note)
+    assert note == "Both quotes were received; the tank was ordered."
+    assert "ACTIONS:\nA-1 · Ask two suppliers" in fakes.llm.prompts("compose_actions")[0]
