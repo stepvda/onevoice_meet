@@ -165,6 +165,12 @@ EOF
     "$HERE/$LABEL.plist" > "$AGENT_PLIST"
   plutil -lint "$AGENT_PLIST" >/dev/null
   for d in "gui/$(id -u)" "user/$(id -u)"; do launchctl bootout "$d/$LABEL" 2>/dev/null || true; done
+  # bootout returns before the service has stopped; bootstrapping before then
+  # fails with "5: Input/output error" and leaves the service unloaded.
+  for _ in $(seq 1 30); do
+    launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1 || launchctl print "user/$(id -u)/$LABEL" >/dev/null 2>&1 || break
+    sleep 0.5
+  done
   if launchctl bootstrap "gui/$(id -u)" "$AGENT_PLIST" 2>/dev/null; then
     echo "    loaded in gui/$(id -u) (starts at every login of $(id -un))"
   else
