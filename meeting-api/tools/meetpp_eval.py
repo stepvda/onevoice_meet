@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Meet++ AI quality harness (FDD §16.3).
+"""Meet++ interpretation harness (FDD v3.1 §8, §12).
 
-Replays the stored transcript of a finished session through the live tick
-prompt + LLM provider in windows, and reports JSON validity, operation counts,
-rejections and token usage. Use it to compare providers/models or to check a
-prompt change against recorded meetings before shipping it.
+Replays the stored transcript of a session through the live tick prompt and
+the configured LLM in 2-minute windows (with the 90 s context), validates
+every returned operation and note with the real validator inside a
+transaction that is rolled back, and reports JSON validity (with the one
+repair re-prompt), applied / rejected operations with reasons, topics and
+token usage. Nothing is written to the database except LLM call records
+(and those only with --record).
 
 USAGE
   cd meeting-api
-  .venv/bin/python tools/meetpp_eval.py --session <sid> [--window 30] [--limit 40]
+  .venv/bin/python tools/meetpp_eval.py --session <sid> [--limit 40] [--out ops.json] [--record]
 
 It reads the same settings as the app (LLM_BASE_URL / LLM_API_KEY / LLM_MODEL),
 so point those at the provider under test.
@@ -19,88 +22,119 @@ import argparse
 import asyncio
 import json
 import sys
+from collections import Counter
+from datetime import timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from app.config import settings  # noqa: E402
 from app.db import SessionLocal  # noqa: E402
-from app.meetpp import llm, prompts  # noqa: E402
-from app.meetpp.models import MeetppAgendaItem, MeetppAttendee, MeetppSegment, MeetppSession  # noqa: E402
+from app.meetpp import llm, ops, outline, prompts, runtime  # noqa: E402
+from app.meetpp.models import MeetppSegment, MeetppSession  # noqa: E402
 
 
-async def run(session_id: str, window: int, limit: int) -> dict:
+def _windows(segments: list[MeetppSegment]) -> list[list[MeetppSegment]]:
+    out: list[list[MeetppSegment]] = []
+    current: list[MeetppSegment] = []
+    for s in segments:
+        t = runtime._seg_time(s)
+        if current and t > runtime._seg_time(current[0]) + timedelta(seconds=runtime.WINDOW_SECONDS):
+            out.append(current)
+            current = []
+        current.append(s)
+    if current:
+        out.append(current)
+    return out
+
+
+async def run(session_id: str, limit: int, record: bool) -> dict:
     db = SessionLocal()
     try:
         session = db.get(MeetppSession, session_id)
         if session is None:
             raise SystemExit(f"session {session_id} not found")
         segments = (
-            db.query(MeetppSegment).filter_by(session_id=session_id).order_by(MeetppSegment.seq).all()
+            db.query(MeetppSegment)
+            .filter(MeetppSegment.session_id == session_id, MeetppSegment.is_gap.is_(False))
+            .order_by(MeetppSegment.seq)
+            .all()
         )
-        if not segments:
-            raise SystemExit("no transcript segments for this session")
-        agenda = [
-            {"id": i.id, "pos": i.position, "title": i.title, "status": i.status}
-            for i in db.query(MeetppAgendaItem).filter_by(session_id=session_id).all()
-        ]
-        aliases = {
-            f"P{n}": a.display_name
-            for n, a in enumerate(db.query(MeetppAttendee).filter_by(session_id=session_id).all(), start=1)
-        }
     finally:
         db.close()
+    if not segments:
+        raise SystemExit("no transcript segments for this session")
+    if not llm.llm_configured():
+        raise SystemExit("LLM_API_KEY is not set")
 
-    stats = {"ticks": 0, "valid_json": 0, "ops": 0, "phase_signals": 0, "tokens_in": 0, "tokens_out": 0, "errors": 0}
-    all_ops: list[dict] = []
-    windows = [segments[i : i + window] for i in range(0, min(len(segments), limit * window), window)]
-    for idx, win in enumerate(windows):
+    stats: Counter = Counter()
+    reasons: Counter = Counter()
+    results = []
+    windows = _windows(segments)[:limit]
+    for idx, window in enumerate(windows):
         stats["ticks"] += 1
-        messages = prompts.build_tick_messages(
-            language=session.language,
-            title="eval",
-            date="2026-01-01",
-            template=session.template,
-            phase=session.phase,
-            current_item_id=session.current_item_id,
-            aliases=aliases,
-            agenda=agenda,
-            prev_actions=[],
-            state={"decisions": [], "actions": [], "minutes": [], "locked_ids": []},
-            context=[],
-            window=[{"seq": s.seq, "speaker": s.name or s.identity, "t": "", "text": s.text} for s in win],
-        )
+        db = SessionLocal()
         try:
-            result = await llm.complete_json(
-                db=None, purpose="eval", messages=messages, max_tokens=1200, temperature=0.2, enforce_budget=False
-            )
-            parsed = llm.parse_json(result.text)
+            session = db.get(MeetppSession, session_id)
+            o = outline.load(db, session_id)
+            ctx_from = runtime._seg_time(window[0]) - timedelta(seconds=int(settings.meetpp_context_seconds))
+            context = [s for s in segments if s.seq < window[0].seq and runtime._seg_time(s) >= ctx_from][-40:]
+            messages = prompts.build_tick_messages(**runtime._prompt_data(db, session, o, window, context))
+            try:
+                parsed, result = await llm.complete_parsed(
+                    db=db if record else None, purpose="eval", messages=messages, max_tokens=2000, temperature=0.2,
+                    session_id=session_id if record else None,
+                )
+            except llm.LLMParseError as exc:
+                stats["invalid_json"] += 1
+                print(f"  window {idx}: invalid output after repair: {exc}")
+                continue
+            except llm.LLMError as exc:
+                stats["errors"] += 1
+                print(f"  window {idx}: LLM error: {exc}")
+                continue
             stats["valid_json"] += 1
             stats["tokens_in"] += result.prompt_tokens
+            stats["tokens_cached"] += result.cached_tokens
             stats["tokens_out"] += result.completion_tokens
-            for op in parsed.get("ops") or []:
-                stats["ops"] += 1
-                all_ops.append(op)
-            if parsed.get("phase_signal"):
-                stats["phase_signals"] += 1
-        except Exception as exc:  # noqa: BLE001
-            stats["errors"] += 1
-            print(f"  window {idx}: ERROR {exc}")
+            # Validate against the real applier, then roll everything back.
+            ctx = ops.ApplyContext(
+                db=db, session=session, actor="ai",
+                window={s.seq for s in window}, context={s.seq for s in context},
+                pins={label: sid for sid, label in o.prompt_ids().items()},
+            )
+            ops.apply_ops(ctx, parsed.get("ops") or [])
+            notes = ops.apply_notes(ctx, parsed.get("notes") or [])
+            stats["ops_applied"] += ctx.applied
+            stats["ops_suggested"] += ctx.suggested
+            stats["ops_rejected"] += len(ctx.rejected) - ctx.suggested
+            stats["notes"] += notes
+            for r in ctx.rejected:
+                reasons[r["reason"].split(":")[0][:60]] += 1
+            topic = (parsed.get("topic") or {}) if isinstance(parsed.get("topic"), dict) else {}
+            if parsed.get("advance"):
+                stats["advances"] += 1
+            results.append({"window": [window[0].seq, window[-1].seq], "topic": topic, "advance": parsed.get("advance"),
+                            "ops": parsed.get("ops") or [], "notes": parsed.get("notes") or [], "rejected": ctx.rejected})
+        finally:
+            db.rollback()
+            db.close()
     stats["json_validity"] = round(stats["valid_json"] / max(1, stats["ticks"]), 3)
-    return {"stats": stats, "ops": all_ops}
+    return {"stats": dict(stats), "rejection_reasons": dict(reasons.most_common()), "ticks": results}
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--session", required=True, help="meetpp session id")
-    ap.add_argument("--window", type=int, default=30, help="segments per tick")
-    ap.add_argument("--limit", type=int, default=100, help="max windows")
-    ap.add_argument("--out", help="write the raw ops JSON to this file")
+    ap.add_argument("--limit", type=int, default=200, help="max windows")
+    ap.add_argument("--out", help="write the per-window output to this JSON file")
+    ap.add_argument("--record", action="store_true", help="record the LLM calls in meetpp_llm_calls")
     args = ap.parse_args()
-    result = asyncio.run(run(args.session, args.window, args.limit))
-    print(json.dumps(result["stats"], indent=2))
+    result = asyncio.run(run(args.session, args.limit, args.record))
+    print(json.dumps({"stats": result["stats"], "rejection_reasons": result["rejection_reasons"]}, indent=2))
     if args.out:
-        Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2))
-        print(f"ops written to {args.out}")
+        Path(args.out).write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+        print(f"written to {args.out}")
 
 
 if __name__ == "__main__":

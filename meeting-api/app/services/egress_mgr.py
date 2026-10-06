@@ -507,24 +507,17 @@ async def _set_recording_metadata(
     When `meeting` is provided, also writes `pip_enabled` and
     `pip_overlay_identity` so a fresh egress lands on the right
     composition without a second LiveKit roundtrip."""
-    import json
+    from app.room_metadata import patch_room_metadata
 
-    rooms = await lk.room.list_rooms(api.ListRoomsRequest(names=[room_name]))
-    current: dict = {}
-    if rooms.rooms:
-        try:
-            current = json.loads(rooms.rooms[0].metadata or "{}")
-        except ValueError:
-            current = {}
-    current["recording_active"] = recording_active
-    if streaming_active is not None:
-        current["streaming_active"] = streaming_active
-    if meeting is not None:
-        current["pip_enabled"] = bool(meeting.pip_enabled)
-        current["pip_overlay_identity"] = meeting.pip_overlay_identity or None
-    await lk.room.update_room_metadata(
-        api.UpdateRoomMetadataRequest(room=room_name, metadata=json.dumps(current))
-    )
+    def change(current: dict) -> None:
+        current["recording_active"] = recording_active
+        if streaming_active is not None:
+            current["streaming_active"] = streaming_active
+        if meeting is not None:
+            current["pip_enabled"] = bool(meeting.pip_enabled)
+            current["pip_overlay_identity"] = meeting.pip_overlay_identity or None
+
+    await patch_room_metadata(lk, room_name, change)
 
 
 async def sync_compositor_session(m: Meeting) -> None:
@@ -580,25 +573,14 @@ async def push_pip_metadata(m: Meeting) -> None:
     Chrome) gets the change live via `RoomEvent.RoomMetadataChanged`.
     No-op if the room isn't running on the SFU yet — the SPA will read
     the values from the meeting row on join."""
-    import json
+    from app.room_metadata import patch_room_metadata
+
+    def change(current: dict) -> None:
+        current["pip_enabled"] = bool(m.pip_enabled)
+        current["pip_overlay_identity"] = m.pip_overlay_identity or None
 
     lk = livekit_api()
     try:
-        rooms = await lk.room.list_rooms(
-            api.ListRoomsRequest(names=[m.room_name])
-        )
-        if not rooms.rooms:
-            return
-        try:
-            current = json.loads(rooms.rooms[0].metadata or "{}")
-        except ValueError:
-            current = {}
-        current["pip_enabled"] = bool(m.pip_enabled)
-        current["pip_overlay_identity"] = m.pip_overlay_identity or None
-        await lk.room.update_room_metadata(
-            api.UpdateRoomMetadataRequest(
-                room=m.room_name, metadata=json.dumps(current)
-            )
-        )
+        await patch_room_metadata(lk, m.room_name, change, require_room=True)
     finally:
         await lk.aclose()

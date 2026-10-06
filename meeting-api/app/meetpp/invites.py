@@ -1,21 +1,34 @@
-"""Next-meeting creation / RRULE occurrence handling, ICS invitations and
-e-mail fan-out. Nothing is sent before the chair publishes."""
+"""Review draft, publishing and distribution (contract §2.3).
+
+Publish = render the meeting report PDF (and the next-meeting agenda PDF when
+a next meeting is set) through `app.meetpp.report`, write the ICS invitation,
+e-mail the report and the invitations (Resend), snapshot the minutes, delete
+the session's audio store and log every output. Nothing is sent before the
+chair publishes.
+"""
 from __future__ import annotations
 
+import asyncio
 import base64
-import json
 import logging
 import re
-from datetime import datetime, timedelta, timezone
+import shutil
+from datetime import datetime, timedelta
+from html import escape
 from pathlib import Path
 
 from sqlalchemy.orm import Session
-from ulid import ULID
 
 from app.config import settings
-from app.meetpp import render
-from app.meetpp.locales import t
-from app.meetpp.models import MeetppAttendee, MeetppOutput, MeetppSession, utcnow
+from app.meetpp import compose, export as export_mod, util
+from app.meetpp.models import (
+    MeetppAction,
+    MeetppAttendee,
+    MeetppMinutesVersion,
+    MeetppOutput,
+    MeetppRoster,
+    MeetppSession,
+)
 from app.models import Meeting
 from app.services.email import send_email
 from app.services.ics import ics_invite
@@ -23,25 +36,29 @@ from app.services.ics import ics_invite
 log = logging.getLogger("app.meetpp")
 
 
-def _aware(dt: datetime | None) -> datetime | None:
-    if dt is None:
-        return None
-    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+class ReportUnavailable(RuntimeError):
+    pass
 
 
-def parse_booking(session: MeetppSession, meeting: Meeting) -> dict:
-    booking: dict = {}
-    if session.review_json:
-        try:
-            booking = json.loads(session.review_json) or {}
-        except ValueError:
-            booking = {}
-    base = _aware(meeting.scheduled_at) or utcnow()
-    booking.setdefault("title", meeting.display_title)
-    booking.setdefault("duration_min", meeting.duration_minutes or 60)
-    booking.setdefault("room", meeting.room_name)
-    booking.setdefault("iso", next_occurrence_iso(meeting, base))
-    return booking
+def report_module():
+    try:
+        from app.meetpp import report
+    except Exception as exc:  # noqa: BLE001
+        raise ReportUnavailable(f"the report renderer (app.meetpp.report) is not available: {exc}") from exc
+    return report
+
+
+async def render_report(export: dict) -> bytes:
+    report = report_module()
+    return await asyncio.to_thread(report.render_meeting_report, export)
+
+
+async def render_agenda(export: dict) -> bytes:
+    report = report_module()
+    return await asyncio.to_thread(report.render_agenda, export)
+
+
+# ─── Review draft ───────────────────────────────────────────────────────────
 
 
 def _rrule_parts(rrule: str | None) -> tuple[str, int] | None:
@@ -54,39 +71,107 @@ def _rrule_parts(rrule: str | None) -> tuple[str, int] | None:
     return m_freq.group(1).upper(), int(m_int.group(1)) if m_int else 1
 
 
-def next_occurrence_iso(meeting: Meeting, after: datetime) -> str:
-    """Compute the next occurrence start as an ISO string. For non-recurring
-    meetings this is `after` + the meeting duration so the draft is sensible."""
+def next_occurrence(meeting: Meeting, after: datetime) -> datetime | None:
     parts = _rrule_parts(meeting.recurrence_rule)
-    base = _aware(meeting.scheduled_at) or after
-    if not parts:
-        return (after + timedelta(minutes=meeting.duration_minutes or 60)).isoformat()
+    base = util.aware(meeting.scheduled_at)
+    if not parts or base is None:
+        return None
     freq, interval = parts
+    step = {"DAILY": timedelta(days=interval), "WEEKLY": timedelta(weeks=interval), "MONTHLY": timedelta(days=30 * interval)}.get(
+        freq, timedelta(weeks=interval)
+    )
     cur = base
-    if freq == "DAILY":
-        step = timedelta(days=interval)
-    elif freq == "WEEKLY":
-        step = timedelta(weeks=interval)
-    elif freq == "MONTHLY":
-        step = timedelta(days=30 * interval)
-    else:
-        step = timedelta(weeks=interval)
-    # advance until strictly after `after`
     guard = 0
-    while cur <= after and guard < 1000:
-        cur = cur + step
+    while cur <= after and guard < 2000:
+        cur += step
         guard += 1
-    return cur.isoformat()
+    return cur
 
 
-def _attendee_emails(db: Session, session: MeetppSession) -> list[dict]:
-    out = []
-    seen = set()
+def _people_with_email(db: Session, session: MeetppSession) -> list[dict]:
+    out: dict[str, dict] = {}
     for a in db.query(MeetppAttendee).filter_by(session_id=session.id).all():
-        if a.email and a.email not in seen:
-            seen.add(a.email)
-            out.append({"name": a.display_name, "email": a.email})
-    return out
+        if a.email:
+            out.setdefault(a.email.lower(), {"name": a.display_name, "email": a.email})
+    for r in db.query(MeetppRoster).filter_by(series_id=session.series_id, active=True).all():
+        if r.email:
+            out.setdefault(r.email.lower(), {"name": r.display_name, "email": r.email})
+    return list(out.values())
+
+
+def default_review(db: Session, session: MeetppSession) -> dict:
+    meeting = db.get(Meeting, session.meeting_id)
+    final = util.loads(session.final_json, {})
+    nxt = next_occurrence(meeting, util.now()) if meeting else None
+    proposal = final.get("next_meeting_proposal") or {}
+    if nxt is None and proposal.get("iso"):
+        nxt = util.parse_dt(proposal["iso"])
+    everyone = _people_with_email(db, session)
+    required = [
+        {"name": a.display_name, "email": a.email}
+        for a in db.query(MeetppAttendee).filter_by(session_id=session.id, required_next=True).all()
+        if a.email
+    ]
+    return {
+        "next_meeting": {
+            "date_iso": util.iso(nxt),
+            "duration_min": (meeting.duration_minutes if meeting and meeting.duration_minutes else 60),
+            "room": "same",
+        },
+        "next_agenda": [
+            {"title": it.get("title"), "body": it.get("body")} for it in final.get("next_agenda") or [] if isinstance(it, dict)
+        ],
+        "recipients": {"report": everyone, "invite": required or everyone},
+        "distribution": {"send_report": True, "send_invites": nxt is not None, "attach_snapshots": True, "include_transcript": False},
+    }
+
+
+def review_draft(db: Session, session: MeetppSession) -> dict:
+    stored = util.loads(session.review_json, {})
+    draft = default_review(db, session)
+    for key in ("next_meeting", "recipients", "distribution"):
+        if isinstance(stored.get(key), dict):
+            draft[key] = {**draft[key], **stored[key]}
+    if isinstance(stored.get("next_agenda"), list):
+        draft["next_agenda"] = stored["next_agenda"]
+    return draft
+
+
+def clean_review(body: dict) -> dict:
+    def _people(items) -> list[dict]:
+        out = []
+        for x in items or []:
+            if isinstance(x, dict) and x.get("email") and "@" in str(x["email"]):
+                out.append({"name": util.truncate(x.get("name"), 200) or str(x["email"]), "email": str(x["email"]).strip()[:300]})
+        return out[: settings.meetpp_invite_max_recipients]
+
+    nm = body.get("next_meeting") if isinstance(body.get("next_meeting"), dict) else {}
+    dist = body.get("distribution") if isinstance(body.get("distribution"), dict) else {}
+    rec = body.get("recipients") if isinstance(body.get("recipients"), dict) else {}
+    when = util.parse_dt(nm.get("date_iso"))
+    duration = nm.get("duration_min")
+    try:
+        duration = max(5, min(24 * 60, int(duration))) if duration not in (None, "") else 60
+    except (TypeError, ValueError):
+        duration = 60
+    return {
+        "next_meeting": {"date_iso": util.iso(when), "duration_min": duration, "room": "new" if nm.get("room") == "new" else "same"},
+        "next_agenda": [
+            {"title": util.truncate(x.get("title"), 300), "body": util.truncate(x.get("body"), 4000)}
+            for x in body.get("next_agenda") or []
+            if isinstance(x, dict) and str(x.get("title") or "").strip()
+        ][:40],
+        "recipients": {"report": _people(rec.get("report")), "invite": _people(rec.get("invite"))},
+        "distribution": {
+            "send_report": bool(dist.get("send_report", True)),
+            "send_invites": bool(dist.get("send_invites", False)),
+            "attach_snapshots": bool(dist.get("attach_snapshots", True)),
+            "include_transcript": bool(dist.get("include_transcript", False)),
+        },
+    }
+
+
+# ─── Outputs ────────────────────────────────────────────────────────────────
 
 
 def _outputs_dir(session: MeetppSession) -> Path:
@@ -95,286 +180,183 @@ def _outputs_dir(session: MeetppSession) -> Path:
     return p
 
 
-def _write_output(
-    db: Session,
-    session: MeetppSession,
-    kind: str,
-    filename: str,
-    data: bytes,
-    version: int,
-    recipients: list[dict] | None = None,
-) -> MeetppOutput:
+def _write_output(db: Session, session: MeetppSession, kind: str, filename: str, data: bytes, version: int, recipients=None, results=None) -> MeetppOutput:
     path = _outputs_dir(session) / f"v{version}-{filename}"
     path.write_bytes(data)
     row = MeetppOutput(
-        id=str(ULID()),
+        id=util.ulid(),
         session_id=session.id,
         kind=kind,
         version=version,
         path=str(path),
         filename=filename,
-        recipients_json=json.dumps(recipients or []),
+        recipients_json=util.dumps(recipients or []),
+        results_json=util.dumps(results) if results is not None else None,
     )
     db.add(row)
     return row
 
 
-async def publish(db: Session, session: MeetppSession) -> dict:
-    """Render outputs, create/attach the next meeting and send e-mails.
-    Idempotent per publish version (re-publish writes a new version)."""
-    meeting = db.get(Meeting, session.meeting_id)
-    if meeting is None:
-        raise ValueError("meeting not found")
-    version = session.publish_version + 1
-    booking = parse_booking(session, meeting)
-    join_url = f"{settings.public_url}/{booking.get('room') or meeting.room_name}"
-    lang = session.language
-
-    minutes_pdf = render.html_to_pdf(render.render_minutes_html(db, session))
-    agenda_pdf = render.html_to_pdf(render.render_agenda_html(db, session, booking))
-    _write_output(db, session, "minutes_pdf", "minutes.pdf", minutes_pdf, version)
-    _write_output(db, session, "agenda_pdf", "agenda.pdf", agenda_pdf, version)
-
-    # Next meeting handling. RRULE: the existing row already holds the
-    # occurrence — attach the agenda, create no duplicate. One-off: create a
-    # new meeting in the same series.
-    next_meeting = None
-    if meeting.recurrence_rule:
-        next_meeting = meeting
-    else:
-        next_meeting = Meeting(
-            id=str(ULID()),
-            room_name=f"{meeting.room_name[:40]}-{str(ULID())[:6].lower()}",
-            display_title=booking.get("title") or meeting.display_title,
-            owner_user_id=meeting.owner_user_id,
-            owner_email=meeting.owner_email,
-            owner_name=meeting.owner_name,
-            scheduled_at=_parse_iso(booking.get("iso")),
-            duration_minutes=int(booking.get("duration_min") or 60),
-            meetpp_series_id=session.series_id,
-        )
-        db.add(next_meeting)
-        db.flush()
-
-    # ICS invitation.
-    uid = f"meetpp-{session.series_id}-{datetime.now(timezone.utc).strftime('%Y%m%d')}@meet.witysk.org"
-    required = (
-        db.query(MeetppAttendee)
-        .filter_by(session_id=session.id, required_next=True)
-        .all()
-    )
-    attendees = (
-        [{"name": a.display_name, "email": a.email} for a in required if a.email]
-        or _attendee_emails(db, session)
-    )
-    # Add explicit review recipients that have an email.
-    for r in booking.get("recipients") or []:
-        if isinstance(r, dict) and r.get("email"):
-            attendees.append({"name": r.get("name") or r["email"], "email": r["email"]})
-    seen = set()
-    attendees = [a for a in attendees if not (a["email"] in seen or seen.add(a["email"]))]
-
-    dtstart = _parse_iso(booking.get("iso")) or utcnow()
-    dtend = dtstart + timedelta(minutes=int(booking.get("duration_min") or 60))
-    agenda_text = "\n".join(
-        f"{i+1}. {it.get('title')}" for i, it in enumerate(
-            (json.loads(session.final_json) if session.final_json else {}).get("next_agenda") or []
-        )
-    )
-    ics_text = ics_invite(
-        uid=uid,
-        sequence=session.publish_version,
-        summary=booking.get("title") or meeting.display_title,
-        join_url=join_url,
-        dtstart=dtstart,
-        dtend=dtend,
-        organizer_name=meeting.owner_name,
-        organizer_email=meeting.owner_email,
-        attendees=attendees,
-        description_text=(agenda_text + "\n\n" if agenda_text else "") + f"Join: {join_url}",
-    )
-    _write_output(db, session, "ics", "invite.ics", ics_text.encode("utf-8"), version)
-
-    results = {"minutes": [], "invites": []}
-    if settings.resend_api_key:
-        # Minutes to attendees.
-        for a in _attendee_emails(db, session):
-            ok = await send_email(
-                to=a["email"],
-                subject=t(lang, "email.minutes_subject", title=meeting.display_title),
-                html=_simple_email(
-                    t(lang, "email.greeting"),
-                    t(lang, "email.minutes_intro", title=meeting.display_title),
-                ),
-                reply_to=meeting.owner_email or settings.invite_reply_to or None,
-                attachments=[
-                    {
-                        "filename": "minutes.pdf",
-                        "content": base64.b64encode(minutes_pdf).decode("ascii"),
-                        "content_type": "application/pdf",
-                    }
-                ],
-            )
-            results["minutes"].append({"email": a["email"], "ok": ok})
-        # Invitations to required attendees.
-        for a in attendees[: settings.meetpp_invite_max_recipients]:
-            ok = await send_email(
-                to=a["email"],
-                subject=t(lang, "email.invite_subject", title=booking.get("title") or meeting.display_title),
-                html=_simple_email(
-                    t(lang, "email.greeting"),
-                    t(lang, "email.invite_intro", title=booking.get("title") or meeting.display_title),
-                ),
-                reply_to=meeting.owner_email or settings.invite_reply_to or None,
-                attachments=[
-                    {"filename": "agenda.pdf", "content": base64.b64encode(agenda_pdf).decode("ascii"), "content_type": "application/pdf"},
-                    {"filename": "invite.ics", "content": base64.b64encode(ics_text.encode("utf-8")).decode("ascii"), "content_type": "text/calendar"},
-                ],
-            )
-            results["invites"].append({"email": a["email"], "ok": ok})
-
-    session.status = "published"
-    session.published_at = utcnow()
-    session.publish_version = version
-    db.add(
-        MeetppOutput(
-            id=str(ULID()),
-            session_id=session.id,
-            kind="email",
-            version=version,
-            recipients_json=json.dumps(results),
-            results_json=json.dumps(results),
-        )
-    )
-    db.commit()
-    log.info(
-        "MEETPP_OUTPUT sid=%s version=%s minutes_sent=%s invites_sent=%s next_meeting=%s",
-        session.id, version, len(results["minutes"]), len(results["invites"]),
-        next_meeting.id if next_meeting else None,
-    )
+def output_dto(o: MeetppOutput) -> dict:
     return {
-        "version": version,
-        "uid": uid,
-        "next_meeting_id": next_meeting.id if next_meeting else None,
-        "recurring": bool(meeting.recurrence_rule),
-        "results": results,
+        "id": o.id,
+        "kind": o.kind,
+        "version": o.version,
+        "filename": o.filename,
+        "created_at": util.iso(o.created_at),
+        "url": f"/api/v1/meetpp/sessions/{o.session_id}/outputs/{o.id}" if o.path else None,
+        "recipients": util.loads(o.recipients_json, []),
+        "results": util.loads(o.results_json, None) if o.results_json else None,
     }
 
 
-async def prepare_outputs(db: Session, session: MeetppSession) -> dict:
-    """Render the download outputs (minutes PDF, agenda PDF, .ics) without
-    sending any e-mail. Used by the end-of-meeting modal so the chair can
-    download everything once finalisation is done. Rendering runs off the
-    event loop."""
-    import asyncio
-
-    meeting = db.get(Meeting, session.meeting_id)
-    if meeting is None:
-        raise ValueError("meeting not found")
-    version = max(1, session.publish_version)
-    booking = parse_booking(session, meeting)
-    join_url = f"{settings.public_url}/{booking.get('room') or meeting.room_name}"
-    lang = session.language
-
-    minutes_html = render.render_minutes_html(db, session)
-    agenda_html = render.render_agenda_html(db, session, booking)
-    minutes_pdf = await asyncio.to_thread(render.html_to_pdf, minutes_html)
-    agenda_pdf = await asyncio.to_thread(render.html_to_pdf, agenda_html)
-
-    uid = f"meetpp-{session.series_id}-{datetime.now(timezone.utc).strftime('%Y%m%d')}@meet.witysk.org"
-    required = (
-        db.query(MeetppAttendee).filter_by(session_id=session.id, required_next=True).all()
-    )
-    attendees = (
-        [{"name": a.display_name, "email": a.email} for a in required if a.email]
-        or _attendee_emails(db, session)
-    )
-    for r in booking.get("recipients") or []:
-        if isinstance(r, dict) and r.get("email"):
-            attendees.append({"name": r.get("name") or r["email"], "email": r["email"]})
-    seen: set[str] = set()
-    attendees = [a for a in attendees if not (a["email"] in seen or seen.add(a["email"]))]
-
-    dtstart = _parse_iso(booking.get("iso")) or utcnow()
-    dtend = dtstart + timedelta(minutes=int(booking.get("duration_min") or 60))
-    next_agenda = []
-    if session.final_json:
-        try:
-            next_agenda = (json.loads(session.final_json) or {}).get("next_agenda") or []
-        except ValueError:
-            next_agenda = []
-    agenda_text = "\n".join(f"{i+1}. {it.get('title')}" for i, it in enumerate(next_agenda))
-    ics_text = ics_invite(
-        uid=uid,
-        sequence=session.publish_version,
-        summary=booking.get("title") or meeting.display_title,
-        join_url=join_url,
-        dtstart=dtstart,
-        dtend=dtend,
-        organizer_name=meeting.owner_name,
-        organizer_email=meeting.owner_email,
-        attendees=attendees,
-        description_text=(agenda_text + "\n\n" if agenda_text else "") + f"Join: {join_url}",
-    )
-
-    minutes_out = _write_output(db, session, "minutes_pdf", "minutes.pdf", minutes_pdf, version)
-    agenda_out = _write_output(db, session, "agenda_pdf", "agenda.pdf", agenda_pdf, version)
-    ics_out = _write_output(db, session, "ics", "invite.ics", ics_text.encode("utf-8"), version)
-    db.commit()
-    _ = (lang, required)
-    return {
-        "outputs": [
-            {"id": minutes_out.id, "kind": "minutes_pdf", "filename": "minutes.pdf"},
-            {"id": agenda_out.id, "kind": "agenda_pdf", "filename": "agenda.pdf"},
-            {"id": ics_out.id, "kind": "ics", "filename": "invite.ics"},
-        ]
-    }
+def list_outputs(db: Session, session: MeetppSession) -> list[dict]:
+    rows = db.query(MeetppOutput).filter_by(session_id=session.id).order_by(MeetppOutput.created_at.desc()).all()
+    return [output_dto(o) for o in rows]
 
 
-def list_outputs(db: Session, session: MeetppSession) -> dict:
-    rows = (
-        db.query(MeetppOutput)
-        .filter(MeetppOutput.session_id == session.id, MeetppOutput.kind.in_(("minutes_pdf", "agenda_pdf", "ics")))
-        .order_by(MeetppOutput.created_at.desc())
-        .all()
-    )
-    latest: dict[str, MeetppOutput] = {}
-    for r in rows:
-        latest.setdefault(r.kind, r)
-    outputs = [
-        {
-            "id": o.id,
-            "kind": o.kind,
-            "filename": o.filename,
-            "download_url": f"/api/v1/meetpp/sessions/{session.id}/outputs/{o.id}",
-        }
-        for o in latest.values()
-    ]
-    kinds = {o["kind"] for o in outputs}
-    finalised = session.status in ("review", "published")
-    return {
-        "status": session.status,
-        "finalised": finalised,
-        "ready": {"minutes_pdf", "agenda_pdf", "ics"}.issubset(kinds),
-        "outputs": outputs,
-        "auto_sent": session.status == "published",
-        "recurring": bool((db.get(Meeting, session.meeting_id).recurrence_rule) if db.get(Meeting, session.meeting_id) else False),
-    }
+def delete_audio(session_id: str) -> bool:
+    base = Path(settings.meetpp_data_dir) / session_id / "audio"
+    if not base.exists():
+        return False
+    shutil.rmtree(base, ignore_errors=True)
+    return True
 
 
-def _parse_iso(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
-
-
-def _simple_email(greeting: str, body: str) -> str:
+def _email_html(greeting: str, paragraphs: list[str], link: str | None = None, link_label: str | None = None) -> str:
+    body = "".join(f"<p>{escape(p)}</p>" for p in paragraphs)
+    if link:
+        body += f"<p><a href='{escape(link)}'>{escape(link_label or link)}</a></p>"
     return (
-        f"<div style='font-family:sans-serif;color:#111827'>"
-        f"<p>{greeting}</p><p>{body}</p>"
-        f"<p style='color:#6b7280;font-size:12px'>Generated with Meet++</p></div>"
+        "<div style='font-family:sans-serif;color:#111827;max-width:560px'>"
+        f"<p>{escape(greeting)}</p>{body}"
+        "<p style='color:#6b7280;font-size:12px'>Generated with Meet++</p></div>"
     )
+
+
+def _safe_name(text: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", text).strip("-")[:60] or "meeting"
+
+
+async def publish(db: Session, session: MeetppSession) -> dict:
+    """Render, invite, send, snapshot, delete audio. Re-publishing writes a
+    new version and sends again."""
+    meeting = db.get(Meeting, session.meeting_id)
+    if meeting is None:
+        raise ValueError("meeting not found")
+    report = report_module()  # fail early with a clear error
+    review = review_draft(db, session)
+    version = int(session.publish_version or 0) + 1
+    # Proposed actions are accepted by publishing; open ones are carried.
+    for a in db.query(MeetppAction).filter_by(session_id=session.id, status="proposed").all():
+        a.status = "open"
+    db.flush()
+    stored = util.loads(session.review_json, {})
+    stored.update({k: review[k] for k in ("next_meeting", "next_agenda", "recipients", "distribution")})
+    session.review_json = util.dumps(stored)
+    db.flush()
+
+    data = export_mod.build_export(db, session)
+    stamp = util.aware(session.started_at or session.created_at).strftime("%Y-%m-%d")
+    base = f"{_safe_name(meeting.display_title)}-{stamp}"
+    report_pdf = await asyncio.to_thread(report.render_meeting_report, data)
+    outputs = [_write_output(db, session, "report_pdf", f"{base}-report.pdf", report_pdf, version)]
+
+    nm = review["next_meeting"]
+    when = util.parse_dt(nm.get("date_iso"))
+    agenda_pdf = None
+    ics_text = None
+    next_meeting_id = None
+    if when is not None:
+        agenda_pdf = await asyncio.to_thread(report.render_agenda, data)
+        outputs.append(_write_output(db, session, "agenda_pdf", f"{base}-next-agenda.pdf", agenda_pdf, version))
+        room = meeting.room_name
+        if nm.get("room") == "new":
+            nxt = Meeting(
+                id=util.ulid(),
+                room_name=f"{meeting.room_name[:40]}-{util.ulid()[-6:].lower()}",
+                display_title=meeting.display_title,
+                owner_user_id=meeting.owner_user_id,
+                owner_email=meeting.owner_email,
+                owner_name=meeting.owner_name,
+                scheduled_at=when,
+                duration_minutes=int(nm.get("duration_min") or 60),
+                meetpp_series_id=session.series_id,
+            )
+            db.add(nxt)
+            db.flush()
+            room, next_meeting_id = nxt.room_name, nxt.id
+        join_url = f"{settings.public_url}/{room}"
+        agenda_text = "\n".join(f"{i}. {it['title']}" for i, it in enumerate(review["next_agenda"], start=1))
+        ics_text = ics_invite(
+            uid=f"meetpp-{session.series_id}-{when.strftime('%Y%m%dT%H%M')}@meet.witysk.org",
+            sequence=version - 1,
+            summary=meeting.display_title,
+            join_url=join_url,
+            dtstart=when,
+            dtend=when + timedelta(minutes=int(nm.get("duration_min") or 60)),
+            organizer_name=meeting.owner_name,
+            organizer_email=meeting.owner_email,
+            attendees=review["recipients"]["invite"],
+            description_text=(agenda_text + "\n\n" if agenda_text else "") + f"Join: {join_url}",
+        )
+        outputs.append(_write_output(db, session, "ics", "invite.ics", ics_text.encode("utf-8"), version, review["recipients"]["invite"]))
+
+    results: list[dict] = []
+    dist = review["distribution"]
+    reply_to = meeting.owner_email or settings.invite_reply_to or None
+    if dist.get("send_report"):
+        for r in review["recipients"]["report"]:
+            ok = await send_email(
+                to=r["email"],
+                subject=f"Meeting report: {meeting.display_title}",
+                html=_email_html(
+                    f"Dear {r['name']},",
+                    [f"The report of {meeting.display_title} ({stamp}) is attached: attendance, decisions, follow-up actions and the minutes."],
+                ),
+                reply_to=reply_to,
+                attachments=[{"filename": f"{base}-report.pdf", "content": base64.b64encode(report_pdf).decode("ascii"), "content_type": "application/pdf"}],
+            )
+            results.append({"kind": "report", "email": r["email"], "ok": bool(ok)})
+    if dist.get("send_invites") and ics_text is not None:
+        for r in review["recipients"]["invite"]:
+            atts = [{"filename": "invite.ics", "content": base64.b64encode(ics_text.encode("utf-8")).decode("ascii"), "content_type": "text/calendar"}]
+            if agenda_pdf:
+                atts.insert(0, {"filename": f"{base}-next-agenda.pdf", "content": base64.b64encode(agenda_pdf).decode("ascii"), "content_type": "application/pdf"})
+            ok = await send_email(
+                to=r["email"],
+                subject=f"Invitation: {meeting.display_title} — {when.strftime('%d/%m/%Y %H:%M')} UTC",
+                html=_email_html(f"Dear {r['name']},", [f"You are invited to {meeting.display_title}. The agenda is attached."], f"{settings.public_url}/{meeting.room_name}", "Join the meeting"),
+                reply_to=reply_to,
+                attachments=atts,
+            )
+            results.append({"kind": "invite", "email": r["email"], "ok": bool(ok)})
+    if results:
+        db.add(
+            MeetppOutput(
+                id=util.ulid(), session_id=session.id, kind="email", version=version,
+                recipients_json=util.dumps([r["email"] for r in results]), results_json=util.dumps(results),
+            )
+        )
+    db.add(MeetppMinutesVersion(session_id=session.id, version=version, markdown=data["minutes"]["markdown"]))
+    session.status = "published"
+    session.published_at = util.now()
+    session.publish_version = version
+    db.commit()
+    audio_deleted = delete_audio(session.id)
+    log.info(
+        "MEETPP_REPORT sid=%s version=%s outputs=%s emails=%s audio_deleted=%s",
+        session.id, version, [o.kind for o in outputs], len(results), audio_deleted,
+    )
+    return {
+        "published_at": util.iso(session.published_at),
+        "version": version,
+        "outputs": [output_dto(o) for o in outputs],
+        "email_results": results,
+        "next_meeting_id": next_meeting_id,
+    }
+
+
+def minutes_markdown(db: Session, session: MeetppSession) -> str:
+    return compose.minutes_markdown(db, session)
+

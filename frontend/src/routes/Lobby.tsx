@@ -378,7 +378,7 @@ export default function Lobby() {
             className="rounded-lg border border-purple-400/50 bg-purple-500/15 text-purple-100 px-4 py-3 mb-4 text-sm"
           >
             <b>{t("meetpp.button.aiNotesOn", { defaultValue: "AI notes on" })}</b> —{" "}
-            {t("meetpp.lobbyNotice", { defaultValue: "AI notes are active in this meeting. Your speech is transcribed after you consent." })}
+            {t("meetpp.lobbyNotice", { defaultValue: "Meet++ AI notes are active in this meeting. Your speech is transcribed only after you consent; recorded audio is deleted when the report is published." })}
           </div>
         )}
 

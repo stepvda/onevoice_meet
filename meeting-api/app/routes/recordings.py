@@ -22,6 +22,7 @@ from app.auth import RequireUser
 from app.config import settings
 from app.db import get_db
 from app.livekit_client import livekit_api
+from app.room_metadata import patch_room_metadata
 from app.models import Meeting, ModerationAudit, Recording
 from app.routes.meetings import _branding_url
 
@@ -43,17 +44,7 @@ def _require_owner(meeting_id: str, user_id: str, db: Session) -> Meeting:
 
 
 async def _set_recording_metadata(lk: api.LiveKitAPI, room_name: str, active: bool) -> None:
-    rooms = await lk.room.list_rooms(api.ListRoomsRequest(names=[room_name]))
-    current: dict = {}
-    if rooms.rooms:
-        try:
-            current = json.loads(rooms.rooms[0].metadata or "{}")
-        except ValueError:
-            current = {}
-    current["recording_active"] = active
-    await lk.room.update_room_metadata(
-        api.UpdateRoomMetadataRequest(room=room_name, metadata=json.dumps(current))
-    )
+    await patch_room_metadata(lk, room_name, lambda md: md.update(recording_active=active))
 
 
 # LiveKit's built-in room-composite templates. "speaker" is the historical

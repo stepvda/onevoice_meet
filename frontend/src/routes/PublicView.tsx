@@ -13,6 +13,7 @@ import type { PublicViewerTokenResponse } from "../lib/api";
 import { roomOptions } from "../lib/livekit";
 import PresenterSpotlight from "../components/PresenterSpotlight";
 import OutputVolumeControl from "../components/OutputVolumeControl";
+import { MeetppPublicSync } from "../components/meetpp/MeetppBoardView";
 
 /**
  * View-only stream page at /public/<publicSlug>.
@@ -97,6 +98,9 @@ export default function PublicView() {
       options={cfg.roomOptions}
       connectOptions={cfg.connectOptions}
     >
+      {/* Meet++: the board replaces the stage only when the session allows
+          the public view (settings.show_public). */}
+      <MeetppPublicSync roomName={tokenResp.room_name} token={tokenResp.token} />
       <PublicViewerInner
         title={tokenResp.display_title}
         brandingUrl={tokenResp.branding_url}

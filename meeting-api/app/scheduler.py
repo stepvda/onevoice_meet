@@ -22,7 +22,8 @@ def _meetpp_retention_job() -> None:
 
     result = run_retention()
     log.info(
-        "meetpp retention: segments=%d documents=%d llm_calls=%d tts_files=%d",
+        "meetpp retention: audio_dirs=%d segments=%d documents=%d llm_calls=%d tts_files=%d",
+        result.get("audio_dirs", 0),
         result.get("segments", 0),
         result.get("documents", 0),
         result.get("llm_calls", 0),
@@ -277,8 +278,8 @@ def start() -> None:
         id="retention_cleanup",
         replace_existing=True,
     )
-    # 03:30 UTC — Meet++ retention: transcript segments, uploaded PDFs,
-    # LLM call metadata and the TTS cache.
+    # 03:30 UTC — Meet++ retention: unpublished sessions' audio (7 days),
+    # transcript segments, uploaded PDFs, LLM call metadata and the TTS cache.
     scheduler.add_job(
         _meetpp_retention_job,
         CronTrigger(hour=3, minute=30),

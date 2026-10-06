@@ -7,6 +7,17 @@ import {
   type RemoteVideoTrack,
 } from "livekit-client";
 import MeetppBoardView from "../components/meetpp/MeetppBoardView";
+import MeetppBoardWindow, { MeetppBoardTile } from "../components/meetpp/MeetppStage";
+import { useMeetppReadOnly } from "../components/meetpp/useMeetppSession";
+import {
+  BOARD_CANDIDATE,
+  BOARD_KEY,
+  candidate,
+  effectiveRoomLayout,
+  kindOfKey,
+  pickMainKey,
+  type StageCandidate,
+} from "../lib/stage";
 
 type EgressLayout = "single-speaker" | "speaker" | "grid";
 
@@ -138,11 +149,17 @@ export default function EgressLayoutPiP() {
   // the recording, not just the camera publishers.
   const [placeholders, setPlaceholders] = useState<{ identity: string; name: string }[]>([]);
   const [status, setStatus] = useState<"connecting" | "connected" | "error">("connecting");
-  // Meet++: the room object (for data-channel updates) and metadata-driven
-  // board flag. When the board is main, the board renders over the stage so
-  // recordings and livestreams show what participants see.
+  // Meet++ (FDD §5.10): while a session runs (and allows recordings), the
+  // read-only board is a stream window like the live room's (lib/stage.ts):
+  // the main stream when it is the presenter (the default), else a thumbnail
+  // in the strip or a grid cell. It follows live without pausing and plays
+  // the announcement audio.
   const [lkRoom, setLkRoom] = useState<Room | null>(null);
+  const boardWanted = useMeetppReadOnly({ room: lkRoom, roomName, token: token || null, mode: "egress" });
+  const boardWantedRef = useRef(boardWanted);
+  boardWantedRef.current = boardWanted;
   const [boardMain, setBoardMain] = useState(false);
+  const boardOnStage = boardWanted && boardMain;
 
   useEffect(() => {
     if (!url || !token) {
@@ -169,11 +186,7 @@ export default function EgressLayoutPiP() {
     let currentLayout: EgressLayout = initialLayout;
     let presenterId: string | null = null;
 
-    function pickMain(): RemoteVideoTrack | null {
-      // 1. If the server-side compositor has published a composite
-      //    track, it's already the final composition (main + corner
-      //    overlay baked in). Use it directly and skip the egress-side
-      //    overlay draw.
+    function compositeTrack(): RemoteVideoTrack | null {
       for (const p of room.remoteParticipants.values()) {
         if (!p.identity.startsWith("composite-")) continue;
         for (const pub of p.videoTrackPublications.values()) {
@@ -184,13 +197,14 @@ export default function EgressLayoutPiP() {
           }
         }
       }
-      // 2. Fallback priority ladder for when no compositor is running.
-      //    Mirrors PresenterSpotlight so live + recording pick the same
-      //    person: screenshare > playback > presenter (Take stage) >
-      //    active speaker > any cam.
-      let best: RemoteVideoTrack | null = null;
-      let bestPriority = -1;
-      const speakers = new Set(room.activeSpeakers.map((p) => p.identity));
+      return null;
+    }
+
+    // Every stream window on the stage (cameras, screen shares, the board),
+    // keyed as in lib/stage.ts.
+    function stage(): { cands: StageCandidate[]; tracks: Map<string, RemoteVideoTrack> } {
+      const cands: StageCandidate[] = [];
+      const tracks = new Map<string, RemoteVideoTrack>();
       room.remoteParticipants.forEach((p) => {
         if (p.identity.startsWith("composite-")) return;
         p.videoTrackPublications.forEach((pub) => {
@@ -201,18 +215,41 @@ export default function EgressLayoutPiP() {
           // `videoTrack` is still around. LiveKit sets `videoTrack`
           // to undefined on a real unsubscribe, so `!t` is enough.
           if (!t) return;
-          let priority = 0;
-          if (pub.source === Track.Source.ScreenShare) priority = 4;
-          else if (p.identity === "playback") priority = 3;
-          else if (presenterId && p.identity === presenterId && pub.source === Track.Source.Camera) priority = 2;
-          else if (speakers.has(p.identity) && pub.source === Track.Source.Camera) priority = 1;
-          if (priority > bestPriority) {
-            bestPriority = priority;
-            best = t;
-          }
+          if (pub.source !== Track.Source.Camera && pub.source !== Track.Source.ScreenShare) return;
+          const c = candidate(p.identity, pub.source === Track.Source.ScreenShare);
+          if (tracks.has(c.key)) return;
+          cands.push(c);
+          tracks.set(c.key, t);
         });
       });
-      return best;
+      if (boardWantedRef.current) cands.push(BOARD_CANDIDATE);
+      return { cands, tracks };
+    }
+
+    // Same ladder as PresenterSpotlight so live + recording pick the same
+    // stream: presenter (a camera, a screen share or the board) > screen
+    // share > playback > board > active speaker > any cam.
+    function mainKey(): string | null {
+      if (compositeTrack()) return null;
+      const speaker = room.activeSpeakers.find((p) => !p.isLocal)?.identity ?? null;
+      return pickMainKey(stage().cands, presenterId, speaker);
+    }
+
+    function boardIsMain(): boolean {
+      return mainKey() === BOARD_KEY;
+    }
+
+    function pickMain(): RemoteVideoTrack | null {
+      // 1. If the server-side compositor has published a composite
+      //    track, it's already the final composition (main + corner
+      //    overlay baked in). Use it directly and skip the egress-side
+      //    overlay draw.
+      const comp = compositeTrack();
+      if (comp) return comp;
+      // 2. The stage ladder; the board is drawn by React, not a <video>.
+      const key = mainKey();
+      if (!key || key === BOARD_KEY) return null;
+      return stage().tracks.get(key) ?? null;
     }
 
     function isCompositeMain(track: RemoteVideoTrack | null): boolean {
@@ -265,19 +302,20 @@ export default function EgressLayoutPiP() {
     }
 
     function effectiveLayout(): EgressLayout {
-      // PiP wins over everything: render as single-speaker (main full-
-      // bleed + corner overlay). The compositor-track case is
+      const kind = kindOfKey(mainKey());
+      // PiP wins over everything but the board: render as single-speaker
+      // (main full-bleed + corner overlay). The compositor-track case is
       // automatically handled by pickMain (returns the composite track)
       // and by pickOverlay (returns null when composite is main, so the
       // overlay element stays hidden — composite already has the PiP
       // baked in). Same precedence as PresenterSpotlight on the live side.
-      if (pipEnabled) return "single-speaker";
-      // Grid + active screenshare → behave as "speaker" so the shared
-      // screen owns the main tile and the webcams form a thumbnail strip.
-      // Otherwise the screenshare gets squashed into one of N equal
-      // cells next to little webcam thumbnails — useless for the viewer.
-      if (currentLayout === "grid" && detectScreenshare()) return "speaker";
-      return currentLayout;
+      if (pipEnabled && kind !== "board") return "single-speaker";
+      // Grid + active screenshare (or the board / a screen share as the
+      // main stream) → behave as "speaker" so it owns the main tile and the
+      // webcams form a thumbnail strip. Otherwise the screenshare gets
+      // squashed into one of N equal cells next to little webcam
+      // thumbnails — useless for the viewer.
+      return effectiveRoomLayout(currentLayout, kind, detectScreenshare());
     }
 
     function pickExtras(mainSid: string | null): RemoteVideoTrack[] {
@@ -306,10 +344,10 @@ export default function EgressLayoutPiP() {
             seen.add(sid);
             out.push(t);
           } else {
-            // "speaker" (explicit or grid-with-screenshare): cams only,
-            // skip the main one (which is the screenshare in the
-            // promoted case).
-            if (pub.source !== Track.Source.Camera) return;
+            // "speaker" (explicit or promoted): every other camera and
+            // screen share; the main one (the presenter, often the shared
+            // screen) is skipped.
+            if (pub.source !== Track.Source.Camera && pub.source !== Track.Source.ScreenShare) return;
             if (sid === mainSid) return;
             seen.add(sid);
             out.push(t);
@@ -360,15 +398,6 @@ export default function EgressLayoutPiP() {
           typeof md.presenter_identity === "string"
             ? md.presenter_identity
             : null;
-        // Meet++: show the board when a session is active, the board is
-        // main, and the session setting allows it in recordings.
-        const mp = md.meetpp;
-        const boardOn =
-          !!mp &&
-          mp.active === true &&
-          mp.board_main !== false &&
-          mp.in_recordings !== false;
-        setBoardMain((cur) => (cur === boardOn ? cur : boardOn));
         // Live layout updates — mirror the host's picker click. We update
         // BOTH the closure var (consumed by pickMain/pickExtras/refresh
         // each tick) AND the React state (drives JSX branching). When
@@ -394,6 +423,8 @@ export default function EgressLayoutPiP() {
       // re-rendering on every tick.
       const ss = detectScreenshare();
       setHasScreenshare((cur) => (cur === ss ? cur : ss));
+      const boardNow = boardIsMain();
+      setBoardMain((cur) => (cur === boardNow ? cur : boardNow));
 
       // The main <video> is attached in "single-speaker" and "speaker"
       // (or grid-promoted-to-speaker) layouts. In pure grid we render
@@ -406,7 +437,7 @@ export default function EgressLayoutPiP() {
       // attach, leaving the recording without the screenshare. The
       // `layout`/`hasScreenshare` useEffect below also schedules a
       // post-commit refresh so the attach happens immediately.
-      if (eff !== "grid") {
+      if (eff !== "grid" && !boardNow) {
         const main = pickMain();
         const mainSid = main?.sid ?? null;
         if (mainSid !== currentMainSid) {
@@ -458,7 +489,7 @@ export default function EgressLayoutPiP() {
       if (eff === "single-speaker") {
         setExtraTracks((cur) => (cur.length === 0 ? cur : []));
       } else {
-        const mainSidForExtras = eff === "speaker" ? (pickMain()?.sid ?? null) : null;
+        const mainSidForExtras = eff === "speaker" && !boardNow ? (pickMain()?.sid ?? null) : null;
         const next = pickExtras(mainSidForExtras);
         setExtraTracks((cur) => {
           if (cur.length !== next.length) return next;
@@ -590,7 +621,7 @@ export default function EgressLayoutPiP() {
     // Microtask delay so React's ref-attach has run by the time we read.
     const id = setTimeout(() => refreshRef.current(), 0);
     return () => clearTimeout(id);
-  }, [layout, hasScreenshare, pipActive]);
+  }, [layout, hasScreenshare, pipActive, boardOnStage, boardWanted]);
 
   // Compute the effective layout for rendering. Same precedence as the
   // imperative `effectiveLayout()` closure used by refresh():
@@ -598,21 +629,30 @@ export default function EgressLayoutPiP() {
   //   2. Grid + active screenshare → speaker (screenshare main +
   //      thumbnail strip).
   //   3. Otherwise the host's picked layout.
-  const effectiveRenderLayout: EgressLayout = pipActive
-    ? "single-speaker"
-    : layout === "grid" && hasScreenshare
-      ? "speaker"
-      : layout;
+  const effectiveRenderLayout: EgressLayout = boardOnStage
+    ? layout === "single-speaker"
+      ? "single-speaker"
+      : "speaker"
+    : pipActive
+      ? "single-speaker"
+      : layout === "grid" && hasScreenshare
+        ? "speaker"
+        : layout;
+  // The board as a stream window that is not the main one: a thumbnail in
+  // the speaker strip, a cell in the grid.
+  const boardInStrip = boardWanted && !boardOnStage && effectiveRenderLayout === "speaker";
+  const boardInGrid = boardWanted && effectiveRenderLayout === "grid";
+  const stripCount = extraTracks.length + (boardInStrip ? 1 : 0);
   // In "speaker" mode the main video shrinks to leave the bottom ~22%
   // for the thumbnail strip; in "single-speaker" it fills the frame.
   // Sizing has to be explicit — <video> is a replaced element, so
   // width/height: auto falls back to the stream's intrinsic dimensions
   // and the element sits at native size inside the inset box instead of
   // filling it.
-  const isSpeaker = effectiveRenderLayout === "speaker";
+  const isSpeaker = effectiveRenderLayout === "speaker" && stripCount > 0;
   const mainHeightPct = isSpeaker ? "78%" : "100%";
-  // Grid shape counts BOTH video tiles and name placeholders.
-  const tileCount = extraTracks.length + placeholders.length;
+  // Grid shape counts video tiles, name placeholders and the board.
+  const tileCount = extraTracks.length + placeholders.length + (boardInGrid ? 1 : 0);
   const cols = gridColumns(tileCount);
   const rows = Math.max(1, Math.ceil(tileCount / Math.max(1, cols)));
 
@@ -627,10 +667,15 @@ export default function EgressLayoutPiP() {
         padding: 0,
       }}
     >
-      {boardMain && token && (
-        <MeetppBoardView room={roomName} token={token} liveRoom={lkRoom} scale="720p" />
+      {boardOnStage && (
+        <div
+          data-testid="egress-meetpp-board"
+          style={{ position: "absolute", top: 0, left: 0, right: 0, height: mainHeightPct, padding: 8, background: "#0b1220" }}
+        >
+          <MeetppBoardView className="h-full w-full" />
+        </div>
       )}
-      {effectiveRenderLayout !== "grid" && (
+      {effectiveRenderLayout !== "grid" && !boardOnStage && (
         <video
           ref={mainVideoRef}
           autoPlay
@@ -671,7 +716,7 @@ export default function EgressLayoutPiP() {
         />
       )}
 
-      {effectiveRenderLayout === "speaker" && (
+      {effectiveRenderLayout === "speaker" && stripCount > 0 && (
         <div
           style={{
             position: "absolute",
@@ -688,6 +733,11 @@ export default function EgressLayoutPiP() {
             justifyContent: "center",
           }}
         >
+          {boardInStrip && (
+            <div key="meetpp-board" style={{ aspectRatio: "16 / 9", height: "100%", flex: "0 0 auto" }}>
+              <MeetppBoardTile controls={false} />
+            </div>
+          )}
           {extraTracks.map((t) => (
             <div
               key={t.sid}
@@ -715,6 +765,11 @@ export default function EgressLayoutPiP() {
             padding: 8,
           }}
         >
+          {boardInGrid && (
+            <div key="meetpp-board" style={{ minWidth: 0, minHeight: 0, overflow: "hidden", borderRadius: 6 }}>
+              <MeetppBoardWindow size="cell" variant="egress" />
+            </div>
+          )}
           {extraTracks.map((t) => (
             // minWidth/minHeight: 0 is load-bearing: a bare <video> grid
             // item's min-content size is the stream's intrinsic height

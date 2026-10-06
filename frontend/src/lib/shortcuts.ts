@@ -2,7 +2,63 @@ import { useEffect } from "react";
 import type { Room } from "livekit-client";
 import { usePreferences } from "./preferences";
 import { useToggleHandRaise } from "./handRaise";
-import { useMeetpp } from "./meetpp/store";
+import {
+  backToLive as meetppBackToLive,
+  selectTab as meetppSelectTab,
+  stepViewed as meetppStepViewed,
+  toggleFollow as meetppToggleFollow,
+  useMeetpp,
+} from "./meetpp/store";
+import { meetppActions } from "./meetpp/session";
+import { TABS as MEETPP_TABS } from "./meetpp/types";
+
+/** Meet++ board shortcuts (FDD §5.8), listed in the ShortcutOverlay. */
+export const MEETPP_SHORTCUTS = {
+  tabs: "Alt+1…6",
+  outline: "Alt+↑ / Alt+↓",
+  backToLive: "Esc",
+  next: "Ctrl+Shift+→",
+  back: "Ctrl+Shift+←",
+  follow: "Ctrl+Shift+A",
+} as const;
+
+function anyModalOpen(): boolean {
+  return !!document.querySelector('[role="dialog"][aria-modal="true"], [data-testid="shortcut-overlay"]');
+}
+
+/** Handle a Meet++ shortcut; returns true when the key was consumed. */
+function handleMeetppKey(e: KeyboardEvent): boolean {
+  const mp = useMeetpp.getState();
+  if (!mp.active || !mp.snap) return false;
+  // Chair: Next / Back work whatever is on the stage.
+  if (e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+    if (!mp.ctx.isChair) return false;
+    void (e.key === "ArrowRight" ? meetppActions.next() : meetppActions.back()).catch(() => undefined);
+    return true;
+  }
+  // The board's own keys only while this viewer sees the full board (as the
+  // main stream or zoomed): Esc and Alt+digits stay free otherwise.
+  if (!mp.boardOnStage) return false;
+  // Alt+1…6 → tabs (e.code: Alt+digit types other characters on macOS).
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && /^Digit[1-6]$/.test(e.code)) {
+    meetppSelectTab(MEETPP_TABS[Number(e.code.slice(5)) - 1], true);
+    return true;
+  }
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+    meetppStepViewed(e.key === "ArrowDown" ? 1 : -1);
+    return true;
+  }
+  if (e.key === "Escape" && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    if (anyModalOpen()) return false;
+    meetppBackToLive();
+    return true;
+  }
+  if (e.ctrlKey && e.shiftKey && !e.altKey && (e.key === "A" || e.key === "a")) {
+    meetppToggleFollow();
+    return true;
+  }
+  return false;
+}
 
 /**
  * Parses a binding string like "Ctrl+Shift+D" into a matcher and runs it
@@ -113,10 +169,10 @@ export function useMeetingShortcuts({
         onLeave();
         return;
       }
-      // Meet++: Ctrl+Shift+A toggles follow mode.
-      if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) {
+      // Meet++ board: Alt+1…6 tabs, Alt+↑/↓ outline, Esc back to live,
+      // chair Ctrl+Shift+→/← Next/Back, Ctrl+Shift+A follow on/off.
+      if (handleMeetppKey(e)) {
         e.preventDefault();
-        useMeetpp.getState().toggleFollow();
         return;
       }
     };

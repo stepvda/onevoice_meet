@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -67,6 +67,7 @@ import { usePushToTalk } from "../lib/pushToTalk";
 import { useRoomLayout } from "../lib/useRoomLayout";
 import { useBrowserNotifications } from "../lib/browserNotifications";
 import { useJoinPolicy } from "../lib/joinPolicy";
+import { StageActionsContext, type StageActions } from "../lib/stageControls";
 
 interface InnerProps {
   meetingId: string | null;
@@ -438,6 +439,16 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
       await withBusy("pin-self", () => api.setPresenter(meetingId, me));
     }
   }
+
+  // Stage controls on every stream window: the host and co-hosts choose the
+  // room-wide presenter (a camera, a screen share or the Meet++ board).
+  const stageActions = useMemo<StageActions>(
+    () => ({
+      canPresent: isOwner && !!meetingId,
+      present: (key) => (meetingId ? api.setPresenter(meetingId, key) : Promise.resolve()),
+    }),
+    [isOwner, meetingId],
+  );
 
   async function muteAll() {
     if (!meetingId) return;
@@ -892,7 +903,9 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
             .filter(Boolean)
             .join(" ")}
         >
-          <PresenterSpotlight />
+          <StageActionsContext.Provider value={stageActions}>
+            <PresenterSpotlight />
+          </StageActionsContext.Provider>
           <RoomAudioRenderer />
           {display.showMeetingClock && <MeetingClock />}
           {accessibility.liveCaptions && (

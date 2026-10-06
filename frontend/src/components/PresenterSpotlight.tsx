@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   GridLayout,
   TrackRefContext,
@@ -7,28 +8,57 @@ import {
 } from "@livekit/components-react";
 import { RoomEvent, Track } from "livekit-client";
 import type { TrackReferenceOrPlaceholder } from "@livekit/components-react";
+import { LayoutGrid, Minimize2 } from "lucide-react";
 import FlippableTile from "./FlippableTile";
-import MeetppBoard from "./meetpp/MeetppBoard";
+import MeetppBoardWindow from "./meetpp/MeetppStage";
+import { setStage, useMeetpp } from "../lib/meetpp/store";
 import { usePreferences } from "../lib/preferences";
 import { useIsMobile } from "../lib/useIsMobile";
 import { GridStageContext, GridFocusContext } from "../lib/gridStage";
-
-type RoomLayout = "single-speaker" | "speaker" | "grid";
+import {
+  BOARD_CANDIDATE,
+  BOARD_KEY,
+  candidate,
+  effectiveRoomLayout,
+  pickMainKey,
+  type RoomLayout,
+  type StageCandidate,
+} from "../lib/stage";
+import { StageInfoContext } from "../lib/stageControls";
+import {
+  resetStageView,
+  setFocus,
+  setViewLayout,
+  toggleFocus,
+  useStageView,
+  type ViewLayout,
+} from "../lib/stageView";
 
 /**
  * Room-wide composition shared between every live viewer, the recording,
- * and the livestream. The layout is the room's, not per-user:
+ * and the livestream. The layout is the room's; each viewer may override it
+ * for themselves (lib/stageView.ts).
  *
- *   - "single-speaker": one full-bleed main = screenshare > playback >
- *     presenter (Take stage) > active speaker > any cam.
- *   - "speaker": same main, plus a centered bottom thumbnail strip of
- *     every OTHER camera-publishing participant.
- *   - "grid": equal-tile grid of everyone.
+ * The stage is a list of stream windows: every camera and screen share
+ * (LiveKit track references) and, while a Meet++ session runs, the board
+ * (lib/stage.ts). One of them is the main stream: the presenter the host
+ * chose (`presenter_identity` in the room metadata: a camera, a screen
+ * share or the board) > a screen share > playback > the board > the active
+ * speaker > any camera — the same ladder as the egress page.
+ *
+ *   - "single-speaker": the main stream full-bleed.
+ *   - "speaker": the main stream plus a bottom strip of every other one.
+ *   - "grid": equal tiles of everyone; a shared screen, or the board or a
+ *     screen share as the main stream, turns it into "speaker".
  *
  * Host changes the layout via the toolbar picker, which POSTs to
  * `/meetings/{id}/layout`. That endpoint persists the choice on the
  * meeting AND pushes it to LiveKit room metadata, so every connected
  * client re-renders in lockstep on `RoomMetadataChanged`.
+ *
+ * Every viewer can zoom one stream window to their whole stage (double-click
+ * or the tile's zoom button) and pick their own layout (the view menu at the
+ * top of the stage); neither affects anyone else or the recording.
  *
  * Two things stay isolated from `roomLayout`:
  *   1. Server-side composite (the PiP compositor publishes a track from
@@ -40,7 +70,7 @@ type RoomLayout = "single-speaker" | "speaker" | "grid";
  *      room layout when on.
  *
  * Note: the per-user `display.layout` zustand pref (auto/grid/speaker/
- * spotlight) is now ignored at composition time. `hideSelfView` and
+ * spotlight) is ignored at composition time. `hideSelfView` and
  * `hideEmptyTiles` are still honoured.
  */
 const VALID_ROOM_LAYOUTS: ReadonlySet<RoomLayout> = new Set([
@@ -55,7 +85,18 @@ function parseRoomLayout(v: unknown): RoomLayout | null {
     : null;
 }
 
+/** One stream window on the stage. */
+type StageItem =
+  | { kind: "track"; tileKey: string; stageKey: string; cand: StageCandidate; track: TrackReferenceOrPlaceholder }
+  | { kind: "board"; tileKey: string; stageKey: string; cand: StageCandidate };
+
+type BoardVariant = "stage" | "public";
+
 export default function PresenterSpotlight({ boardForPublicOnly = false }: { boardForPublicOnly?: boolean } = {}) {
+  return <SpotlightStage boardForPublicOnly={boardForPublicOnly} />;
+}
+
+function SpotlightStage({ boardForPublicOnly }: { boardForPublicOnly: boolean }) {
   const room = useRoomContext();
   const display = usePreferences((s) => s.display);
   const [roomLayout, setRoomLayout] = useState<RoomLayout>("grid");
@@ -67,14 +108,13 @@ export default function PresenterSpotlight({ boardForPublicOnly = false }: { boa
   const [pipOverlayIdentity, setPipOverlayIdentity] = useState<string | null>(
     null,
   );
-  // Meet++ board metadata: when a session is active and the board is main,
-  // the board becomes a virtual stage tile (Part 5.4 / ADR-5). A human
-  // screenshare, playback or a pinned person always takes over.
-  const [meetpp, setMeetpp] = useState<{
-    active: boolean;
-    board_main: boolean;
-    public: boolean;
-  } | null>(null);
+  // Meet++ (FDD §5.10): while a session runs the board is a stream window.
+  const meetppActive = useMeetpp((s) => s.active);
+  const meetppPublic = useMeetpp((s) => s.snap?.session.settings?.show_public === true);
+  const boardWanted = meetppActive && (!boardForPublicOnly || meetppPublic);
+  const boardVariant: BoardVariant = boardForPublicOnly ? "public" : "stage";
+  const viewLayout = useStageView((s) => s.layout);
+  const focusKey = useStageView((s) => s.focusKey);
 
   useEffect(() => {
     const apply = () => {
@@ -93,12 +133,6 @@ export default function PresenterSpotlight({ boardForPublicOnly = false }: { boa
       setPipOverlayIdentity(
         typeof md.pip_overlay_identity === "string"
           ? md.pip_overlay_identity
-          : null,
-      );
-      const mp = md.meetpp as { active?: boolean; board_main?: boolean; public?: boolean } | undefined;
-      setMeetpp(
-        mp && typeof mp === "object"
-          ? { active: !!mp.active, board_main: mp.board_main !== false, public: mp.public === true }
           : null,
       );
     };
@@ -145,8 +179,10 @@ export default function PresenterSpotlight({ boardForPublicOnly = false }: { boa
     return rawTracks.filter((t) => {
       // Hide the compositor bot from regular tiles — its screenshare
       // track is consumed by the composite branch below (full-bleed) and
-      // its entry never belongs in a tile alongside humans.
+      // its entry never belongs in a tile alongside humans. The Meet++
+      // agent is subscribe-only, but never give it a tile either.
       if (t.participant.identity.startsWith("composite-")) return false;
+      if (t.participant.identity.startsWith("meetpp-")) return false;
       if (display.hideSelfView && t.participant.identity === me) return false;
       if (
         display.hideEmptyTiles &&
@@ -157,15 +193,6 @@ export default function PresenterSpotlight({ boardForPublicOnly = false }: { boa
       return true;
     });
   }, [rawTracks, display.hideSelfView, display.hideEmptyTiles, room.localParticipant.identity]);
-
-  // Video-playback hijacks the stage: when LiveKit Ingress publishes the
-  // current playlist item as participant identity "playback", that tile
-  // dominates in single-speaker and speaker layouts. In grid mode the
-  // playback tile still wins (it's the meeting's primary content).
-  const playbackTrack = useMemo(
-    () => tracks.find((t) => t.participant.identity === "playback" && t.source === Track.Source.Camera) ?? null,
-    [tracks],
-  );
 
   // Server-side PiP composite. When the meeting has `pip_enabled` on,
   // the compositor service publishes a ScreenShare track from identity
@@ -186,28 +213,33 @@ export default function PresenterSpotlight({ boardForPublicOnly = false }: { boa
     );
   }, [rawTracks]);
 
-  // Main video for single-speaker / speaker layouts AND for the
+  // The stream windows. Order: the playback ingress first (so the playlist
+  // tile is always in the first visible row and never paginated / scrolled
+  // off-screen — the fix for playback being invisible in grid mode on
+  // phones), then the board, then everyone else.
+  const items = useMemo<StageItem[]>(() => {
+    const trackItems: StageItem[] = tracks.map((t) => {
+      const cand = candidate(t.participant.identity, t.source === Track.Source.ScreenShare);
+      return { kind: "track", tileKey: trackKey(t), stageKey: cand.key, cand, track: t };
+    });
+    const board: StageItem[] = boardWanted
+      ? [{ kind: "board", tileKey: BOARD_KEY, stageKey: BOARD_KEY, cand: BOARD_CANDIDATE }]
+      : [];
+    return [
+      ...trackItems.filter((i) => i.cand.kind === "playback"),
+      ...board,
+      ...trackItems.filter((i) => i.cand.kind !== "playback"),
+    ];
+  }, [tracks, boardWanted]);
+
+  // Main stream for single-speaker / speaker layouts AND for the
   // client-side PiP fallback. Same priority ladder as the egress page so
-  // live + recording / livestream pick the same person.
-  const main = useMemo<TrackReferenceOrPlaceholder | null>(() => {
-    const screen = tracks.find((t) => t.source === Track.Source.ScreenShare);
-    if (screen) return screen;
-    if (playbackTrack) return playbackTrack;
-    const pickCamFor = (identity: string | null) => {
-      if (!identity) return null;
-      return (
-        tracks.find(
-          (t) => t.participant.identity === identity && t.source === Track.Source.Camera,
-        ) ?? null
-      );
-    };
-    return (
-      pickCamFor(presenterId) ??
-      pickCamFor(activeSpeakerId) ??
-      tracks.find((t) => t.source === Track.Source.Camera) ??
-      null
-    );
-  }, [tracks, playbackTrack, presenterId, activeSpeakerId]);
+  // live + recording / livestream pick the same stream.
+  const mainKey = useMemo(
+    () => pickMainKey(items.map((i) => i.cand), presenterId, activeSpeakerId),
+    [items, presenterId, activeSpeakerId],
+  );
+  const main = useMemo(() => items.find((i) => i.stageKey === mainKey) ?? null, [items, mainKey]);
 
   // Mobile gets a bespoke non-paginating grid; desktop keeps LiveKit's.
   const { isMobile, isPortrait } = useIsMobile();
@@ -216,96 +248,178 @@ export default function PresenterSpotlight({ boardForPublicOnly = false }: { boa
   // cover-cropped grid that tiles cleanly.
   const gridAspect = usePreferences((s) => s.display.gridAspect ?? "off");
 
-  // Grid ordering: lead with the playback ingress so the video-playlist tile
-  // is always in the first visible row and never paginated / scrolled
-  // off-screen — the fix for playback being invisible in grid mode on phones.
-  const orderedTracks = useMemo<TrackReferenceOrPlaceholder[]>(() => {
-    if (!playbackTrack) return tracks;
-    return [playbackTrack, ...tracks.filter((t) => t !== playbackTrack)];
-  }, [tracks, playbackTrack]);
+  // Grid + a shared screen (or the board / a screen share as the main
+  // stream) auto-promotes to "speaker"; a layout the viewer picked for
+  // themselves is taken as is.
+  const hasScreenshare = items.some((i) => i.cand.kind === "screen");
+  const layout: RoomLayout =
+    viewLayout === "room"
+      ? effectiveRoomLayout(roomLayout, main?.cand.kind ?? null, hasScreenshare)
+      : viewLayout;
 
-  // Grid + active screenshare auto-promotes to "speaker" (the shared screen
-  // owns the main tile). Computed here — before the early returns — so the
-  // focus-reset effect can depend on it without breaking rules-of-hooks.
-  const hasScreenshare = tracks.some((t) => t.source === Track.Source.ScreenShare);
-  const effectiveRoomLayout: RoomLayout =
-    roomLayout === "grid" && hasScreenshare ? "speaker" : roomLayout;
+  // Per-viewer zoom: one stream window on the whole stage. Dropped when the
+  // zoomed stream disappears, so the viewer is never stranded on a dead
+  // full-bleed tile; the local view is reset when leaving the room.
+  const focused = focusKey ? items.find((i) => i.tileKey === focusKey) ?? null : null;
+  useEffect(() => {
+    if (focusKey && !items.some((i) => i.tileKey === focusKey)) setFocus(null);
+  }, [focusKey, items]);
+  useEffect(() => () => resetStageView(), []);
+  const focusCtx = useMemo(() => ({ focusedKey: focusKey, toggle: toggleFocus }), [focusKey]);
+  const info = useMemo(() => ({ presenter: presenterId, mainKey }), [presenterId, mainKey]);
 
-  // Double-tap / double-click a tile to zoom it to the full stage, and again
-  // to return to the grid. Per-viewer, grid-mode only. FlippableTile toggles
-  // via GridFocusContext; we own the key here.
-  const [focusedKey, setFocusedKey] = useState<string | null>(null);
-  const focusCtx = useMemo(
-    () => ({
-      focusedKey,
-      toggle: (key: string) =>
-        setFocusedKey((prev) => (prev === key ? null : key)),
-    }),
-    [focusedKey],
+  // Meet++: whether this viewer sees the full board as the main stream (the
+  // captions overlay steps aside) and whether the board is the presenter
+  // (the chair's menu offers "Present the board" otherwise).
+  const boardLarge =
+    !compositeTrack &&
+    (focused ? focused.kind === "board" : main?.kind === "board" && layout !== "grid");
+  useEffect(() => {
+    if (boardForPublicOnly) return;
+    setStage({ boardOnStage: boardLarge, boardPresenter: boardWanted && presenterId === BOARD_KEY });
+  }, [boardForPublicOnly, boardLarge, boardWanted, presenterId]);
+  useEffect(
+    () => () => {
+      if (!boardForPublicOnly) setStage({ boardOnStage: false, boardPresenter: false });
+    },
+    [boardForPublicOnly],
   );
-  // Drop the zoom when we leave grid mode or the focused track disappears, so
-  // the viewer is never stranded on a dead full-bleed tile.
-  useEffect(() => {
-    if (effectiveRoomLayout !== "grid") setFocusedKey(null);
-  }, [effectiveRoomLayout]);
-  useEffect(() => {
-    if (focusedKey && !orderedTracks.some((t) => trackKey(t) === focusedKey)) {
-      setFocusedKey(null);
+
+  const body = renderStage();
+  return (
+    <StageInfoContext.Provider value={info}>
+      <GridFocusContext.Provider value={focusCtx}>
+        {body}
+        {!compositeTrack && items.length > 0 && (
+          <ViewMenu layout={viewLayout} zoomed={!!focused} />
+        )}
+      </GridFocusContext.Provider>
+    </StageInfoContext.Provider>
+  );
+
+  function renderStage(): ReactNode {
+    // ── 1. Server composite always wins ─────────────────────────────────
+    if (compositeTrack) {
+      return <FullBleed track={compositeTrack} />;
     }
-  }, [focusedKey, orderedTracks]);
 
-  // ── 1. Server composite always wins ─────────────────────────────────
-  if (compositeTrack) {
-    return <FullBleed track={compositeTrack} />;
-  }
+    // ── 2. This viewer zoomed one stream window ──────────────────────────
+    if (focused) {
+      return <MainView item={focused} boardVariant={boardVariant} />;
+    }
 
-  // ── 1b. Meet++ board as main stage tile. A human screenshare, playback
-  //       or a pinned person takes over; otherwise the board owns the
-  //       main slot while a session is active.
-  const meetppScreenshare = tracks.some(
-    (t) => t.source === Track.Source.ScreenShare,
-  );
-  const meetppPinnedPerson = presenterId
-    ? tracks.find(
-        (t) =>
-          t.participant.identity === presenterId &&
-          t.source === Track.Source.Camera,
-      )
-    : null;
-  const showMeetppBoard =
-    !!meetpp?.active &&
-    meetpp.board_main &&
-    (!boardForPublicOnly || meetpp.public) &&
-    !meetppScreenshare &&
-    !playbackTrack &&
-    !meetppPinnedPerson;
-  if (showMeetppBoard) {
-    // Board owns the main area; keep the webcams visible in a bottom band so
-    // people can still see each other in AI Meeting mode.
-    const camTracks = tracks.filter(
-      (t) =>
-        t.source === Track.Source.Camera &&
-        !t.participant.identity.startsWith("meetpp-") &&
-        t.participant.identity !== "playback",
-    );
-    return (
-      <div className="flex h-full flex-col bg-slate-900">
-        <div className="min-h-0 flex-1 p-2">
-          <MeetppBoard readOnly canEdit={false} className="h-full w-full" />
+    // ── 3. Client-side PiP fallback (active when pip_enabled but the
+    //       compositor track hasn't landed yet) ─────────────────────────
+    if (pipEnabled && main?.kind === "track") {
+      const pipOverlayTrack: TrackReferenceOrPlaceholder | null =
+        pipOverlayIdentity
+          ? tracks.find(
+              (t) =>
+                t.participant.identity === pipOverlayIdentity &&
+                t.source === Track.Source.Camera,
+            ) ?? null
+          : null;
+      const showOverlay =
+        pipOverlayTrack &&
+        !(
+          pipOverlayTrack.participant.identity === main.track.participant.identity &&
+          pipOverlayTrack.source === main.track.source
+        );
+      return (
+        <div className="relative h-full bg-black overflow-hidden">
+          <div className="absolute inset-0">
+            <TrackRefContext.Provider value={main.track}>
+              <FlippableTile />
+            </TrackRefContext.Provider>
+          </div>
+          {showOverlay && pipOverlayTrack && (
+            <div
+              data-testid="pip-overlay"
+              className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-[28%] sm:w-[22%] aspect-video rounded-lg overflow-hidden border-2 border-white/90 shadow-xl bg-black"
+            >
+              <TrackRefContext.Provider value={pipOverlayTrack}>
+                <FlippableTile />
+              </TrackRefContext.Provider>
+            </div>
+          )}
         </div>
-        {camTracks.length > 0 && (
-          <div
-            data-testid="meetpp-cam-strip"
-            className="h-[18%] min-h-[110px] flex justify-center items-stretch gap-2 px-3 py-2 bg-black/50 overflow-x-auto"
-          >
-            {camTracks.map((t) => (
-              <div
-                key={`${t.participant.identity}-${t.source}`}
-                className="aspect-video h-full flex-shrink-0 rounded-md overflow-hidden bg-primary-900"
-              >
-                <TrackRefContext.Provider value={t}>
+      );
+    }
+
+    // ── 4. Playback as the main stream is full-bleed outside the grid ────
+    if (main?.cand.kind === "playback" && layout !== "grid") {
+      return <MainView item={main} boardVariant={boardVariant} />;
+    }
+
+    // ── 5. Grid ──────────────────────────────────────────────────────────
+    if (layout === "grid") {
+      const hasBoard = items.some((i) => i.kind === "board");
+      return (
+        <GridStageContext.Provider value={true}>
+          {gridAspect !== "off" ? (
+            <UniformGrid
+              items={items}
+              aspect={gridAspect === "landscape" ? 4 / 3 : 3 / 4}
+              isMobile={isMobile}
+              isPortrait={isPortrait}
+              boardVariant={boardVariant}
+            />
+          ) : isMobile ? (
+            <MobileGrid items={items} isPortrait={isPortrait} boardVariant={boardVariant} />
+          ) : hasBoard ? (
+            <ItemGrid items={items} boardVariant={boardVariant} />
+          ) : (
+            <GridLayout tracks={tracks} className="h-full p-2">
+              <FlippableTile />
+            </GridLayout>
+          )}
+        </GridStageContext.Provider>
+      );
+    }
+
+    if (!main) {
+      // No video yet — render an empty grid so placeholders fill the stage
+      // gracefully instead of going black.
+      return (
+        <GridLayout tracks={tracks} className="h-full p-2">
+          <FlippableTile />
+        </GridLayout>
+      );
+    }
+
+    // ── 6. Single speaker: the main stream alone ─────────────────────────
+    if (layout === "single-speaker") {
+      return <MainView item={main} boardVariant={boardVariant} />;
+    }
+
+    // ── 7. Speaker: the main stream plus a strip of every other one ──────
+    const others = items.filter((i) => i.tileKey !== main.tileKey);
+    return (
+      <div className={["flex h-full flex-col", main.kind === "board" ? "bg-slate-900" : "bg-black"].join(" ")}>
+        <div className="flex-1 min-h-0 p-2">
+          <div className="relative h-full">
+            <div className="absolute inset-0">
+              {main.kind === "board" ? (
+                <MeetppBoardWindow size="main" variant={boardVariant} />
+              ) : (
+                <TrackRefContext.Provider value={main.track}>
                   <FlippableTile />
                 </TrackRefContext.Provider>
+              )}
+            </div>
+          </div>
+        </div>
+        {others.length > 0 && (
+          <div
+            data-testid="speaker-thumbnails"
+            className="h-[20%] min-h-[120px] flex justify-center items-stretch gap-2 px-3 py-2 bg-black/40 overflow-x-auto"
+          >
+            {others.map((i) => (
+              <div
+                key={i.tileKey}
+                className="aspect-video h-full flex-shrink-0 rounded-md overflow-hidden bg-primary-900"
+              >
+                <ItemTile item={i} size="thumb" boardVariant={boardVariant} />
               </div>
             ))}
           </div>
@@ -313,139 +427,28 @@ export default function PresenterSpotlight({ boardForPublicOnly = false }: { boa
       </div>
     );
   }
+}
 
-  // ── 2. Client-side PiP fallback (active when pip_enabled but the
-  //       compositor track hasn't landed yet) ─────────────────────────
-  if (pipEnabled && main) {
-    const pipOverlayTrack: TrackReferenceOrPlaceholder | null =
-      pipOverlayIdentity
-        ? tracks.find(
-            (t) =>
-              t.participant.identity === pipOverlayIdentity &&
-              t.source === Track.Source.Camera,
-          ) ?? null
-        : null;
-    const showOverlay =
-      pipOverlayTrack &&
-      !(
-        pipOverlayTrack.participant.identity === main.participant.identity &&
-        pipOverlayTrack.source === main.source
-      );
-    return (
-      <div className="relative h-full bg-black overflow-hidden">
-        <div className="absolute inset-0">
-          <TrackRefContext.Provider value={main}>
-            <FlippableTile />
-          </TrackRefContext.Provider>
-        </div>
-        {showOverlay && pipOverlayTrack && (
-          <div
-            data-testid="pip-overlay"
-            className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 w-[28%] sm:w-[22%] aspect-video rounded-lg overflow-hidden border-2 border-white/90 shadow-xl bg-black"
-          >
-            <TrackRefContext.Provider value={pipOverlayTrack}>
-              <FlippableTile />
-            </TrackRefContext.Provider>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── 3. Playback hijack (full-bleed in single-speaker / speaker; in
-  //       grid we still tile but playback is the natural "main") ─────
-  if (playbackTrack && roomLayout !== "grid") {
-    return <FullBleed track={playbackTrack} />;
-  }
-
-  // ── 4. Room layout ───────────────────────────────────────────────────
-  // (grid + screenshare auto-promotion to "speaker" is computed above so the
-  // focus-reset effect can depend on it.)
-  if (effectiveRoomLayout === "grid") {
-    // Double-tap zoom: render just the focused track full-bleed. Rendered
-    // OUTSIDE GridStageContext so it keeps native aspect (never squished by
-    // the tile-shape toggle); GridFocusContext stays so a second double-tap
-    // returns to the grid.
-    const focused = focusedKey
-      ? orderedTracks.find((t) => trackKey(t) === focusedKey) ?? null
-      : null;
-    if (focused) {
-      return (
-        <GridFocusContext.Provider value={focusCtx}>
-          <FullBleed track={focused} />
-        </GridFocusContext.Provider>
-      );
-    }
-    return (
-      <GridStageContext.Provider value={true}>
-        <GridFocusContext.Provider value={focusCtx}>
-          {gridAspect !== "off" ? (
-            <UniformGrid
-              tracks={orderedTracks}
-              aspect={gridAspect === "landscape" ? 4 / 3 : 3 / 4}
-              isMobile={isMobile}
-              isPortrait={isPortrait}
-            />
-          ) : isMobile ? (
-            <MobileGrid tracks={orderedTracks} isPortrait={isPortrait} />
-          ) : (
-            <GridLayout tracks={orderedTracks} className="h-full p-2">
-              <FlippableTile />
-            </GridLayout>
-          )}
-        </GridFocusContext.Provider>
-      </GridStageContext.Provider>
-    );
-  }
-
-  if (!main) {
-    // No video yet — render an empty grid so placeholders fill the stage
-    // gracefully instead of going black.
-    return (
-      <GridLayout tracks={tracks} className="h-full p-2">
-        <FlippableTile />
-      </GridLayout>
-    );
-  }
-
-  if (effectiveRoomLayout === "single-speaker") {
-    return <FullBleed track={main} />;
-  }
-
-  // effective "speaker": main + bottom thumbnail strip of others.
-  const others = tracks.filter(
-    (t) => !(t.participant.identity === main.participant.identity && t.source === main.source),
-  );
+/** A stream window in a grid cell or the speaker strip. */
+function ItemTile({ item, size, boardVariant }: { item: StageItem; size: "cell" | "thumb"; boardVariant: BoardVariant }) {
+  if (item.kind === "board") return <MeetppBoardWindow size={size} variant={boardVariant} />;
   return (
-    <div className="flex h-full flex-col bg-black">
-      <div className="flex-1 min-h-0 p-2">
-        <div className="relative h-full">
-          <div className="absolute inset-0">
-            <TrackRefContext.Provider value={main}>
-              <FlippableTile />
-            </TrackRefContext.Provider>
-          </div>
-        </div>
-      </div>
-      {others.length > 0 && (
-        <div
-          data-testid="speaker-thumbnails"
-          className="h-[20%] min-h-[120px] flex justify-center items-stretch gap-2 px-3 py-2 bg-black/40 overflow-x-auto"
-        >
-          {others.map((t) => (
-            <div
-              key={`${t.participant.identity}-${t.source}`}
-              className="aspect-video h-full flex-shrink-0 rounded-md overflow-hidden bg-primary-900"
-            >
-              <TrackRefContext.Provider value={t}>
-                <FlippableTile />
-              </TrackRefContext.Provider>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <TrackRefContext.Provider value={item.track}>
+      <FlippableTile />
+    </TrackRefContext.Provider>
   );
+}
+
+/** A stream window on the whole stage. */
+function MainView({ item, boardVariant }: { item: StageItem; boardVariant: BoardVariant }) {
+  if (item.kind === "board") {
+    return (
+      <div className="h-full bg-slate-900 p-2">
+        <MeetppBoardWindow size="main" variant={boardVariant} />
+      </div>
+    );
+  }
+  return <FullBleed track={item.track} />;
 }
 
 function FullBleed({ track }: { track: TrackReferenceOrPlaceholder }) {
@@ -466,47 +469,136 @@ function trackKey(t: TrackReferenceOrPlaceholder): string {
   return `${t.participant.identity}-${t.source}`;
 }
 
-// Mobile grid. <=6 tracks fill the stage (no scroll); >6 scrolls, with never
-// more than 6 tiles in view. While a playlist video plays it is pinned at the
-// top (always mounted, never scrolled away) so it stays visible in grid mode —
-// the remaining participants scroll below it, each lazy-mounted so only the
+const VIEW_OPTIONS: Array<{ value: ViewLayout; key: string; label: string }> = [
+  { value: "room", key: "stage.viewRoom", label: "Room layout" },
+  { value: "grid", key: "stage.viewGrid", label: "Grid" },
+  { value: "speaker", key: "stage.viewSpeaker", label: "Speaker" },
+  { value: "single-speaker", key: "stage.viewSingle", label: "Single speaker" },
+];
+
+/**
+ * This viewer's own view: a layout of their choice instead of the room's, and
+ * the way back from a zoomed stream window. Nothing here reaches anyone else.
+ */
+function ViewMenu({ layout, zoomed }: { layout: ViewLayout; zoomed: boolean }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const current = VIEW_OPTIONS.find((o) => o.value === layout) ?? VIEW_OPTIONS[0];
+  return (
+    <div className="absolute left-1/2 top-2 z-20 flex -translate-x-1/2 items-start gap-2" data-testid="stage-view-menu">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className={[
+            "inline-flex items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-xs text-white hover:bg-black/75 transition-opacity",
+            layout === "room" && !open ? "opacity-40 hover:opacity-100 focus-visible:opacity-100" : "opacity-100",
+          ].join(" ")}
+          title={t("stage.view", { defaultValue: "My view" })}
+        >
+          <LayoutGrid size={13} />
+          {layout === "room" ? t("stage.view", { defaultValue: "My view" }) : t(current.key, { defaultValue: current.label })}
+        </button>
+        {open && (
+          <div role="menu" className="absolute left-1/2 mt-1 w-48 -translate-x-1/2 overflow-hidden rounded-md bg-slate-900/95 py-1 text-sm text-white shadow-xl ring-1 ring-white/10">
+            {VIEW_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                role="menuitemradio"
+                aria-checked={o.value === layout}
+                onClick={() => {
+                  setViewLayout(o.value);
+                  setOpen(false);
+                }}
+                className={["block w-full px-3 py-1.5 text-left hover:bg-white/10", o.value === layout ? "font-semibold text-accent-300" : ""].join(" ")}
+              >
+                {t(o.key, { defaultValue: o.label })}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {zoomed && (
+        <button
+          type="button"
+          onClick={() => setFocus(null)}
+          className="inline-flex items-center gap-1.5 rounded-md bg-accent-600/90 px-2 py-1 text-xs font-semibold text-white shadow hover:bg-accent-600"
+          data-testid="stage-unzoom"
+        >
+          <Minimize2 size={13} />
+          {t("stage.unzoom", { defaultValue: "Back to the room view" })}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Desktop grid used while the board is on the stage (LiveKit's GridLayout
+ * only takes track references). */
+function ItemGrid({ items, boardVariant }: { items: StageItem[]; boardVariant: BoardVariant }) {
+  const n = items.length;
+  const cols = n <= 1 ? 1 : Math.ceil(Math.sqrt(n));
+  const rows = Math.max(1, Math.ceil(n / cols));
+  return (
+    <div
+      data-testid="item-grid"
+      className="grid h-full w-full gap-2 p-2"
+      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` }}
+    >
+      {items.map((i) => (
+        <div key={i.tileKey} className="min-h-0 min-w-0 overflow-hidden rounded-md">
+          <ItemTile item={i} size="cell" boardVariant={boardVariant} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Mobile grid. <=6 stream windows fill the stage (no scroll); >6 scrolls, with
+// never more than 6 tiles in view. While a playlist video plays (or, failing
+// that, the Meet++ board is on the stage) it is pinned at the top (always
+// mounted, never scrolled away) so it stays visible in grid mode — the
+// remaining participants scroll below it, each lazy-mounted so only the
 // on-screen streams (plus a small preload band) stay subscribed.
 //
 // The outer structure is identical in every mode so tiles reconcile in place
 // across the 6<->7 boundary (only the added/removed tile mounts — no full-grid
 // remount / black flash).
 function MobileGrid({
-  tracks,
+  items,
   isPortrait,
+  boardVariant,
 }: {
-  tracks: TrackReferenceOrPlaceholder[];
+  items: StageItem[];
   isPortrait: boolean;
+  boardVariant: BoardVariant;
 }) {
   const cols = isPortrait ? 2 : 3;
   const rows = isPortrait ? 3 : 2;
   const capacity = cols * rows; // 6 in view either way
-  const scrollMode = tracks.length > capacity;
+  const scrollMode = items.length > capacity;
 
-  // Pin the playback ingress (kept at index 0 by orderedTracks) ONLY when we
-  // scroll — otherwise a LazyTile would unmount it as it scrolls off. In fill
-  // mode nothing scrolls, so it stays a normal always-mounted grid cell.
+  // Pin the playback ingress or the board (kept at index 0 by `items`) ONLY
+  // when we scroll — otherwise a LazyTile would unmount it as it scrolls off.
+  // In fill mode nothing scrolls, so it stays a normal always-mounted cell.
+  const first = items[0];
   const pinned =
-    scrollMode && tracks[0]?.participant.identity === "playback"
-      ? tracks[0]
+    scrollMode && first && (first.kind === "board" || first.cand.kind === "playback")
+      ? first
       : null;
-  const rest = pinned ? tracks.slice(1) : tracks;
+  const rest = pinned ? items.slice(1) : items;
 
   return (
     <div className="flex h-full w-full flex-col gap-2 p-2">
       {pinned && (
         <div key="pinned" className="min-h-0 basis-[40%] shrink-0">
-          <TrackRefContext.Provider value={pinned}>
-            <FlippableTile />
-          </TrackRefContext.Provider>
+          <ItemTile item={pinned} size="cell" boardVariant={boardVariant} />
         </div>
       )}
       <div key="grid" className="min-h-0 flex-1">
-        <AdaptiveGrid tracks={rest} isPortrait={isPortrait} reserveRow={!!pinned} />
+        <AdaptiveGrid items={rest} isPortrait={isPortrait} reserveRow={!!pinned} boardVariant={boardVariant} />
       </div>
     </div>
   );
@@ -519,20 +611,22 @@ function MobileGrid({
 // and the per-tile LazyTile are the SAME element types in both modes, so
 // switching between fill and scroll never remounts the tiles.
 function AdaptiveGrid({
-  tracks,
+  items,
   isPortrait,
   reserveRow,
+  boardVariant,
 }: {
-  tracks: TrackReferenceOrPlaceholder[];
+  items: StageItem[];
   isPortrait: boolean;
   reserveRow: boolean;
+  boardVariant: BoardVariant;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [rowH, setRowH] = useState(0);
   const scrollCols = isPortrait ? 2 : 3;
   const visibleRows = Math.max(1, (isPortrait ? 3 : 2) - (reserveRow ? 1 : 0));
   const capacity = scrollCols * visibleRows;
-  const count = tracks.length;
+  const count = items.length;
   const scroll = count > capacity;
   // Fill mode uses a face-friendlier column count for small groups (stack 2 on
   // a portrait phone rather than two skinny columns).
@@ -582,12 +676,13 @@ function AdaptiveGrid({
       ].join(" ")}
     >
       <div className={scroll ? "grid w-full" : "grid h-full w-full"} style={style}>
-        {tracks.map((tr) => (
+        {items.map((it) => (
           <LazyTile
-            key={trackKey(tr)}
-            track={tr}
+            key={it.tileKey}
+            item={it}
             root={rootRef}
             eager={!scroll}
+            boardVariant={boardVariant}
           />
         ))}
       </div>
@@ -600,13 +695,15 @@ function AdaptiveGrid({
 // streams unmount and LiveKit's adaptive stream pauses them; the slot keeps its
 // full cell height either way so scroll geometry stays correct.
 function LazyTile({
-  track,
+  item,
   root,
   eager,
+  boardVariant,
 }: {
-  track: TrackReferenceOrPlaceholder;
+  item: StageItem;
   root: { current: HTMLDivElement | null };
   eager: boolean;
+  boardVariant: BoardVariant;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [show, setShow] = useState(eager);
@@ -629,13 +726,11 @@ function LazyTile({
   return (
     <div ref={ref} className="h-full w-full min-w-0 min-h-0">
       {show ? (
-        <TrackRefContext.Provider value={track}>
-          <FlippableTile />
-        </TrackRefContext.Provider>
+        <ItemTile item={item} size="cell" boardVariant={boardVariant} />
       ) : (
         <div className="flex h-full w-full items-center justify-center rounded-md bg-primary-900/60">
           <span className="truncate px-1 text-[10px] text-slate-500">
-            {track.participant.name || track.participant.identity}
+            {item.kind === "board" ? "Meet++" : item.track.participant.name || item.track.participant.identity}
           </span>
         </div>
       )}
@@ -650,15 +745,17 @@ function LazyTile({
 // the grid scrolls when tiles overflow; on desktop the column count is chosen
 // to make the tiles as large as possible while everyone stays in view.
 function UniformGrid({
-  tracks,
+  items,
   aspect,
   isMobile,
   isPortrait,
+  boardVariant,
 }: {
-  tracks: TrackReferenceOrPlaceholder[];
+  items: StageItem[];
   aspect: number;
   isMobile: boolean;
   isPortrait: boolean;
+  boardVariant: BoardVariant;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
@@ -675,7 +772,7 @@ function UniformGrid({
   const { cols, tileW, tileH, scroll } = computeUniform(
     dims.w,
     dims.h,
-    tracks.length,
+    items.length,
     aspect,
     GAP,
     isMobile,
@@ -705,13 +802,13 @@ function UniformGrid({
     >
       {tileW > 0 && (
         <div style={style}>
-          {tracks.map((tr) => (
+          {items.map((it) => (
             <div
-              key={trackKey(tr)}
+              key={it.tileKey}
               style={{ width: tileW, height: tileH }}
               className="overflow-hidden rounded-md"
             >
-              <LazyTile track={tr} root={rootRef} eager={!scroll} />
+              <LazyTile item={it} root={rootRef} eager={!scroll} boardVariant={boardVariant} />
             </div>
           ))}
         </div>

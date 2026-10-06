@@ -6,10 +6,13 @@ import {
   useEnsureTrackRef,
 } from "@livekit/components-react";
 import { FlipHorizontal2, Hand } from "lucide-react";
+import { Track } from "livekit-client";
 import { usePreferences } from "../lib/preferences";
 import ConnectionQualityButton from "./ConnectionQualityButton";
 import { GridStageContext, GridFocusContext } from "../lib/gridStage";
 import { useHandRaiseState } from "../lib/handRaise";
+import { streamKey } from "../lib/stage";
+import StageTileControls from "./StageTileControls";
 
 /**
  * A drop-in replacement for `<ParticipantTile />` that overlays a small
@@ -34,6 +37,8 @@ export default function FlippableTile() {
   // never right, so this tile is exempt from the mirror preference and the
   // manual flip button.
   const isPlayback = identity === "playback";
+  // The server composite is the whole picture already: no stage controls.
+  const isComposite = identity.startsWith("composite-");
   const mirrorOwnPref = usePreferences((s) => s.display.mirrorOwnVideo);
   // Grid-mode tile-shape standardization. The value lives in prefs; the
   // boolean context is true only inside the grid stage, so non-grid tiles
@@ -246,6 +251,13 @@ export default function FlippableTile() {
         >
           <ParticipantTile />
           <ConnectionQualityButton />
+          {!isComposite && ref?.source && (
+            <StageTileControls
+              tileKey={trackKey}
+              stageKey={streamKey(identity, ref.source === Track.Source.ScreenShare)}
+              className={isPlayback ? "right-2" : "right-11"}
+            />
+          )}
           {hand.raised && (
             <div
               data-testid={`tile-hand-${identity}`}

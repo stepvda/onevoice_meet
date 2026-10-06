@@ -1,0 +1,69 @@
+# meetpp-speech runtime, fully pinned (Python 3.12, macOS arm64 / Apple Silicon).
+#
+# This is a complete lock of the runtime closure and is installed with
+#     pip/uv pip install --no-deps --only-binary=:all: -r requirements.txt
+# --no-deps is deliberate: mlx-whisper declares `torch` (about 600 MB) only for
+# its PyTorch conversion/reference code, which this service never imports.
+# Everything mlx_whisper.transcribe needs is listed here. When bumping a pin,
+# re-run the test-suite (tests/) - a missing transitive dependency shows up as
+# an ImportError at start-up.
+
+# --- speech-to-text: mlx-whisper on the Apple GPU (MLX) ---------------------
+mlx==0.32.3
+mlx-metal==0.32.3
+mlx-whisper==0.4.3
+numba==0.68.0
+llvmlite==0.50.0
+scipy==1.18.1
+tiktoken==0.14.0
+regex==2026.9.29
+requests==2.34.2
+charset-normalizer==3.5.2
+urllib3==2.8.0
+certifi==2026.7.22
+idna==3.20
+more-itertools==11.1.0
+tqdm==4.70.1
+huggingface_hub==2.1.1
+hf-xet==1.6.0
+httpx2==2.13.1
+httpcore2==2.13.1
+truststore==0.10.4
+filelock==4.0.12
+fsspec==2026.9.0
+PyYAML==6.0.3
+packaging==26.3
+click==8.5.0
+
+# --- text-to-speech: Kokoro-82M via kokoro-onnx ------------------------------
+kokoro-onnx==0.6.1
+onnxruntime==1.30.0
+flatbuffers==25.12.19
+protobuf==7.36.2
+espeakng-loader==0.2.4
+phonemizer==3.4.0
+joblib==1.6.0
+cloudpickle==3.1.2
+attrs==26.1.0
+dlinfo==2.0.0
+
+# --- audio I/O (no ffmpeg: libsndfile bundled in the wheel, with Ogg/Opus) ---
+numpy==2.5.3
+soundfile==0.14.0
+cffi==2.1.1
+pycparser==3.0
+soxr==1.1.0
+
+# --- HTTP service -------------------------------------------------------------
+fastapi==0.142.2
+starlette==1.7.0
+pydantic==2.13.5
+pydantic_core==2.46.5
+annotated-types==0.8.0
+annotated-doc==0.0.5
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+opentelemetry-api==1.45.0
+anyio==4.15.1
+uvicorn==0.54.0
+h11==0.16.0

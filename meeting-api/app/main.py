@@ -24,6 +24,9 @@ setup_logging()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # Meet++ schema v3 replaces the Release 1 tables (test data only) once.
+    from app.meetpp.models import ensure_schema
+    ensure_schema(engine)
     Base.metadata.create_all(bind=engine)
     lightweight_migrate()
     bootstrap_platform_admins()

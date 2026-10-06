@@ -1,936 +1,1775 @@
-"""Session runtime (orchestrator).
+"""Session runtime (FDD §7.5, §8; contract §4, §6.1).
 
-One asyncio task per active session inside meeting-api, resumable from the
-database. The LLM only propose; validation, application and broadcast are
-deterministic.
+One `SessionRunner` task per active session inside meeting-api, guarded by a
+Redis lease and resumable from the database (running, paused and finalising
+sessions are resumed on startup). The runner keeps the agent in step
+(accepted identities and pause every 20 s; restart when missing from
+/health), runs interpretation ticks (every 12 s with new speech, at once on a
+cue phrase or a chair move; single-flight), nudges overrunning timeboxes and
+drives the finalisation jobs.
+
+Everything that changes state goes: mutate → atomic version bump → commit →
+broadcast (bus.publish_changes). Session rows are re-read after every await.
 """
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import re
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
-import httpx
-from livekit import api as lk_api
-from sqlalchemy import func
+from sqlalchemy import func, or_
+from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
 from app.db import SessionLocal
-from app.livekit_client import livekit_api, mint_agent_token
-from app.meetpp import llm, ops, phases, prompts, render
-from app.meetpp.locales import t
+from app.livekit_client import mint_agent_token
+from app.meetpp import agent as agent_mod
+from app.meetpp import bus, compose, governance, llm, ops, outline as outline_mod, prompts, util
 from app.meetpp.models import (
-    MeetppAction,
-    MeetppAgendaItem,
+    MeetppActionReport,
     MeetppAttendee,
     MeetppConsent,
     MeetppDecision,
     MeetppMinute,
     MeetppOp,
+    MeetppRoster,
     MeetppSegment,
-    MeetppSession,
     MeetppSeries,
-    utcnow,
+    MeetppSession,
 )
-from app.models import Meeting
+from app.models import Meeting, User
 
 log = logging.getLogger("app.meetpp")
 
-# Wake at least this often to re-check the trigger policy. The ingest event
-# also wakes the loop immediately, so ticks run close to per-utterance.
-TICK_INTERVAL_SECONDS = 4
-# Batch very short fragments, but otherwise process new speech almost
-# immediately (the user expects per-sentence extraction).
-WORDS_PER_TICK = 60
-IDLE_TICK_SECONDS = 3
-CONTEXT_OVERLAP_SECONDS = 60
-MAX_ANNOUNCE_TITLE = 60
-ANNOUNCE_DURATION_DEFAULT_MS = 2500
-
 CUE_RE = re.compile(
-    r"\b(action|actiepunt|actie|we agree|afgesproken|decided|besliss|decision|next item|volgend punt|"
-    r"any other business|rondvraag|to conclude|afronden|point suivant|prochaine réunion|nächster punkt)\b",
+    r"\b(next (item|point|topic)|moving on|move on to|let'?s move on|on to (item|point)|agreed|we agree|"
+    r"all in favou?r|in favou?r|any objections|action (for|point)|we (have )?decided|i propose|i move that|"
+    r"resolved|motion|second(ed)? (the|that)|let'?s vote|put (it )?to (a|the) vote|carried|approved|"
+    r"any other business|apologies)\b",
     re.IGNORECASE,
 )
+WINDOW_SECONDS = 120
+CATCHUP_SECONDS = 180
+THROTTLED_TICK_SECONDS = 30
+RECONCILE_SECONDS = 20
+LEASE_TTL = 30
+LEASE_RENEW_SECONDS = 10
+ECHO_WINDOW_SECONDS = 10
+TOPIC_MIN = 0.6
+TOPIC_SURE = 0.8
+ADVANCE_AUTO = 0.85
+PROPOSAL_MIN = 0.6
+# Topic-based move: a later item that wins LATER_HITS of the last LATER_WINDOW
+# ticks (about 40 s of talk) becomes live even when no tick was sure of it —
+# provided a cue for it was heard (an `advance` of at least ADVANCE_HINT_MIN in
+# the last ADVANCE_HINT_SECONDS: "number four", "on to the budget"). Talk
+# drifting to a later item's subject without a cue (a member previewing the
+# next point's subject under the current one) moves only after SILENT_MOVE_TICKS
+# consecutive ticks (about 5 minutes): the chair moved on without saying so.
+LATER_WINDOW = 4
+LATER_HITS = 3
+ADVANCE_HINT_MIN = 0.5
+ADVANCE_HINT_SECONDS = 150
+SILENT_MOVE_TICKS = 25
+NOT_NOW_SECONDS = 180
+# A cue phrase ticks at once, but not more often than this.
+CUE_MIN_SPACING_SECONDS = 3
+ACTIVE_STATUSES = ("running", "paused")
+
+# sid -> (announcement text, monotonic time) for the echo guard.
+_last_announce: dict[str, tuple[str, float]] = {}
 
 
-def _now() -> datetime:
-    return datetime.now(timezone.utc)
+# ─── helpers ────────────────────────────────────────────────────────────────
 
 
-def _aware(dt: datetime | None) -> datetime | None:
-    if dt is None:
+def chair_identities(meeting: Meeting | None) -> list[str]:
+    if meeting is None:
+        return []
+    from app.routes.meetings import _cohost_set
+
+    subs = [meeting.owner_user_id, *sorted(_cohost_set(meeting))]
+    return [f"user-{s}" for s in subs if s]
+
+
+def _room(db, session: MeetppSession) -> str | None:
+    meeting = db.get(Meeting, session.meeting_id)
+    return meeting.room_name if meeting else None
+
+
+def _seg_time(s: MeetppSegment):
+    return util.aware(s.t_start or s.t_end or s.created_at)
+
+
+def _topic_state(session: MeetppSession) -> dict:
+    return util.loads(session.topic_state_json, {})
+
+
+def _save_topic_state(session: MeetppSession, st: dict) -> None:
+    session.topic_state_json = util.dumps(st)
+
+
+def _echo(sid: str, text: str) -> bool:
+    last = _last_announce.get(sid)
+    if not last or time.monotonic() - last[1] > ECHO_WINDOW_SECONDS:
+        return False
+    return util.jaccard(text, last[0]) >= 0.6 or (util.norm_name(last[0]) in util.norm_name(text) and len(text) < 2 * len(last[0]))
+
+
+def identity_map(db, session_id: str) -> dict[str, str]:
+    """LiveKit identity → person_key (attendee identities and consent posts)."""
+    out: dict[str, str] = {}
+    for a in db.query(MeetppAttendee).filter_by(session_id=session_id).all():
+        for ident in util.loads(a.identities_json, []):
+            out[str(ident)] = a.person_key
+    for c in db.query(MeetppConsent).filter_by(session_id=session_id).all():
+        out.setdefault(c.identity, c.person_key)
+    return out
+
+
+def accepted_identities(db, session_id: str) -> list[str]:
+    consents = {c.person_key: c for c in db.query(MeetppConsent).filter_by(session_id=session_id).all()}
+    out: set[str] = set()
+    for key, c in consents.items():
+        if c.decision != "accept":
+            continue
+        out.add(c.identity)
+    for a in db.query(MeetppAttendee).filter_by(session_id=session_id).all():
+        c = consents.get(a.person_key)
+        if c is not None and c.decision == "accept" and not a.opted_out:
+            out.update(str(i) for i in util.loads(a.identities_json, []))
+    return sorted(out)
+
+
+def glossary(db, session: MeetppSession) -> str:
+    words: list[str] = []
+    o = outline_mod.load(db, session.id)
+    for s in o.flat:
+        if s.source != "template":
+            words.append(s.title)
+        if s.presenter:
+            words.append(s.presenter)
+    for a in db.query(MeetppAttendee).filter_by(session_id=session.id).all():
+        words.append(a.display_name)
+    for r in db.query(MeetppRoster).filter_by(series_id=session.series_id, active=True).all():
+        words.append(r.display_name)
+    seen: list[str] = []
+    for w in words:
+        w = (w or "").strip()
+        if w and w not in seen:
+            seen.append(w)
+    return ", ".join(seen)[:600]
+
+
+def _user_profile(db, sub: str) -> dict:
+    """Display name, username and e-mail of a signed-in participant."""
+    user = None
+    if sub.startswith("m:"):
+        try:
+            user = db.query(User).filter_by(id=int(sub[2:]), kind="native").first()
+        except ValueError:
+            user = None
+    else:
+        user = db.query(User).filter_by(external_id=sub, kind="sso").first()
+    if user is None:
+        return {}
+    return {"name": user.name, "username": user.username, "email": user.email}
+
+
+def _merge_attendee(db, keep: MeetppAttendee, other: MeetppAttendee) -> None:
+    ids = util.loads(keep.identities_json, [])
+    for i in util.loads(other.identities_json, []):
+        if i not in ids:
+            ids.append(i)
+    keep.identities_json = util.dumps(ids)
+    keep.talk_seconds = float(keep.talk_seconds or 0) + float(other.talk_seconds or 0)
+    keep.online = keep.online or other.online
+    keep.first_joined_at = keep.first_joined_at or other.first_joined_at
+    if keep.status in ("not_registered", "absent") and other.status == "present":
+        keep.status = "present"
+    db.query(MeetppSegment).filter_by(session_id=keep.session_id, person_key=other.person_key).update(
+        {MeetppSegment.person_key: keep.person_key}, synchronize_session=False
+    )
+    db.delete(other)
+
+
+def _has_established_voting_members(db, session: MeetppSession) -> bool:
+    """Voting members the series had before this meeting: seeded from the
+    previous report or first seen in an earlier session."""
+    return (
+        db.query(MeetppRoster)
+        .filter(
+            MeetppRoster.series_id == session.series_id,
+            MeetppRoster.voting.is_(True),
+            or_(MeetppRoster.first_session_id.is_(None), MeetppRoster.first_session_id != session.id),
+        )
+        .first()
+        is not None
+    )
+
+
+def upsert_roster(db, session: MeetppSession, key: str, name: str, *, username: str | None = None, email: str | None = None) -> MeetppRoster | None:
+    """Roster row for a participant (FDD §8.6). Seeded rows ("name:" keys from
+    the previous report) are matched by username or name and re-keyed."""
+    if not (key.startswith("sub:") or key.startswith("guest:")):
         return None
-    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+    r = db.query(MeetppRoster).filter_by(series_id=session.series_id, person_key=key).first()
+    if r is None:
+        needle = util.norm_name(name)
+        for cand in db.query(MeetppRoster).filter(
+            MeetppRoster.series_id == session.series_id, MeetppRoster.person_key.like("name:%")
+        ).all():
+            if (username and cand.username and cand.username.lstrip("@").lower() == username.lstrip("@").lower()) or (
+                needle and util.norm_name(cand.display_name) == needle
+            ):
+                cand.person_key = key
+                r = cand
+                break
+    if r is None:
+        r = MeetppRoster(
+            id=util.ulid(),
+            series_id=session.series_id,
+            person_key=key,
+            display_name=(name or key)[:200],
+            username=username,
+            email=email,
+            # Signed-in participants vote by default only while the series has
+            # no voting members from before this meeting (its first meeting:
+            # everyone signed in); later newcomers (guests with an account,
+            # invitees) start non-voting until the chair toggles them (FDD §8.6).
+            voting=key.startswith("sub:") and not _has_established_voting_members(db, session),
+            first_session_id=session.id,
+            active=True,
+        )
+        db.add(r)
+    else:
+        r.last_seen_at = util.now()
+        if username and not r.username:
+            r.username = username
+        if email and not r.email:
+            r.email = email
+    db.flush()
+    return r
 
 
-class AgentClient:
-    """Thin HTTP client for meetpp-agent's session API."""
+def find_attendee(db, session: MeetppSession, *, key: str | None, identity: str | None, name: str | None) -> MeetppAttendee | None:
+    q = db.query(MeetppAttendee).filter_by(session_id=session.id)
+    if key:
+        a = q.filter_by(person_key=key).first()
+        if a is not None:
+            return a
+    if identity:
+        for a in q.all():
+            if identity in util.loads(a.identities_json, []):
+                return a
+    return None
 
-    def __init__(self) -> None:
-        self.base = settings.meetpp_agent_url.rstrip("/")
 
-    async def start(self, payload: dict) -> bool:
+def _seeded_match(db, session: MeetppSession, name: str | None, username: str | None) -> MeetppAttendee | None:
+    needle = util.norm_name(name)
+    for a in db.query(MeetppAttendee).filter(
+        MeetppAttendee.session_id == session.id, MeetppAttendee.person_key.like("name:%")
+    ).all():
+        if (username and a.username and a.username.lstrip("@").lower() == username.lstrip("@").lower()) or (
+            needle and util.norm_name(a.display_name) == needle
+        ):
+            return a
+    return None
+
+
+def ensure_attendee(db, session: MeetppSession, *, key: str, identity: str | None, name: str | None) -> MeetppAttendee:
+    """Attendee row for a person, merging a provisional identity row or a
+    seeded roster row into the person's key."""
+    profile = _user_profile(db, key[4:]) if key.startswith("sub:") else {}
+    display = (name or profile.get("name") or key)[:200]
+    a = db.query(MeetppAttendee).filter_by(session_id=session.id, person_key=key).first()
+    provisional = None
+    if identity:
+        provisional = db.query(MeetppAttendee).filter_by(session_id=session.id, person_key=f"id:{identity}").first()
+    seeded = _seeded_match(db, session, display, profile.get("username")) if a is None else None
+    if a is None and seeded is not None:
+        seeded.person_key = key
+        a = seeded
+    if a is None and provisional is not None:
+        provisional.person_key = key
+        a = provisional
+        provisional = None
+    created = False
+    if a is None:
+        a = MeetppAttendee(
+            id=util.ulid(),
+            session_id=session.id,
+            person_key=key,
+            display_name=display,
+            identities_json="[]",
+            status="present",
+            voting=key.startswith("sub:"),
+        )
+        db.add(a)
+        db.flush()
+        created = True
+    if provisional is not None and provisional.id != a.id:
+        _merge_attendee(db, a, provisional)
+    if not a.username and profile.get("username"):
+        a.username = profile["username"]
+    if not a.email and profile.get("email"):
+        a.email = profile["email"]
+    roster = upsert_roster(db, session, key, a.display_name, username=a.username, email=a.email)
+    if roster is not None:
+        a.roster_id = roster.id
+        if created:
+            a.voting = bool(roster.voting)
+        if not a.email and roster.email:
+            a.email = roster.email
+        if not a.username and roster.username:
+            a.username = roster.username
+    if identity:
+        ids = util.loads(a.identities_json, [])
+        if identity not in ids:
+            ids.append(identity)
+            a.identities_json = util.dumps(ids[-20:])
+    db.flush()
+    return a
+
+
+def expected_attendees(db, session: MeetppSession) -> set[str]:
+    """Roster members get an attendee row (status not_registered) so absentees
+    and the quorum are known before anyone joins (contract §1a)."""
+    changed: set[str] = set()
+    have = {a.person_key: a for a in db.query(MeetppAttendee).filter_by(session_id=session.id).all()}
+    for r in db.query(MeetppRoster).filter_by(series_id=session.series_id, active=True).all():
+        if r.person_key in have:
+            continue
+        a = MeetppAttendee(
+            id=util.ulid(),
+            session_id=session.id,
+            person_key=r.person_key,
+            roster_id=r.id,
+            display_name=r.display_name,
+            username=r.username,
+            email=r.email,
+            identities_json="[]",
+            status="not_registered",
+            voting=bool(r.voting),
+        )
+        db.add(a)
+        changed.add(a.id)
+    db.flush()
+    return changed
+
+
+# ─── announcements and moves ───────────────────────────────────────────────
+
+
+async def announce(
+    session_id: str,
+    *,
+    kind: str,
+    title: str,
+    subtitle: str = "",
+    speech: str | None = None,
+    destination: list[str] | None = None,
+) -> dict:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            return {}
+        room = _room(db, session)
+        speak = ops._settings(session)["speak"]
+    finally:
+        db.close()
+    audio_url = None
+    if speech and speak:
+        clip = await agent_mod.client.tts(speech, settings.meetpp_tts_voice)
+        if clip and re.fullmatch(r"[0-9a-f]{16,64}", str(clip.get("hash") or "")):
+            audio_url = f"/api/v1/meetpp/tts/{clip['hash']}.ogg"
+    if speech:
+        _last_announce[session_id] = (speech, time.monotonic())
+    msg = bus.message("announce", session_id, aid=util.ulid(), kind=kind, title=title[:120], subtitle=(subtitle or "")[:160], audio_url=audio_url)
+    await bus.send(room, msg, destination)
+    return msg
+
+
+def _position_texts(o: outline_mod.Outline, target, *, back: bool) -> tuple[str, str]:
+    num = o.numbers.get(target.id)
+    title = f"{num} · {target.title}" if num else target.title
+    if back:
+        speech = f"Back to item {num}: {target.title}." if num else f"Back to {target.title}."
+    else:
+        speech = f"Moving on to item {num}: {target.title}." if num else f"Moving on to {target.title}."
+    return title, speech
+
+
+async def _after_move(db, session: MeetppSession, res: outline_mod.MoveResult, *, by: str, compose_delay: float) -> int | None:
+    changes = ops.Changes(session=True, sections=set(res.changed), minutes=set(res.minutes_changed))
+    changes.activate("topic", res.live_id)
+
+    def _position(version: int) -> list[dict]:
+        return [
+            bus.message(
+                "position",
+                session.id,
+                version=version,
+                live_section_id=res.live_id,
+                prev_section_id=res.prev_id,
+                by="ai" if by == "ai" else "chair",
+                undo_until=res.undo_until,
+            )
+        ]
+
+    # position, then the state delta with the same version (sections + session).
+    version = await bus.publish_changes(db, session, changes, lead=_position)
+    o = outline_mod.load(db, session.id)
+    target = o.by_id.get(res.live_id)
+    prev = o.by_id.get(res.prev_id or "")
+    back = prev is not None and o.later(prev, target) if target is not None else False
+    if target is not None:
+        title, speech = _position_texts(o, target, back=back)
+        subtitle = "AI moved the meeting on — the chair can undo" if by == "ai" else ""
+        asyncio.get_running_loop().create_task(
+            announce(session.id, kind="position", title=title, subtitle=subtitle, speech=speech)
+        )
+    for sid in res.closed:
+        compose.schedule_section(session.id, sid, delay=compose_delay)
+    log.info("MEETPP_POSITION sid=%s from=%s to=%s by=%s version=%s", session.id, res.prev_id, res.live_id, by, version)
+    return version
+
+
+class PositionError(Exception):
+    def __init__(self, status: int, detail: str) -> None:
+        super().__init__(detail)
+        self.status = status
+        self.detail = detail
+
+
+async def chair_move(session_id: str, action: str, section_id: str | None = None) -> dict:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            raise PositionError(404, "session not found")
+        if session.status not in ACTIVE_STATUSES:
+            raise PositionError(409, f"session is {session.status}")
+        o = outline_mod.load(db, session_id)
+        if action == "next":
+            target = outline_mod.next_target(o, session)
+        elif action == "back":
+            target = outline_mod.prev_target(o, session)
+        elif action == "move":
+            target = o.by_id.get(section_id or "")
+            if target is None:
+                raise PositionError(404, "section not found")
+        else:
+            raise PositionError(400, "action must be next, back or move")
+        if target is None:
+            raise PositionError(409, f"no section to move to ({action})")
+        res = outline_mod.move(db, session, target, by="chair")
+        version = await _after_move(db, session, res, by="chair", compose_delay=0)
+        runtime.poke(session_id, "chair")
+        return {"live_section_id": session.live_section_id, "version": version or session.state_version}
+    finally:
+        db.close()
+
+
+async def undo_move(session_id: str) -> dict:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            raise PositionError(404, "session not found")
+        res = outline_mod.undo(db, session)
+        if res is None:
+            db.commit()
+            raise PositionError(409, "nothing to undo")
+        version = await _after_move(db, session, res, by="chair", compose_delay=0)
+        return {"live_section_id": session.live_section_id, "version": version or session.state_version}
+    finally:
+        db.close()
+
+
+async def answer_proposal(session_id: str, pid: str, accept: bool) -> dict:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            raise PositionError(404, "session not found")
+        proposal = util.loads(session.proposal_json, {})
+        if not proposal or proposal.get("pid") != pid:
+            raise PositionError(409, "no such proposal")
+        target_id = proposal.get("to")
+        if not accept:
+            st = _topic_state(session)
+            notnow = st.get("notnow") or {}
+            notnow[target_id] = util.iso(util.now() + timedelta(seconds=NOT_NOW_SECONDS))
+            st["notnow"] = notnow
+            _save_topic_state(session, st)
+            session.proposal_json = None
+            await bus.publish_changes(db, session, ops.Changes(session=True))
+            return {"ok": True}
+    finally:
+        db.close()
+    await chair_move(session_id, "move", target_id)
+    return {"ok": True}
+
+
+# ─── ingest (agent → meeting-api) ──────────────────────────────────────────
+
+
+async def ingest(session_id: str, body: dict) -> dict:
+    """Store segments (consent per person, echo guard), refinements and gaps,
+    and broadcast caption / caption-update / gap messages."""
+    db = SessionLocal()
+    seqs: dict[str, int] = {}
+    messages: list[dict] = []
+    cue = False
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            return {"ok": False, "seqs": {}}
+        room = _room(db, session)
+        ident_map = identity_map(db, session_id)
+        consents = {c.person_key: c.decision for c in db.query(MeetppConsent).filter_by(session_id=session_id).all()}
+        max_seq = db.query(func.max(MeetppSegment.seq)).filter(MeetppSegment.session_id == session_id).scalar() or 0
+        accepting = session.status in ("running", "paused", "finalising")
+        talk: dict[str, float] = {}
+        for raw in (body.get("segments") or []) if accepting else []:
+            if not isinstance(raw, dict):
+                continue
+            uid = str(raw.get("utterance_id") or "")[:64] or None
+            if uid:
+                existing = db.query(MeetppSegment).filter_by(session_id=session_id, utterance_id=uid).first()
+                if existing is not None:
+                    seqs[uid] = existing.seq
+                    continue
+            identity = str(raw.get("identity") or "")
+            text = str(raw.get("text") or "").strip()
+            if not identity or not text:
+                continue
+            key = util.person_key_for_identity(identity) or ident_map.get(identity)
+            if key is None or consents.get(key) != "accept":
+                log.info("meetpp: dropped segment from %s (no consent)", identity)
+                continue
+            if _echo(session_id, text):
+                log.info("meetpp: dropped segment from %s (announcement echo)", identity)
+                continue
+            max_seq += 1
+            t_start = util.parse_dt(raw.get("t_start")) or util.now()
+            t_end = util.parse_dt(raw.get("t_end")) or t_start
+            seg = MeetppSegment(
+                session_id=session_id,
+                seq=max_seq,
+                utterance_id=uid,
+                identity=identity,
+                person_key=key,
+                name=util.truncate(raw.get("name"), 200) or identity,
+                t_start=t_start,
+                t_end=t_end,
+                text=text,
+                tier=1,
+                lang=str(raw.get("lang") or "en")[:8],
+                avg_logprob=raw.get("avg_logprob") if isinstance(raw.get("avg_logprob"), (int, float)) else None,
+                no_speech_prob=raw.get("no_speech_prob") if isinstance(raw.get("no_speech_prob"), (int, float)) else None,
+                section_id=session.live_section_id,
+            )
+            db.add(seg)
+            if uid:
+                seqs[uid] = max_seq
+            talk[key] = talk.get(key, 0.0) + max(0.0, (t_end - t_start).total_seconds())
+            cue = cue or bool(CUE_RE.search(text))
+            messages.append(
+                bus.message(
+                    "caption", session_id, seq=max_seq, identity=identity, name=seg.name, person_key=key,
+                    t_start=util.iso(t_start), text=text, tier=1,
+                )
+            )
+        for raw in body.get("refinements") or []:
+            if not isinstance(raw, dict) or not raw.get("utterance_id"):
+                continue
+            seg = db.query(MeetppSegment).filter_by(session_id=session_id, utterance_id=str(raw["utterance_id"])[:64]).first()
+            text = str(raw.get("text") or "").strip()
+            if seg is None or not text or seg.is_gap:
+                continue
+            if seg.text_refined == text:
+                continue
+            seg.text_refined = text
+            seg.tier = 2
+            seqs[seg.utterance_id] = seg.seq
+            messages.append(bus.message("caption-update", session_id, seq=seg.seq, text=text, tier=2))
+        for raw in body.get("gaps") or []:
+            if not isinstance(raw, dict):
+                continue
+            max_seq += 1
+            t_from = util.parse_dt(raw.get("t_from")) or util.now()
+            t_to = util.parse_dt(raw.get("t_to")) or t_from
+            name = util.truncate(raw.get("name"), 200)
+            reason = util.truncate(raw.get("reason"), 200) or "transcription interrupted"
+            db.add(
+                MeetppSegment(
+                    session_id=session_id,
+                    seq=max_seq,
+                    identity=str(raw.get("identity") or "meetpp-agent")[:200],
+                    name=name,
+                    t_start=t_from,
+                    t_end=t_to,
+                    text="",
+                    is_gap=True,
+                    gap_reason=reason,
+                    section_id=session.live_section_id,
+                )
+            )
+            payload = {"seq": max_seq, "t_from": util.iso(t_from), "t_to": util.iso(t_to), "reason": reason}
+            if name:
+                payload["name"] = name
+            messages.append(bus.message("gap", session_id, **payload))
+        for key, secs in talk.items():
+            a = db.query(MeetppAttendee).filter_by(session_id=session_id, person_key=key).first()
+            if a is not None:
+                a.talk_seconds = float(a.talk_seconds or 0.0) + secs
         try:
-            async with httpx.AsyncClient(timeout=15) as c:
-                r = await c.post(f"{self.base}/sessions", json=payload)
-                # 409 = the agent already has this session; treat as healthy.
-                return r.status_code in (200, 201, 409)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            log.warning("meetpp: segment seq collision for %s; agent will retry", session_id)
+            return {"ok": False, "seqs": {}}
+    finally:
+        db.close()
+    for msg in messages:
+        await bus.send(room, msg)
+    if messages:
+        runtime.poke(session_id, "cue" if cue else None)
+    return {"ok": True, "seqs": seqs}
+
+
+async def presence(session_id: str, events: list) -> None:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            return
+        changes = ops.Changes()
+        ident_map = identity_map(db, session_id)
+        for ev in events or []:
+            if not isinstance(ev, dict):
+                continue
+            identity = str(ev.get("identity") or "")
+            kind = str(ev.get("kind") or "standard").lower()
+            if kind != "standard" or util.is_system_identity(identity):
+                continue
+            name = util.truncate(ev.get("name"), 200) or identity
+            key = util.person_key_for_identity(identity) or ident_map.get(identity)
+            if key is None:
+                a = find_attendee(db, session, key=None, identity=identity, name=name)
+                if a is None:
+                    a = MeetppAttendee(
+                        id=util.ulid(), session_id=session_id, person_key=f"id:{identity}", display_name=name,
+                        identities_json=util.dumps([identity]), status="present", voting=False,
+                    )
+                    db.add(a)
+                    db.flush()
+            else:
+                a = ensure_attendee(db, session, key=key, identity=identity, name=name)
+            at = util.parse_dt(ev.get("at")) or util.now()
+            if ev.get("event") == "connected":
+                a.online = True
+                if a.status in ("not_registered", "absent", "excused"):
+                    a.status = "present"
+                a.first_joined_at = a.first_joined_at or at
+            elif ev.get("event") == "disconnected":
+                ids = util.loads(a.identities_json, [])
+                if not ids or ids[-1] == identity:
+                    a.online = False
+                a.last_left_at = at
+            consent = db.query(MeetppConsent).filter_by(session_id=session_id, person_key=a.person_key).first()
+            a.opted_out = bool(consent and consent.decision == "opt_out")
+            changes.attendees.add(a.id)
+        if changes.attendees:
+            changes.quorum = True
+            await bus.publish_changes(db, session, changes)
+        else:
+            db.commit()
+    finally:
+        db.close()
+
+
+class ConsentError(Exception):
+    pass
+
+
+async def set_consent(session_id: str, identity: str, decision: str, person_key: str | None, name: str | None) -> dict:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            raise ConsentError("session not found")
+        key = util.person_key_for_identity(identity)
+        if key is None:
+            if not util.valid_guest_key(person_key):
+                raise ConsentError("person_key must be guest:<id> for anonymous participants")
+            key = person_key
+        row = db.query(MeetppConsent).filter_by(session_id=session_id, person_key=key).first()
+        if row is None:
+            row = MeetppConsent(session_id=session_id, person_key=key, identity=identity, decision=decision)
+            db.add(row)
+        else:
+            row.identity = identity
+            row.decision = decision
+            row.updated_at = util.now()
+        a = ensure_attendee(db, session, key=key, identity=identity, name=name)
+        a.opted_out = decision == "opt_out"
+        a.online = True
+        if a.status in ("not_registered", "absent"):
+            a.status = "present"
+        a.first_joined_at = a.first_joined_at or util.now()
+        changes = ops.Changes(attendees={a.id}, quorum=True)
+        await bus.publish_changes(db, session, changes)
+        accepted = accepted_identities(db, session_id)
+        status = session.status
+    finally:
+        db.close()
+    if status in ACTIVE_STATUSES:
+        await agent_mod.client.patch(session_id, {"accepted_identities": accepted})
+    return {"ok": True, "person_key": key}
+
+
+async def agent_status(session_id: str, body: dict) -> None:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            return
+        current = util.loads(session.agent_json, {})
+        speakers = [
+            {"name": sp.get("name"), "ok": bool(sp.get("ok", True))}
+            for sp in (body.get("speakers") or [])
+            if isinstance(sp, dict)
+        ]
+        current.update(
+            {
+                "status": body.get("status") or current.get("status") or "listening",
+                "backlog_s": body.get("backlog_s") if isinstance(body.get("backlog_s"), (int, float)) else current.get("backlog_s", 0),
+                "speakers": speakers,
+                "tier2": body.get("tier2") or current.get("tier2") or "off",
+                "rtf_p50": body.get("rtf_p50"),
+                "at": util.iso(util.now()),
+            }
+        )
+        if body.get("final_pass") in ("running", "done", "failed", "skipped"):
+            current["final_pass"] = body["final_pass"]
+            if body["final_pass"] == "done":
+                session.final_pass_done = True
+        session.agent_json = util.dumps(current)
+        db.commit()
+        room = _room(db, session)
+        msg = bus.message(
+            "agent", session_id, status=current["status"], backlog_s=current["backlog_s"],
+            speakers=speakers, tier2=current["tier2"],
+        )
+    finally:
+        db.close()
+    await bus.send(room, msg)
+    runtime.poke(session_id)
+
+
+# ─── interpretation tick ───────────────────────────────────────────────────
+
+
+def _record_gap(db, session: MeetppSession, first: int, last: int, reason: str) -> None:
+    db.add(
+        MeetppOp(
+            session_id=session.id,
+            version=int(session.state_version or 0),
+            op_type="interpretation.gap",
+            payload_json=util.dumps({"from_seq": first, "to_seq": last}),
+            actor="ai",
+            status="rejected",
+            reason=reason[:300],
+        )
+    )
+    log.warning("MEETPP_TICK sid=%s interpretation gap seq %s–%s: %s", session.id, first, last, reason)
+
+
+def _prompt_data(db, session: MeetppSession, o: outline_mod.Outline, window: list[MeetppSegment], context: list[MeetppSegment]) -> dict:
+    series = db.get(MeetppSeries, session.series_id)
+    meeting = db.get(Meeting, session.meeting_id)
+    pid = o.prompt_ids()
+    live = o.by_id.get(session.live_section_id or "")
+    topic = o.by_id.get(session.topic_section_id or "")
+    nxt = outline_mod.next_target(o, session)
+    # Agenda text for the live point and the next one: enough to tell when the
+    # talk has reached the next point, even when the chair names it loosely.
+    shown = {x.id for x in (o.top(live) if live is not None else None, nxt) if x is not None}
+    outline_lines = []
+    for s in o.flat:
+        num = o.numbers.get(s.id)
+        indent = "  " if s.parent_id else ""
+        mark = " ← LIVE" if live is not None and s.id == live.id else (" ← NEXT" if nxt is not None and s.id == nxt.id else "")
+        line = f"{indent}{pid[s.id]} · {(num + ' · ') if num else ''}{s.title} · {s.status}{mark}"
+        if s.body and o.top(s).id in shown:
+            # The live point in full, so that a phrase from one of its later
+            # sub-points ("the next item there: the handbook is not a contract")
+            # is not taken for the next point; the next point only needs enough
+            # to recognise its start. Both stay in the cached prefix while live.
+            limit = 6000 if live is not None and o.top(s).id == o.top(live).id else 400
+            line += f"\n{indent}    {util.truncate(s.body, limit)}"
+        outline_lines.append(line)
+    focus_tops = {o.top(x).id for x in (live, topic) if x is not None}
+
+    def in_focus(section_id: str | None) -> bool:
+        s = o.by_id.get(section_id or "")
+        return s is not None and o.top(s).id in focus_tops
+
+    members = []
+    q_keys, _ = governance.voting_keys(db, session)
+    for a in db.query(MeetppAttendee).filter_by(session_id=session.id).order_by(MeetppAttendee.display_name).all():
+        bits = [a.status.replace("_", " ")]
+        if a.person_key in q_keys:
+            bits.append("voting")
+        if a.represented_by:
+            bits.append(f"represented by {a.represented_by}")
+        members.append(f"{a.display_name} ({', '.join(bits)})")
+    decisions = db.query(MeetppDecision).filter_by(session_id=session.id).order_by(MeetppDecision.created_at).all()
+    pending_lines, decision_lines = [], []
+    for d in decisions:
+        where = pid.get(d.section_id or "", "?")
+        if d.status == "pending":
+            if in_focus(d.section_id):
+                pending_lines.append(f"{d.ref} · {where} · {d.title}" + (f" — draft: {d.resolution}" if d.resolution else ""))
+            continue
+        if in_focus(d.section_id):
+            decision_lines.append(
+                f"{d.ref} · {where} · {d.status} · {d.title}" + (f" — {d.resolution}" if d.resolution else "")
+                + (" [locked]" if d.locked else "")
+            )
+        else:
+            decision_lines.append(f"{d.ref} · {where} · {d.status} · {util.truncate(d.title, 80)}")
+    prev_lines, action_lines = [], []
+    reports = {r.action_id: r for r in db.query(MeetppActionReport).filter_by(session_id=session.id).all()}
+    for a in ops.session_actions(db, session):
+        who = ", ".join(x.get("name", "") for x in util.loads(a.assignees_json, []) if isinstance(x, dict))
+        base = f"{a.ref} · {a.title}" + (f" · {who}" if who else "") + (f" · due {a.due_date}" if a.due_date else "") + f" · {a.status}"
+        if ops.is_previous_action(a, session):
+            # The description helps match what is said to the right action; once
+            # reported, the recorded note is shown so that the model can correct it.
+            report = reports.get(a.id)
+            if report is None:
+                prev_lines.append(base + " · TO REVIEW" + (f" — {util.truncate(a.description, 200)}" if a.description else ""))
+            else:
+                prev_lines.append(base + (f" · reported: {util.truncate(report.note, 200)}" if report.note else " · reported"))
+        elif in_focus(a.section_id):
+            action_lines.append(base + (" [locked]" if a.locked else ""))
+        else:
+            action_lines.append(f"{a.ref} · {util.truncate(a.title, 80)}")
+    notes = []
+    if live is not None:
+        m = db.query(MeetppMinute).filter_by(session_id=session.id, kind="section", section_id=o.top(live).id).first()
+        if m is not None:
+            notes = [f"- {n.get('text')}" for n in util.loads(m.notes_json, [])][-20:]
+
+    def seg(s: MeetppSegment) -> dict:
+        t = _seg_time(s)
+        return {"seq": s.seq, "time": t.strftime("%H:%M:%S") if t else "", "name": s.name, "text": s.best_text}
+
+    return {
+        "org": settings.meetpp_org_name,
+        "meeting_type_label": governance.TYPE_LABELS.get(series.meeting_type if series else "informal", "Meeting"),
+        "title": meeting.display_title if meeting else "",
+        "date": util.now().date().isoformat(),
+        "mode": session.mode,
+        "outline_lines": outline_lines,
+        "live": pid.get(live.id) if live is not None else None,
+        "topic": pid.get(topic.id) if topic is not None else None,
+        "members": members,
+        "previous_actions": prev_lines,
+        "pending_decisions": pending_lines,
+        "decisions": decision_lines,
+        "actions": action_lines,
+        "running_notes": notes,
+        "context": [seg(s) for s in context],
+        "window": [seg(s) for s in window],
+    }
+
+
+def _select_window(db, session: MeetppSession, runner: "SessionRunner | None") -> tuple[list, list, list[MeetppSegment], bool]:
+    """(gap_rows_to_skip, window, context, more)."""
+    pending = (
+        db.query(MeetppSegment)
+        .filter(MeetppSegment.session_id == session.id, MeetppSegment.seq > session.transcript_cursor)
+        .order_by(MeetppSegment.seq)
+        .limit(3000)
+        .all()
+    )
+    finals = [s for s in pending if not s.is_gap]
+    if not finals:
+        return pending, [], [], False
+    if runner is not None and runner.llm_down:
+        newest = _seg_time(finals[-1])
+        cutoff = newest - timedelta(seconds=CATCHUP_SECONDS)
+        skipped = [s for s in finals if _seg_time(s) < cutoff]
+        if skipped:
+            _record_gap(db, session, skipped[0].seq, skipped[-1].seq, "LLM unavailable; covered by the section composition")
+            session.transcript_cursor = skipped[-1].seq
+            finals = [s for s in finals if s.seq > skipped[-1].seq]
+    t0 = _seg_time(finals[0])
+    window = [s for s in finals if _seg_time(s) <= t0 + timedelta(seconds=WINDOW_SECONDS)] or finals[:1]
+    window = window[:80]
+    more = len(window) < len(finals)
+    ctx_from = t0 - timedelta(seconds=int(settings.meetpp_context_seconds))
+    context = (
+        db.query(MeetppSegment)
+        .filter(
+            MeetppSegment.session_id == session.id,
+            MeetppSegment.seq < window[0].seq,
+            MeetppSegment.is_gap.is_(False),
+            MeetppSegment.t_end >= ctx_from,
+        )
+        .order_by(MeetppSegment.seq.desc())
+        .limit(40)
+        .all()
+    )
+    return pending, window, list(reversed(context)), more
+
+
+def _topic_rule(session: MeetppSession, o: outline_mod.Outline, target, conf: float) -> bool:
+    """Hysteresis (FDD §8.3). Returns True when the topic changed."""
+    st = _topic_state(session)
+    changed = False
+    if target is None or conf < TOPIC_MIN or target.id == session.topic_section_id:
+        st["candidate"] = None
+    elif conf >= TOPIC_SURE:
+        changed = True
+    elif (st.get("candidate") or {}).get("sid") == target.id:
+        changed = True
+    else:
+        st["candidate"] = {"sid": target.id, "conf": conf}
+    if changed:
+        session.topic_section_id = target.id
+        st["candidate"] = None
+    _save_topic_state(session, st)
+    return changed
+
+
+def _advance_decision(
+    session: MeetppSession, o: outline_mod.Outline, parsed: dict, topic_target, topic_conf: float,
+    discussed: set[str] | None = None,
+):
+    """→ (target, confidence, reason, auto) or None. `discussed`: top-level
+    sections with transcript tagged to them."""
+    live = o.by_id.get(session.live_section_id or "")
+    if live is None:
+        return None
+    live_top = o.top(live)
+    nxt = outline_mod.next_target(o, session)
+    st = _topic_state(session)
+    result = None
+    adv = parsed.get("advance") if isinstance(parsed.get("advance"), dict) else None
+    if adv:
+        to = o.resolve(adv.get("to"))
+        try:
+            conf = max(0.0, min(1.0, float(adv.get("confidence") or 0)))
+        except (TypeError, ValueError):
+            conf = 0.0
+        if to is not None:
+            to_top = o.top(to)
+            if to_top.id != live_top.id and o.later(to_top, live_top) and to_top.status != "skipped":
+                if conf >= ADVANCE_HINT_MIN:
+                    st["hint"] = {"sid": to_top.id, "at": util.iso(util.now())}
+                # A sure cue moves to the next point, or further when every point
+                # in between is a fixed section (an unannounced "Previous
+                # actions") or was already discussed; skipping an agenda point
+                # nobody talked about stays a proposal for the chair.
+                between = [t for t in o.nav() if o.later(t, live_top) and o.later(to_top, t)]
+                skippable = all(t.kind != "agenda" or t.id in (discussed or set()) for t in between)
+                auto = conf >= ADVANCE_AUTO and ((nxt is not None and to_top.id == nxt.id) or skippable)
+                if auto or conf >= PROPOSAL_MIN:
+                    result = (to_top, conf, util.truncate(adv.get("reason"), 200) or "", auto)
+    # Recent ticks whose topic was a later point: [{"sid", "conf"} | None, …].
+    hist = list(st.get("later_hist") or [])[-(LATER_WINDOW - 1):]
+    entry = None
+    if topic_target is not None and topic_conf >= TOPIC_MIN:
+        t_top = o.top(topic_target)
+        if t_top.id != live_top.id and o.later(t_top, live_top) and t_top.status != "skipped":
+            entry = {"sid": t_top.id, "conf": round(topic_conf, 2)}
+    hist.append(entry)
+    st["later_hist"] = hist
+    run = st.get("later_run") or {}
+    run = {"sid": entry["sid"], "n": int(run.get("n", 0)) + 1 if run.get("sid") == entry["sid"] else 1} if entry else None
+    st["later_run"] = run
+    if entry is not None and (result is None or not result[3]):
+        t_top = o.by_id[entry["sid"]]
+        prev = hist[-2] if len(hist) >= 2 else None
+        sure = (
+            entry["conf"] >= ADVANCE_AUTO and prev is not None and prev["sid"] == entry["sid"]
+            and prev["conf"] >= ADVANCE_AUTO
+        )
+        steady = sum(1 for h in hist if h is not None and h["sid"] == entry["sid"]) >= LATER_HITS
+        hint = st.get("hint") or {}
+        hint_at = util.parse_dt(hint.get("at"))
+        cued = (
+            hint.get("sid") == entry["sid"] and hint_at is not None
+            and (util.now() - hint_at).total_seconds() <= ADVANCE_HINT_SECONDS
+        )
+        if ((sure or steady) and cued) or run["n"] >= SILENT_MOVE_TICKS:
+            result = (t_top, topic_conf, "The discussion has moved on to this item.", True)
+    _save_topic_state(session, st)
+    return result
+
+
+async def tick(session_id: str, *, trigger: str | None = None, runner: "SessionRunner | None" = None) -> dict:
+    """One interpretation tick. Never raises; never stalls the cursor except
+    while the LLM is unreachable (then catch-up is capped at 3 minutes)."""
+    started = time.monotonic()
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None or session.status != "running":
+            return {"skipped": "status"}
+        pending, window, context, more = _select_window(db, session, runner)
+        if not window:
+            if pending:
+                session.transcript_cursor = max(s.seq for s in pending)
+            db.commit()
+            return {"skipped": "no speech"}
+        cursor_to = window[-1].seq
+        # Gap rows interleaved before the window end are consumed with it.
+        if not llm.llm_configured():
+            session.transcript_cursor = cursor_to
+            session.last_tick_at = util.now()
+            db.commit()
+            return {"skipped": "llm not configured", "cursor": cursor_to}
+        o = outline_mod.load(db, session_id)
+        data = _prompt_data(db, session, o, window, context)
+        messages = prompts.build_tick_messages(**data)
+        window_seqs = {s.seq for s in window}
+        context_seqs = {s.seq for s in context}
+        sid_prompt = o.prompt_ids()
+        db.commit()
+    finally:
+        db.close()
+
+    rec = SessionLocal()
+    error: Exception | None = None
+    parsed: dict = {}
+    result = None
+    try:
+        parsed, result = await llm.complete_parsed(
+            db=rec, purpose="tick", messages=messages, max_tokens=2000, temperature=0.2, session_id=session_id,
+        )
+    except llm.LLMParseError as exc:
+        error = exc
+    except llm.LLMError as exc:
+        error = exc
+    finally:
+        rec.close()
+
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            return {"skipped": "deleted"}
+        was_ok = llm.ai_status(session_id) == "ok"
+        if error is not None and not isinstance(error, llm.LLMParseError):
+            llm.mark_tick(session_id, False)
+            if runner is not None:
+                runner.llm_down = True
+            log.warning("MEETPP_TICK sid=%s llm unavailable: %s", session_id, error)
+            await bus.publish_changes(db, session, ops.Changes(session=was_ok))
+            return {"error": str(error)}
+        if runner is not None:
+            runner.llm_down = False
+        llm.mark_tick(session_id, True)
+        o = outline_mod.load(db, session_id)
+        live_id = session.live_section_id
+        if isinstance(error, llm.LLMParseError):
+            _record_gap(db, session, min(window_seqs), max(window_seqs), f"invalid output: {error}")
+            db.query(MeetppSegment).filter(MeetppSegment.session_id == session_id, MeetppSegment.seq.in_(window_seqs)).update(
+                {MeetppSegment.section_id: live_id}, synchronize_session=False
+            )
+            session.transcript_cursor = max(session.transcript_cursor, cursor_to)
+            session.last_tick_at = util.now()
+            db.commit()
+            return {"gap": str(error), "more": more}
+
+        pins = {label: section_id for section_id, label in sid_prompt.items()}
+        o.pins = pins
+        topic = parsed.get("topic") if isinstance(parsed.get("topic"), dict) else {}
+        topic_section = o.resolve(topic.get("section"))
+        try:
+            topic_conf = max(0.0, min(1.0, float(topic.get("confidence") or 0)))
+        except (TypeError, ValueError):
+            topic_conf = 0.0
+        sub = outline_mod.resolve_sub(o, topic_section, topic.get("sub"))
+        topic_target = sub or topic_section
+
+        ctx = ops.ApplyContext(
+            db=db, session=session, actor="ai", window=window_seqs, context=context_seqs,
+            topic_section_id=topic_target.id if topic_target is not None and topic_conf >= TOPIC_MIN else None,
+            pins=pins,
+        )
+        ctx.changes.session = not was_ok
+        ops.apply_ops(ctx, parsed.get("ops") or [])
+        session = ctx.session
+        n_notes = ops.apply_notes(ctx, parsed.get("notes") or [])
+        o = outline_mod.load(db, session_id)
+        o.pins = pins
+        topic_section = o.resolve(topic.get("section"))
+        sub = outline_mod.resolve_sub(o, topic_section, topic.get("sub"))
+        topic_target = sub or topic_section
+        tag = topic_target.id if topic_target is not None and topic_conf >= TOPIC_MIN else session.live_section_id
+        db.query(MeetppSegment).filter(MeetppSegment.session_id == session_id, MeetppSegment.seq.in_(window_seqs)).update(
+            {MeetppSegment.section_id: tag}, synchronize_session=False
+        )
+        if _topic_rule(session, o, topic_target, topic_conf):
+            ctx.changes.session = True
+            ctx.changes.activate("topic", topic_target.id)
+        if sub is not None and topic_conf >= TOPIC_MIN:
+            done = outline_mod.mark_subpoints_through(o, sub)
+            ctx.changes.sections.update(done)
+        discussed = {
+            o.top(o.by_id[sid]).id
+            for (sid,) in db.query(MeetppSegment.section_id)
+            .filter(MeetppSegment.session_id == session_id, MeetppSegment.section_id.isnot(None))
+            .distinct()
+            if sid in o.by_id
+        }
+        decision = _advance_decision(session, o, parsed, topic_target, topic_conf, discussed)
+        session.transcript_cursor = max(session.transcript_cursor, cursor_to)
+        session.last_tick_at = util.now()
+        version = await bus.publish_changes(db, session, ctx.changes)
+        log.info(
+            "MEETPP_TICK sid=%s trigger=%s window=%s-%s topic=%s conf=%.2f ops_applied=%s rejected=%s notes=%s "
+            "activations=%s version=%s llm_ms=%s tokens_in=%s more=%s reasons=%s",
+            session_id, trigger, min(window_seqs), max(window_seqs), sid_prompt.get(topic_target.id) if topic_target else None,
+            topic_conf, ctx.applied, len(ctx.rejected), n_notes, len(ctx.changes.activations), version,
+            result.latency_ms if result else None, result.prompt_tokens if result else None, more,
+            "; ".join(r["reason"] for r in ctx.rejected)[:300],
+        )
+        if decision is not None:
+            await _handle_advance(db, session, o, decision)
+        for sec in ctx.compose:
+            compose.schedule_section(session_id, sec)
+        return {
+            "applied": ctx.applied,
+            "rejected": ctx.rejected,
+            "notes": n_notes,
+            "version": version,
+            "topic": topic_target.id if topic_target is not None else None,
+            "advance": decision[0].id if decision else None,
+            "more": more,
+            "ms": int((time.monotonic() - started) * 1000),
+        }
+    except Exception:  # noqa: BLE001 — a tick must never kill the runner
+        log.exception("meetpp: tick failed for %s", session_id)
+        try:
+            db.rollback()
+            session = db.get(MeetppSession, session_id)
+            if session is not None:
+                _record_gap(db, session, min(window_seqs), max(window_seqs), "internal error while applying the tick")
+                session.transcript_cursor = max(session.transcript_cursor, cursor_to)
+                db.commit()
+        except Exception:  # noqa: BLE001
+            db.rollback()
+        return {"error": "internal"}
+    finally:
+        db.close()
+
+
+async def _handle_advance(db, session: MeetppSession, o: outline_mod.Outline, decision) -> None:
+    target, conf, reason, auto = decision
+    st = _topic_state(session)
+    until = util.parse_dt((st.get("notnow") or {}).get(target.id))
+    if until is not None and util.now() < until:
+        return
+    if outline_mod.ai_moves_suppressed(session):
+        return
+    if auto and session.mode == "lead":
+        res = outline_mod.move(db, session, target, by="ai")
+        await _after_move(db, session, res, by="ai", compose_delay=outline_mod.AI_UNDO_SECONDS + 1)
+        return
+    current = util.loads(session.proposal_json, {})
+    if current.get("to") == target.id:
+        return
+    proposal = {"pid": util.ulid(), "to": target.id, "reason": reason, "confidence": round(conf, 2), "created_at": util.iso(util.now())}
+    session.proposal_json = util.dumps(proposal)
+    await bus.publish_changes(db, session, ops.Changes(session=True))
+    meeting = db.get(Meeting, session.meeting_id)
+    num = o.numbers.get(target.id)
+    await bus.send(
+        meeting.room_name if meeting else None,
+        bus.message(
+            "proposal", session.id, pid=proposal["pid"], to_section_id=target.id,
+            title=f"{num} · {target.title}" if num else target.title, reason=reason, confidence=proposal["confidence"],
+        ),
+        chair_identities(meeting),
+    )
+
+
+# ─── lifecycle ──────────────────────────────────────────────────────────────
+
+
+async def update_room_metadata(session_id: str, active: bool, *, board: str | None = None) -> None:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            return
+        meeting = db.get(Meeting, session.meeting_id)
+        st = ops._settings(session)
+        payload = {
+            "sid": session.id,
+            "active": active,
+            "status": session.status,
+            "board_main": True,
+            "public": st["show_public"],
+            "in_recordings": st["in_recordings"],
+        }
+        room = meeting.room_name if meeting else None
+    finally:
+        db.close()
+    await bus.set_room_meetpp(room, payload, board=board)
+
+
+async def start_session(session_id: str) -> dict:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        session.status = "running"
+        session.started_at = session.started_at or util.now()
+        changes = ops.Changes(session=True, quorum=True)
+        changes.sections.update(outline_mod.apply_skip_rules(db, session))
+        res = outline_mod.start_live(db, session)
+        if res is not None:
+            changes.sections.update(res.changed)
+        changes.attendees.update(expected_attendees(db, session))
+        changes.sections.update(s.id for s in outline_mod.load(db, session_id).flat)
+        await bus.publish_changes(db, session, changes)
+        room = _room(db, session)
+        meta = ops.session_meta(db, session)
+    finally:
+        db.close()
+    await bus.send(room, bus.message("session", session_id, state="started"))
+    asyncio.get_running_loop().create_task(
+        announce(session_id, kind="session", title="Meet++ is taking notes",
+                 subtitle="Live transcript and the shared board are on.", speech="Meet plus plus is now taking notes.")
+    )
+    # The board is a stream window and the presenter by default (FDD v3.2).
+    asyncio.get_running_loop().create_task(update_room_metadata(session_id, True, board="start"))
+    runtime.start_session(session_id)
+    log.info("MEETPP_SESSION sid=%s event=start", session_id)
+    return meta
+
+
+async def pause_session(session_id: str, paused: bool) -> dict:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None or session.status not in ACTIVE_STATUSES:
+            raise PositionError(409, "session is not running")
+        live = db.get(outline_mod.MeetppSection, session.live_section_id) if session.live_section_id else None
+        if paused and session.status == "running":
+            if live is not None:
+                outline_mod.pause_timer(session, live)
+            session.status = "paused"
+        elif not paused and session.status == "paused":
+            session.status = "running"
+            if live is not None:
+                outline_mod.resume_timer(session, live)
+        changes = ops.Changes(session=True)
+        if live is not None:
+            changes.sections.add(live.id)
+        await bus.publish_changes(db, session, changes)
+        room = _room(db, session)
+        meta = ops.session_meta(db, session)
+        accepted = accepted_identities(db, session_id)
+    finally:
+        db.close()
+    await agent_mod.client.patch(session_id, {"paused": paused, "accepted_identities": accepted})
+    await bus.send(room, bus.message("session", session_id, state="paused" if paused else "resumed"))
+    runtime.poke(session_id)
+    return meta
+
+
+JOB_ORDER = ("tier2", "compose", "final", "render")
+
+
+def _jobs(session: MeetppSession) -> dict:
+    jobs = util.loads(session.jobs_json, {})
+    for name in JOB_ORDER:
+        jobs.setdefault(name, {"status": "pending"})
+    return jobs
+
+
+async def end_session(session_id: str) -> dict:
+    """Close the live section and start the finalisation jobs (returns at once)."""
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None:
+            return {}
+        if session.status not in ACTIVE_STATUSES:
+            return {"status": session.status}
+        changes = ops.Changes(session=True)
+        # A paused session's timer already stopped (started_at is null).
+        closed = outline_mod.close_live(db, session)
+        changes.sections.update(s.id for s in outline_mod.load(db, session_id).flat)
+        session.status = "finalising"
+        session.ended_at = util.now()
+        session.proposal_json = None
+        session.undo_json = None
+        session.jobs_json = util.dumps(_jobs(session))
+        await bus.publish_changes(db, session, changes)
+        room = _room(db, session)
+    finally:
+        db.close()
+    _ = closed
+    await bus.send(room, bus.message("session", session_id, state="ended"))
+    await bus.send(room, bus.message("session", session_id, state="finalising"))
+    asyncio.get_running_loop().create_task(
+        announce(session_id, kind="session", title="Meet++ has stopped taking notes",
+                 subtitle="The minutes follow after the chair's review.", speech="Meet plus plus has stopped taking notes.")
+    )
+    asyncio.get_running_loop().create_task(update_room_metadata(session_id, False, board="end"))
+    runtime.start_finalisation(session_id)
+    log.info("MEETPP_SESSION sid=%s event=end", session_id)
+    return {"status": "finalising"}
+
+
+async def _set_job(session_id: str, name: str, **fields) -> None:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        jobs = _jobs(session)
+        jobs[name] = {**jobs.get(name, {}), **fields}
+        session.jobs_json = util.dumps(jobs)
+        await bus.publish_changes(db, session, ops.Changes(session=True))
+    finally:
+        db.close()
+
+
+def _job_status(session_id: str) -> dict:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        return _jobs(session) if session else {}
+    finally:
+        db.close()
+
+
+async def _job_tier2(session_id: str) -> None:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        already_done = session.final_pass_done
+        agent_info = util.loads(session.agent_json, {})
+    finally:
+        db.close()
+    if already_done:
+        await _set_job(session_id, "tier2", status="done", finished_at=util.iso(util.now()))
+        return
+    if agent_info.get("tier2") == "off":
+        await agent_mod.client.stop(session_id)
+        await _set_job(session_id, "tier2", status="skipped", error="tier 2 is off")
+        return
+    started = util.now()
+    ok = await agent_mod.client.finalize(session_id)
+    if not ok:
+        await _set_job(session_id, "tier2", status="skipped", error="agent unavailable")
+        return
+    await _set_job(session_id, "tier2", status="running", started_at=util.iso(started))
+    deadline = time.monotonic() + float(settings.meetpp_final_pass_timeout_seconds)
+    outcome = None
+    while time.monotonic() < deadline:
+        db = SessionLocal()
+        try:
+            session = db.get(MeetppSession, session_id)
+            info = util.loads(session.agent_json, {})
+            if session.final_pass_done or info.get("final_pass") == "done":
+                outcome = "done"
+            elif info.get("final_pass") in ("failed", "skipped"):
+                outcome = info["final_pass"]
+        finally:
+            db.close()
+        if outcome:
+            break
+        await asyncio.sleep(min(2.0, max(0.05, deadline - time.monotonic())))
+    await agent_mod.client.stop(session_id)
+    if outcome == "done":
+        await _set_job(session_id, "tier2", status="done", finished_at=util.iso(util.now()), error=None)
+    elif outcome == "failed":
+        await _set_job(session_id, "tier2", status="failed", finished_at=util.iso(util.now()), error="final pass failed")
+    elif outcome == "skipped":
+        await _set_job(session_id, "tier2", status="skipped", finished_at=util.iso(util.now()), error="tier 2 is off")
+    else:
+        await _set_job(session_id, "tier2", status="skipped", finished_at=util.iso(util.now()), error="timed out after 5 minutes")
+
+
+async def _job_compose(session_id: str) -> None:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        ids = compose.sections_to_compose(db, session)
+    finally:
+        db.close()
+    await _set_job(session_id, "compose", status="running", total=len(ids), done=0, failed=0)
+    failed = []
+    for i, sec in enumerate(ids, start=1):
+        status = await compose.compose_section(session_id, sec)
+        if status == "failed":
+            failed.append(sec)
+        await _set_job(session_id, "compose", done=i, failed=len(failed))
+    if failed:
+        await _set_job(session_id, "compose", status="failed", error=f"{len(failed)} section(s) failed", sections=failed)
+    else:
+        await _set_job(session_id, "compose", status="done", error=None, sections=[])
+
+
+def mark_absentees(db, session: MeetppSession) -> set[str]:
+    changed = expected_attendees(db, session)
+    for a in db.query(MeetppAttendee).filter_by(session_id=session.id).all():
+        if a.status == "not_registered" and a.first_joined_at is None:
+            a.status = "absent"
+            changed.add(a.id)
+    return changed
+
+
+async def _job_final(session_id: str) -> None:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        changed = mark_absentees(db, session)
+        await bus.publish_changes(db, session, ops.Changes(attendees=changed, quorum=True))
+    finally:
+        db.close()
+    await compose.compose_final(session_id)
+    await _set_job(session_id, "final", status="done", error=None)
+
+
+async def _job_render(session_id: str) -> None:
+    from app.meetpp import export as export_mod
+
+    try:
+        from app.meetpp import report
+    except Exception as exc:  # noqa: BLE001
+        await _set_job(session_id, "render", status="failed", error=f"report renderer unavailable: {exc}"[:300])
+        return
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        data = export_mod.build_export(db, session)
+    finally:
+        db.close()
+    pdf = await asyncio.to_thread(report.render_meeting_report, data)
+    if not pdf or not bytes(pdf).startswith(b"%PDF"):
+        raise RuntimeError("the renderer returned no PDF")
+    await _set_job(session_id, "render", status="done", error=None, bytes=len(pdf))
+
+
+_JOB_FUNCS = {"tier2": _job_tier2, "compose": _job_compose, "final": _job_final, "render": _job_render}
+
+
+_finalising: set[str] = set()
+
+
+async def run_finalisation(session_id: str, *, retry: bool = False) -> dict:
+    """Run every pending (or, on retry, failed) job in order; each failure is
+    recorded on its job and the session always reaches review."""
+    if session_id in _finalising:
+        return _job_status(session_id)
+    _finalising.add(session_id)
+    try:
+        return await _run_finalisation(session_id, retry=retry)
+    finally:
+        _finalising.discard(session_id)
+
+
+async def _run_finalisation(session_id: str, *, retry: bool) -> dict:
+    if retry:
+        db = SessionLocal()
+        try:
+            session = db.get(MeetppSession, session_id)
+            jobs = _jobs(session)
+            for name in JOB_ORDER:
+                if jobs[name].get("status") in ("failed", "running"):
+                    jobs[name] = {"status": "pending"}
+            session.jobs_json = util.dumps(jobs)
+            db.commit()
+        finally:
+            db.close()
+    for name in JOB_ORDER:
+        status = _job_status(session_id).get(name, {}).get("status")
+        if status in ("done", "skipped", "failed"):
+            continue
+        try:
+            if name != "tier2":
+                await _set_job(session_id, name, status="running", started_at=util.iso(util.now()))
+            await _JOB_FUNCS[name](session_id)
+        except asyncio.CancelledError:
+            raise
         except Exception as exc:  # noqa: BLE001
-            log.warning("meetpp-agent start failed: %s", exc)
-            return False
+            log.exception("MEETPP_FINALISE sid=%s job=%s failed", session_id, name)
+            await _set_job(session_id, name, status="failed", error=f"{type(exc).__name__}: {exc}"[:300])
+        log.info("MEETPP_FINALISE sid=%s job=%s status=%s", session_id, name, _job_status(session_id).get(name, {}).get("status"))
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session.status == "finalising":
+            session.status = "review"
+            session.finalised_at = util.now()
+        jobs = _jobs(session)
+        await bus.publish_changes(db, session, ops.Changes(session=True))
+        room = _room(db, session)
+        status = session.status
+    finally:
+        db.close()
+    if status == "review":
+        await bus.send(room, bus.message("session", session_id, state="review"))
+    return jobs
 
-    async def patch(self, sid: str, payload: dict) -> bool:
-        try:
-            async with httpx.AsyncClient(timeout=10) as c:
-                r = await c.patch(f"{self.base}/sessions/{sid}", json=payload)
-                return r.status_code < 400
-        except Exception:  # noqa: BLE001
-            return False
 
-    async def stop(self, sid: str) -> bool:
-        try:
-            async with httpx.AsyncClient(timeout=15) as c:
-                r = await c.delete(f"{self.base}/sessions/{sid}")
-                return r.status_code < 400
-        except Exception:  # noqa: BLE001
-            return False
+# ─── runner ─────────────────────────────────────────────────────────────────
 
-    async def tts(self, text: str, lang: str) -> dict | None:
+
+class _Lease:
+    def __init__(self, session_id: str) -> None:
+        self.key = f"meetpp:lease:{session_id}"
+        self.token = util.ulid()
+
+    async def _redis(self, fn):
         try:
-            async with httpx.AsyncClient(timeout=30) as c:
-                r = await c.post(f"{self.base}/tts", json={"text": text, "lang": lang})
-                if r.status_code >= 400:
-                    return None
-                return r.json()
-        except Exception:  # noqa: BLE001
+            import redis as redis_sync
+
+            def _do():
+                r = redis_sync.Redis.from_url(settings.redis_url, socket_timeout=2, socket_connect_timeout=2)
+                return fn(r)
+
+            return await asyncio.to_thread(_do)
+        except Exception:  # noqa: BLE001 — no Redis: single process, proceed
             return None
 
-    async def health(self) -> dict | None:
-        try:
-            async with httpx.AsyncClient(timeout=5) as c:
-                r = await c.get(f"{self.base}/health")
-                return r.json() if r.status_code < 400 else None
-        except Exception:  # noqa: BLE001
-            return None
+    async def acquire(self) -> bool:
+        res = await self._redis(lambda r: r.set(self.key, self.token, nx=True, ex=LEASE_TTL))
+        if res is None:
+            held = await self._redis(lambda r: r.get(self.key))
+            return held is None or (held.decode() if isinstance(held, bytes) else held) == self.token
+        return bool(res)
+
+    async def renew(self) -> bool:
+        def _renew(r):
+            cur = r.get(self.key)
+            cur = cur.decode() if isinstance(cur, bytes) else cur
+            if cur in (None, self.token):
+                r.set(self.key, self.token, ex=LEASE_TTL)
+                return True
+            return False
+
+        res = await self._redis(_renew)
+        return res is not False
+
+    async def release(self) -> None:
+        def _rel(r):
+            cur = r.get(self.key)
+            cur = cur.decode() if isinstance(cur, bytes) else cur
+            if cur == self.token:
+                r.delete(self.key)
+
+        await self._redis(_rel)
 
 
 class SessionRunner:
     def __init__(self, session_id: str) -> None:
         self.session_id = session_id
-        self.event = asyncio.Event()
-        self.stop = asyncio.Event()
-        self.agent = AgentClient()
+        self.wake = asyncio.Event()
+        self.stopping = False
         self.task: asyncio.Task | None = None
-        self.agent_ok = False
-        self.paused = False
-        self._lease_held = True
-        self._last_nudge_at: datetime | None = None
-        self._last_announce_text: str | None = None
-        self._last_announce_at: datetime | None = None
-        self._room_name: str | None = None
-        self._lk = None
-        self._last_health_at = 0.0
+        self.tick_task: asyncio.Task | None = None
+        self.final_task: asyncio.Task | None = None
+        self.trigger: str | None = None
+        self.llm_down = False
+        self.more = False
+        self.lease = _Lease(session_id)
+        self._last_renew = 0.0
+        self._last_reconcile = 0.0
+        self._last_timebox = 0.0
+        self._agent_started = False
+        self._not_connected = 0
 
-    # ── lifecycle ──────────────────────────────────────────────────────
     def start(self) -> None:
-        self.task = asyncio.create_task(self.run())
+        if self.task is None or self.task.done():
+            self.stopping = False
+            self.task = asyncio.get_running_loop().create_task(self.run())
+
+    def poke(self, trigger: str | None = None) -> None:
+        if trigger == "chair" or (trigger == "cue" and self.trigger != "chair"):
+            self.trigger = trigger
+        self.wake.set()
+
+    async def stop(self) -> None:
+        self.stopping = True
+        self.wake.set()
+        for t in (self.tick_task, self.task):
+            if t is not None and not t.done():
+                try:
+                    await asyncio.wait_for(asyncio.shield(t), timeout=5)
+                except (asyncio.TimeoutError, asyncio.CancelledError, Exception):  # noqa: BLE001
+                    t.cancel()
+        await self.lease.release()
 
     async def run(self) -> None:
-        if not await self._acquire_lease():
-            log.info("meetpp: session %s already held elsewhere", self.session_id)
+        if not await self.lease.acquire():
+            log.info("meetpp: session %s is held by another process", self.session_id)
             return
-        # Setup is best-effort: a transient failure here must not kill the whole
-        # session (which would silently stop captions and AI extraction).
+        self._last_renew = time.monotonic()
         try:
-            if not await self._start_agent():
-                await self._set_agent_status("offline", None)
-            await self._broadcast("session", sid=self.session_id, state="started")
-            await self._announce(
-                t("en", "announce.start.title"),
-                t("en", "announce.start.subtitle"),
-            )
-            self._touch_metadata(active=True)
-        except asyncio.CancelledError:
-            raise
-        except Exception:  # noqa: BLE001
-            log.exception("meetpp: runner setup failed for %s", self.session_id)
-        try:
-            while not self.stop.is_set():
+            while not self.stopping:
                 try:
-                    await self._loop_once()
+                    await asyncio.wait_for(self.wake.wait(), timeout=1.0)
+                except asyncio.TimeoutError:
+                    pass
+                self.wake.clear()
+                if self.stopping:
+                    break
+                try:
+                    if not await self._iteration():
+                        break
                 except asyncio.CancelledError:
                     raise
                 except Exception:  # noqa: BLE001
-                    log.exception("meetpp: loop error (continuing) for %s", self.session_id)
-                    await asyncio.sleep(2)
-                # Health watchdog: every ~20 s confirm the agent still serves
-                # this session; if not, recreate it so transcription resumes.
-                now = time.monotonic()
-                if now - self._last_health_at > 20:
-                    self._last_health_at = now
-                    try:
-                        health = await self.agent.health()
-                        ids = {d.get("session_id") for d in (health or {}).get("sessions_detail", [])}
-                        if health is None or self.session_id not in ids:
-                            self.agent_ok = False
-                    except Exception:  # noqa: BLE001
-                        self.agent_ok = False
-                if not self.agent_ok and not self.paused:
-                    try:
-                        self.agent_ok = await self._start_agent()
-                    except Exception:  # noqa: BLE001
-                        self.agent_ok = False
-        except asyncio.CancelledError:
-            raise
+                    log.exception("meetpp: runner iteration failed for %s", self.session_id)
+                    await asyncio.sleep(1)
         finally:
-            await self._close_lk()
-            self._release_lease()
+            await self.lease.release()
 
-    async def stop_runner(self) -> None:
-        self.stop.set()
-        self.event.set()
-        if self.task is not None:
-            try:
-                await asyncio.wait_for(self.task, timeout=10)
-            except (asyncio.TimeoutError, asyncio.CancelledError):
-                self.task.cancel()
-
-    async def _loop_once(self) -> None:
-        try:
-            await asyncio.wait_for(self.event.wait(), timeout=TICK_INTERVAL_SECONDS)
-        except asyncio.TimeoutError:
-            pass
-        self.event.clear()
-        if self.stop.is_set():
-            return
-        db = SessionLocal()
-        try:
-            session = db.get(MeetppSession, self.session_id)
-            if session is None or session.status not in ("running", "paused", "setup"):
-                if session is not None and session.status in ("finalising", "review", "published"):
-                    self.stop.set()
-                return
-            self.paused = session.status == "paused"
-            if not self.paused:
-                await self._maybe_tick(db, session)
-            await self._check_proposal(db, session)
-            await self._check_timebox(db, session)
-        except Exception:  # noqa: BLE001
-            log.exception("meetpp: loop error for %s", self.session_id)
-        finally:
-            db.close()
-
-    # ── agent ──────────────────────────────────────────────────────────
-    async def _start_agent(self) -> bool:
-        db = SessionLocal()
-        try:
-            session = db.get(MeetppSession, self.session_id)
-            meeting = db.get(Meeting, session.meeting_id)
-            identity = f"meetpp-scribe-{session.id}"
-            token = mint_agent_token(room_name=meeting.room_name, identity=identity)
-            rows = db.query(MeetppConsent).filter_by(session_id=session.id).all()
-            opted_out = [c.identity for c in rows if c.decision == "opt_out"]
-            accepted = [c.identity for c in rows if c.decision == "accept"]
-            vocabulary = _vocabulary(db, session)
-            ok = await self.agent.start(
-                {
-                    "session_id": session.id,
-                    "room": meeting.room_name,
-                    "ws_url": _internal_ws_url(),
-                    "token": token,
-                    "language": session.language,
-                    "stt_model": settings.stt_model,
-                    "accepted": accepted,
-                    "opted_out": opted_out,
-                    "vocabulary": vocabulary,
-                }
-            )
-            self.agent_ok = ok
-            return ok
-        finally:
-            db.close()
-
-    async def pause_agent(self, paused: bool) -> None:
-        await self.agent.patch(self.session_id, {"paused": paused})
-
-    async def set_opt_out(self, identities: list[str]) -> None:
-        await self.agent.patch(self.session_id, {"opted_out": identities})
-
-    # ── ticks ──────────────────────────────────────────────────────────
-    async def _maybe_tick(self, db, session: MeetppSession) -> None:
-        cursor = session.transcript_cursor
-        new_segments = (
-            db.query(MeetppSegment)
-            .filter(MeetppSegment.session_id == session.id, MeetppSegment.seq > cursor)
-            .order_by(MeetppSegment.seq)
-            .all()
-        )
-        if not new_segments:
-            return
-        words = sum(len((s.text or "").split()) for s in new_segments)
-        cue = any(CUE_RE.search(s.text or "") for s in new_segments)
-        # With no previous tick, treat the session as due immediately so the
-        # first utterance is processed (otherwise elapsed is 0 forever until
-        # enough words accumulate).
-        since_tick = float(IDLE_TICK_SECONDS + 1)
-        if session.last_tick_at:
-            since_tick = (_now() - _aware(session.last_tick_at)).total_seconds()
-        trigger = None
-        if cue:
-            trigger = "cue"
-        elif words >= WORDS_PER_TICK:
-            trigger = "words"
-        elif since_tick >= IDLE_TICK_SECONDS:
-            trigger = "idle"
-        if trigger is None:
-            return
-        await self._run_tick(db, session, new_segments, trigger)
-
-    async def _run_tick(self, db, session: MeetppSession, new_segments: list[MeetppSegment], trigger: str) -> None:
-        seqs = [s.seq for s in new_segments]
-        window_min, window_max = min(seqs), max(seqs)
-        first = new_segments[0]
-        overlap_start = _aware(first.t_start) - timedelta(seconds=CONTEXT_OVERLAP_SECONDS) if first.t_start else None
-        context = []
-        if overlap_start is not None:
-            context = (
-                db.query(MeetppSegment)
-                .filter(
-                    MeetppSegment.session_id == session.id,
-                    MeetppSegment.seq <= session.transcript_cursor,
-                    MeetppSegment.t_end >= overlap_start,
-                )
-                .order_by(MeetppSegment.seq)
-                .all()
-            )
-        if not llm.llm_configured():
-            self._advance_cursor(db, session, seqs)
-            return
-
-        aliases = _alias_table(db, session)
-        agenda = [
-            {
-                "id": i.id,
-                "pos": i.position,
-                "title": i.title,
-                "presenter_alias": _alias_for(aliases, i.presenter),
-                "timebox": i.timebox_minutes,
-                "status": i.status,
-            }
-            for i in db.query(MeetppAgendaItem).filter_by(session_id=session.id).order_by(MeetppAgendaItem.position).all()
-        ]
-        prev_actions = [
-            {
-                "id": a.id,
-                "ref": a.ref,
-                "title": a.title,
-                "owner_alias": _alias_for(aliases, a.owner_name),
-                "due": a.due_date,
-                "status": a.status,
-                "review_status": a.review_status,
-            }
-            for a in db.query(MeetppAction)
-            .filter(MeetppAction.series_id == session.series_id, MeetppAction.session_id != session.id)
-            .all()
-        ]
-        state = _compact_state(db, session)
-        messages = prompts.build_tick_messages(
-            language=session.language,
-            title=(db.get(Meeting, session.meeting_id).display_title if db.get(Meeting, session.meeting_id) else ""),
-            date=_now().date().isoformat(),
-            template=session.template,
-            phase=session.phase,
-            current_item_id=session.current_item_id,
-            aliases={k: v[0] for k, v in aliases.items()},
-            agenda=agenda,
-            prev_actions=prev_actions,
-            state=state,
-            context=[_seg_dict(s) for s in context],
-            window=[_seg_dict(s) for s in new_segments],
-        )
-        try:
-            result = await llm.complete_json(
-                db=db,
-                purpose="tick",
-                messages=messages,
-                max_tokens=1200,
-                temperature=0.2,
-                session_id=session.id,
-                enforce_budget=True,
-            )
-            parsed = llm.parse_json(result.text)
-        except llm.LLMBudgetExceeded:
-            await self._agent_status_message(session, "budget")
-            self._advance_cursor(db, session, seqs)
-            return
-        except llm.LLMError as exc:
-            log.warning("meetpp: tick LLM failed: %s", exc)
-            await self._set_agent_status("offline", None)
-            return
-
-        ctx = ops.ApplyContext(
-            db=db,
-            session=session,
-            actor="ai",
-            window_min=window_min,
-            window_max=window_max,
-            aliases=aliases,
-            version=session.state_version + 1,
-        )
-        ops.apply_ops(ctx, parsed.get("ops") or [])
-        # Only bump the state version when an operation actually changed state.
-        # Otherwise the client would see version gaps, fall back to a full
-        # refetch (which skips the focus hint) and stop auto-switching tabs.
-        mutated = any(a.status == "applied" for a in ctx.applied)
-        if mutated:
-            session.state_version += 1
-        session.last_tick_at = _now()
-        session.last_tick_seq = max(seqs)
-        self._advance_cursor(db, session, seqs)
-        db.commit()
-
-        # Broadcast state delta + focus.
-        if mutated:
-            payload = ops.delta_from_applied(ctx)
-            focus = ops.focus_for(ctx)
-            await self._broadcast("state", version=session.state_version, changes=payload["changes"], delta=payload["delta"], focus=focus)
-        log.info(
-            "MEETPP_TICK sid=%s trigger=%s llm_ms=%s tokens_in=%s tokens_out=%s ops_applied=%s ops_rejected=%s version=%s",
-            session.id, trigger, result.latency_ms, result.prompt_tokens, result.completion_tokens,
-            sum(1 for a in ctx.applied if a.status == "applied"), len(ctx.rejected), session.state_version,
-        )
-        # Phase signal.
-        if ctx.phase_signal:
-            proposal = phases.propose(db, session, ctx.phase_signal)
-            db.commit()
-            if proposal:
-                await self._send_proposal(session, proposal)
-        # A rule-based proposal can still be due after a tick.
-        await self._check_proposal(db, session)
-
-    def _advance_cursor(self, db, session: MeetppSession, seqs: list[int]) -> None:
-        session.transcript_cursor = max(seqs)
-        db.commit()
-
-    async def _check_proposal(self, db, session: MeetppSession) -> None:
-        proposal = phases.current_proposal(session)
-        if proposal is None:
-            proposal = phases.propose(db, session, None)
-            if proposal:
-                db.commit()
-                await self._send_proposal(session, proposal)
-                return
-        if not proposal:
-            return
-        auto_at = proposal.get("auto_at")
-        # A "Not yet" suppression window must block auto-accept entirely.
-        suppressed = proposal.get("suppressed_until")
-        if suppressed:
-            try:
-                until = datetime.fromisoformat(suppressed)
-                if until.tzinfo is None:
-                    until = until.replace(tzinfo=timezone.utc)
-                if _now() < until:
-                    return
-            except ValueError:
-                pass
-        if auto_at and session.mode == "lead":
-            try:
-                deadline = datetime.fromisoformat(auto_at)
-            except ValueError:
-                deadline = None
-            if deadline is not None and deadline.tzinfo is None:
-                deadline = deadline.replace(tzinfo=timezone.utc)
-            if deadline is not None and _now() >= deadline:
-                await self.accept_proposal(db, session, proposal, by="ai")
-
-    async def _check_timebox(self, db, session: MeetppSession) -> None:
-        if not _settings_bool(session, "timebox_nudges", True):
-            return
-        if _now() - (self._last_nudge_at or datetime.min.replace(tzinfo=timezone.utc)) < timedelta(seconds=60):
-            return
-        ann = phases.timebox_nudge(db, session)
-        if ann:
-            self._last_nudge_at = _now()
-            await self._broadcast("announce", **_announce_payload(session, ann))
-
-    async def accept_proposal(self, db, session: MeetppSession, proposal: dict, by: str) -> None:
-        ann = phases.acceptance(db, session, proposal.get("to") or "", proposal.get("item_id"), by)
-        db.commit()
-        await self._broadcast("phase", phase=session.phase, item_id=session.current_item_id, by=by, at=_now().isoformat())
-        await self._broadcast("announce", **_announce_payload(session, ann))
-        self._touch_metadata(active=True)
-        if session.phase == "closing":
-            await self._broadcast("session", sid=session.id, state="ending")
-
-    async def reject_proposal(self, db, session: MeetppSession, proposal: dict | None = None) -> None:
-        proposal = proposal or phases.current_proposal(session)
-        phases.suppress(db, session, proposal)
-        db.commit()
-
-    async def jump_phase(self, db, session: MeetppSession, to: str, item_id: str | None, by: str) -> dict:
-        ann = phases.acceptance(db, session, to, item_id, by)
-        db.commit()
-        await self._broadcast("phase", phase=session.phase, item_id=session.current_item_id, by=by, at=_now().isoformat())
-        await self._broadcast("announce", **_announce_payload(session, ann))
-        return ann
-
-    async def apply_human_ops(self, session_id: str, raw_ops: list[dict], actor: str) -> dict:
-        db = SessionLocal()
-        try:
-            session = db.get(MeetppSession, session_id)
-            if session is None:
-                return {"applied": [], "version": 0}
-            ctx = ops.ApplyContext(
-                db=db,
-                session=session,
-                actor=actor,
-                window_min=0,
-                window_max=10**9,
-                aliases=_alias_table(db, session),
-                version=session.state_version + 1,
-            )
-            ops.apply_ops(ctx, raw_ops)
-            mutated = any(a.status == "applied" for a in ctx.applied)
-            if mutated:
-                session.state_version += 1
-            db.commit()
-            if mutated:
-                payload = ops.delta_from_applied(ctx)
-                await self._broadcast(
-                    "state",
-                    version=session.state_version,
-                    changes=payload["changes"],
-                    delta=payload["delta"],
-                    focus=ops.focus_for(ctx),
-                )
-            return {
-                "applied": [a.__dict__ for a in ctx.applied],
-                "rejected": [a.__dict__ for a in ctx.rejected],
-                "version": session.state_version,
-            }
-        finally:
-            db.close()
-
-    # ── ingest ─────────────────────────────────────────────────────────
-    async def ingest_segments(self, session_id: str, segments: list[dict]) -> int:
-        db = SessionLocal()
-        try:
-            session = db.get(MeetppSession, session_id)
-            if session is None:
-                return 0
-            consents = db.query(MeetppConsent).filter_by(session_id=session_id).all()
-            # Default-deny: only identities that explicitly accepted are
-            # transcribed; opt-out is applied on top.
-            accepted = {c.identity for c in consents if c.decision == "accept"}
-            opted_out = {c.identity for c in consents if c.decision == "opt_out"}
-            max_seq = (
-                db.query(func.max(MeetppSegment.seq)).filter(MeetppSegment.session_id == session_id).scalar() or 0
-            )
-            inserted = 0
-            captions = []
-            for seg in segments:
-                identity = str(seg.get("identity") or "")
-                if identity in opted_out or identity not in accepted:
-                    continue
-                text = str(seg.get("text") or "").strip()
-                if not text:
-                    continue
-                if _echo_guard(text, self._last_announce_text, self._last_announce_at):
-                    continue
-                max_seq += 1
-                row = MeetppSegment(
-                    session_id=session_id,
-                    seq=max_seq,
-                    identity=identity,
-                    name=seg.get("name"),
-                    t_start=_parse_dt(seg.get("t_start")),
-                    t_end=_parse_dt(seg.get("t_end")),
-                    text=text,
-                    lang=seg.get("lang") or session.language,
-                    avg_logprob=seg.get("avg_logprob"),
-                    no_speech_prob=seg.get("no_speech_prob"),
-                )
-                db.add(row)
-                inserted += 1
-                duration_ms = None
-                if row.t_start and row.t_end:
-                    duration_ms = max(0, int((row.t_end - row.t_start).total_seconds() * 1000))
-                captions.append(
-                    {
-                        "seq": max_seq,
-                        "identity": identity,
-                        "name": seg.get("name") or identity,
-                        "text": text,
-                        "t": (row.t_end or _now()).isoformat(),
-                        "t_start": row.t_start.isoformat() if row.t_start else None,
-                        # Utterance duration drives the subtitle scroll speed.
-                        "duration_ms": duration_ms,
-                    }
-                )
-            if inserted:
-                db.commit()
-                await self._broadcast_captions(captions)
-                self.event.set()
-                await self._set_agent_status("listening", None)
-            return inserted
-        finally:
-            db.close()
-
-    async def apply_presence(self, session_id: str, events: list[dict]) -> None:
-        db = SessionLocal()
-        try:
-            session = db.get(MeetppSession, session_id)
-            if session is None:
-                return
-            changed: list = []
-            for ev in events:
-                identity = str(ev.get("identity") or "")
-                name = str(ev.get("name") or identity)
-                kind = str(ev.get("kind") or "standard")
-                if kind.lower() != "standard":
-                    continue
-                if identity.startswith(("meetpp-", "playback", "composite-", "viewer-", "egress-", "ingress-")):
-                    continue
-                person_key = _person_key(identity, name)
-                attendee = (
-                    db.query(MeetppAttendee)
-                    .filter_by(session_id=session_id, person_key=person_key)
-                    .first()
-                )
-                if attendee is None:
-                    attendee = MeetppAttendee(
-                        id=_ulid(),
-                        session_id=session_id,
-                        person_key=person_key,
-                        display_name=name,
-                        identities_json=json.dumps([identity]),
-                    )
-                    db.add(attendee)
-                else:
-                    ids = json.loads(attendee.identities_json or "[]")
-                    if identity not in ids:
-                        ids.append(identity)
-                        attendee.identities_json = json.dumps(ids)
-                if ev.get("event") == "connected":
-                    attendee.presence = "present"
-                elif ev.get("event") == "disconnected":
-                    attendee.presence = "left"
-                # opted-out flag mirrors a consent row
-                consent = (
-                    db.query(MeetppConsent)
-                    .filter_by(session_id=session_id, identity=identity)
-                    .first()
-                )
-                if consent and consent.decision == "opt_out":
-                    attendee.opted_out = True
-                    attendee.presence = "not_transcribed"
-                changed.append(attendee)
-            if not changed:
-                return
-            db.flush()
-            session.state_version += 1
-            db.commit()
-            # Push the changed attendance rows so the tab updates live.
-            delta = {"attendance": [ops.attendee_dict(a) for a in changed]}
-            await self._broadcast(
-                "state",
-                version=session.state_version,
-                changes=[{"kind": "attendance", "id": a.id, "op": "update"} for a in changed],
-                delta=delta,
-                focus=None,
-            )
-            self.event.set()
-        finally:
-            db.close()
-
-    async def set_consent(self, session_id: str, identity: str, decision: str) -> None:
-        db = SessionLocal()
-        try:
-            row = (
-                db.query(MeetppConsent)
-                .filter_by(session_id=session_id, identity=identity)
-                .first()
-            )
-            if row is None:
-                row = MeetppConsent(session_id=session_id, identity=identity, decision=decision)
-                db.add(row)
-            else:
-                row.decision = decision
-                row.updated_at = utcnow()
-            # Reflect on attendance.
-            changed = []
-            for a in db.query(MeetppAttendee).filter_by(session_id=session_id).all():
-                ids = json.loads(a.identities_json or "[]")
-                if identity in ids:
-                    a.opted_out = decision == "opt_out"
-                    if decision == "opt_out":
-                        a.presence = "not_transcribed"
-                    changed.append(a)
-            session = db.get(MeetppSession, session_id)
-            if changed and session is not None:
-                db.flush()
-                session.state_version += 1
-            db.commit()
-            all_rows = db.query(MeetppConsent).filter_by(session_id=session_id).all()
-            opted_out = [c.identity for c in all_rows if c.decision == "opt_out"]
-            accepted = [c.identity for c in all_rows if c.decision == "accept"]
-            await self.agent.patch(
-                session_id, {"accepted": accepted, "opted_out": opted_out}
-            )
-            if changed and session is not None:
-                await self._broadcast(
-                    "state",
-                    version=session.state_version,
-                    changes=[{"kind": "attendance", "id": a.id, "op": "update"} for a in changed],
-                    delta={"attendance": [ops.attendee_dict(a) for a in changed]},
-                    focus=None,
-                )
-        finally:
-            db.close()
-
-    async def pause_session(self, session_id: str, paused: bool) -> None:
-        db = SessionLocal()
-        try:
-            session = db.get(MeetppSession, session_id)
-            if session is None:
-                return
-            session.status = "paused" if paused else "running"
-            db.commit()
-            await self.pause_agent(paused)
-            await self._broadcast("session", sid=session_id, state="paused" if paused else "resumed")
-            await self._set_agent_status("paused" if paused else "listening", None)
-        finally:
-            db.close()
-
-    async def announce(self, session_id: str, title: str, subtitle: str = "") -> None:
-        await self._bulk_announce(session_id, title, subtitle)
-
-    # ── finalise ───────────────────────────────────────────────────────
-    async def finalise(self, session_id: str) -> dict:
-        db = SessionLocal()
-        try:
-            session = db.get(MeetppSession, session_id)
-            if session is None:
-                return {}
-            session.status = "finalising"
-            db.commit()
-            await self._broadcast("session", sid=session_id, state="finalising")
-            state = _compact_state(db, session)
-            segments = (
-                db.query(MeetppSegment)
-                .filter_by(session_id=session_id)
-                .order_by(MeetppSegment.seq)
-                .all()
-            )
-            transcript = "\n".join(
-                f"[{s.seq}] {s.name or s.identity}: {s.text}" for s in segments
-            )
-            minutes = [
-                {"item_id": m.agenda_item_id, "body_md": m.body_md, "locked": m.locked}
-                for m in db.query(MeetppMinute).filter_by(session_id=session_id).all()
-            ]
-            final: dict = {}
-            if llm.llm_configured() and transcript:
-                try:
-                    result = await llm.complete_json(
-                        db=db,
-                        purpose="finalise",
-                        messages=prompts.build_finalise_messages(
-                            language=session.language, state=state, transcript=transcript, minutes=minutes
-                        ),
-                        max_tokens=4000,
-                        temperature=0.2,
-                        session_id=session_id,
-                        enforce_budget=False,
-                    )
-                    final = llm.parse_json(result.text)
-                except llm.LLMError as exc:
-                    log.warning("meetpp: finalisation LLM failed: %s", exc)
-                    session.error = "Finalisation failed — Retry"
-            _apply_final(db, session, final)
-            session.final_json = json.dumps(final, ensure_ascii=False)
-            session.status = "review"
-            session.finalised_at = _now()
-            session.ended_at = session.ended_at or _now()
-            db.commit()
-            await self._broadcast("session", sid=session_id, state="ended")
-            await self._stop_agent()
-            self._touch_metadata(active=False)
-            self.stop.set()
-            return final
-        finally:
-            db.close()
-
-    # ── broadcast / status ─────────────────────────────────────────────
-    def _livekit(self):
-        """One long-lived LiveKit server client per runner (avoids a new
-        connection per broadcast)."""
-        if self._lk is None:
-            self._lk = livekit_api()
-        return self._lk
-
-    async def _close_lk(self) -> None:
-        if self._lk is not None:
-            try:
-                await self._lk.aclose()
-            except Exception:  # noqa: BLE001
-                pass
-            self._lk = None
-
-    async def _room(self) -> str | None:
-        if self._room_name:
-            return self._room_name
-        db = SessionLocal()
-        try:
-            session = db.get(MeetppSession, self.session_id)
-            if session is not None:
-                meeting = db.get(Meeting, session.meeting_id)
-                if meeting is not None:
-                    self._room_name = meeting.room_name
-        finally:
-            db.close()
-        return self._room_name
-
-    async def _send_raw(self, body: dict) -> None:
-        room = await self._room()
-        if not room:
-            return
-        try:
-            await self._livekit().room.send_data(
-                lk_api.SendDataRequest(
-                    room=room,
-                    data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-                    kind=lk_api.DataPacket.Kind.RELIABLE,
-                    topic="meet-ai",
-                )
-            )
-        except Exception:
-            log.exception("meetpp: broadcast %s failed", body.get("type"))
-
-    async def _broadcast(self, mtype: str, **payload) -> None:
-        await self._send_raw({"v": 1, "type": mtype, "sid": self.session_id, **payload})
-
-    async def _broadcast_captions(self, captions: list[dict]) -> None:
-        """Batch a whole ingest's captions into one data message."""
-        if not captions:
-            return
-        await self._send_raw({"v": 1, "type": "captions", "sid": self.session_id, "items": captions})
-
-    async def _send_proposal(self, session: MeetppSession, proposal: dict) -> None:
-        log.info(
-            "MEETPP_PROPOSAL sid=%s to=%s source=%s confidence=%s auto_at=%s",
-            session.id, proposal.get("to"), proposal.get("source"), proposal.get("confidence"), proposal.get("auto_at"),
-        )
-        await self._broadcast(
-            "proposal",
-            pid=proposal.get("pid"),
-            to=proposal.get("to"),
-            item_id=proposal.get("item_id"),
-            reason=proposal.get("reason"),
-            confidence=proposal.get("confidence"),
-            auto_at=proposal.get("auto_at"),
-        )
-
-    async def _announce(self, title: str, subtitle: str) -> None:
-        await self._bulk_announce(self.session_id, title, subtitle)
-
-    async def _bulk_announce(self, session_id: str, title: str, subtitle: str) -> None:
-        db = SessionLocal()
-        try:
-            session = db.get(MeetppSession, session_id)
-            lang = session.language if session else "en"
-        finally:
-            db.close()
-        tts = await self.agent.tts(title, lang)
-        audio_url = None
-        duration_ms = ANNOUNCE_DURATION_DEFAULT_MS
-        if tts and tts.get("hash"):
-            ext = tts.get("ext") or "ogg"
-            audio_url = f"/api/v1/meetpp/tts/{tts['hash']}.{ext}"
-            duration_ms = int(tts.get("duration_ms") or ANNOUNCE_DURATION_DEFAULT_MS)
-        self._last_announce_text = title
-        self._last_announce_at = _now()
-        await self._broadcast(
-            "announce",
-            aid=f"a{int(_now().timestamp())}",
-            title=title[:MAX_ANNOUNCE_TITLE],
-            subtitle=subtitle[:90],
-            audio_url=audio_url,
-            duration_ms=duration_ms,
-        )
-
-    async def _set_agent_status(self, status: str, backlog_s: float | None) -> None:
-        await self._broadcast("agent", status=status, backlog_s=backlog_s)
-
-    async def _agent_status_message(self, session: MeetppSession, kind: str) -> None:
-        await self._broadcast("agent", status=kind, backlog_s=None)
-
-    def _touch_metadata(self, active: bool, board_main: bool = True) -> None:
-        asyncio.create_task(self._update_metadata(active, board_main))
-
-    async def _update_metadata(self, active: bool, board_main: bool) -> None:
+    async def _iteration(self) -> bool:
+        now = time.monotonic()
+        if now - self._last_renew >= LEASE_RENEW_SECONDS:
+            self._last_renew = now
+            if not await self.lease.renew():
+                log.warning("meetpp: lease for %s lost", self.session_id)
+                return False
         db = SessionLocal()
         try:
             session = db.get(MeetppSession, self.session_id)
             if session is None:
-                return
-            meeting = db.get(Meeting, session.meeting_id)
-            lk = livekit_api()
-            try:
-                rooms = await lk.room.list_rooms(lk_api.ListRoomsRequest(names=[meeting.room_name]))
-                current: dict = {}
-                if rooms.rooms:
-                    try:
-                        current = json.loads(rooms.rooms[0].metadata or "{}")
-                    except ValueError:
-                        current = {}
-                current["meetpp"] = {
-                    "sid": session.id,
-                    "active": active,
-                    "phase": session.phase,
-                    "board_main": board_main,
-                    "public": _settings_bool(session, "show_public", False),
-                    "in_recordings": _settings_bool(session, "in_recordings", True),
-                }
-                await lk.room.update_room_metadata(
-                    lk_api.UpdateRoomMetadataRequest(room=meeting.room_name, metadata=json.dumps(current))
-                )
-            except Exception:
-                log.exception("meetpp: metadata update failed")
-            finally:
-                await lk.aclose()
+                return False
+            status = session.status
+            due = status == "running" and self._tick_due(db, session)
         finally:
             db.close()
-
-    async def _stop_agent(self) -> None:
-        await self.agent.stop(self.session_id)
-
-    # ── lease ──────────────────────────────────────────────────────────
-    async def _acquire_lease(self) -> bool:
-        try:
-            import redis as redis_sync
-
-            def _do():
-                r = redis_sync.Redis.from_url(settings.redis_url, socket_timeout=2)
-                return bool(r.set(f"meetpp:lease:{self.session_id}", "1", nx=True, ex=30))
-            return await asyncio.to_thread(_do)
-        except Exception:  # noqa: BLE001
+        if status == "finalising":
+            if self.final_task is None or self.final_task.done():
+                self.final_task = asyncio.get_running_loop().create_task(run_finalisation(self.session_id))
             return True
+        if status not in ACTIVE_STATUSES:
+            return False
+        if not self._agent_started or now - self._last_reconcile >= RECONCILE_SECONDS:
+            self._last_reconcile = now
+            await self.reconcile_agent()
+        if due:
+            trigger, self.trigger = self.trigger, None
+            self.tick_task = asyncio.get_running_loop().create_task(self._tick(trigger))
+        if status == "running" and now - self._last_timebox >= 5:
+            self._last_timebox = now
+            await self._timebox()
+        return True
 
-    def _release_lease(self) -> None:
-        self._lease_held = False
+    def _tick_due(self, db, session: MeetppSession) -> bool:
+        if self.tick_task is not None and not self.tick_task.done():
+            return False
+        has_new = (
+            db.query(MeetppSegment.id)
+            .filter(MeetppSegment.session_id == session.id, MeetppSegment.seq > session.transcript_cursor)
+            .first()
+            is not None
+        )
+        if not has_new:
+            return False
+        last = util.aware(session.last_tick_at)
+        since = (util.now() - last).total_seconds() if last is not None else None
+        if self.trigger == "chair" or self.more:
+            return True
+        if self.trigger == "cue" and (since is None or since >= CUE_MIN_SPACING_SECONDS):
+            return True
+        interval = float(settings.meetpp_tick_seconds)
+        if llm.over_budget(db, session.id):
+            interval = THROTTLED_TICK_SECONDS
+        return since is None or since >= interval
+
+    async def _tick(self, trigger: str | None) -> None:
         try:
-            import redis as redis_sync
-
-            r = redis_sync.Redis.from_url(settings.redis_url, socket_timeout=2)
-            r.delete(f"meetpp:lease:{self.session_id}")
+            res = await tick(self.session_id, trigger=trigger, runner=self)
+            self.more = bool(res.get("more"))
+            if self.more:
+                self.wake.set()
         except Exception:  # noqa: BLE001
-            pass
+            log.exception("meetpp: tick task failed for %s", self.session_id)
+
+    async def _timebox(self) -> None:
+        db = SessionLocal()
+        try:
+            session = db.get(MeetppSession, self.session_id)
+            if session is None or not ops._settings(session)["timebox_nudges"]:
+                return
+            section = outline_mod.timebox_overrun(db, session)
+            if section is None:
+                db.commit()
+                return
+            o = outline_mod.load(db, session.id)
+            label = outline_mod.label(o, section)
+            minutes = int(outline_mod.live_elapsed(session, section) // 60)
+            db.commit()
+            dest = chair_identities(db.get(Meeting, session.meeting_id))
+        finally:
+            db.close()
+        await announce(
+            self.session_id, kind="timebox", title=f"{label} is over its time",
+            subtitle=f"{minutes} min of {section.timebox_minutes} min", destination=dest,
+        )
+
+    async def reconcile_agent(self) -> None:
+        db = SessionLocal()
+        try:
+            session = db.get(MeetppSession, self.session_id)
+            if session is None or session.status not in ACTIVE_STATUSES:
+                return
+            accepted = accepted_identities(db, self.session_id)
+            paused = session.status == "paused"
+            meeting = db.get(Meeting, session.meeting_id)
+            start_payload = {
+                "session_id": session.id,
+                "room": meeting.room_name if meeting else "",
+                "ws_url": settings.meetpp_agent_ws_url,
+                "token": mint_agent_token(room_name=meeting.room_name, identity=f"meetpp-scribe-{session.id}") if meeting else "",
+                "language": "en",
+                "glossary": glossary(db, session),
+                "accepted_identities": accepted,
+                "paused": paused,
+            }
+        finally:
+            db.close()
+        health = await agent_mod.client.health()
+        entry = agent_mod.session_health(health, self.session_id)
+        restart = False
+        if entry is None:
+            restart = True
+        elif entry.get("connected") is False:
+            self._not_connected += 1
+            restart = self._not_connected >= 2
+        else:
+            self._not_connected = 0
+        if restart or not self._agent_started:
+            if entry is not None and not restart:
+                ok = await agent_mod.client.patch(self.session_id, {"accepted_identities": accepted, "paused": paused})
+            else:
+                ok = await agent_mod.client.start(start_payload)
+                if ok and self._agent_started and restart:
+                    await ingest(self.session_id, {"gaps": [{"t_from": util.iso(util.now() - timedelta(seconds=RECONCILE_SECONDS)), "t_to": util.iso(util.now()), "reason": "agent_restart"}]})
+                    log.warning("meetpp: agent session %s restarted", self.session_id)
+            self._agent_started = self._agent_started or ok
+            self._not_connected = 0
+            return
+        await agent_mod.client.patch(self.session_id, {"accepted_identities": accepted, "paused": paused})
 
 
 class MeetppRuntime:
@@ -938,285 +1777,72 @@ class MeetppRuntime:
         self.runners: dict[str, SessionRunner] = {}
 
     def get(self, session_id: str) -> SessionRunner:
-        runner = self.runners.get(session_id)
-        if runner is None:
-            runner = SessionRunner(session_id)
-            self.runners[session_id] = runner
-        return runner
+        r = self.runners.get(session_id)
+        if r is None:
+            r = SessionRunner(session_id)
+            self.runners[session_id] = r
+        return r
+
+    def poke(self, session_id: str, trigger: str | None = None) -> None:
+        r = self.runners.get(session_id)
+        if r is not None:
+            r.poke(trigger)
+
+    def start_session(self, session_id: str) -> None:
+        try:
+            self.get(session_id).start()
+        except RuntimeError:
+            pass
+
+    def start_finalisation(self, session_id: str) -> None:
+        try:
+            runner = self.get(session_id)
+            if runner.task is None or runner.task.done():
+                runner.start()
+            else:
+                runner.poke()
+        except RuntimeError:
+            pass
 
     async def start(self) -> None:
-        """Resume every session that was running when the API restarted."""
+        """Resume running, paused and finalising sessions after a restart."""
         if not settings.meetpp_enabled:
             return
         db = SessionLocal()
         try:
-            active = (
-                db.query(MeetppSession.id)
-                .filter(MeetppSession.status.in_(("running", "paused", "setup")))
-                .all()
-            )
-            ids = [r[0] for r in active]
+            ids = [
+                r[0]
+                for r in db.query(MeetppSession.id).filter(MeetppSession.status.in_(("running", "paused", "finalising"))).all()
+            ]
+            for sid in ids:
+                session = db.get(MeetppSession, sid)
+                if session.status == "finalising":
+                    jobs = _jobs(session)
+                    for name in JOB_ORDER:
+                        if jobs[name].get("status") == "running" and name != "tier2":
+                            jobs[name] = {"status": "pending"}
+                        if name == "tier2" and jobs[name].get("status") == "running":
+                            jobs[name] = {"status": "pending"}
+                    session.jobs_json = util.dumps(jobs)
+            db.commit()
         finally:
             db.close()
-        if ids:
-            # Clear any stale single-runner leases left by a previous process
-            # so a fast restart resumes sessions instead of silently skipping
-            # them (the lease has a 30 s TTL).
-            try:
-                import redis as redis_sync
-
-                def _clear():
-                    r = redis_sync.Redis.from_url(settings.redis_url, socket_timeout=2)
-                    for sid in ids:
-                        r.delete(f"meetpp:lease:{sid}")
-                await asyncio.to_thread(_clear)
-            except Exception:  # noqa: BLE001
-                pass
         for sid in ids:
+            await _Lease(sid)._redis(lambda r, k=f"meetpp:lease:{sid}": r.delete(k))
             self.get(sid).start()
         if ids:
             log.info("meetpp: resumed %d session(s)", len(ids))
 
     async def stop(self) -> None:
-        for runner in list(self.runners.values()):
-            await runner.stop_runner()
+        for r in list(self.runners.values()):
+            await r.stop()
         self.runners.clear()
+        await bus.close()
 
-    def start_session(self, session_id: str) -> None:
-        self.get(session_id).start()
-
-    async def end_session(self, session_id: str) -> dict:
-        runner = self.get(session_id)
-        result = await runner.finalise(session_id)
-        self.runners.pop(session_id, None)
-        return result
+    async def drop(self, session_id: str) -> None:
+        r = self.runners.pop(session_id, None)
+        if r is not None:
+            await r.stop()
 
 
 runtime = MeetppRuntime()
-
-
-# ─── helpers ────────────────────────────────────────────────────────────────
-
-
-def _internal_ws_url() -> str:
-    # The agent joins over the Docker network, like egress.
-    return "ws://host.docker.internal:7880"
-
-
-def _parse_dt(value) -> datetime | None:
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return value
-    try:
-        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
-
-
-def _ulid() -> str:
-    from ulid import ULID
-
-    return str(ULID())
-
-
-def _person_key(identity: str, name: str) -> str:
-    from app.meetpp.util import person_key
-
-    return person_key(identity, name)
-
-
-def _alias_table(db, session: MeetppSession) -> dict[str, tuple[str, str | None]]:
-    # When aliasing is disabled the LLM sees real names (and returns them); the
-    # validator matches owners by name.
-    if not settings.meetpp_speaker_aliasing:
-        return {}
-    rows = db.query(MeetppAttendee).filter_by(session_id=session.id).order_by(MeetppAttendee.created_at).all()
-    table: dict[str, tuple[str, str | None]] = {}
-    for i, a in enumerate(rows, start=1):
-        table[f"P{i}"] = (a.display_name, a.person_key)
-    return table
-
-
-def _alias_for(table: dict[str, tuple[str, str | None]], name: str | None) -> str | None:
-    if not name:
-        return None
-    for alias, (display, _key) in table.items():
-        if display.lower() == name.lower():
-            return alias
-    return None
-
-
-def _seg_dict(s: MeetppSegment) -> dict:
-    return {
-        "seq": s.seq,
-        "speaker": s.name or s.identity,
-        "t": (_aware(s.t_start).strftime("%H:%M:%S") if s.t_start else ""),
-        "text": s.text,
-    }
-
-
-def _compact_state(db, session: MeetppSession) -> dict:
-    decisions = [
-        {"id": d.id, "ref": d.ref, "text": d.text[:200], "status": d.status, "locked": d.locked}
-        for d in db.query(MeetppDecision).filter_by(session_id=session.id).all()
-    ]
-    actions = [
-        {"id": a.id, "ref": a.ref, "title": a.title[:120], "owner": a.owner_name, "due": a.due_date, "status": a.status, "locked": a.locked}
-        for a in db.query(MeetppAction).filter(MeetppAction.series_id == session.series_id).all()
-    ]
-    minutes = []
-    for m in db.query(MeetppMinute).filter_by(session_id=session.id).all():
-        active = m.agenda_item_id == session.current_item_id
-        minutes.append({"item_id": m.agenda_item_id, "body": m.body_md if active else m.body_md[:300], "locked": m.locked})
-    locked = [d["id"] for d in decisions if d["locked"]] + [a["id"] for a in actions if a["locked"]] + [
-        m["item_id"] for m in minutes if m["locked"]
-    ]
-    return {"decisions": decisions, "actions": actions, "minutes": minutes, "locked_ids": locked}
-
-
-def _vocabulary(db, session: MeetppSession) -> list[str]:
-    words: list[str] = []
-    for i in db.query(MeetppAgendaItem).filter_by(session_id=session.id).all():
-        words.append(i.title)
-        if i.presenter:
-            words.append(i.presenter)
-    for a in db.query(MeetppAttendee).filter_by(session_id=session.id).all():
-        words.append(a.display_name)
-    return words[:40]
-
-
-def _echo_guard(text: str, last_text: str | None, last_at: datetime | None) -> bool:
-    if not last_text or last_at is None:
-        return False
-    if _now() - last_at > timedelta(seconds=10):
-        return False
-    a = set(re.findall(r"\w+", text.lower()))
-    b = set(re.findall(r"\w+", last_text.lower()))
-    if not a or not b:
-        return False
-    return len(a & b) / len(a | b) >= 0.6
-
-
-def _announce_payload(session: MeetppSession, ann: dict) -> dict:
-    return {
-        "aid": f"a{int(_now().timestamp())}",
-        "title": (ann.get("title") or "")[:MAX_ANNOUNCE_TITLE],
-        "subtitle": (ann.get("subtitle") or "")[:90],
-        "audio_url": None,
-        "duration_ms": ANNOUNCE_DURATION_DEFAULT_MS,
-    }
-
-
-def _settings_bool(session: MeetppSession, key: str, default: bool) -> bool:
-    try:
-        data = json.loads(session.settings_json or "{}")
-    except ValueError:
-        data = {}
-    return bool(data.get(key, default))
-
-
-def _apply_final(db, session: MeetppSession, final: dict) -> None:
-    """Apply non-locked finalisation output. Locked items are never changed;
-    differences are surfaced in `final.changes`."""
-    for m in final.get("minutes") or []:
-        item_id = m.get("item_id")
-        body = m.get("body_md")
-        # `item_id` may be null when there are no agenda items; still store it
-        # as a general minutes block so the PDF is never empty.
-        if not body:
-            continue
-        minute = (
-            db.query(MeetppMinute)
-            .filter_by(session_id=session.id, agenda_item_id=item_id)
-            .first()
-        )
-        if minute is None:
-            db.add(MeetppMinute(id=_ulid(), session_id=session.id, agenda_item_id=item_id, body_md=body, origin="ai"))
-        elif not minute.locked:
-            minute.body_md = body
-            minute.version += 1
-    existing_decision_texts = {
-        row.text.strip().lower()
-        for row in db.query(MeetppDecision).filter_by(series_id=session.series_id).all()
-    }
-    for d in final.get("decisions") or []:
-        text = (d.get("text") or "").strip()
-        if d.get("id"):
-            row = db.get(MeetppDecision, d["id"])
-            if row is not None and not row.locked and text:
-                row.text = text[:600]
-                existing_decision_texts.add(text.lower())
-            continue
-        # Finalisation may surface decisions the live ticks missed: add them.
-        if not text or text.lower() in existing_decision_texts:
-            continue
-        item_id = d.get("item_id") or session.current_item_id
-        series = db.get(MeetppSeries, session.series_id)
-        series.decision_counter += 1
-        db.add(
-            MeetppDecision(
-                id=_ulid(),
-                session_id=session.id,
-                series_id=session.series_id,
-                ref=f"D-{series.decision_counter:02d}",
-                agenda_item_id=item_id,
-                text=text[:600],
-                status="confirmed",
-                origin="ai",
-            )
-        )
-        existing_decision_texts.add(text.lower())
-    for a in final.get("actions") or []:
-        if not a.get("id"):
-            continue
-        row = db.get(MeetppAction, a["id"])
-        if row is not None and not row.locked:
-            if a.get("title"):
-                row.title = a["title"][:300]
-            if a.get("owner"):
-                row.owner_name = a["owner"][:200]
-            if a.get("due"):
-                row.due_date = a["due"][:20]
-    for a in final.get("actions") or []:
-        if a.get("id"):
-            continue
-        title = a.get("title")
-        if not title:
-            continue
-        series = db.get(MeetppSeries, session.series_id)
-        series.action_counter += 1
-        db.add(
-            MeetppAction(
-                id=_ulid(),
-                series_id=session.series_id,
-                session_id=session.id,
-                ref=f"A-{series.action_counter:02d}",
-                title=title[:300],
-                owner_name=(a.get("owner") or None),
-                due_date=(a.get("due") or None),
-                status="open",
-                origin="ai",
-            )
-        )
-    for r in final.get("required_next") or []:
-        name = (r or {}).get("name")
-        if not name:
-            continue
-        attendee = (
-            db.query(MeetppAttendee)
-            .filter_by(session_id=session.id, person_key=_person_key(name, name))
-            .first()
-        )
-        if attendee is None:
-            attendee = MeetppAttendee(
-                id=_ulid(),
-                session_id=session.id,
-                person_key=_person_key(name, name),
-                display_name=name[:200],
-                presence="absent",
-            )
-            db.add(attendee)
-        attendee.required_next = True
-        attendee.required_reason = (r.get("reason") or "")[:300] or attendee.required_reason

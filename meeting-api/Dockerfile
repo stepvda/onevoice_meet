@@ -9,12 +9,11 @@ ENV PYTHONUNBUFFERED=1 \
 # into a 16 kHz mono WAV before POSTing it to the local whisper.cpp server.
 # It is also used by app.services.previews to render On Demand social-card
 # media (poster/GIF/clip) on the 2-vCPU production host.
-# Meet++ adds WeasyPrint's pango/cairo stack and Noto fonts for the minutes
-# and agenda PDFs (about 80 MB).
+# Meet++ renders its meeting report and agenda PDFs with ReportLab (pure
+# Python, no system libraries); the DejaVu/Noto fonts give it full Unicode.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
-        libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libcairo2 libgdk-pixbuf-2.0-0 \
-        shared-mime-info fonts-noto-core && \
+        fonts-dejavu-core fonts-noto-core && \
     rm -rf /var/lib/apt/lists/*
 
 # Hard resource sandbox for the social-preview ffmpeg jobs. A palettegen GIF

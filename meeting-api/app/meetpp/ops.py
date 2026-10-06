@@ -1,935 +1,1541 @@
-"""Operation vocabulary, validator, applier and state serialisation.
+"""Operations, validation and state serialisation (contract §3, §3.1, §5).
 
-The LLM only proposes operations; this module validates them against IDs,
-provenance, human locks and limits, then applies them in a versioned,
-audited transaction. Human edits use the same vocabulary.
-
-Unknown fields are rejected (pydantic `extra="forbid"`).
+The LLM only proposes; this module validates and applies. Validation is
+lenient on shape (unknown fields ignored, long text truncated, unknown
+sections fall back to the topic and then the live section) and strict on
+meaning (evidence must cite the window, duplicates are refused or merged,
+locked items only receive suggestions). Every rejection is stored in
+meetpp_ops with its raw payload and reason.
 """
 from __future__ import annotations
 
 import json
 import logging
 import re
-import unicodedata
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
-from typing import Any, Literal, Optional
+from datetime import date
+from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, BeforeValidator, ConfigDict, ValidationError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.meetpp import governance, outline as outline_mod, util
 from app.meetpp.models import (
     MeetppAction,
-    MeetppAgendaItem,
-    MeetppAttendee,
+    MeetppActionReport,
     MeetppAttachment,
+    MeetppAttendee,
+    MeetppBallot,
     MeetppDecision,
+    MeetppDocument,
     MeetppMinute,
     MeetppOp,
+    MeetppRoster,
+    MeetppSection,
+    MeetppSegment,
+    MeetppSeries,
     MeetppSession,
-    utcnow,
+    MeetppVote,
 )
+from app.models import Meeting
 
 log = logging.getLogger("app.meetpp")
 
-MAX_OPS_PER_TICK = 12
-MAX_MINUTE_UPSERTS_PER_TICK = 3
-MAX_AGENDA_ITEMS = 20
-MAX_ATTENDEES = 30
+MAX_AI_OPS_PER_TICK = 20
+MAX_NOTES_PER_TICK = 6
+MAX_EVIDENCE = 10
 DUPLICATE_JACCARD = 0.85
+PENDING_MERGE_JACCARD = 0.6
+NOTE_DUPLICATE_JACCARD = 0.85
+
+DECISION_STATUSES = ("pending", "proposed", "adopted", "rejected", "withdrawn")
+ACTION_STATUSES = ("proposed", "open", "in_progress", "done", "cancelled")
+OPEN_ACTION_STATUSES = ("proposed", "open", "in_progress")
+ATTENDANCE_STATUSES = ("present", "represented", "absent", "excused", "not_registered")
+PRIO = {"topic": 3, "decision": 5, "action": 4, "attendance": 2}
+TAB = {"topic": "agenda", "decision": "decisions", "action": "actions", "attendance": "attendance"}
+FINAL_PART_KINDS = ("opening", "adjournment", "voting_record", "provenance")
 
 
-# ─── Schemas ────────────────────────────────────────────────────────────────
+# ─── Lenient field types ───────────────────────────────────────────────────
 
 
-class _Base(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+def _text(limit: int):
+    def conv(v):
+        if v is None:
+            return None
+        if isinstance(v, (list, tuple)):
+            v = "; ".join(str(x) for x in v if x is not None)
+        elif isinstance(v, dict):
+            v = json.dumps(v, ensure_ascii=False)
+        return util.truncate(v, limit)
+
+    return BeforeValidator(conv)
 
 
-class AgendaSetActive(_Base):
-    op: Literal["agenda.set_active"]
-    item_id: str
+def _int(v):
+    if v is None or v == "" or isinstance(v, bool):
+        return None
+    try:
+        return int(float(str(v).strip()))
+    except (TypeError, ValueError):
+        return None
 
 
-class AgendaSetStatus(_Base):
-    op: Literal["agenda.set_status"]
-    item_id: str
-    status: Literal["done", "deferred"]
+def _float(v):
+    try:
+        return max(0.0, min(1.0, float(v)))
+    except (TypeError, ValueError):
+        return 0.0
 
 
-class AgendaAdd(_Base):
-    op: Literal["agenda.add"]
-    title: str = Field(max_length=300)
-    presenter: str | None = Field(default=None, max_length=200)
-    source: Literal["aob"] = "aob"
+def _evidence(v):
+    if v is None:
+        return []
+    if not isinstance(v, (list, tuple)):
+        v = [v]
+    out: list[int] = []
+    for x in v:
+        if isinstance(x, str):
+            out.extend(int(n) for n in re.findall(r"\d+", x))
+        else:
+            n = _int(x)
+            if n is not None:
+                out.append(n)
+    seen: list[int] = []
+    for n in out:
+        if n not in seen:
+            seen.append(n)
+    return seen
 
 
-class AgendaUpdate(_Base):
-    op: Literal["agenda.update"]
-    item_id: str
-    title: str | None = Field(default=None, max_length=300)
-    presenter: str | None = Field(default=None, max_length=200)
-    timebox_minutes: int | None = None
-    outcome: str | None = Field(default=None, max_length=600)
-    position: int | None = None
+def _names(v):
+    if v is None:
+        return None
+    if isinstance(v, str):
+        v = [p for p in re.split(r"\s*(?:,|;| and )\s*", v) if p.strip()]
+    out = []
+    for x in v if isinstance(v, (list, tuple)) else [v]:
+        if isinstance(x, dict):
+            x = x.get("name") or x.get("person")
+        name = util.truncate(x, 200)
+        if name:
+            out.append(name)
+    return out[:10]
 
 
-class DecisionAdd(_Base):
-    op: Literal["decision.add"]
-    item_id: str | None = None
-    text: str = Field(max_length=600)
-    rationale: str | None = Field(default=None, max_length=600)
-    evidence: list[int] = Field(default_factory=list)
+def _dict(v):
+    return v if isinstance(v, dict) else None
 
 
-class DecisionUpdate(_Base):
-    op: Literal["decision.update"]
-    id: str
-    text: str | None = Field(default=None, max_length=600)
-    status: Literal["proposed", "confirmed", "rejected"] | None = None
+Text200 = Annotated[str | None, _text(200)]
+Text300 = Annotated[str | None, _text(300)]
+Text600 = Annotated[str | None, _text(600)]
+Text1200 = Annotated[str | None, _text(1200)]
+Text4000 = Annotated[str | None, _text(4000)]
+Text40k = Annotated[str | None, _text(40000)]
+Int = Annotated[int | None, BeforeValidator(_int)]
+Conf = Annotated[float, BeforeValidator(_float)]
+Evidence = Annotated[list[int], BeforeValidator(_evidence)]
+Names = Annotated[list[str] | None, BeforeValidator(_names)]
+Obj = Annotated[dict | None, BeforeValidator(_dict)]
+Ref = Annotated[str | None, _text(40)]
 
 
-class ActionAdd(_Base):
-    op: Literal["action.add"]
-    title: str = Field(max_length=300)
-    owner_alias: str | None = Field(default=None, max_length=200)
-    due: str | None = None
-    item_id: str | None = None
-    evidence: list[int] = Field(default_factory=list)
+class _Op(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    op: str
 
 
-class ActionUpdate(_Base):
-    op: Literal["action.update"]
-    id: str
-    status: Literal["open", "in_progress", "done", "dropped", "carried", "proposed"] | None = None
-    owner_alias: str | None = Field(default=None, max_length=200)
-    due: str | None = None
-    note: str | None = Field(default=None, max_length=500)
-    evidence: list[int] = Field(default_factory=list)
+class DecisionAdd(_Op):
+    section: Ref = None
+    section_id: Ref = None
+    title: Text300 = None
+    resolution: Text1200 = None
+    how_taken: Text600 = None
+    status: Text200 = None
+    decided_at_seq: Int = None
+    vote: Obj = None
+    evidence: Evidence = []
 
 
-class MinutesUpsert(_Base):
-    op: Literal["minutes.upsert"]
-    item_id: str | None = None
-    body_md: str = Field(max_length=1500)
+class DecisionUpdate(_Op):
+    ref: Ref = None
+    id: Ref = None
+    title: Text300 = None
+    resolution: Text1200 = None
+    how_taken: Text600 = None
+    status: Text200 = None
+    section: Ref = None
+    section_id: Ref = None
+    decided_at_seq: Int = None
+    vote: Obj = None
+    evidence: Evidence = []
 
 
-class AttendanceApologies(_Base):
-    op: Literal["attendance.apologies"]
-    person: str = Field(max_length=200)
-    evidence: list[int] = Field(default_factory=list)
+class ActionAdd(_Op):
+    section: Ref = None
+    section_id: Ref = None
+    title: Text300 = None
+    description: Text4000 = None
+    assignees: Names = None
+    due: Text200 = None
+    from_decision: Ref = None
+    status: Text200 = None
+    evidence: Evidence = []
 
 
-class AttendanceRequireNext(_Base):
-    op: Literal["attendance.require_next"]
-    person: str = Field(max_length=200)
-    reason: str = Field(default="", max_length=300)
-    evidence: list[int] = Field(default_factory=list)
+class ActionUpdate(_Op):
+    ref: Ref = None
+    id: Ref = None
+    title: Text300 = None
+    description: Text4000 = None
+    status: Text200 = None
+    report_note: Text600 = None
+    progress_note: Text600 = None
+    completion_note: Text600 = None
+    due: Text200 = None
+    assignees: Names = None
+    evidence: Evidence = []
 
 
-class PhaseSignal(_Base):
-    op: Literal["phase.signal"]
-    to: str
-    confidence: float = 0.0
-    reason: str = Field(default="", max_length=200)
+class AttendanceSet(_Op):
+    person: Text200 = None
+    status: Text200 = None
+    represented_by: Text200 = None
+    mandate_ref: Text300 = None
+    evidence: Evidence = []
 
 
-class NextMeetingPropose(_Base):
-    op: Literal["next_meeting.propose"]
-    date_text: str = Field(default="", max_length=200)
-    iso: str | None = None
-    duration_min: int | None = None
+class AttendanceRequireNext(_Op):
+    person: Text200 = None
+    reason: Text300 = None
+    evidence: Evidence = []
 
 
-AnyOp = (
-    AgendaSetActive
-    | AgendaSetStatus
-    | AgendaAdd
-    | AgendaUpdate
-    | DecisionAdd
-    | DecisionUpdate
-    | ActionAdd
-    | ActionUpdate
-    | MinutesUpsert
-    | AttendanceApologies
-    | AttendanceRequireNext
-    | PhaseSignal
-    | NextMeetingPropose
-)
+class SectionAdd(_Op):
+    kind: Text200 = None
+    parent: Ref = None
+    parent_id: Ref = None
+    title: Text300 = None
 
-_OP_TYPES: dict[str, type[BaseModel]] = {
-    "agenda.set_active": AgendaSetActive,
-    "agenda.set_status": AgendaSetStatus,
-    "agenda.add": AgendaAdd,
-    "agenda.update": AgendaUpdate,
+
+class NextMeetingPropose(_Op):
+    when_text: Text300 = None
+    iso: Text200 = None
+    evidence: Evidence = []
+
+
+class IdOp(_Op):
+    id: Ref = None
+
+
+class MinutesEdit(_Op):
+    section_id: Ref = None
+    kind: Text200 = None
+    narrative_md: Text40k = None
+
+
+class SectionUpdate(_Op):
+    id: Ref = None
+    title: Text300 = None
+    body: Text4000 = None
+    presenter: Text200 = None
+    timebox_minutes: Int = None
+
+
+class SectionStatus(_Op):
+    id: Ref = None
+    status: Text200 = None
+
+
+class Note(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    section: Ref = None
+    text: Text300 = None
+    evidence: Evidence = []
+
+
+AI_OPS: dict[str, type[_Op]] = {
     "decision.add": DecisionAdd,
     "decision.update": DecisionUpdate,
     "action.add": ActionAdd,
     "action.update": ActionUpdate,
-    "minutes.upsert": MinutesUpsert,
-    "attendance.apologies": AttendanceApologies,
+    "attendance.set": AttendanceSet,
     "attendance.require_next": AttendanceRequireNext,
-    "phase.signal": PhaseSignal,
+    "section.add": SectionAdd,
     "next_meeting.propose": NextMeetingPropose,
+}
+HUMAN_OPS: dict[str, type[_Op]] = {
+    **AI_OPS,
+    "decision.confirm": IdOp,
+    "decision.reject": IdOp,
+    "action.confirm": IdOp,
+    "action.reject": IdOp,
+    "minutes.edit": MinutesEdit,
+    "section.update": SectionUpdate,
+    "section.status": SectionStatus,
 }
 
 
-class TickOutput(_Base):
-    ops: list[dict] = Field(default_factory=list, max_length=MAX_OPS_PER_TICK)
-    phase_signal: dict | None = None
-    notes: str | None = None
-
-
-def parse_op(raw: dict) -> AnyOp | None:
-    op_type = raw.get("op")
-    model = _OP_TYPES.get(str(op_type))
+def parse_op(raw: Any, vocabulary: dict[str, type[_Op]]) -> tuple[_Op | None, str | None]:
+    if not isinstance(raw, dict):
+        return None, "not an object"
+    name = str(raw.get("op") or raw.get("type") or "").strip()
+    model = vocabulary.get(name)
     if model is None:
-        return None
+        return None, f"unknown op {name!r}"[:120]
     try:
-        return model.model_validate(raw)
-    except ValidationError:
-        return None
+        return model.model_validate({**raw, "op": name}), None
+    except ValidationError as exc:
+        return None, f"invalid: {exc.errors()[0].get('msg', 'schema')}"[:200]
+
+
+# ─── Change tracking ────────────────────────────────────────────────────────
+
+
+@dataclass
+class Changes:
+    session: bool = False
+    sections: set[str] = field(default_factory=set)
+    decisions: set[str] = field(default_factory=set)
+    actions: set[str] = field(default_factory=set)
+    minutes: set[str] = field(default_factory=set)
+    attendees: set[str] = field(default_factory=set)
+    attachments: set[str] = field(default_factory=set)
+    documents: set[str] = field(default_factory=set)
+    quorum: bool = False
+    removed: list[dict] = field(default_factory=list)
+    activations: list[dict] = field(default_factory=list)
+
+    def any(self) -> bool:
+        return bool(
+            self.session or self.sections or self.decisions or self.actions or self.minutes
+            or self.attendees or self.attachments or self.documents or self.quorum or self.removed
+        )
+
+    def merge(self, other: "Changes") -> "Changes":
+        self.session = self.session or other.session
+        self.quorum = self.quorum or other.quorum
+        for name in ("sections", "decisions", "actions", "minutes", "attendees", "attachments", "documents"):
+            getattr(self, name).update(getattr(other, name))
+        self.removed.extend(other.removed)
+        self.activations.extend(other.activations)
+        return self
+
+    def activate(self, kind: str, section_id: str | None, item_id: str | None = None) -> None:
+        act = {"kind": kind, "tab": TAB[kind], "section_id": section_id, "prio": PRIO[kind]}
+        if item_id:
+            act["item_id"] = item_id
+        for a in self.activations:
+            if a == act:
+                return
+        self.activations.append(act)
 
 
 # ─── Apply context ──────────────────────────────────────────────────────────
 
 
 @dataclass
-class AppliedOp:
-    op_type: str
-    kind: str
-    id: str | None
-    action: str  # add | update | remove
-    status: str  # applied | rejected | suggested
-    reason: str | None = None
-    focus_prio: int = 0
-
-
-@dataclass
 class ApplyContext:
     db: Session
     session: MeetppSession
-    actor: str
-    now: datetime = field(default_factory=utcnow)
-    # transcript window this tick covers, for evidence validation
-    window_min: int = 0
-    window_max: int = 10**9
-    # alias -> (name, attendee person_key)
-    aliases: dict[str, tuple[str, str | None]] = field(default_factory=dict)
-    applied: list[AppliedOp] = field(default_factory=list)
-    rejected: list[AppliedOp] = field(default_factory=list)
-    phase_signal: dict | None = None
-    next_meeting: dict | None = None
-    minute_upserts: int = 0
-    has_agenda: bool = True
-    # Target state_version for every op row written by this tick.
-    version: int = 0
+    actor: str = "ai"
+    window: set[int] = field(default_factory=set)
+    context: set[int] = field(default_factory=set)
+    topic_section_id: str | None = None
+    changes: Changes = field(default_factory=Changes)
+    applied: int = 0
+    suggested: int = 0
+    rejected: list[dict] = field(default_factory=list)
+    compose: list[str] = field(default_factory=list)
+    # "S5" → section id as shown in the prompt (AI ticks).
+    pins: dict[str, str] | None = None
+    _outline: outline_mod.Outline | None = None
+    _series: MeetppSeries | None = None
 
-    def ver(self) -> int:
-        return self.version or (self.session.state_version + 1)
+    @property
+    def human(self) -> bool:
+        return self.actor != "ai"
 
-    def agenda_items(self) -> list[MeetppAgendaItem]:
-        return (
-            self.db.query(MeetppAgendaItem)
-            .filter_by(session_id=self.session.id)
-            .order_by(MeetppAgendaItem.position)
-            .all()
+    @property
+    def outline(self) -> outline_mod.Outline:
+        if self._outline is None:
+            self._outline = outline_mod.load(self.db, self.session.id)
+            self._outline.pins = self.pins
+        return self._outline
+
+    def reload_outline(self) -> None:
+        self._outline = None
+
+    @property
+    def series(self) -> MeetppSeries:
+        if self._series is None:
+            self._series = self.db.get(MeetppSeries, self.session.series_id)
+        return self._series
+
+    @property
+    def version(self) -> int:
+        return int(self.session.state_version or 0) + 1
+
+
+def _log(ctx: ApplyContext, op_type: str, raw: Any, status: str, reason: str | None = None, evidence: list[int] | None = None) -> None:
+    try:
+        payload = util.dumps(raw)[:20000]
+    except (TypeError, ValueError):
+        payload = str(raw)[:20000]
+    ctx.db.add(
+        MeetppOp(
+            session_id=ctx.session.id,
+            version=ctx.version,
+            op_type=str(op_type or "?")[:40],
+            payload_json=payload,
+            actor=ctx.actor[:200],
+            status=status,
+            reason=(reason or None) and reason[:300],
+            evidence_json=util.dumps(evidence or []),
         )
-
-    def find_item(self, item_id: str | None) -> MeetppAgendaItem | None:
-        if not item_id:
-            item = self.session.current_item_id
-            if item:
-                return self.db.get(MeetppAgendaItem, item)
-            items = self.agenda_items()
-            return items[0] if items else None
-        return self.db.get(MeetppAgendaItem, item_id)
+    )
 
 
-# ─── Validator / applier ────────────────────────────────────────────────────
+class Reject(Exception):
+    pass
 
 
-def _norm_tokens(text: str) -> set[str]:
-    text = unicodedata.normalize("NFKD", (text or "").lower())
-    return {t for t in re.findall(r"\w+", text) if len(t) > 2}
+class Suggest(Exception):
+    pass
 
 
-def _jaccard(a: set[str], b: set[str]) -> float:
-    if not a or not b:
-        return 0.0
-    return len(a & b) / len(a | b)
+def _check_evidence(ctx: ApplyContext, evidence: list[int], required: bool = True) -> list[int]:
+    if ctx.human:
+        return [e for e in evidence][:MAX_EVIDENCE]
+    known = ctx.window | ctx.context
+    ev = [e for e in evidence if e in known][:MAX_EVIDENCE]
+    if required and not any(e in ctx.window for e in ev):
+        raise Reject("evidence must cite at least one new transcript line" if evidence else "evidence missing")
+    return ev
 
 
-def _is_duplicate(text: str, existing: list[str]) -> bool:
-    tokens = _norm_tokens(text)
-    return any(_jaccard(tokens, _norm_tokens(e)) >= DUPLICATE_JACCARD for e in existing)
+def _section(ctx: ApplyContext, ref: str | None, section_id: str | None = None) -> MeetppSection | None:
+    o = ctx.outline
+    s = o.resolve(section_id) or o.resolve(ref)
+    if s is None and ctx.topic_section_id:
+        s = o.by_id.get(ctx.topic_section_id)
+    if s is None and ctx.session.topic_section_id:
+        s = o.by_id.get(ctx.session.topic_section_id)
+    if s is None and ctx.session.live_section_id:
+        s = o.by_id.get(ctx.session.live_section_id)
+    return s
 
 
-def _evidence_ok(ctx: ApplyContext, evidence: list[int]) -> bool:
-    if not evidence:
-        return False
-    return all(ctx.window_min <= int(e) <= ctx.window_max for e in evidence)
+def _seg_time(ctx: ApplyContext, seq: int | None):
+    if seq is None:
+        return None
+    seg = ctx.db.query(MeetppSegment).filter_by(session_id=ctx.session.id, seq=seq).first()
+    if seg is None:
+        return None
+    return util.aware(seg.t_end or seg.t_start or seg.created_at)
 
 
-def _resolve_owner(ctx: ApplyContext, alias: str | None) -> tuple[str | None, str | None]:
-    if not alias:
-        return None, None
-    key = alias.strip()
-    if key in ctx.aliases:
-        return ctx.aliases[key]
-    # quoted / free name — match a known attendee by normalised name
-    needle = key.strip('"\u201c\u201d ')
-    low = needle.lower()
-    for a in ctx.db.query(MeetppAttendee).filter_by(session_id=ctx.session.id).all():
-        if a.display_name.lower() == low or low in a.display_name.lower():
-            return a.display_name, a.person_key
-    return (needle or None), None
+def _norm_status(value: str | None, allowed: tuple[str, ...], default: str | None) -> str | None:
+    if not value:
+        return default
+    v = value.strip().lower().replace(" ", "_").replace("-", "_")
+    v = {
+        "agreed": "adopted", "approved": "adopted", "carried": "adopted", "passed": "adopted", "accepted": "adopted",
+        "declined": "rejected", "defeated": "rejected", "lost": "rejected",
+        "completed": "done", "closed": "done", "finished": "done", "inprogress": "in_progress", "ongoing": "in_progress",
+        "started": "in_progress", "dropped": "cancelled", "canceled": "cancelled",
+        "apologies": "excused", "apology": "excused", "proxy": "represented",
+    }.get(v, v)
+    return v if v in allowed else default
 
 
-def _valid_due(value: str | None) -> str | None:
+def _due(value: str | None) -> str | None:
     if not value:
         return None
-    try:
-        d = date.fromisoformat(value.strip()[:10])
-    except ValueError:
-        return None
-    if d < date.today():
-        return None
-    return d.isoformat()
-
-
-def _reject(ctx: ApplyContext, op_type: str, reason: str) -> None:
-    ctx.rejected.append(AppliedOp(op_type, _kind_for(op_type), None, "update", "rejected", reason))
-    ctx.db.add(
-        MeetppOp(
-            session_id=ctx.session.id,
-            version=ctx.ver(),
-            op_type=op_type,
-            payload_json="{}",
-            actor=ctx.actor,
-            status="rejected",
-            reason=reason[:300],
-        )
-    )
-
-
-def _kind_for(op_type: str) -> str:
-    return {
-        "agenda.set_active": "agenda",
-        "agenda.set_status": "agenda",
-        "agenda.add": "agenda",
-        "agenda.update": "agenda",
-        "decision.add": "decision",
-        "decision.update": "decision",
-        "action.add": "action",
-        "action.update": "action",
-        "minutes.upsert": "minutes",
-        "attendance.apologies": "attendance",
-        "attendance.require_next": "attendance",
-        "phase.signal": "phase",
-        "next_meeting.propose": "next_meeting",
-    }.get(op_type, "other")
-
-
-def _record(ctx: ApplyContext, op: AnyOp, kind: str, obj_id: str | None, action: str, prio: int) -> None:
-    payload = op.model_dump() if hasattr(op, "model_dump") else {}
-    ctx.applied.append(AppliedOp(op.op, kind, obj_id, action, "applied", None, prio))
-    ctx.db.add(
-        MeetppOp(
-            session_id=ctx.session.id,
-            version=ctx.ver(),
-            op_type=op.op,
-            payload_json=json.dumps(payload, ensure_ascii=False),
-            actor=ctx.actor,
-            status="applied",
-            evidence_json=json.dumps(getattr(op, "evidence", []) or []),
-        )
-    )
-
-
-def apply_ops(ctx: ApplyContext, raw_ops: list[dict]) -> list[AppliedOp]:
-    """Validate and apply up to MAX_OPS_PER_TICK operations. Any op on a locked
-    item becomes a suggestion (recorded, not applied)."""
-    session = ctx.session
-    for raw in raw_ops[:MAX_OPS_PER_TICK]:
-        if not isinstance(raw, dict):
-            continue
-        op = parse_op(raw)
-        if op is None:
-            _reject(ctx, str(raw.get("op", "?")), "invalid op or schema")
-            continue
+    m = re.search(r"(\d{4})-(\d{2})-(\d{2})", value)
+    if m:
         try:
-            _apply_one(ctx, op)
-        except Exception as exc:  # noqa: BLE001 — never let one op kill the tick
-            log.exception("meetpp: op %s failed", getattr(op, "op", "?"))
-            _reject(ctx, getattr(op, "op", "?"), f"error: {exc}")
-    return ctx.applied
-
-
-def _apply_one(ctx: ApplyContext, op: AnyOp) -> None:
-    session = ctx.session
-    kind = _kind_for(op.op)
-    handler = {
-        "agenda.set_active": _apply_agenda_active,
-        "agenda.set_status": _apply_agenda_status,
-        "agenda.add": _apply_agenda_add,
-        "agenda.update": _apply_agenda_update,
-        "decision.add": _apply_decision_add,
-        "decision.update": _apply_decision_update,
-        "action.add": _apply_action_add,
-        "action.update": _apply_action_update,
-        "minutes.upsert": _apply_minutes_upsert,
-        "attendance.apologies": _apply_apologies,
-        "attendance.require_next": _apply_require_next,
-        "phase.signal": _apply_phase_signal,
-        "next_meeting.propose": _apply_next_meeting,
-    }[op.op]
-    handler(ctx, op)
-
-
-def _apply_agenda_active(ctx: ApplyContext, op: AgendaSetActive) -> None:
-    item = ctx.db.get(MeetppAgendaItem, op.item_id)
-    if item is None or item.session_id != ctx.session.id:
-        _reject(ctx, op.op, "item not found")
-        return
-    for other in ctx.agenda_items():
-        if other.status == "active" and other.id != item.id:
-            other.status = "pending"
-    if item.status == "pending":
-        item.status = "active"
-        item.started_at = ctx.now
-    ctx.session.current_item_id = item.id
-    _record(ctx, op, "agenda", item.id, "update", 5)
-
-
-def _apply_agenda_status(ctx: ApplyContext, op: AgendaSetStatus) -> None:
-    item = ctx.db.get(MeetppAgendaItem, op.item_id)
-    if item is None or item.session_id != ctx.session.id:
-        _reject(ctx, op.op, "item not found")
-        return
-    if item.locked:
-        _suggest(ctx, op, "agenda", item.id)
-        return
-    item.status = op.status
-    item.closed_at = ctx.now
-    if ctx.session.current_item_id == item.id and op.status in ("done", "deferred"):
-        ctx.session.current_item_id = None
-    _record(ctx, op, "agenda", item.id, "update", 5)
-
-
-def _apply_agenda_add(ctx: ApplyContext, op: AgendaAdd) -> None:
-    phase = ctx.session.phase
-    if phase not in ("discussion", "aob", "next_steps"):
-        _reject(ctx, op.op, "agenda.add only allowed in discussion/aob")
-        return
-    items = ctx.agenda_items()
-    if len(items) >= MAX_AGENDA_ITEMS:
-        _reject(ctx, op.op, "agenda full")
-        return
-    item = MeetppAgendaItem(
-        id=_ulid(),
-        session_id=ctx.session.id,
-        position=(items[-1].position + 1) if items else 1,
-        title=op.title.strip()[:300],
-        presenter=(op.presenter or None),
-        source="aob",
-        status="pending",
-    )
-    ctx.db.add(item)
-    ctx.db.flush()
-    _record(ctx, op, "agenda", item.id, "add", 5)
-
-
-def _apply_agenda_update(ctx: ApplyContext, op: AgendaUpdate) -> None:
-    item = ctx.db.get(MeetppAgendaItem, op.item_id)
-    if item is None or item.session_id != ctx.session.id:
-        _reject(ctx, op.op, "item not found")
-        return
-    if item.locked:
-        _suggest(ctx, op, "agenda", item.id)
-        return
-    if op.title is not None:
-        item.title = op.title.strip()[:300] or item.title
-    if op.presenter is not None:
-        item.presenter = op.presenter.strip()[:200] or None
-    if op.timebox_minutes is not None:
-        item.timebox_minutes = max(0, min(600, int(op.timebox_minutes)))
-    if op.outcome is not None:
-        item.desired_outcome = op.outcome.strip()[:600] or None
-    if op.position is not None:
-        items = [i for i in ctx.agenda_items() if i.id != item.id]
-        target = max(1, min(len(items) + 1, int(op.position)))
-        items.insert(target - 1, item)
-        for idx, it in enumerate(items, start=1):
-            it.position = idx
-    _record(ctx, op, "agenda", item.id, "update", 5)
-
-
-def _apply_decision_add(ctx: ApplyContext, op: DecisionAdd) -> None:
-    if not _evidence_ok(ctx, op.evidence):
-        _reject(ctx, op.op, "evidence missing or outside window")
-        return
-    item = ctx.find_item(op.item_id)
-    existing = [d.text for d in ctx.db.query(MeetppDecision).filter_by(series_id=ctx.session.series_id).all()]
-    if _is_duplicate(op.text, existing):
-        _reject(ctx, op.op, "near-duplicate decision")
-        return
-    series = _series(ctx)
-    series.decision_counter += 1
-    decision = MeetppDecision(
-        id=_ulid(),
-        session_id=ctx.session.id,
-        series_id=ctx.session.series_id,
-        ref=f"D-{series.decision_counter:02d}",
-        agenda_item_id=item.id if item else None,
-        text=op.text.strip()[:600],
-        rationale=(op.rationale or None),
-        status="proposed",
-        origin="ai" if ctx.actor == "ai" else "user",
-        evidence_json=json.dumps(op.evidence),
-    )
-    ctx.db.add(decision)
-    ctx.db.flush()
-    _record(ctx, op, "decision", decision.id, "add", 4)
-
-
-def _apply_decision_update(ctx: ApplyContext, op: DecisionUpdate) -> None:
-    d = ctx.db.get(MeetppDecision, op.id)
-    if d is None or d.session_id != ctx.session.id:
-        _reject(ctx, op.op, "decision not found")
-        return
-    if d.locked:
-        _suggest(ctx, op, "decision", d.id)
-        return
-    if op.text is not None:
-        d.text = op.text.strip()[:600]
-    if op.status is not None:
-        d.status = op.status
-    _record(ctx, op, "decision", d.id, "update", 3)
-
-
-def _apply_action_add(ctx: ApplyContext, op: ActionAdd) -> None:
-    if not _evidence_ok(ctx, op.evidence):
-        _reject(ctx, op.op, "evidence missing or outside window")
-        return
-    item = ctx.find_item(op.item_id)
-    owner_name, owner_key = _resolve_owner(ctx, op.owner_alias)
-    existing = [a.title for a in ctx.db.query(MeetppAction).filter_by(series_id=ctx.session.series_id).all()]
-    if _is_duplicate(op.title, existing):
-        _reject(ctx, op.op, "near-duplicate action")
-        return
-    series = _series(ctx)
-    series.action_counter += 1
-    action = MeetppAction(
-        id=_ulid(),
-        series_id=ctx.session.series_id,
-        session_id=ctx.session.id,
-        ref=f"A-{series.action_counter:02d}",
-        title=op.title.strip()[:300],
-        owner_name=owner_name,
-        owner_person_key=owner_key,
-        due_date=_valid_due(op.due),
-        agenda_item_id=item.id if item else None,
-        status="proposed",
-        origin="ai" if ctx.actor == "ai" else "user",
-        evidence_json=json.dumps(op.evidence),
-    )
-    ctx.db.add(action)
-    ctx.db.flush()
-    _record(ctx, op, "action", action.id, "add", 3)
-
-
-def _apply_action_update(ctx: ApplyContext, op: ActionUpdate) -> None:
-    a = ctx.db.get(MeetppAction, op.id)
-    if a is None or a.series_id != ctx.session.series_id:
-        _reject(ctx, op.op, "action not found")
-        return
-    if a.locked:
-        _suggest(ctx, op, "action", a.id)
-        return
-    if op.status is not None:
-        a.status = op.status
-        if ctx.session.phase in ("previous_actions",):
-            a.review_status = op.status
-    if op.owner_alias is not None:
-        a.owner_name, a.owner_person_key = _resolve_owner(ctx, op.owner_alias)
-    if op.due is not None:
-        a.due_date = _valid_due(op.due)
-    if op.note is not None:
-        a.note = op.note[:500]
-    _record(ctx, op, "action", a.id, "update", 3)
-
-
-def _apply_minutes_upsert(ctx: ApplyContext, op: MinutesUpsert) -> None:
-    if ctx.minute_upserts >= MAX_MINUTE_UPSERTS_PER_TICK:
-        _reject(ctx, op.op, "minute upsert limit per tick")
-        return
-    item = ctx.find_item(op.item_id)
-    minute = (
-        ctx.db.query(MeetppMinute)
-        .filter_by(session_id=ctx.session.id, agenda_item_id=(item.id if item else None))
-        .first()
-    )
-    if minute and minute.locked:
-        _suggest(ctx, op, "minutes", minute.id)
-        return
-    if minute is None:
-        minute = MeetppMinute(
-            id=_ulid(),
-            session_id=ctx.session.id,
-            agenda_item_id=item.id if item else None,
-            body_md=op.body_md,
-            origin="ai" if ctx.actor == "ai" else "user",
-        )
-        ctx.db.add(minute)
-    else:
-        minute.body_md = op.body_md
-        minute.version += 1
-        minute.origin = "ai" if ctx.actor == "ai" else "user"
-    ctx.db.flush()
-    ctx.minute_upserts += 1
-    _record(ctx, op, "minutes", minute.id, "update", 1)
-
-
-def _apply_apologies(ctx: ApplyContext, op: AttendanceApologies) -> None:
-    if not _evidence_ok(ctx, op.evidence):
-        _reject(ctx, op.op, "evidence missing or outside window")
-        return
-    a = _find_attendee(ctx, op.person)
-    if a is None:
-        _reject(ctx, op.op, "person not known")
-        return
-    a.presence = "apologies"
-    a.required_now = True
-    _record(ctx, op, "attendance", a.id, "update", 2)
-
-
-def _apply_require_next(ctx: ApplyContext, op: AttendanceRequireNext) -> None:
-    count = ctx.db.query(MeetppAttendee).filter_by(session_id=ctx.session.id, required_next=True).count()
-    if count >= MAX_ATTENDEES:
-        _reject(ctx, op.op, "required-next limit reached")
-        return
-    a = _find_attendee(ctx, op.person)
-    if a is None:
-        if not op.person.strip():
-            _reject(ctx, op.op, "empty person")
-            return
-        a = MeetppAttendee(
-            id=_ulid(),
-            session_id=ctx.session.id,
-            person_key=_norm_person_key(op.person),
-            display_name=op.person.strip()[:200],
-            presence="absent",
-        )
-        ctx.db.add(a)
-    a.required_next = True
-    a.required_reason = op.reason[:300] or a.required_reason
-    ctx.db.flush()
-    _record(ctx, op, "attendance", a.id, "update", 2)
-
-
-def _apply_phase_signal(ctx: ApplyContext, op: PhaseSignal) -> None:
-    ctx.phase_signal = {"to": op.to, "confidence": op.confidence, "reason": op.reason}
-
-
-def _apply_next_meeting(ctx: ApplyContext, op: NextMeetingPropose) -> None:
-    ctx.next_meeting = {
-        "date_text": op.date_text,
-        "iso": op.iso,
-        "duration_min": op.duration_min,
-    }
-
-
-def _suggest(ctx: ApplyContext, op: AnyOp, kind: str, obj_id: str) -> None:
-    ctx.applied.append(AppliedOp(op.op, kind, obj_id, "update", "suggested", "item locked", 0))
-    ctx.db.add(
-        MeetppOp(
-            session_id=ctx.session.id,
-            version=ctx.ver(),
-            op_type=op.op,
-            payload_json=json.dumps(op.model_dump(), ensure_ascii=False),
-            actor=ctx.actor,
-            status="suggested",
-            reason="item locked",
-        )
-    )
-
-
-def _find_attendee(ctx: ApplyContext, person: str) -> MeetppAttendee | None:
-    if not person:
-        return None
-    low = person.strip().strip('"\u201c\u201d ').lower()
-    for a in ctx.db.query(MeetppAttendee).filter_by(session_id=ctx.session.id).all():
-        if a.display_name.lower() == low or a.display_name.lower().startswith(low[:20]):
-            return a
-        if low in a.display_name.lower():
-            return a
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3))).isoformat()
+        except ValueError:
+            return None
+    m = re.search(r"(\d{1,2})/(\d{1,2})/(\d{4})", value)
+    if m:
+        try:
+            return date(int(m.group(3)), int(m.group(2)), int(m.group(1))).isoformat()
+        except ValueError:
+            return None
     return None
 
 
-def _norm_person_key(name: str) -> str:
-    from app.meetpp.util import person_key
-
-    return person_key(None, name)
-
-
-def _ulid() -> str:
-    from ulid import ULID
-
-    return str(ULID())
+def _assignees(ctx: ApplyContext, names: list[str] | None) -> list[dict]:
+    out = []
+    for n in names or []:
+        display, key = governance.match_person(ctx.db, ctx.session, n)
+        if display and all(a["name"] != display for a in out):
+            out.append({"name": display, "person_key": key})
+    return out
 
 
-def _series(ctx: ApplyContext):
-    from app.meetpp.models import MeetppSeries
-
-    return ctx.db.get(MeetppSeries, ctx.session.series_id)
-
-
-# ─── Serialisation ──────────────────────────────────────────────────────────
-
-
-def _iso(dt: datetime | None) -> str | None:
-    if dt is None:
+def _decision_by_ref(ctx: ApplyContext, ref: str | None, id_: str | None) -> MeetppDecision | None:
+    d = None
+    if id_:
+        d = ctx.db.get(MeetppDecision, id_)
+    if d is None and ref:
+        r = ref.strip().upper().replace(" ", "")
+        m = re.fullmatch(r"D-?0*(\d+)", r)
+        q = ctx.db.query(MeetppDecision).filter_by(series_id=ctx.session.series_id)
+        d = q.filter_by(ref=f"D-{int(m.group(1))}").first() if m else q.filter_by(ref=ref.strip()).first()
+    if d is not None and d.session_id != ctx.session.id:
         return None
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc).isoformat()
+    return d
 
 
-def agenda_dict(i: MeetppAgendaItem) -> dict:
-    return {
-        "id": i.id,
-        "position": i.position,
-        "title": i.title,
-        "presenter": i.presenter,
-        "timebox": i.timebox_minutes,
-        "outcome": i.desired_outcome,
-        "status": i.status,
-        "source": i.source,
-        "started_at": _iso(i.started_at),
-        "locked": i.locked,
-    }
+def _action_by_ref(ctx: ApplyContext, ref: str | None, id_: str | None) -> MeetppAction | None:
+    a = None
+    if id_:
+        a = ctx.db.get(MeetppAction, id_)
+    if a is None and ref:
+        r = ref.strip().upper().replace(" ", "")
+        m = re.fullmatch(r"A-?0*(\d+)", r)
+        q = ctx.db.query(MeetppAction).filter_by(series_id=ctx.session.series_id)
+        a = q.filter_by(ref=f"A-{int(m.group(1))}").first() if m else q.filter_by(ref=ref.strip()).first()
+    if a is not None and a.series_id != ctx.session.series_id:
+        return None
+    return a
 
 
-def decision_dict(d: MeetppDecision, previous: bool = False) -> dict:
-    return {
-        "id": d.id,
-        "ref": d.ref,
-        "text": d.text,
-        "rationale": d.rationale,
-        "item_id": d.agenda_item_id,
-        "status": d.status,
-        "origin": d.origin,
-        "locked": d.locked,
-        "evidence": json.loads(d.evidence_json or "[]"),
-        "previous": previous,
-    }
+def _decision_text(d) -> str:
+    return f"{d.title or ''} {d.resolution or ''}"
 
 
-def action_dict(a: MeetppAction) -> dict:
-    return {
-        "id": a.id,
-        "ref": a.ref,
-        "session_id": a.session_id,
-        "title": a.title,
-        "owner": a.owner_name,
-        "due": a.due_date,
-        "item_id": a.agenda_item_id,
-        "status": a.status,
-        "review_status": a.review_status,
-        "origin": a.origin,
-        "locked": a.locked,
-        "note": a.note,
-        "evidence": json.loads(a.evidence_json or "[]"),
-    }
+def _similar(a_title: str, a_full: str, b_title: str, b_full: str) -> float:
+    return max(util.jaccard(a_title, b_title), util.jaccard(a_full, b_full))
 
 
-def attendee_dict(a: MeetppAttendee) -> dict:
-    return {
-        "id": a.id,
-        "person_key": a.person_key,
-        "identities": json.loads(a.identities_json or "[]"),
-        "name": a.display_name,
-        "email": a.email,
-        "role": a.role,
-        "presence": a.presence,
-        "talk_seconds": a.talk_seconds,
-        "opted_out": a.opted_out,
-        "required_now": a.required_now,
-        "required_next": a.required_next,
-        "required_reason": a.required_reason,
-    }
+def is_previous_action(a: MeetppAction, session: MeetppSession) -> bool:
+    return a.session_id != session.id or a.origin == "pdf"
 
 
-def minute_dict(m: MeetppMinute) -> dict:
-    return {
-        "id": m.id,
-        "item_id": m.agenda_item_id,
-        "body_md": m.body_md,
-        "version": m.version,
-        "status": m.status,
-        "locked": m.locked,
-    }
+# ─── Appliers ───────────────────────────────────────────────────────────────
 
 
-def attachment_dict(a: MeetppAttachment) -> dict:
-    return {
-        "id": a.id,
-        "item_id": a.agenda_item_id,
-        "kind": a.kind,
-        "filename": a.filename,
-        "caption": a.caption,
-        "author": a.author,
-        "url": f"/api/v1/meetpp/sessions/{a.session_id}/attachments/{a.id}",
-    }
+def _decision_fields(ctx: ApplyContext, d: MeetppDecision, op, *, evidence: list[int]) -> bool:
+    """Apply title/resolution/how_taken/status/vote. Returns True if the
+    decision became adopted or rejected (activation)."""
+    before = d.status
+    if op.title:
+        d.title = op.title
+    if op.resolution:
+        d.resolution = op.resolution
+    if op.how_taken:
+        d.how_taken = op.how_taken
+    status = _norm_status(op.status, DECISION_STATUSES, None)
+    if status == "pending" and not ctx.human:
+        status = None
+    if status:
+        d.status = status
+    if getattr(op, "decided_at_seq", None) is not None:
+        d.decided_seq = op.decided_at_seq
+        d.decided_at = _seg_time(ctx, op.decided_at_seq) or d.decided_at
+    if d.status in ("adopted", "rejected") and d.decided_at is None:
+        seq = max(evidence) if evidence else None
+        d.decided_seq = d.decided_seq or seq
+        d.decided_at = _seg_time(ctx, seq) or util.now()
+    if evidence:
+        merged = util.loads(d.evidence_json, [])
+        for e in evidence:
+            if e not in merged:
+                merged.append(e)
+        d.evidence_json = util.dumps(merged[-30:])
+    if op.vote:
+        vote_data = dict(op.vote)
+        governance.apply_vote(ctx.db, ctx.session, d, vote_data, confirmed=True if ctx.human else False)
+        vote = ctx.db.query(MeetppVote).filter_by(decision_id=d.id).first()
+        if vote is not None and vote.result and not status:
+            d.status = vote.result
+    elif (
+        not ctx.human and d.status == "adopted" and before != "adopted" and governance.is_formal(ctx.series)
+        and ctx.db.query(MeetppVote).filter_by(decision_id=d.id).first() is None
+    ):
+        # Adopted with no count heard: recorded as taken with the assent of the
+        # voting members present (the chair can correct it in review).
+        governance.apply_vote(ctx.db, ctx.session, d, {"method": "assent"}, confirmed=False)
+    if ctx.human:
+        d.locked = True
+    return d.status != before and d.status in ("adopted", "rejected")
 
 
-def session_meta(s: MeetppSession) -> dict:
+def _new_ref(ctx: ApplyContext, kind: str) -> str:
+    series = ctx.series
+    if kind == "D":
+        series.decision_counter = int(series.decision_counter or 0) + 1
+        return f"D-{series.decision_counter}"
+    series.action_counter = int(series.action_counter or 0) + 1
+    return f"A-{series.action_counter}"
+
+
+def _apply_decision_add(ctx: ApplyContext, op: DecisionAdd) -> str:
+    title = op.title or (util.truncate(re.sub(r"^that\s+", "", op.resolution or "", flags=re.I), 120) if op.resolution else None)
+    if not title:
+        raise Reject("title missing")
+    evidence = _check_evidence(ctx, op.evidence)
+    section = _section(ctx, op.section, op.section_id)
+    o = ctx.outline
+    existing = ctx.db.query(MeetppDecision).filter_by(session_id=ctx.session.id).all()
+    full = f"{title} {op.resolution or ''}"
+    top_id = o.top(section).id if section else None
+    # A decision that was prefilled as "to take" is updated, not duplicated.
+    best, best_score = None, 0.0
+    for d in existing:
+        if d.status != "pending":
+            continue
+        ds = o.by_id.get(d.section_id or "")
+        if top_id and ds is not None and o.top(ds).id != top_id:
+            continue
+        score = _similar(title, full, d.title, _decision_text(d))
+        if score > best_score:
+            best, best_score = d, score
+    target = best if best is not None and best_score >= PENDING_MERGE_JACCARD else None
+    if target is None:
+        for d in existing:
+            if d.status == "pending":
+                continue
+            if _similar(title, full, d.title, _decision_text(d)) >= DUPLICATE_JACCARD:
+                new_status = _norm_status(op.status, DECISION_STATUSES, None)
+                if new_status and new_status != d.status and not d.locked:
+                    target = d
+                    break
+                raise Reject(f"duplicate of {d.ref}")
+    if target is not None:
+        if target.locked and not ctx.human:
+            raise Suggest(f"{target.ref} is locked")
+        if not op.status:
+            op.status = "adopted" if ctx.human else "proposed"
+        took = _decision_fields(ctx, target, op, evidence=evidence)
+        ctx.changes.decisions.add(target.id)
+        ctx.changes.sections.add(target.section_id or "")
+        if took or target.status in ("adopted", "rejected"):
+            ctx.changes.activate("decision", target.section_id, target.id)
+        ctx.changes.quorum = True
+        return f"merged into {target.ref}"
+    d = MeetppDecision(
+        id=util.ulid(),
+        session_id=ctx.session.id,
+        series_id=ctx.session.series_id,
+        ref=_new_ref(ctx, "D"),
+        section_id=section.id if section else None,
+        title=title,
+        status="proposed",
+        origin="user" if ctx.human else "ai",
+        confirmed=ctx.human,
+        evidence_json="[]",
+    )
+    ctx.db.add(d)
+    ctx.db.flush()
+    if not op.status:
+        op.status = "adopted" if ctx.human else "proposed"
+    _decision_fields(ctx, d, op, evidence=evidence)
+    ctx.changes.decisions.add(d.id)
+    if d.section_id:
+        ctx.changes.sections.add(d.section_id)
+    ctx.changes.activate("decision", d.section_id, d.id)
+    return d.ref
+
+
+def _apply_decision_update(ctx: ApplyContext, op: DecisionUpdate) -> str:
+    d = _decision_by_ref(ctx, op.ref, op.id)
+    if d is None:
+        raise Reject("decision not found")
+    evidence = _check_evidence(ctx, op.evidence)
+    if d.locked and not ctx.human:
+        raise Suggest(f"{d.ref} is locked")
+    if ctx.human and (op.section_id or op.section):
+        s = ctx.outline.resolve(op.section_id) or ctx.outline.resolve(op.section)
+        if s is not None and s.id != d.section_id:
+            ctx.changes.sections.update({d.section_id or "", s.id})
+            d.section_id = s.id
+    took = _decision_fields(ctx, d, op, evidence=evidence)
+    ctx.changes.decisions.add(d.id)
+    if took:
+        ctx.changes.activate("decision", d.section_id, d.id)
+    return d.ref
+
+
+def _apply_action_add(ctx: ApplyContext, op: ActionAdd) -> str:
+    if not op.title:
+        raise Reject("title missing")
+    evidence = _check_evidence(ctx, op.evidence)
+    section = _section(ctx, op.section, op.section_id)
+    series_actions = ctx.db.query(MeetppAction).filter_by(series_id=ctx.session.series_id).all()
+    for a in series_actions:
+        if util.jaccard(a.title, op.title) < DUPLICATE_JACCARD:
+            continue
+        if a.session_id == ctx.session.id and not is_previous_action(a, ctx.session):
+            raise Reject(f"duplicate of {a.ref}")
+        if a.status in OPEN_ACTION_STATUSES:
+            raise Reject(f"duplicate of previous action {a.ref} (use action.update)")
+    decision = _decision_by_ref(ctx, op.from_decision, None) if op.from_decision else None
+    status = _norm_status(op.status, ACTION_STATUSES, None) if ctx.human else None
+    a = MeetppAction(
+        id=util.ulid(),
+        series_id=ctx.session.series_id,
+        session_id=ctx.session.id,
+        ref=_new_ref(ctx, "A"),
+        section_id=section.id if section else None,
+        title=op.title,
+        description=op.description,
+        assignees_json=util.dumps(_assignees(ctx, op.assignees)),
+        due_date=_due(op.due),
+        status=status or ("open" if ctx.human else "proposed"),
+        decision_id=decision.id if decision else None,
+        origin="user" if ctx.human else "ai",
+        locked=ctx.human,
+        evidence_json=util.dumps(evidence),
+    )
+    ctx.db.add(a)
+    ctx.db.flush()
+    ctx.changes.actions.add(a.id)
+    if a.section_id:
+        ctx.changes.sections.add(a.section_id)
+    ctx.changes.activate("action", a.section_id, a.id)
+    return a.ref
+
+
+def _report_for(ctx: ApplyContext, a: MeetppAction) -> MeetppActionReport:
+    r = ctx.db.query(MeetppActionReport).filter_by(action_id=a.id, session_id=ctx.session.id).first()
+    if r is None:
+        r = MeetppActionReport(action_id=a.id, session_id=ctx.session.id, note="", evidence_json="[]")
+        ctx.db.add(r)
+    return r
+
+
+def _append_text(existing: str | None, new: str, sep: str = " ") -> str:
+    if not existing:
+        return new
+    if util.jaccard(existing, new) >= NOTE_DUPLICATE_JACCARD or new in existing:
+        return existing
+    return f"{existing}{sep}{new}"
+
+
+def _action_update_is_noop(ctx: ApplyContext, a: MeetppAction, op: ActionUpdate, status: str | None) -> bool:
+    """The model often repeats an update it already made; re-applying it would
+    only flash the same item on the board again."""
+    if status and status != a.status:
+        return False
+    if op.due and _due(op.due) and _due(op.due) != a.due_date:
+        return False
+    if op.assignees:
+        return False
+    report = ctx.db.query(MeetppActionReport).filter_by(action_id=a.id, session_id=ctx.session.id).first()
+    for text, existing in (
+        (op.report_note, report.note if report else None),
+        (op.completion_note, a.completion_note),
+        (op.progress_note, a.progress_notes),
+    ):
+        if text and _append_text(existing, text) != (existing or ""):
+            return False
+    return True
+
+
+def _apply_action_update(ctx: ApplyContext, op: ActionUpdate) -> str:
+    a = _action_by_ref(ctx, op.ref, op.id)
+    if a is None:
+        raise Reject("action not found")
+    evidence = _check_evidence(ctx, op.evidence)
+    if a.locked and not ctx.human:
+        raise Suggest(f"{a.ref} is locked")
+    status = _norm_status(op.status, ACTION_STATUSES, None)
+    if not ctx.human and _action_update_is_noop(ctx, a, op, status):
+        raise Reject("no change")
+    if status and status != a.status:
+        a.status = status
+        if status == "done":
+            a.completed_at = a.completed_at or util.now()
+        elif status in OPEN_ACTION_STATUSES:
+            a.completed_at = None
+    if op.title and ctx.human:
+        a.title = op.title
+    if op.description and ctx.human:
+        a.description = op.description
+    if op.due:
+        due = _due(op.due)
+        if due:
+            a.due_date = due
+    if op.assignees is not None and op.assignees:
+        a.assignees_json = util.dumps(_assignees(ctx, op.assignees))
+    if op.completion_note:
+        a.completion_note = op.completion_note if ctx.human else _append_text(a.completion_note, op.completion_note)
+    if op.progress_note:
+        stamp = util.now().date().isoformat()
+        a.progress_notes = _append_text(a.progress_notes, f"{stamp}: {op.progress_note}", "\n")
+    report = None
+    if op.report_note or status or op.completion_note or op.progress_note:
+        report = _report_for(ctx, a)
+        if op.report_note:
+            report.note = op.report_note if ctx.human else _append_text(report.note, op.report_note)
+        report.status_at_report = a.status
+        if evidence:
+            ev = util.loads(report.evidence_json, [])
+            report.evidence_json = util.dumps((ev + [e for e in evidence if e not in ev])[-30:])
+    if evidence:
+        ev = util.loads(a.evidence_json, [])
+        a.evidence_json = util.dumps((ev + [e for e in evidence if e not in ev])[-30:])
+    if ctx.human:
+        a.locked = True
+    ctx.changes.actions.add(a.id)
+    ctx.changes.activate("action", action_section_id(ctx.db, ctx.session, a, ctx.outline), a.id)
+    return a.ref
+
+
+def _attendee_for(ctx: ApplyContext, person: str, create_status: str) -> MeetppAttendee | None:
+    display, key = governance.match_person(ctx.db, ctx.session, person)
+    if not display:
+        return None
+    key = key or util.name_key(display)
+    a = ctx.db.query(MeetppAttendee).filter_by(session_id=ctx.session.id, person_key=key).first()
+    if a is None:
+        roster = ctx.db.query(MeetppRoster).filter_by(series_id=ctx.session.series_id, person_key=key).first()
+        a = MeetppAttendee(
+            id=util.ulid(),
+            session_id=ctx.session.id,
+            person_key=key,
+            roster_id=roster.id if roster else None,
+            display_name=roster.display_name if roster else display,
+            username=roster.username if roster else None,
+            email=roster.email if roster else None,
+            status=create_status,
+            voting=bool(roster.voting) if roster else False,
+            identities_json="[]",
+        )
+        ctx.db.add(a)
+        ctx.db.flush()
+    return a
+
+
+def _apply_attendance_set(ctx: ApplyContext, op: AttendanceSet) -> str:
+    if not op.person:
+        raise Reject("person missing")
+    status = _norm_status(op.status, ATTENDANCE_STATUSES, None)
+    if status is None:
+        raise Reject("invalid attendance status")
+    evidence = _check_evidence(ctx, op.evidence)
+    a = _attendee_for(ctx, op.person, status)
+    if a is None:
+        raise Reject("person not recognised")
+    if not ctx.human and a.online and status in ("absent", "excused"):
+        raise Reject("person is connected")
+    a.status = status
+    if status == "represented":
+        if op.represented_by:
+            a.represented_by = op.represented_by
+        if op.mandate_ref:
+            a.mandate_ref = op.mandate_ref
+    _ = evidence
+    ctx.changes.attendees.add(a.id)
+    ctx.changes.quorum = True
+    ctx.changes.activate("attendance", ctx.session.live_section_id, a.id)
+    return a.display_name
+
+
+def _apply_require_next(ctx: ApplyContext, op: AttendanceRequireNext) -> str:
+    if not op.person:
+        raise Reject("person missing")
+    _check_evidence(ctx, op.evidence)
+    a = _attendee_for(ctx, op.person, "absent")
+    if a is None:
+        raise Reject("person not recognised")
+    a.required_next = True
+    if op.reason:
+        a.required_reason = op.reason
+    ctx.changes.attendees.add(a.id)
+    ctx.changes.activate("attendance", ctx.session.live_section_id, a.id)
+    return a.display_name
+
+
+def _apply_section_add(ctx: ApplyContext, op: SectionAdd) -> str:
+    if not op.title:
+        raise Reject("title missing")
+    kind = (op.kind or "subpoint").strip().lower()
+    parent_id = None
+    if kind in ("subpoint", "sub_point", "sub-point", "agenda") and (op.parent or op.parent_id):
+        parent = ctx.outline.resolve(op.parent_id) or ctx.outline.resolve(op.parent)
+        if parent is None:
+            raise Reject("parent section not found")
+        parent_id = ctx.outline.top(parent).id
+    elif kind in ("subpoint", "sub_point", "sub-point"):
+        if ctx.human:
+            raise Reject("parent required for a sub-point")
+        base = _section(ctx, None)
+        if base is None:
+            raise Reject("parent required for a sub-point")
+        parent_id = ctx.outline.top(base).id
     try:
-        settings = json.loads(s.settings_json or "{}")
-    except ValueError:
-        settings = {}
-    try:
-        editors = json.loads(s.editors_json or "[]")
-    except ValueError:
-        editors = []
+        s = outline_mod.add_section(
+            ctx.db,
+            ctx.session,
+            title=op.title,
+            kind="aob" if kind == "aob" else "agenda",
+            parent_id=parent_id,
+            source="user" if ctx.human else "ai",
+        )
+    except outline_mod.OutlineError as exc:
+        raise Reject(str(exc)) from exc
+    ctx.reload_outline()
+    # Positions of other rows may have changed: send the whole outline.
+    ctx.changes.sections.update(x.id for x in ctx.outline.flat)
+    return s.id
+
+
+def _apply_next_meeting(ctx: ApplyContext, op: NextMeetingPropose) -> str:
+    _check_evidence(ctx, op.evidence)
+    final = util.loads(ctx.session.final_json, {})
+    final["next_meeting_proposal"] = {"when_text": op.when_text, "iso": op.iso}
+    ctx.session.final_json = util.dumps(final)
+    return "next meeting"
+
+
+def _apply_confirm(ctx: ApplyContext, op: IdOp) -> str:
+    if op.op == "decision.confirm":
+        d = _decision_by_ref(ctx, op.id, op.id)
+        if d is None:
+            raise Reject("decision not found")
+        d.confirmed = True
+        d.locked = True
+        if d.status == "pending":
+            d.status = "proposed"
+        ctx.changes.decisions.add(d.id)
+        return d.ref
+    a = _action_by_ref(ctx, op.id, op.id)
+    if a is None:
+        raise Reject("action not found")
+    if a.status == "proposed":
+        a.status = "open"
+    a.locked = True
+    ctx.changes.actions.add(a.id)
+    return a.ref
+
+
+def delete_decision(db: Session, d: MeetppDecision) -> None:
+    vote = db.query(MeetppVote).filter_by(decision_id=d.id).first()
+    if vote is not None:
+        db.query(MeetppBallot).filter_by(vote_id=vote.id).delete(synchronize_session=False)
+        db.delete(vote)
+    db.query(MeetppAction).filter_by(decision_id=d.id).update({MeetppAction.decision_id: None}, synchronize_session=False)
+    db.delete(d)
+
+
+def _apply_reject(ctx: ApplyContext, op: IdOp) -> str:
+    if op.op == "decision.reject":
+        d = _decision_by_ref(ctx, op.id, op.id)
+        if d is None:
+            raise Reject("decision not found")
+        ref, sid = d.ref, d.section_id
+        delete_decision(ctx.db, d)
+        ctx.changes.removed.append({"kind": "decision", "id": op.id})
+        if sid:
+            ctx.changes.sections.add(sid)
+        return ref
+    a = _action_by_ref(ctx, op.id, op.id)
+    if a is None:
+        raise Reject("action not found")
+    if is_previous_action(a, ctx.session):
+        raise Reject("a previous action cannot be removed; set its status to cancelled")
+    ref, sid = a.ref, a.section_id
+    ctx.db.query(MeetppActionReport).filter_by(action_id=a.id).delete(synchronize_session=False)
+    ctx.db.delete(a)
+    ctx.changes.removed.append({"kind": "action", "id": op.id})
+    if sid:
+        ctx.changes.sections.add(sid)
+    return ref
+
+
+def _apply_minutes_edit(ctx: ApplyContext, op: MinutesEdit) -> str:
+    if op.narrative_md is None:
+        raise Reject("narrative_md missing")
+    if op.section_id:
+        s = ctx.outline.resolve(op.section_id)
+        if s is None:
+            raise Reject("section not found")
+        m = outline_mod.minute_for(ctx.db, ctx.session, ctx.outline.top(s).id)
+    else:
+        kind = (op.kind or "").strip()
+        if kind not in FINAL_PART_KINDS:
+            raise Reject("section_id or kind required")
+        m = outline_mod.minute_for(ctx.db, ctx.session, None, kind=kind)
+    m.narrative_md = op.narrative_md
+    m.status = "edited"
+    m.locked = True
+    m.error = None
+    m.version = int(m.version or 0) + 1
+    m.composed_at = util.now()
+    ctx.changes.minutes.add(m.id)
+    return m.id
+
+
+def _apply_section_update(ctx: ApplyContext, op: SectionUpdate) -> str:
+    s = ctx.outline.resolve(op.id)
+    if s is None:
+        raise Reject("section not found")
+    if op.title:
+        s.title = op.title
+    if op.body is not None:
+        s.body = op.body
+    if op.presenter is not None:
+        s.presenter = op.presenter
+    if op.timebox_minutes is not None:
+        s.timebox_minutes = max(0, min(600, op.timebox_minutes)) or None
+    s.locked = True
+    ctx.changes.sections.add(s.id)
+    return s.id
+
+
+def _apply_section_status(ctx: ApplyContext, op: SectionStatus) -> str:
+    s = ctx.outline.resolve(op.id)
+    if s is None:
+        raise Reject("section not found")
+    status = (op.status or "").strip().lower()
+    if status not in ("done", "deferred"):
+        raise Reject("status must be done or deferred")
+    if s.id == ctx.session.live_section_id:
+        raise Reject("the live section is closed with Next")
+    s.status = status
+    s.ended_at = s.ended_at or util.now()
+    ctx.changes.sections.add(s.id)
+    if not s.parent_id:
+        for c in ctx.outline.children.get(s.id, []):
+            if c.status == "pending":
+                c.status = "done"
+                ctx.changes.sections.add(c.id)
+        if status == "done":
+            ctx.compose.append(s.id)
+    return s.id
+
+
+_APPLIERS = {
+    "decision.add": _apply_decision_add,
+    "decision.update": _apply_decision_update,
+    "action.add": _apply_action_add,
+    "action.update": _apply_action_update,
+    "attendance.set": _apply_attendance_set,
+    "attendance.require_next": _apply_require_next,
+    "section.add": _apply_section_add,
+    "next_meeting.propose": _apply_next_meeting,
+    "decision.confirm": _apply_confirm,
+    "action.confirm": _apply_confirm,
+    "decision.reject": _apply_reject,
+    "action.reject": _apply_reject,
+    "minutes.edit": _apply_minutes_edit,
+    "section.update": _apply_section_update,
+    "section.status": _apply_section_status,
+}
+
+
+def apply_ops(ctx: ApplyContext, raw_ops: list) -> ApplyContext:
+    """Validate and apply operations. Never raises; every outcome is logged."""
+    vocabulary = HUMAN_OPS if ctx.human else AI_OPS
+    if not isinstance(raw_ops, list):
+        raw_ops = []
+    limit = 200 if ctx.human else MAX_AI_OPS_PER_TICK
+    for i, raw in enumerate(raw_ops):
+        if i >= limit:
+            _log(ctx, "?", raw, "rejected", "too many operations in one tick")
+            ctx.rejected.append({"op": raw, "reason": "too many operations"})
+            continue
+        op, err = parse_op(raw, vocabulary)
+        if op is None:
+            name = raw.get("op") if isinstance(raw, dict) else "?"
+            _log(ctx, str(name), raw, "rejected", err)
+            ctx.rejected.append({"op": raw, "reason": err})
+            continue
+        try:
+            detail = _APPLIERS[op.op](ctx, op)
+            ctx.applied += 1
+            _log(ctx, op.op, raw, "applied", detail if isinstance(detail, str) and detail.startswith("merged") else None,
+                 getattr(op, "evidence", None))
+        except Suggest as exc:
+            ctx.suggested += 1
+            _log(ctx, op.op, raw, "suggested", str(exc), getattr(op, "evidence", None))
+            ctx.rejected.append({"op": raw, "reason": f"suggested: {exc}"})
+        except Reject as exc:
+            _log(ctx, op.op, raw, "rejected", str(exc), getattr(op, "evidence", None))
+            ctx.rejected.append({"op": raw, "reason": str(exc)})
+        except SQLAlchemyError as exc:
+            # The unit of work is unusable: drop this batch, keep the audit row.
+            log.exception("meetpp: op %s failed (rolled back)", op.op)
+            ctx.db.rollback()
+            ctx.changes = Changes()
+            ctx.applied = 0
+            ctx.reload_outline()
+            ctx._series = None
+            _log(ctx, op.op, raw, "rejected", f"error: {exc}"[:300])
+            ctx.rejected.append({"op": raw, "reason": "database error"})
+        except Exception as exc:  # noqa: BLE001 — one bad op never kills the tick
+            log.exception("meetpp: op %s failed", op.op)
+            ctx.reload_outline()
+            _log(ctx, op.op, raw, "rejected", f"error: {exc}")
+            ctx.rejected.append({"op": raw, "reason": f"error: {exc}"[:200]})
+    ctx.changes.sections.discard("")
+    return ctx
+
+
+def apply_notes(ctx: ApplyContext, raw_notes: list) -> int:
+    """Append running notes (append-only, deduplicated, evidence required)."""
+    added = 0
+    if not isinstance(raw_notes, list):
+        return 0
+    for i, raw in enumerate(raw_notes):
+        if i >= MAX_NOTES_PER_TICK:
+            _log(ctx, "note", raw, "rejected", "too many notes in one tick")
+            continue
+        if isinstance(raw, str):
+            raw = {"text": raw}
+        try:
+            note = Note.model_validate(raw if isinstance(raw, dict) else {})
+        except ValidationError:
+            _log(ctx, "note", raw, "rejected", "invalid note")
+            continue
+        if not note.text:
+            _log(ctx, "note", raw, "rejected", "empty note")
+            continue
+        try:
+            evidence = _check_evidence(ctx, note.evidence)
+        except Reject as exc:
+            _log(ctx, "note", raw, "rejected", str(exc))
+            continue
+        section = _section(ctx, note.section)
+        m = outline_mod.minute_for(ctx.db, ctx.session, section.id if section else None)
+        notes = util.loads(m.notes_json, [])
+        if any(util.jaccard(n.get("text", ""), note.text) >= NOTE_DUPLICATE_JACCARD for n in notes):
+            _log(ctx, "note", raw, "rejected", "duplicate note")
+            continue
+        notes.append({"text": note.text, "evidence": evidence, "at": util.iso(util.now())})
+        m.notes_json = util.dumps(notes)
+        ctx.changes.minutes.add(m.id)
+        added += 1
+    return added
+
+
+# ─── DTOs (contract §3) ─────────────────────────────────────────────────────
+
+
+def _settings(s: MeetppSession) -> dict:
+    data = util.loads(s.settings_json, {})
     return {
-        "editors": editors,
+        "show_public": bool(data.get("show_public", False)),
+        "in_recordings": bool(data.get("in_recordings", True)),
+        "timebox_nudges": bool(data.get("timebox_nudges", True)),
+        "speak": bool(data.get("speak", True)),
+    }
+
+
+def session_meta(db: Session, s: MeetppSession, *, series: MeetppSeries | None = None, meeting: Meeting | None = None) -> dict:
+    from app.meetpp import llm
+
+    series = series or db.get(MeetppSeries, s.series_id)
+    meeting = meeting or db.get(Meeting, s.meeting_id)
+    agent = util.loads(s.agent_json, {})
+    proposal = util.loads(s.proposal_json, {}) if s.proposal_json else None
+    jobs = util.loads(s.jobs_json, {})
+    return {
         "id": s.id,
         "status": s.status,
         "template": s.template,
         "mode": s.mode,
-        "language": s.language,
+        "language": s.language or "en",
         "goal": s.goal,
-        "phase": s.phase,
-        "phase_index": s.phase_index,
-        "current_item_id": s.current_item_id,
-        "version": s.state_version,
-        "settings": settings,
-        "started_at": _iso(s.started_at),
-        "ended_at": _iso(s.ended_at),
+        "meeting_type": series.meeting_type if series else "informal",
+        "majority_rule": series.majority_rule if series else "ordinary",
+        # Series rules for the setup/review screens (clarification of §3).
+        "quorum_required": series.quorum_required if series else None,
+        "voting_body": governance.BODY_LABELS.get(series.meeting_type) if series and governance.is_formal(series) else None,
+        "series_id": s.series_id,
+        "series_title": series.title if series else None,
+        "meeting_id": s.meeting_id,
+        "room": meeting.room_name if meeting else None,
+        "live_section_id": s.live_section_id,
+        "topic_section_id": s.topic_section_id,
+        "started_at": util.iso(s.started_at),
+        "ended_at": util.iso(s.ended_at),
+        "published_at": util.iso(s.published_at),
+        "settings": _settings(s),
+        "editors": util.loads(s.editors_json, []),
+        "undo": outline_mod.undo_info(s),
+        "proposal": (
+            {k: proposal.get(k) for k in ("pid", "to", "reason", "confidence")} if proposal and proposal.get("pid") else None
+        ),
+        "agent": {
+            "status": agent.get("status") or "offline",
+            "backlog_s": agent.get("backlog_s") or 0,
+            "speakers": [
+                {"name": sp.get("name"), "ok": bool(sp.get("ok", True))}
+                for sp in (agent.get("speakers") or [])
+                if isinstance(sp, dict)
+            ],
+            "tier2": agent.get("tier2") or "off",
+        },
+        "ai": {"status": llm.ai_status(s.id)},
+        "jobs": jobs or None,
     }
 
 
-def build_state(db: Session, s: MeetppSession) -> dict:
-    items = db.query(MeetppAgendaItem).filter_by(session_id=s.id).order_by(MeetppAgendaItem.position).all()
-    decisions = (
-        db.query(MeetppDecision).filter_by(session_id=s.id).order_by(MeetppDecision.created_at).all()
-    )
-    actions = (
-        db.query(MeetppAction)
-        .filter(
-            MeetppAction.series_id == s.series_id,
-            (MeetppAction.session_id == s.id)
-            | (MeetppAction.status.notin_(("done", "dropped"))),
-        )
-        .order_by(MeetppAction.created_at)
-        .all()
-    )
-    attendees = (
-        db.query(MeetppAttendee).filter_by(session_id=s.id).order_by(MeetppAttendee.display_name).all()
-    )
-    minutes = db.query(MeetppMinute).filter_by(session_id=s.id).all()
-    attachments = (
-        db.query(MeetppAttachment).filter_by(session_id=s.id).order_by(MeetppAttachment.created_at).all()
-    )
-    # Previous session's decisions as a collapsed reference group.
-    prev = (
-        db.query(MeetppDecision)
-        .filter(MeetppDecision.series_id == s.series_id, MeetppDecision.session_id != s.id)
-        .order_by(MeetppDecision.created_at.desc())
-        .limit(20)
-        .all()
-    )
+def section_dto(s: MeetppSection, o: outline_mod.Outline, session: MeetppSession, counts: dict) -> dict:
     return {
-        "session": session_meta(s),
-        "agenda": [agenda_dict(i) for i in items],
-        "decisions": [decision_dict(d) for d in decisions],
-        "previous_decisions": [decision_dict(d, previous=True) for d in reversed(prev)],
-        "actions": [action_dict(a) for a in actions],
-        "attendance": [attendee_dict(a) for a in attendees],
-        "minutes": [minute_dict(m) for m in minutes],
-        "attachments": [attachment_dict(a) for a in attachments],
+        "id": s.id,
+        "kind": s.kind,
+        "parent_id": s.parent_id,
+        "position": s.position,
+        "number": o.numbers.get(s.id),
+        "title": s.title,
+        "body": s.body,
+        "presenter": s.presenter,
+        "timebox_minutes": s.timebox_minutes,
+        "status": s.status,
+        "started_at": util.iso(s.started_at),
+        "ended_at": util.iso(s.ended_at),
+        "elapsed_seconds": round(float(s.elapsed_seconds or 0.0), 1),
+        "source": s.source,
+        "locked": bool(s.locked),
+        "counts": counts.get(s.id, {"decisions": 0, "actions": 0}),
     }
 
 
-# Delta buckets use the plural collection names the client merges (matching
-# Appendix B: {"delta":{"actions":[…]}}). `changes[].kind` stays singular.
-_DELTA_KEY = {
-    "agenda": "agenda",
-    "decision": "decisions",
-    "action": "actions",
-    "attendance": "attendance",
-    "minutes": "minutes",
-    "attachment": "attachments",
-}
-
-
-def delta_from_applied(ctx: ApplyContext) -> dict:
-    """Build a compact delta for the applied operations (bounded ≤ 8 KB)."""
-    delta: dict[str, list] = {}
-    changes = []
-    for ap in ctx.applied:
-        if ap.action == "remove":
-            changes.append({"kind": ap.kind, "id": ap.id, "op": "remove"})
-            # Removal still needs the plural bucket so the client can drop it.
-            key = _DELTA_KEY.get(ap.kind)
-            if key:
-                delta.setdefault(key, [])
-            continue
-        changes.append({"kind": ap.kind, "id": ap.id, "op": ap.action})
-        if ap.id is None:
-            continue
-        obj = _load(ctx.db, ap.kind, ap.id)
-        if obj is None:
-            continue
-        bucket = {
-            "agenda": agenda_dict,
-            "decision": decision_dict,
-            "action": action_dict,
-            "attendance": attendee_dict,
-            "minutes": minute_dict,
-            "attachment": attachment_dict,
-        }.get(ap.kind)
-        key = _DELTA_KEY.get(ap.kind)
-        if bucket and key:
-            delta.setdefault(key, []).append(bucket(obj))
-    return {"changes": changes, "delta": delta}
-
-
-def _load(db: Session, kind: str, obj_id: str):
-    model = {
-        "agenda": MeetppAgendaItem,
-        "decision": MeetppDecision,
-        "action": MeetppAction,
-        "attendance": MeetppAttendee,
-        "minutes": MeetppMinute,
-        "attachment": MeetppAttachment,
-    }.get(kind)
-    return db.get(model, obj_id) if model else None
-
-
-_FOCUS_PRIO = {"agenda": 6, "decision": 5, "action": 4, "attendance": 3, "minutes": 2}
-
-
-def focus_for(ctx: ApplyContext) -> dict | None:
-    """Highest-priority focus hint among the applied operations."""
-    best: AppliedOp | None = None
-    for ap in ctx.applied:
-        if ap.action == "remove" or ap.id is None:
-            continue
-        if best is None or ap.focus_prio > best.focus_prio:
-            best = ap
-    if best is None:
+def vote_dto(v: MeetppVote | None, ballots: list[MeetppBallot]) -> dict | None:
+    if v is None:
         return None
-    tab = {
-        "agenda": "agenda",
-        "decision": "decisions",
-        "action": "actions",
-        "attendance": "attendance",
-        "minutes": "minutes",
-    }.get(best.kind)
-    if not tab:
-        return None
-    return {"tab": tab, "id": best.id, "prio": best.focus_prio or _FOCUS_PRIO.get(best.kind, 1)}
+    return {
+        "method": v.method,
+        "for": v.tally_for,
+        "against": v.tally_against,
+        "abstain": v.tally_abstain,
+        "eligible": v.eligible_count,
+        "present": v.present_count,
+        "quorum_required": v.quorum_required,
+        "quorum_met": v.quorum_met,
+        "result": v.result,
+        "outcome_note": v.outcome_note,
+        "confirmed": bool(v.confirmed),
+        "ballots": [
+            {"name": b.name, "person_key": b.person_key, "choice": b.choice, "cast_by": b.cast_by, "proxy": bool(b.proxy)}
+            for b in ballots
+        ],
+    }
+
+
+def decision_dto(d: MeetppDecision, vote: MeetppVote | None, ballots: list[MeetppBallot], previous: bool = False) -> dict:
+    return {
+        "id": d.id,
+        "ref": d.ref,
+        "section_id": d.section_id,
+        "title": d.title,
+        "resolution": d.resolution,
+        "how_taken": d.how_taken,
+        "status": d.status,
+        "decided_at": util.iso(d.decided_at),
+        "origin": d.origin,
+        "confirmed": bool(d.confirmed),
+        "locked": bool(d.locked),
+        "evidence": util.loads(d.evidence_json, []),
+        "previous": previous,
+        "vote": vote_dto(vote, ballots),
+    }
+
+
+def _prev_section_id(o: outline_mod.Outline) -> str | None:
+    for s in o.tops():
+        if s.kind == "previous_actions":
+            return s.id
+    return None
+
+
+def action_section_id(db: Session, session: MeetppSession, a: MeetppAction, o: outline_mod.Outline | None = None) -> str | None:
+    o = o or outline_mod.load(db, session.id)
+    if is_previous_action(a, session):
+        return _prev_section_id(o) or (a.section_id if a.section_id in o.by_id else None)
+    return a.section_id
+
+
+def action_dto(
+    a: MeetppAction,
+    session: MeetppSession,
+    section_id: str | None,
+    report: MeetppActionReport | None,
+    decision_refs: dict[str, str],
+) -> dict:
+    previous = is_previous_action(a, session)
+    return {
+        "id": a.id,
+        "ref": a.ref,
+        "section_id": section_id,
+        "title": a.title,
+        "description": a.description,
+        "assignees": [
+            {"name": x.get("name"), "person_key": x.get("person_key")}
+            for x in util.loads(a.assignees_json, [])
+            if isinstance(x, dict)
+        ],
+        "due": a.due_date,
+        "status": a.status,
+        "decision_ref": decision_refs.get(a.decision_id or ""),
+        "completed_at": util.iso(a.completed_at),
+        "completion_note": a.completion_note,
+        "progress_notes": a.progress_notes,
+        "origin": a.origin,
+        "locked": bool(a.locked),
+        "evidence": util.loads(a.evidence_json, []),
+        "previous": previous,
+        "carried_forward": previous and a.status in OPEN_ACTION_STATUSES,
+        "report": (
+            {"note": report.note or "", "status": report.status_at_report, "at": util.iso(report.updated_at or report.created_at)}
+            if report is not None
+            else None
+        ),
+    }
+
+
+def minute_dto(m: MeetppMinute) -> dict:
+    return {
+        "id": m.id,
+        "kind": m.kind,
+        "section_id": m.section_id,
+        "notes": [
+            {"text": n.get("text"), "evidence": n.get("evidence") or [], "at": n.get("at")}
+            for n in util.loads(m.notes_json, [])
+            if isinstance(n, dict)
+        ],
+        "narrative_md": m.narrative_md,
+        "version": m.version,
+        "status": m.status,
+        "source_tier": m.source_tier,
+        "composed_at": util.iso(m.composed_at),
+        "locked": bool(m.locked),
+        "error": m.error,
+    }
+
+
+def attendee_dto(a: MeetppAttendee, include_email: bool = False) -> dict:
+    return {
+        "id": a.id,
+        "person_key": a.person_key,
+        "name": a.display_name,
+        "username": a.username,
+        "email": a.email if include_email else None,
+        "status": a.status,
+        "online": bool(a.online),
+        "voting": bool(a.voting),
+        "represented_by": a.represented_by,
+        "mandate_ref": a.mandate_ref,
+        "opted_out": bool(a.opted_out),
+        "required_next": bool(a.required_next),
+        "required_reason": a.required_reason,
+        "talk_seconds": round(float(a.talk_seconds or 0.0), 1),
+    }
+
+
+def attachment_dto(a: MeetppAttachment) -> dict:
+    return {
+        "id": a.id,
+        "section_id": a.section_id,
+        "kind": a.kind,
+        "filename": a.filename,
+        "caption": a.caption,
+        "author": a.author,
+        "created_at": util.iso(a.created_at),
+        "url": f"/api/v1/meetpp/sessions/{a.session_id}/attachments/{a.id}",
+    }
+
+
+def document_dto(d: MeetppDocument) -> dict:
+    return {
+        "id": d.id,
+        "kind": d.kind,
+        "filename": d.filename,
+        "title": d.title,
+        "status": d.status,
+        "error": d.error,
+        "page_count": d.page_count,
+        "summary": util.loads(d.summary_json, {}) or None,
+    }
+
+
+def segment_dto(s: MeetppSegment) -> dict:
+    return {
+        "seq": s.seq,
+        "identity": s.identity,
+        "name": s.name,
+        "person_key": s.person_key,
+        "t_start": util.iso(s.t_start),
+        "t_end": util.iso(s.t_end),
+        "text": s.text,
+        "text_refined": s.text_refined,
+        "tier": s.tier,
+        "is_gap": bool(s.is_gap),
+        "gap_reason": s.gap_reason,
+    }
+
+
+def series_dto(db: Session, series: MeetppSeries) -> dict:
+    voting = db.query(MeetppRoster).filter_by(series_id=series.id, active=True, voting=True).count()
+    return {
+        "id": series.id,
+        "title": series.title,
+        "meeting_id": series.meeting_id,
+        "meeting_type": series.meeting_type,
+        "majority_rule": series.majority_rule,
+        "quorum_required": series.quorum_required,
+        "quorum_default": voting // 2 + 1 if voting else 0,
+        "voting_members": voting,
+    }
+
+
+def roster_dto(r: MeetppRoster) -> dict:
+    return {
+        "id": r.id,
+        "person_key": r.person_key,
+        "name": r.display_name,
+        "display_name": r.display_name,
+        "username": r.username,
+        "email": r.email,
+        "voting": bool(r.voting),
+        "active": bool(r.active),
+        "first_seen_at": util.iso(r.first_seen_at),
+        "last_seen_at": util.iso(r.last_seen_at),
+    }
+
+
+# ─── Snapshot and deltas ────────────────────────────────────────────────────
+
+
+def session_actions(db: Session, session: MeetppSession) -> list[MeetppAction]:
+    """Actions shown for this session: raised here, plus series actions from
+    earlier sessions that are still open or were reported on at this meeting."""
+    reported = {
+        r.action_id for r in db.query(MeetppActionReport.action_id).filter_by(session_id=session.id).all()
+    }
+    rows = db.query(MeetppAction).filter_by(series_id=session.series_id).all()
+    # Actions raised in later sessions of the series never show in an earlier one.
+    cutoff = util.aware(session.ended_at) or util.now()
+    out = [
+        a
+        for a in rows
+        if a.session_id == session.id
+        or a.id in reported
+        or (a.status in OPEN_ACTION_STATUSES and util.aware(a.created_at) <= cutoff)
+    ]
+    # Previous actions first (by ref number), then this meeting's.
+    def key(a: MeetppAction):
+        m = re.search(r"\d+", a.ref or "")
+        return (0 if is_previous_action(a, session) else 1, int(m.group(0)) if m else 0)
+
+    return sorted(out, key=key)
+
+
+def _collect(db: Session, session: MeetppSession, include_emails: bool) -> dict:
+    o = outline_mod.load(db, session.id)
+    series = db.get(MeetppSeries, session.series_id)
+    decisions = db.query(MeetppDecision).filter_by(session_id=session.id).order_by(MeetppDecision.created_at).all()
+    votes = {v.decision_id: v for v in db.query(MeetppVote).filter(MeetppVote.decision_id.in_([d.id for d in decisions] or [""])).all()}
+    ballots: dict[str, list[MeetppBallot]] = {}
+    if votes:
+        for b in db.query(MeetppBallot).filter(MeetppBallot.vote_id.in_([v.id for v in votes.values()])).order_by(MeetppBallot.id).all():
+            ballots.setdefault(b.vote_id, []).append(b)
+    actions = session_actions(db, session)
+    reports = {
+        r.action_id: r
+        for r in db.query(MeetppActionReport).filter_by(session_id=session.id).all()
+    }
+    decision_refs = {
+        d.id: d.ref
+        for d in db.query(MeetppDecision.id, MeetppDecision.ref).filter_by(series_id=session.series_id).all()
+    }
+    counts: dict[str, dict] = {}
+    for d in decisions:
+        if d.section_id:
+            counts.setdefault(d.section_id, {"decisions": 0, "actions": 0})["decisions"] += 1
+    action_dtos = []
+    for a in actions:
+        sid = action_section_id(db, session, a, o)
+        if sid:
+            counts.setdefault(sid, {"decisions": 0, "actions": 0})["actions"] += 1
+        action_dtos.append(action_dto(a, session, sid, reports.get(a.id), decision_refs))
+    minutes = db.query(MeetppMinute).filter_by(session_id=session.id).all()
+    attendees = db.query(MeetppAttendee).filter_by(session_id=session.id).order_by(MeetppAttendee.display_name).all()
+    attachments = db.query(MeetppAttachment).filter_by(session_id=session.id).order_by(MeetppAttachment.created_at).all()
+    documents = db.query(MeetppDocument).filter_by(session_id=session.id).order_by(MeetppDocument.created_at).all()
+    return {
+        "session": session_meta(db, session, series=series),
+        "sections": [section_dto(s, o, session, counts) for s in o.flat],
+        "decisions": [decision_dto(d, votes.get(d.id), ballots.get(votes[d.id].id, []) if d.id in votes else []) for d in decisions],
+        "actions": action_dtos,
+        "minutes": [minute_dto(m) for m in minutes],
+        "attendees": [attendee_dto(a, include_emails) for a in attendees],
+        "attachments": [attachment_dto(a) for a in attachments],
+        "documents": [document_dto(d) for d in documents],
+        "quorum": governance.quorum(db, session, series) if governance.is_formal(series) else None,
+    }
+
+
+def build_state(db: Session, session: MeetppSession, *, include_emails: bool = False) -> dict:
+    data = _collect(db, session, include_emails)
+    return {"v": 1, "type": "state", "sid": session.id, "version": session.state_version, **data}
+
+
+def build_delta(db: Session, session: MeetppSession, changes: Changes) -> dict:
+    data = _collect(db, session, include_emails=False)
+    delta: dict = {}
+    if changes.session:
+        delta["session"] = data["session"]
+    buckets = (
+        ("sections", changes.sections),
+        ("decisions", changes.decisions),
+        ("actions", changes.actions),
+        ("minutes", changes.minutes),
+        ("attendees", changes.attendees),
+        ("attachments", changes.attachments),
+        ("documents", changes.documents),
+    )
+    # Counts on sections follow decision/action changes.
+    touched_sections = set(changes.sections)
+    for d in data["decisions"]:
+        if d["id"] in changes.decisions and d["section_id"]:
+            touched_sections.add(d["section_id"])
+    for a in data["actions"]:
+        if a["id"] in changes.actions and a["section_id"]:
+            touched_sections.add(a["section_id"])
+    for name, ids in buckets:
+        if name == "sections":
+            ids = touched_sections
+        if not ids:
+            continue
+        items = [x for x in data[name] if x["id"] in ids]
+        if items:
+            delta[name] = items
+    if changes.quorum or changes.attendees:
+        delta["quorum"] = data["quorum"]
+    if changes.removed:
+        delta["removed"] = changes.removed
+    return delta
+
+
+def sorted_activations(changes: Changes, limit: int = 3) -> list[dict]:
+    acts = sorted(changes.activations, key=lambda a: -int(a.get("prio") or 0))
+    return acts[:limit]
+
+
+def bump_version(db: Session, session: MeetppSession) -> int:
+    """Atomic `state_version + 1` in SQL; the in-memory object is updated
+    without marking the column dirty, so a later flush cannot write back a
+    stale value."""
+    from sqlalchemy import text
+    from sqlalchemy.orm.attributes import set_committed_value
+
+    row = db.execute(
+        text("UPDATE meetpp_sessions SET state_version = state_version + 1 WHERE id = :id RETURNING state_version"),
+        {"id": session.id},
+    ).fetchone()
+    version = int(row[0]) if row else int(session.state_version or 0) + 1
+    set_committed_value(session, "state_version", version)
+    return version
+

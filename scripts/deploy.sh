@@ -54,6 +54,8 @@ rsync -avz --delete \
   --exclude '__pycache__' \
   --exclude 'docs/*.docx' \
   --exclude 'docs/~$*' \
+  --exclude 'meetpp-speech' \
+  --exclude 'meetpp-agent/tests' \
   "$LOCAL_DIR/" "$HOST:/tmp/meet-stage/"
 
 echo "==> Installing to /opt/meet (preserving .env)…"

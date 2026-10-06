@@ -21,13 +21,11 @@ pyotp==2.9.0
 pytest==8.3.3
 pytest-asyncio==0.24.0
 
-# Meet++ — PDF ingestion, HTML→PDF output rendering.
+# Meet++ — PDF ingestion (pypdf) and the meeting report / agenda PDFs
+# (ReportLab, pure Python; markdown-it-py renders the minutes Markdown).
 pypdf==5.1.0
-jinja2==3.1.4
-weasyprint==62.3
-# WeasyPrint 62.3 is incompatible with pydyf >= 0.11 (it calls the removed
-# Stream.transform), which breaks PDF rendering. Pin the compatible release.
-pydyf==0.10.0
+reportlab==5.0.1
+markdown-it-py==4.2.0
 
 # YouTube manual upload — keep deps minimal: httpx already used; we hand-roll
 # the OAuth + resumable-upload flow rather than pulling google-api-python-client.

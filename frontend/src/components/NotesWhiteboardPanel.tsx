@@ -5,6 +5,7 @@ import { useRoomContext } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 import {
   Brush,
+  Camera,
   Circle as CircleIcon,
   Download,
   Eraser,
@@ -17,6 +18,8 @@ import {
 } from "lucide-react";
 import jsPDF from "jspdf";
 import { api, type WhiteboardShapeDTO } from "../lib/api";
+import { useMeetpp } from "../lib/meetpp/store";
+import { meetppActions } from "../lib/meetpp/session";
 
 interface Props {
   open: boolean;
@@ -979,6 +982,7 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
             <X size={14} />
           </button>
         )}
+        <MeetppSnapshotButton />
         <button
           type="button"
           onClick={exportPdf}
@@ -1117,5 +1121,44 @@ function TextOverlay({
       // briefly invisible.
       className="bg-primary-950 border border-accent-500 outline-none resize-none p-0 m-0"
     />
+  );
+}
+
+
+/** Meet++: file the current whiteboard as a paper of the viewed section
+ * (Papers tab). Shown only while a Meet++ session runs. */
+function MeetppSnapshotButton() {
+  const { t } = useTranslation();
+  const { roomName = "" } = useParams();
+  const active = useMeetpp((s) => s.active);
+  const [state, setState] = useState<"idle" | "busy" | "ok" | "err">("idle");
+  if (!active || !roomName) return null;
+  const label =
+    state === "ok"
+      ? t("meetpp.snapshot.added", { defaultValue: "Snapshot added" })
+      : state === "err"
+        ? t("meetpp.snapshot.failed", { defaultValue: "Snapshot failed" })
+        : t("meetpp.snapshot.toolbarButton", { defaultValue: "Snapshot to Meet++" });
+  return (
+    <button
+      type="button"
+      disabled={state === "busy"}
+      onClick={async () => {
+        setState("busy");
+        try {
+          await meetppActions.snapshotWhiteboard(roomName);
+          setState("ok");
+        } catch {
+          setState("err");
+        }
+        window.setTimeout(() => setState("idle"), 2500);
+      }}
+      title={label}
+      aria-label={label}
+      data-testid="whiteboard-meetpp-snapshot"
+      className={`p-1.5 rounded hover:bg-primary-800 ${state === "ok" ? "text-emerald-300" : state === "err" ? "text-red-300" : "text-slate-300"}`}
+    >
+      <Camera size={14} />
+    </button>
   );
 }

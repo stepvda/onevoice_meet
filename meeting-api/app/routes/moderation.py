@@ -16,6 +16,8 @@ from sqlalchemy.orm import Session
 from app.auth import RequireUser
 from app.db import get_db
 from app.livekit_client import livekit_api
+from app import stage
+from app.room_metadata import patch_room_metadata
 from app.models import Meeting, ModerationAudit
 from app.routes.meetings import is_moderator
 
@@ -158,17 +160,7 @@ async def kick(meeting_id: str, body: KickBody, user: RequireUser, db: Session =
 
 async def _update_metadata(lk: api.LiveKitAPI, room_name: str, **patch) -> None:
     """Merge-update the room's metadata dict."""
-    rooms = await lk.room.list_rooms(api.ListRoomsRequest(names=[room_name]))
-    current: dict = {}
-    if rooms.rooms:
-        try:
-            current = json.loads(rooms.rooms[0].metadata or "{}")
-        except ValueError:
-            current = {}
-    current.update(patch)
-    await lk.room.update_room_metadata(
-        api.UpdateRoomMetadataRequest(room=room_name, metadata=json.dumps(current))
-    )
+    await patch_room_metadata(lk, room_name, lambda md: md.update(patch))
 
 
 @router.post("/meetings/{meeting_id}/mute-all")
@@ -202,7 +194,10 @@ async def set_presenter(meeting_id: str, body: PresenterBody, user: RequireUser,
     m = _require_owner(meeting_id, user.sub, db)
     lk = livekit_api()
     try:
-        await _update_metadata(lk, m.room_name, presenter_identity=body.participant_identity)
+        # A stream window key (app/stage.py): a camera, "<identity>#screen"
+        # or the Meet++ board. The host's choice stands: a screen share that
+        # took the stage no longer hands it back to the earlier presenter.
+        await patch_room_metadata(lk, m.room_name, lambda md: stage.chosen(md, body.participant_identity))
     finally:
         await lk.aclose()
     _audit(db, m.id, user.sub, "presenter", target=body.participant_identity)

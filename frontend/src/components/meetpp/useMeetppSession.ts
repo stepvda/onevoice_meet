@@ -1,258 +1,176 @@
-import { useCallback, useEffect, useState } from "react";
-import type { Room } from "livekit-client";
-import { RoomEvent } from "livekit-client";
-import { useMeetpp } from "../../lib/meetpp/store";
-import { meetppApi, setMeetppRoomToken } from "../../lib/meetpp/api";
-import type { Announcement, BoardState, Caption, Proposal } from "../../lib/meetpp/types";
+import { useEffect, useRef } from "react";
+import { RoomEvent, type Room } from "livekit-client";
+import { setMeetppRoomToken } from "../../lib/meetpp/api";
+import { attachRoom, discover, postConsent, refetchState } from "../../lib/meetpp/session";
+import { configureFocus, setCtx, useMeetpp, type ClientMode } from "../../lib/meetpp/store";
+import { usePreferences } from "../../lib/preferences";
+import type { AnnounceMsg } from "../../lib/meetpp/types";
 
-const MEET_AI_TOPIC = "meet-ai";
-
-interface Options {
+/**
+ * Room participant wiring: room token for the REST calls, client context,
+ * the meet-ai data channel, active speakers, reconnect handling (snapshot +
+ * incremental transcript + consent re-post) and session discovery.
+ */
+export function useMeetppRoom({
+  room,
+  roomName,
+  meetingId,
+  isChair,
+  roomToken,
+}: {
   room: Room;
   roomName: string;
   meetingId: string | null;
-  isOwner: boolean;
+  isChair: boolean;
   roomToken: string | null;
-}
-
-/** Read the store lazily via getState() so callbacks stay stable and do not
- * re-run effects on every store mutation. */
-const S = () => useMeetpp.getState();
-
-export function useMeetppSession({ room, roomName, meetingId, isOwner, roomToken }: Options) {
-  const [loading, setLoading] = useState(false);
-
+}): void {
   useEffect(() => {
     setMeetppRoomToken(roomToken);
   }, [roomToken]);
 
-  const fetchState = useCallback(async (sid: string) => {
-    try {
-      const state = (await meetppApi.getState(sid)) as BoardState;
-      // Never let an in-flight (stale) snapshot overwrite a newer board.
-      const current = S().board?.session.version ?? -1;
-      if (state.session && state.session.version < current) return;
-      S().setBoard(state);
-      S().setActive(true);
-      try {
-        const tr = await meetppApi.getTranscript(sid, 0);
-        S().setTranscript(tr.segments);
-      } catch {
-        /* transcript may be empty */
-      }
-    } catch {
-      /* session may have ended */
-    }
-  }, []);
-
-  // Discover an active session on mount / when the meeting id is known.
   useEffect(() => {
-    if (!meetingId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await meetppApi.roomActive(roomName);
-        if (!cancelled && res.active && res.sid) {
-          await fetchState(res.sid);
-        }
-      } catch {
-        /* ignore */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [meetingId, roomName, fetchState]);
+    configureFocus(false);
+    setCtx({
+      mode: "participant",
+      isChair,
+      meetingId,
+      roomName,
+      localIdentity: room.localParticipant.identity || null,
+      localName: room.localParticipant.name || null,
+    });
+  }, [room, isChair, meetingId, roomName]);
 
-  // Listen to the server-published meet-ai data channel.
+  // The local identity is only known once connected; consent needs it.
   useEffect(() => {
-    const decoder = new TextDecoder();
-    const onData = (payload: Uint8Array, _p: unknown, _k: unknown, topic?: string) => {
-      if (topic !== MEET_AI_TOPIC) return;
-      let msg: Record<string, unknown>;
-      try {
-        msg = JSON.parse(decoder.decode(payload));
-      } catch {
-        return;
-      }
-      const type = msg.type as string;
-      if (type === "session") {
-        const state = msg.state as string;
-        if (state === "started" || state === "resumed") {
-          S().clearLiveTranscript();
-          window.setTimeout(() => fetchState(String(msg.sid)), 300);
-        } else if (state === "ended") {
-          S().setActive(false);
-          S().setProposal(null);
-        } else if (state === "paused") {
-          S().setAgent({ status: "paused", backlog_s: null });
-        }
-        return;
-      }
-      if (type === "state") {
-        const version = Number(msg.version ?? 0);
-        const local = S().board?.session.version ?? -1;
-        if (local > version) return; // stale / out-of-order
-        if (local < 0 || local < version - 1) {
-          // First state or a gap: pull a full snapshot.
-          void fetchState(String(msg.sid));
-          return;
-        }
-        // local === version - 1 (next) or local === version (idempotent
-        // re-broadcast carrying a delta, e.g. an attachment at the same
-        // version). Always merge the delta.
-        S().applyState(msg as never);
-        S().setProposal(null);
-        const focus = msg.focus as never;
-        if (focus) S().applyFocus(focus, Date.now());
-        return;
-      }
-      if (type === "caption") {
-        S().addCaption(msg as unknown as Caption);
-        return;
-      }
-      if (type === "captions") {
-        for (const c of (msg.items as Caption[]) ?? []) S().addCaption(c);
-        return;
-      }
-      if (type === "phase") {
-        const current = S().board;
-        if (current) {
-          S().setBoard({
-            ...current,
-            session: { ...current.session, phase: msg.phase as string, current_item_id: (msg.item_id as string) ?? null },
-          });
-        }
-        S().applyFocus({ tab: "agenda", id: (msg.item_id as string) ?? null, prio: 6 }, Date.now());
-        return;
-      }
-      if (type === "proposal") {
-        S().setProposal(msg as unknown as Proposal);
-        return;
-      }
-      if (type === "announce") {
-        S().setAnnouncement(msg as unknown as Announcement);
-        return;
-      }
-      if (type === "agent") {
-        S().setAgent({ status: (msg.status as never) ?? "listening", backlog_s: (msg.backlog_s as number) ?? null });
-        return;
-      }
+    const onConnected = () => {
+      setCtx({ localIdentity: room.localParticipant.identity || null, localName: room.localParticipant.name || null });
+      void postConsent();
     };
-    room.on(RoomEvent.DataReceived, onData);
+    if (room.localParticipant.identity) onConnected();
+    room.on(RoomEvent.Connected, onConnected);
     return () => {
-      room.off(RoomEvent.DataReceived, onData);
+      room.off(RoomEvent.Connected, onConnected);
     };
-  }, [room, fetchState]);
+  }, [room]);
 
-  const startSession = useCallback(
-    async (
-      body: { template: string; mode: string; language: string; series_id?: string | null; goal?: string | null },
-      files?: { agenda?: File | null; previousNotes?: File | null },
-    ) => {
-      if (!meetingId) throw new Error("no meeting");
-      setLoading(true);
-      try {
-        S().clearLiveTranscript();
-        const res = await meetppApi.createSession(meetingId, body);
-        // Optional PDFs are uploaded (parsed in the background) before start.
-        if (files?.agenda) await meetppApi.uploadDocument(res.session.id, "agenda", files.agenda);
-        if (files?.previousNotes) await meetppApi.uploadDocument(res.session.id, "previous_notes", files.previousNotes);
-        await meetppApi.start(res.session.id);
-        await fetchState(res.session.id);
-        return res.session.id;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [meetingId, fetchState],
-  );
+  useEffect(() => attachRoom(room, roomName), [room, roomName]);
 
-  const sid = (): string | null => S().session?.id ?? null;
-
-  const sendOps = useCallback(async (ops: Array<Record<string, unknown>>) => {
-    const id = sid();
-    if (!id) return;
-    await meetppApi.ops(id, ops);
-  }, []);
-
-  const acceptProposal = useCallback(async (proposal: Proposal) => {
-    const id = sid();
-    if (!id) return;
-    await meetppApi.phase(id, { to: proposal.to, item_id: proposal.item_id, accept: true });
-    S().setProposal(null);
-  }, []);
-
-  const rejectProposal = useCallback(async (proposal: Proposal) => {
-    const id = sid();
-    if (!id) return;
-    await meetppApi.phase(id, { to: proposal.to, item_id: proposal.item_id, accept: false });
-    S().setProposal(null);
-  }, []);
-
-  const jumpPhase = useCallback(async (to: string, itemId?: string | null) => {
-    const id = sid();
-    if (!id) return;
-    await meetppApi.phase(id, { to, item_id: itemId ?? null, accept: true });
-  }, []);
-
-  const pauseResume = useCallback(async (paused: boolean) => {
-    const id = sid();
-    if (!id) return;
-    if (paused) await meetppApi.pause(id);
-    else await meetppApi.resume(id);
-  }, []);
-
-  const endSession = useCallback(async () => {
-    const id = sid();
-    if (!id) return;
-    await meetppApi.end(id);
-    S().setActive(false);
-  }, []);
-
-  const consent = useCallback(async (decision: "accept" | "opt_out") => {
-    const id = sid();
-    if (id) {
-      try {
-        await meetppApi.consent(id, decision);
-      } catch {
-        /* best effort */
-      }
-    }
-    S().setConsent(decision === "accept" ? "accepted" : "opted_out");
-  }, []);
-
-  const boardToMain = useCallback(async () => {
-    const id = sid();
-    if (!id) return;
-    await meetppApi.boardToMain(id);
-  }, []);
-
-  const snapshot = useCallback(async () => {
-    const id = sid();
-    if (!id) return;
-    const [{ api }, wr] = await Promise.all([import("../../lib/api"), import("../../lib/meetpp/whiteboardRender")]);
-    const [strokes, shapes] = await Promise.all([
-      api.getWhiteboardStrokes(roomName),
-      api.listWhiteboardShapes(roomName),
-    ]);
-    const blob = await wr.buildSnapshot(strokes, shapes, "#0b1220");
-    const item = S().board?.agenda.find((a) => a.status === "active");
-    await meetppApi.uploadAttachment(id, blob, `Whiteboard: ${item?.title ?? ""} — ${new Date().toLocaleTimeString()}`);
+  // Discover on mount, then a slow safety poll (a missed `session` message
+  // must not leave the board hidden or stale).
+  useEffect(() => {
+    if (!roomName) return;
+    void discover(roomName);
+    const timer = window.setInterval(() => {
+      const s = useMeetpp.getState();
+      if (s.active) void refetchState();
+      else void discover(roomName);
+    }, 30000);
+    return () => window.clearInterval(timer);
   }, [roomName]);
 
-  return {
-    loading,
-    isOwner,
-    startSession,
-    sendOps,
-    acceptProposal,
-    rejectProposal,
-    jumpPhase,
-    pauseResume,
-    endSession,
-    consent,
-    boardToMain,
-    snapshot,
+  useAnnouncementAudio(true);
+}
+
+/**
+ * Read-only wiring for the egress page and the public view. Returns whether
+ * the board should be shown there (egress: unless the session excludes it
+ * from recordings; public: only when the session allows it).
+ */
+export function useMeetppReadOnly({
+  room,
+  roomName,
+  token,
+  mode,
+}: {
+  room: Room | null;
+  roomName: string;
+  token: string | null;
+  mode: Extract<ClientMode, "egress" | "public">;
+}): boolean {
+  useEffect(() => {
+    setMeetppRoomToken(token);
+  }, [token]);
+
+  useEffect(() => {
+    configureFocus(mode === "egress");
+    setCtx({ mode, isChair: false, roomName, meetingId: null, localIdentity: null, localName: null });
+  }, [mode, roomName]);
+
+  useEffect(() => (room ? attachRoom(room, roomName) : undefined), [room, roomName]);
+
+  useEffect(() => {
+    if (!roomName || !token) return;
+    void discover(roomName);
+    const timer = window.setInterval(() => {
+      const s = useMeetpp.getState();
+      if (s.active) void refetchState();
+      else void discover(roomName);
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [roomName, token]);
+
+  // The egress page plays the clip so recordings include it.
+  useAnnouncementAudio(mode !== "egress");
+
+  const active = useMeetpp((s) => s.active);
+  const settings = useMeetpp((s) => s.snap?.session.settings);
+  if (!active) return false;
+  return mode === "egress" ? settings?.in_recordings !== false : settings?.show_public === true;
+}
+
+// ── Announcement audio ────────────────────────────────────────────────────
+
+function speak(text: string): void {
+  if (typeof window === "undefined" || !("speechSynthesis" in window) || !text) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-GB";
+    const voice = window.speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith("en"));
+    if (voice) u.voice = voice;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* no speech available */
+  }
+}
+
+/** Play the Kokoro clip (`audio_url`); fall back to the browser's speech
+ * synthesis (English) when the clip is missing or fails. */
+export function playAnnouncement(a: Pick<AnnounceMsg, "audio_url" | "title" | "subtitle">): void {
+  const text = [a.title, a.subtitle].filter(Boolean).join(". ");
+  if (!a.audio_url) {
+    speak(text);
+    return;
+  }
+  let fellBack = false;
+  const fallback = () => {
+    if (fellBack) return;
+    fellBack = true;
+    speak(text);
   };
+  try {
+    const audio = new Audio(a.audio_url);
+    audio.onerror = fallback;
+    void audio.play().catch(fallback);
+  } catch {
+    fallback();
+  }
+}
+
+/** Plays each announcement once (respecting the user's mute preference and
+ * the session's `speak` setting). */
+export function useAnnouncementAudio(respectMute: boolean): void {
+  const lastAid = useRef<string | null>(null);
+  useEffect(
+    () =>
+      useMeetpp.subscribe((s) => {
+        const a = s.announcement;
+        if (!a || a.aid === lastAid.current) return;
+        lastAid.current = a.aid;
+        if (respectMute && !usePreferences.getState().notifications.speakAnnouncements) return;
+        if (s.snap?.session.settings?.speak === false) return;
+        playAnnouncement(a);
+      }),
+    [respectMute],
+  );
 }

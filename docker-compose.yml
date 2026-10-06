@@ -269,12 +269,17 @@ services:
     environment:
       LIVEKIT_WS_URL_INTERNAL: "ws://host.docker.internal:7880"
       MEETING_API_URL: "http://meeting-api:8080"
+      # Tier-2 speech service on the Mac Studio, reached over the host's
+      # WireGuard tunnel (wg0 10.88.0.1 <-> 10.88.0.2). Empty = tier 1 only.
+      MEETPP_SPEECH_URL: "${MEETPP_SPEECH_URL:-}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     expose:
       - "8091"
     volumes:
-      - /var/lib/meet/meetpp/tts:/var/lib/meet/meetpp/tts
+      # Shared with meeting-api (which mounts /var/lib/meet): per-session
+      # audio store (<sid>/audio/, deleted at publish) and the TTS clip cache.
+      - /var/lib/meet/meetpp:/var/lib/meet/meetpp
     cpus: 2.0
     mem_limit: 3g
     cpu_shares: 512

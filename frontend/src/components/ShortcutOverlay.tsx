@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { usePreferences } from "../lib/preferences";
+import { MEETPP_SHORTCUTS } from "../lib/shortcuts";
 
 interface Props {
   open: boolean;
@@ -29,7 +30,12 @@ export default function ShortcutOverlay({ open, onClose }: Props) {
     [t("shortcuts.hand"), kb.handRaiseKey],
     [t("shortcuts.screenshare"), kb.screenshareKey],
     [t("shortcuts.leave"), kb.leaveMeetingKey],
-    [t("shortcuts.meetppFollow", { defaultValue: "Meet++ follow mode" }), "Ctrl+Shift+A"],
+    [t("meetpp.shortcuts.tabs", { defaultValue: "Meet++: show tab 1–6" }), MEETPP_SHORTCUTS.tabs],
+    [t("meetpp.shortcuts.outline", { defaultValue: "Meet++: previous / next section in the outline" }), MEETPP_SHORTCUTS.outline],
+    [t("meetpp.shortcuts.backToLive", { defaultValue: "Meet++: back to the live section" }), MEETPP_SHORTCUTS.backToLive],
+    [t("meetpp.shortcuts.next", { defaultValue: "Meet++ (chair): next section" }), MEETPP_SHORTCUTS.next],
+    [t("meetpp.shortcuts.back", { defaultValue: "Meet++ (chair): previous section" }), MEETPP_SHORTCUTS.back],
+    [t("meetpp.shortcuts.follow", { defaultValue: "Meet++: follow on / off" }), MEETPP_SHORTCUTS.follow],
     [t("shortcuts.help"), "?"],
   ];
 

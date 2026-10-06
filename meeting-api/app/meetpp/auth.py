@@ -228,3 +228,71 @@ async def require_internal(
 ) -> None:
     body = await request.body()
     verify_internal_signature(x_meetpp_timestamp, x_meetpp_signature, body)
+
+
+# ─── Room token or chair JWT ────────────────────────────────────────────────
+
+
+@dataclass
+class Access:
+    """Caller of a live endpoint: a room participant (LiveKit room token) or
+    a chair using the app JWT (review screen, outside the room)."""
+
+    session: MeetppSession
+    meeting: Meeting
+    principal: RoomPrincipal | None
+    user: AuthUser | None
+    is_chair: bool
+    can_edit: bool
+    read_only: bool
+    identity: str
+    name: str
+
+
+def resolve_access(session_id: str, request: Request, db: Session) -> Access:
+    from app.auth import require_user
+
+    session = db.get(MeetppSession, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="session not found")
+    meeting = db.get(Meeting, session.meeting_id)
+    if meeting is None or not meetpp_allowed(meeting):
+        raise HTTPException(status_code=404, detail="session not found")
+    token = request.headers.get("x-meet-room-token")
+    if token:
+        principal = principal_from_claims(verify_room_token(token), meeting.room_name)
+        sub = principal.identity[5:] if principal.identity.startswith("user-") else None
+        is_chair = not principal.read_only and (principal.room_admin or (sub is not None and is_moderator(meeting, sub)))
+        can_edit = is_chair or (not principal.read_only and principal.identity in session_editors(session))
+        return Access(
+            session=session, meeting=meeting, principal=principal, user=None, is_chair=is_chair,
+            can_edit=can_edit, read_only=principal.read_only, identity=principal.identity, name=principal.name,
+        )
+    authorization = request.headers.get("authorization")
+    if authorization:
+        user = require_user(authorization, db)
+        if not is_moderator(meeting, user.sub):
+            raise HTTPException(status_code=404, detail="session not found")
+        return Access(
+            session=session, meeting=meeting, principal=None, user=user, is_chair=True, can_edit=True,
+            read_only=False, identity=f"user-{user.sub}", name=user.email or user.sub,
+        )
+    raise HTTPException(status_code=401, detail="missing X-Meet-Room-Token")
+
+
+def room_access(session_id: str, request: Request, db: Session = Depends(get_db)) -> Access:
+    return resolve_access(session_id, request, db)
+
+
+def edit_access(session_id: str, request: Request, db: Session = Depends(get_db)) -> Access:
+    acc = resolve_access(session_id, request, db)
+    if not acc.can_edit:
+        raise HTTPException(status_code=404, detail="session not found")
+    return acc
+
+
+def chair_access(session_id: str, request: Request, db: Session = Depends(get_db)) -> Access:
+    acc = resolve_access(session_id, request, db)
+    if not acc.is_chair:
+        raise HTTPException(status_code=404, detail="session not found")
+    return acc

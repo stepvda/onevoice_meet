@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  meetpp-speech LaunchAgent template (per-user, no sudo).
+  install.sh --launchd replaces __INSTALL_DIR__ and __HOME__ and copies it to
+  ~/Library/LaunchAgents/org.witysk.meetpp-speech.plist.
+
+  caffeinate -is keeps the Mac from idle/system sleep while the service runs
+  (pmset has sleep 1); launchd kills the whole process group on stop.
+  Configuration lives in ~/.config/meetpp-speech/env (mode 600), not here.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.witysk.meetpp-speech</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/caffeinate</string>
+    <string>-is</string>
+    <string>/bin/bash</string>
+    <string>__INSTALL_DIR__/run.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__INSTALL_DIR__</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>MEETPP_SPEECH_ENV_FILE</key>
+    <string>__HOME__/.config/meetpp-speech/env</string>
+    <key>PATH</key>
+    <string>/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>15</integer>
+  <key>ProcessType</key>
+  <string>Standard</string>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/meetpp-speech.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/meetpp-speech.log</string>
+</dict>
+</plist>

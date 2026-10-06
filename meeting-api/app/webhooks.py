@@ -25,6 +25,8 @@ from app.routes.ti_cafe import (
 )
 from app.livekit_client import livekit_api
 from app.services.playback_mgr import PLAYBACK_IDENTITY
+from app import stage
+from app.room_metadata import patch_room_metadata
 
 router = APIRouter(prefix="/v1")
 
@@ -65,8 +67,12 @@ def _write_meetpp_transcript(db, rec: Recording) -> bool:
             return False
         lines = []
         for s in segs:
+            if s.is_gap:
+                continue
             stamp = s.t_start.strftime("%H:%M:%S") if s.t_start else ""
-            lines.append(f"[{stamp}] {s.name or s.identity}: {s.text}")
+            lines.append(f"[{stamp}] {s.name or s.identity}: {s.best_text}")
+        if not lines:
+            return False
         if not rec.file_path:
             return False
         txt_path = rec.file_path.rsplit(".", 1)[0] + ".txt"
@@ -245,6 +251,31 @@ async def _mute_track_for_playback(room_name: str, identity: str, track_sid: str
         await lk.aclose()
 
 
+def _stage_key(identity: str, source) -> str | None:
+    """Stage key of a stream that takes the stage by itself (a screen share,
+    the playback), else None (app/stage.py)."""
+    if identity.startswith(("composite-", "meetpp-")):
+        return None
+    if source == api.TrackSource.SCREEN_SHARE:
+        return stage.screen_key(identity)
+    if identity == PLAYBACK_IDENTITY and source == api.TrackSource.CAMERA:
+        return stage.PLAYBACK_KEY
+    return None
+
+
+async def _stage_stream(room_name: str, key: str, started: bool) -> None:
+    """A screen share or the playback started / stopped: it takes the stage
+    from the presenter, or gives it back (Meet++ board as a stream window)."""
+    move = stage.stream_started if started else stage.stream_stopped
+    lk = livekit_api()
+    try:
+        await patch_room_metadata(lk, room_name, lambda md: move(md, key), require_room=True)
+    except Exception as exc:  # noqa: BLE001 — a missed hand-over must not fail the webhook
+        log.warning("stage hand-over failed room=%s key=%s: %s", room_name, key, exc)
+    finally:
+        await lk.aclose()
+
+
 async def _clear_recording_metadata(room_name: str) -> None:
     """Flip the `recording_active` / `streaming_active` flags back to False
     on the LiveKit room metadata when an egress ends outside our normal
@@ -252,23 +283,16 @@ async def _clear_recording_metadata(room_name: str) -> None:
     The SPA listens to `RoomMetadataChanged` to drive the in-meeting
     indicator pills — without this update they would stay stuck "on"
     until the user refreshes."""
-    import json
-    lk = livekit_api()
-    try:
-        rooms = await lk.room.list_rooms(api.ListRoomsRequest(names=[room_name]))
-        if not rooms.rooms:
-            return
-        try:
-            current = json.loads(rooms.rooms[0].metadata or "{}")
-        except ValueError:
-            current = {}
+    def change(current: dict) -> bool:
         if not current.get("recording_active") and not current.get("streaming_active"):
-            return
+            return False
         current["recording_active"] = False
         current["streaming_active"] = False
-        await lk.room.update_room_metadata(
-            api.UpdateRoomMetadataRequest(room=room_name, metadata=json.dumps(current))
-        )
+        return True
+
+    lk = livekit_api()
+    try:
+        await patch_room_metadata(lk, room_name, change, require_room=True)
     finally:
         await lk.aclose()
 
@@ -318,14 +342,17 @@ async def livekit_webhook(
                 except IntegrityError:
                     db.rollback()
 
-    elif etype == "track_published" and event.participant and event.room and event.track:
+    elif etype in ("track_published", "track_unpublished") and event.participant and event.room and event.track:
+        key = _stage_key(event.participant.identity, event.track.source)
+        if key:
+            background.add_task(_stage_stream, event.room.name, key, etype == "track_published")
         # If video playback is active in this meeting, immediately
         # server-mute the freshly-published track so the playback
         # participant remains the sole speaker. Skip the playback
         # ingress itself and any non-standard participants (other
         # ingresses, egress workers, agents) so we never accidentally
         # silence the playback feed or some future workload.
-        m = db.query(Meeting).filter_by(room_name=event.room.name).first()
+        m = db.query(Meeting).filter_by(room_name=event.room.name).first() if etype == "track_published" else None
         if (
             m
             and m.playback_ingress_id
@@ -340,6 +367,11 @@ async def livekit_webhook(
             )
 
     elif etype == "participant_left" and event.participant and event.room:
+        # A presenter's screen share (or the playback) ends with them.
+        for source in (api.TrackSource.SCREEN_SHARE, api.TrackSource.CAMERA):
+            key = _stage_key(event.participant.identity, source)
+            if key:
+                background.add_task(_stage_stream, event.room.name, key, False)
         if is_ti_cafe_room(event.room.name):
             ticafe_mark_left(event.participant.identity)
         m = db.query(Meeting).filter_by(room_name=event.room.name).first()
@@ -379,22 +411,23 @@ async def livekit_webhook(
                 log.exception(
                     "room_finished: playback teardown failed for %s", m.id
                 )
-        # Meet++: a room closing ends any active session (finalisation runs
-        # in the background so the webhook acks fast).
+        # Meet++: a room closing ends a running or paused session (its
+        # finalisation jobs run in the background so the webhook acks fast).
+        # A session still in setup is left for the chair.
         if m:
             from app.meetpp.models import MeetppSession
-            from app.meetpp.runtime import runtime as meetpp_runtime
+            from app.meetpp.runtime import end_session as meetpp_end_session
 
             active = (
                 db.query(MeetppSession)
                 .filter(
                     MeetppSession.meeting_id == m.id,
-                    MeetppSession.status.in_(("setup", "running", "paused")),
+                    MeetppSession.status.in_(("running", "paused")),
                 )
                 .first()
             )
             if active is not None:
-                background.add_task(meetpp_runtime.end_session, active.id)
+                background.add_task(meetpp_end_session, active.id)
 
     elif etype in ("egress_started", "egress_updated", "egress_ended") and event.egress_info:
         info = event.egress_info

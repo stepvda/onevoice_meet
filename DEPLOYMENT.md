@@ -419,5 +419,33 @@ agent during a live session. Recreating `meetpp-agent` interrupts transcription
 for the session it is serving; `meeting-api` recreations are safe because
 sessions resume from the database and the agent buffers segments.
 
+### Meet++ v3 (FDD v3.1) upgrade
+
+Release 1.1 replaces the Release 1 Meet++ schema. On the first start of the
+new meeting-api, `ensure_schema()` drops the Release 1 `meetpp_*` tables (test
+data only) and recreates them; the two `meetings` columns are kept. Remove the
+orphaned Release 1 session folders afterwards:
+`ls /var/lib/meet/meetpp/` and delete the old `<session-id>/` folders (keep `tts/`).
+
+New `.env` keys (see `.env.example`, section "Meet++ v3"):
+
+- `MEETPP_LANGUAGES=["en"]` (Release 1.1 is English only)
+- `MEETPP_SPEECH_URL=http://10.88.0.2:9310` and `MEETPP_SPEECH_SECRET=<openssl rand -hex 32>`
+- optional tuning: `MEETPP_TICK_SECONDS`, `MEETPP_CONTEXT_SECONDS`,
+  `MEETPP_MAX_TOKENS_PER_HOUR`, `MEETPP_AUDIO_RETENTION_DAYS`, `MEETPP_TTS_VOICE`
+
+`meetpp-agent` now mounts all of `/var/lib/meet/meetpp` (audio store +
+TTS cache) and reaches the Mac Studio over the host's WireGuard tunnel
+(`wg0`: 10.88.0.1 ↔ 10.88.0.2). Check from the container:
+`docker compose -p meet exec meetpp-agent curl -fsS http://10.88.0.2:9310/health`.
+
+#### Tier-2 speech service on the Mac Studio
+
+`meetpp-speech/` runs on the Mac Studio as a per-user LaunchAgent bound to
+10.88.0.2:9310 (large-v3-turbo via mlx-whisper + Kokoro TTS). Install and
+upgrade with `meetpp-speech/install.sh` (see `meetpp-speech/README.md`); put the
+same `MEETPP_SPEECH_SECRET` in `~/.config/meetpp-speech/env`. Without the Mac
+Studio the system runs on tier 1 only and the report's provenance says so.
+
 SQLite now runs in WAL mode. The backup procedure must copy `meet.db-wal` and
 `meet.db-shm` alongside `meet.db`.

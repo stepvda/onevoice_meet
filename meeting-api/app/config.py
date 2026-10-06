@@ -220,11 +220,25 @@ class Settings(BaseSettings):
     meetpp_data_dir: str = "/var/lib/meet/meetpp"
     meetpp_upload_max_bytes: int = 10 * 1024 * 1024
     meetpp_upload_max_pages: int = 50
-    # Selectable session languages (STT, TTS and templates must support them).
-    meetpp_languages: list[str] = ["en", "nl", "fr", "de"]
+    # Spoken language, prompts, minutes, report and TTS are English only in
+    # Release 1.1 (FDD v3.1 §15.1 Q9).
+    meetpp_languages: list[str] = ["en"]
     meetpp_default_mode: str = "lead"
-    # Alias participant names in prompts sent to external providers.
-    meetpp_speaker_aliasing: bool = True
+    # LiveKit URL the agent joins over the Docker network (like egress).
+    meetpp_agent_ws_url: str = "ws://host.docker.internal:7880"
+    # Informational only: tier-2 speech service configured on the agent.
+    meetpp_speech_enabled: bool = False
+    # Interpretation cadence (FDD §8.1): tick every N s when there is new
+    # speech; N s of already-processed speech is resent as context.
+    meetpp_tick_seconds: int = 12
+    meetpp_context_seconds: int = 90
+    # Per-utterance audio (MEETPP_DATA_DIR/<sid>/audio/) is deleted at publish;
+    # unpublished sessions are purged after this many days.
+    meetpp_audio_retention_days: int = 7
+    # Kokoro voice for announcements (synthesised on the Mac Studio).
+    meetpp_tts_voice: str = "am_michael"
+    # Tier-2 final pass: how long finalisation waits for the agent.
+    meetpp_final_pass_timeout_seconds: int = 300
 
     # ─── Printable meeting report identity (minutes PDF header/footer) ────
     meetpp_org_name: str = "TI One Voice vzw"
@@ -238,9 +252,9 @@ class Settings(BaseSettings):
     meetpp_org_iban: str = ""
     # Optional notice block under the identity (e.g. PROVISIONAL). Empty = none.
     meetpp_report_notice: str = ""
-    # Input-token budget per session-hour. Raised from 900k because live ticks
-    # run close to per-utterance (near-immediate extraction).
-    meetpp_max_tokens_per_hour: int = 2_000_000
+    # Input-token budget per session-hour (FDD §8.8). When exceeded, ticks
+    # slow down to one per 30 s instead of stopping.
+    meetpp_max_tokens_per_hour: int = 3_000_000
     meetpp_transcript_retention_days: int = 30
     meetpp_upload_retention_days: int = 90
     # Debug only: store raw prompts for 7 days.
@@ -259,14 +273,11 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 45.0
     llm_max_retries: int = 2
 
-    # STT / TTS configuration handed to meetpp-agent (also read there).
+    # STT configuration handed to meetpp-agent (also read there).
     stt_model: str = "small"
     stt_degrade_model: str = "base"
     stt_threads: int = 2
     stt_compute_type: str = "int8"
-    stt_remote_url: str = ""
-    # Piper voice per language, e.g. "en:en_GB-alba-medium,nl:nl_BE-nathalie-medium".
-    tts_voices: str = "en:en_GB-alba-medium,nl:nl_BE-nathalie-medium,fr:fr_FR-siwis-medium,de:de_DE-thorsten-medium"
 
 
 settings = Settings()
