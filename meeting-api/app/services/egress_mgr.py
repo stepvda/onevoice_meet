@@ -154,6 +154,45 @@ def _current_state(m: Meeting, db: Session) -> tuple[str | None, bool, bool]:
     return egress_id, bool(file_egress), bool(stream_egress)
 
 
+def egress_flags(db: Session, meeting_id: str, *, ended_egress_id: str | None = None) -> tuple[bool, bool]:
+    """(recording_active, streaming_active) as the database has them: a running
+    Recording row; the meeting's livestream egress. `ended_egress_id` counts
+    for neither."""
+    recs = db.query(Recording).filter(Recording.meeting_id == meeting_id, Recording.status == "running")
+    if ended_egress_id:
+        recs = recs.filter(Recording.egress_id != ended_egress_id)
+    m = db.get(Meeting, meeting_id)
+    stream_egress = m.livestream_egress_id if m else None
+    return recs.first() is not None, bool(stream_egress) and stream_egress != ended_egress_id
+
+
+async def sync_egress_flags(meeting_id: str, room_name: str, *, ended_egress_id: str | None = None) -> None:
+    """Write the Recording / Streaming flags of the room metadata from the
+    database (`egress_flags`). An egress ending must not simply clear them:
+    reconcile_egress restarts the egress for several transitions, and the old
+    egress's `egress_ended` arrives while the new one runs. The database is
+    read under the room's metadata lock, and reconcile_egress commits before
+    it writes the flags, so a racing reconcile is either seen or overwrites
+    this write. No-op when the room is not running."""
+    from app.db import SessionLocal
+    from app.room_metadata import patch_room_metadata
+
+    def change(current: dict) -> bool:
+        with SessionLocal() as db:
+            recording, streaming = egress_flags(db, meeting_id, ended_egress_id=ended_egress_id)
+        if bool(current.get("recording_active")) == recording and bool(current.get("streaming_active")) == streaming:
+            return False
+        current["recording_active"] = recording
+        current["streaming_active"] = streaming
+        return True
+
+    lk = livekit_api()
+    try:
+        await patch_room_metadata(lk, room_name, change, require_room=True)
+    finally:
+        await lk.aclose()
+
+
 def _titv_hls_segment_outputs(m: Meeting) -> list:
     """HLS output for the TI-TV public channel so the mobile apps get a
     castable / backgroundable LIVE stream.
@@ -354,20 +393,6 @@ async def reconcile_egress(
         egress_info = await lk.egress.start_room_composite_egress(
             api.RoomCompositeEgressRequest(**req_kwargs)
         )
-        # Surface the recording / streaming flags on room metadata — the
-        # in-meeting Recording and Streaming pills are driven from these,
-        # so every participant sees them update the same tick the egress
-        # is (re)started.
-        try:
-            await _set_recording_metadata(
-                lk,
-                m.room_name,
-                recording_active=want_file,
-                streaming_active=want_stream,
-                meeting=m,
-            )
-        except Exception:  # noqa: BLE001
-            pass
     finally:
         await lk.aclose()
 
@@ -402,6 +427,25 @@ async def reconcile_egress(
         )
     )
     db.commit()
+
+    # Surface the recording / streaming flags on room metadata — the
+    # in-meeting Recording and Streaming pills are driven from these, so
+    # every participant sees them update the same tick the egress is
+    # (re)started. Written after the commit: the old egress's
+    # `egress_ended` (sync_egress_flags) then reads the new egress.
+    lk = livekit_api()
+    try:
+        await _set_recording_metadata(
+            lk,
+            m.room_name,
+            recording_active=want_file,
+            streaming_active=want_stream,
+            meeting=m,
+        )
+    except Exception:  # noqa: BLE001
+        pass
+    finally:
+        await lk.aclose()
     return {"egress_id": new_egress_id, "recording_id": new_recording_id, "no_change": False}
 
 

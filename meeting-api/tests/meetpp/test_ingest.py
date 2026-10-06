@@ -43,6 +43,11 @@ async def test_seq_assignment_refinement_and_gap(fakes):
     assert gap_row.is_gap and gap_row.gap_reason == "agent_reconnect"
     a = query(lambda db: db.query(MeetppAttendee).filter_by(session_id=sid, person_key="sub:42").one())
     assert a.talk_seconds >= 4
+    # Tier 2 first: the Mac Studio's text arrives as the live line itself.
+    res = await rt.ingest(sid, {"segments": [dict(_seg("u3", "user-42", "Third line.", "Alice Moreau"), tier=2)]})
+    seg = query(lambda db: db.query(MeetppSegment).filter_by(session_id=sid, utterance_id="u3").one())
+    assert seg.tier == 2 and seg.text_refined == "Third line." and seg.best_text == "Third line."
+    assert fakes.bus.last("caption")["tier"] == 2
 
 
 async def test_default_deny_and_opt_out(fakes):
@@ -66,7 +71,9 @@ async def test_guest_consent_survives_reconnect_with_new_identity(fakes):
     await rt.set_consent(sid, "anon-AAA", "accept", key, "Guest Gina")
     res = await rt.ingest(sid, {"segments": [_seg("g1", "anon-AAA", "Hi from the guest.")]})
     assert res["seqs"] == {"g1": 1}
-    # Reconnect: new LiveKit identity, same guest key.
+    # Reload: the old connection leaves, a new LiveKit identity posts the same
+    # guest key (rebinding needs the previous connection gone).
+    await rt.presence(sid, [{"identity": "anon-AAA", "name": "Guest Gina", "kind": "standard", "event": "disconnected"}])
     await rt.presence(sid, [{"identity": "anon-BBB", "name": "Guest Gina", "kind": "standard", "event": "connected"}])
     await rt.set_consent(sid, "anon-BBB", "accept", key, "Guest Gina")
     res = await rt.ingest(sid, {"segments": [_seg("g2", "anon-BBB", "Back again.")]})

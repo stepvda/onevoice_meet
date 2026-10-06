@@ -1,9 +1,9 @@
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package.json ./
-# Use npm install (no lockfile yet); regenerate a lockfile after the first
-# successful build and switch to `npm ci` for reproducibility.
-RUN npm install
+COPY package*.json ./
+# Installs exactly what package-lock.json pins (and fails if it is out of
+# date with package.json).
+RUN npm ci
 COPY . .
 RUN npm run build
 

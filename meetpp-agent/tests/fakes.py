@@ -22,6 +22,15 @@ from agent.worker import STTWorker
 SECRET = "test-secret"
 
 
+def expected_signature(secret: str, request: httpx.Request) -> str:
+    """Receiver side of HMAC v2 (meeting-api / meetpp-speech), written out
+    independently of agent.poster."""
+    ts = request.headers["X-Meetpp-Timestamp"]
+    target = request.url.raw_path.decode("latin-1")
+    msg = ("v2\n" + ts + "\n" + request.method + "\n" + target + "\n").encode() + hashlib.sha256(request.content).hexdigest().encode()
+    return hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
+
+
 # ── audio helpers ──
 def tone(n: int, amp: float = 0.3, freq: float = 220.0) -> np.ndarray:
     return (amp * np.sin(2 * np.pi * freq * np.arange(n) / 16000)).astype(np.float32)
@@ -174,9 +183,7 @@ class Recorder:
     responses: dict[str, list] = field(default_factory=dict)  # endpoint → list of (status, json)
 
     def handler(self, request: httpx.Request) -> httpx.Response:
-        ts = request.headers["X-Meetpp-Timestamp"]
-        expected = hmac.new(SECRET.encode(), ts.encode() + b"." + request.content, hashlib.sha256).hexdigest()
-        assert request.headers["X-Meetpp-Signature"] == expected, "bad HMAC"
+        assert request.headers["X-Meetpp-Signature"] == expected_signature(SECRET, request), "bad HMAC"
         endpoint = request.url.path.rsplit("/", 1)[-1]
         body = json.loads(request.content or b"{}")
         self.requests.append((endpoint, body))

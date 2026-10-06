@@ -49,7 +49,18 @@ services:
     volumes:
       - frontend_build:/output
     # One-shot container: copies the built SPA into the shared volume, then exits.
-    command: ["sh", "-c", "rm -rf /output/* && cp -r /app/dist/* /output/"]
+    # Copied over the previous build, index.html last (renamed into place), so
+    # an SPA that is open during a deploy can still load the previous build's
+    # lazy chunks; assets no build has written for a week are pruned.
+    command:
+      - sh
+      - -c
+      - >-
+        set -e;
+        for f in /app/dist/*; do [ "$$f" = /app/dist/index.html ] || cp -r "$$f" /output/; done;
+        cp /app/dist/index.html /output/index.html.new;
+        mv /output/index.html.new /output/index.html;
+        find /output/assets -type f -mtime +7 -delete
 
   livekit:
     logging: *default-logging
@@ -265,13 +276,25 @@ services:
     logging: *default-logging
     build: ./meetpp-agent
     restart: unless-stopped
-    env_file: .env
+    # Only what the agent reads (meetpp-agent/agent/config.py), not the whole
+    # .env: it gets none of the other services' secrets, and an unrelated .env
+    # edit does not recreate it mid-meeting. A new agent setting goes here.
     environment:
       LIVEKIT_WS_URL_INTERNAL: "ws://host.docker.internal:7880"
       MEETING_API_URL: "http://meeting-api:8080"
+      MEETPP_INTERNAL_SECRET: "${MEETPP_INTERNAL_SECRET:-}"
       # Tier-2 speech service on the Mac Studio, reached over the host's
       # WireGuard tunnel (wg0 10.88.0.1 <-> 10.88.0.2). Empty = tier 1 only.
       MEETPP_SPEECH_URL: "${MEETPP_SPEECH_URL:-}"
+      MEETPP_SPEECH_SECRET: "${MEETPP_SPEECH_SECRET:-}"
+      # 1 = tier-2 text is the live caption, tier 1 only the fallback.
+      MEETPP_TIER2_FIRST: "${MEETPP_TIER2_FIRST:-1}"
+      MEETPP_DATA_DIR: "${MEETPP_DATA_DIR:-/var/lib/meet/meetpp}"
+      MEETPP_MIN_FREE_GB: "${MEETPP_MIN_FREE_GB:-3}"
+      STT_MODEL: "${STT_MODEL:-small}"
+      STT_DEGRADE_MODEL: "${STT_DEGRADE_MODEL:-base}"
+      STT_THREADS: "${STT_THREADS:-2}"
+      STT_COMPUTE_TYPE: "${STT_COMPUTE_TYPE:-int8}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     expose:

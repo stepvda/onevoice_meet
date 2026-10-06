@@ -215,7 +215,9 @@ export type AttendanceStatus = "present" | "represented" | "absent" | "excused" 
 
 export interface AttendeeDto {
   id: string;
-  person_key: string;
+  /** Guests appear as an opaque per-session alias (`guest:~…`); null for a
+   * public viewer. */
+  person_key: string | null;
   name: string;
   username: string | null;
   email: string | null;
@@ -341,7 +343,8 @@ export interface CaptionMsg {
   person_key: string | null;
   t_start: string | null;
   text: string;
-  tier: 1;
+  /** 2 when the Mac Studio transcribed it live (tier 2 first). */
+  tier: 1 | 2;
 }
 
 export interface CaptionUpdateMsg {

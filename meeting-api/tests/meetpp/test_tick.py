@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from app.db import SessionLocal
-from app.meetpp import llm, outline, runtime as rt, util
+from app.meetpp import compose, llm, outline, runtime as rt, util
 from app.meetpp.models import (
     MeetppAction,
     MeetppActionReport,
@@ -502,7 +502,8 @@ async def test_adopted_without_a_count_is_recorded_as_assent_in_a_board_meeting(
     v = query(lambda db: db.query(MeetppVote).filter_by(decision_id=d.id).one())
     assert v.method == "assent" and v.tally_for == 2 and v.present_count == 2
     # An assent sent with zero counts is counted from the ballots; a count
-    # above the voting members present is capped.
+    # above the voting members present is kept as heard but decides nothing
+    # (the chair checks it in review).
     s2 = await say(sid, "43", "Ben Hartley", "And the shed: all in favour? Yes. Agreed.")
     fakes.llm.add("tick", {"ops": [
         {"op": "decision.add", "section": pid(sid, "Approval of the minutes"), "title": "Shed repainted",
@@ -515,7 +516,17 @@ async def test_adopted_without_a_count_is_recorded_as_assent_in_a_board_meeting(
     assert (await rt.tick(sid))["applied"] == 2
     tallies = query(lambda db: {d.title: db.query(MeetppVote).filter_by(decision_id=d.id).one().tally_for
                                 for d in db.query(MeetppDecision).filter_by(session_id=sid).all()})
-    assert tallies == {"Hall booking kept": 2, "Shed repainted": 2, "Fence mended": 2}
+    assert tallies == {"Hall booking kept": 2, "Shed repainted": 2, "Fence mended": 3}
+    fence = query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid, title="Fence mended").one())
+    s3 = await say(sid, "42", "Alice Moreau", "On the fence, one for and four against, I think.")
+    fakes.llm.add("tick", {"ops": [{"op": "decision.update", "ref": fence.ref, "evidence": [s3],
+                                    "vote": {"method": "voice", "for": 1, "against": 4, "abstain": 0}}]})
+    assert (await rt.tick(sid))["applied"] == 1
+    fence = get(MeetppDecision, fence.id)
+    v = query(lambda db: db.query(MeetppVote).filter_by(decision_id=fence.id).one())
+    assert fence.status == "adopted" and (v.tally_for, v.tally_against) == (1, 4) and not v.confirmed
+    checks = query(lambda db: compose._count_checks(db, db.get(MeetppSession, sid)))
+    assert len(checks) == 1 and checks[0].startswith(f"{fence.ref} ") and "more than the 2 voting members present" in checks[0]
 
 
 async def test_session_start_and_end_move_the_board_on_and_off_the_stage(fakes):
@@ -616,3 +627,33 @@ async def test_runner_loop_ticks_on_cue_and_finalises(fakes, monkeypatch):
         assert get(MeetppSession, sid).status == "review"
     finally:
         await rt.runtime.drop(sid)
+
+
+async def test_ai_adopts_only_on_agreement_in_the_cited_lines(fakes):
+    sid = await running(fakes, meeting_type="board")
+    sec = pid(sid, "Community garden")
+    s1 = await say(sid, "42", "Alice Moreau", "My view is that we should stop renting the hall altogether.")
+    s2 = await say(sid, "42", "Alice Moreau", "It costs far too much for what we get from it.")
+    fakes.llm.add("tick", {"ops": [{"op": "decision.add", "section": sec, "title": "Stop renting the hall",
+                                    "status": "adopted", "evidence": [s1, s2],
+                                    "vote": {"method": "assent", "for": 2, "against": 0, "abstain": 0}}]})
+    assert (await rt.tick(sid))["applied"] == 1
+    d = query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid).one())
+    # An opinion, nobody agreed: proposed, and the model's vote is not taken.
+    assert d.status == "proposed" and d.decided_at is None
+    assert query(lambda db: db.query(MeetppVote).filter_by(decision_id=d.id).count()) == 0
+    # The other director's plain "yes" is agreement: the next cite adopts it.
+    s3 = await say(sid, "43", "Ben Hartley", "Yes, fine.")
+    fakes.llm.add("tick", {"ops": [{"op": "decision.update", "ref": d.ref, "status": "adopted", "evidence": [s1, s3]}]})
+    assert (await rt.tick(sid))["applied"] == 1
+    d = get(MeetppDecision, d.id)
+    assert d.status == "adopted" and d.decided_seq == s3
+    assert query(lambda db: db.query(MeetppVote).filter_by(decision_id=d.id).one()).method == "assent"
+    # A suggestion nobody answered stays proposed too.
+    s4 = await say(sid, "42", "Alice Moreau", "We could also paint the gate.")
+    rows = query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid).count())
+    fakes.llm.add("tick", {"ops": [{"op": "decision.add", "section": sec, "title": "Paint the gate",
+                                    "status": "adopted", "evidence": [s4]}]})
+    await rt.tick(sid)
+    gate = query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid, title="Paint the gate").one())
+    assert gate.status == "proposed" and rows == 1

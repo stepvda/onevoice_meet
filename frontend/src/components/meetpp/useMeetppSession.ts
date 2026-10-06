@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { RoomEvent, type Room } from "livekit-client";
 import { setMeetppRoomToken } from "../../lib/meetpp/api";
-import { attachRoom, discover, postConsent, refetchState } from "../../lib/meetpp/session";
+import { attachRoom, discover, postConsent, refetchState, resetSessionLayer } from "../../lib/meetpp/session";
 import { configureFocus, setCtx, useMeetpp, type ClientMode } from "../../lib/meetpp/store";
 import { usePreferences } from "../../lib/preferences";
 import type { AnnounceMsg } from "../../lib/meetpp/types";
@@ -53,7 +53,15 @@ export function useMeetppRoom({
     };
   }, [room]);
 
-  useEffect(() => attachRoom(room, roomName), [room, roomName]);
+  // Leaving the room (or switching to another) drops its Meet++ state, so
+  // the next meeting never shows the previous one's board.
+  useEffect(() => {
+    const detach = attachRoom(room, roomName);
+    return () => {
+      detach();
+      resetSessionLayer();
+    };
+  }, [room, roomName]);
 
   // Discover on mount, then a slow safety poll (a missed `session` message
   // must not leave the board hidden or stale).
@@ -96,7 +104,14 @@ export function useMeetppReadOnly({
     setCtx({ mode, isChair: false, roomName, meetingId: null, localIdentity: null, localName: null });
   }, [mode, roomName]);
 
-  useEffect(() => (room ? attachRoom(room, roomName) : undefined), [room, roomName]);
+  useEffect(() => {
+    if (!room) return undefined;
+    const detach = attachRoom(room, roomName);
+    return () => {
+      detach();
+      resetSessionLayer();
+    };
+  }, [room, roomName]);
 
   useEffect(() => {
     if (!roomName || !token) return;
@@ -109,13 +124,13 @@ export function useMeetppReadOnly({
     return () => window.clearInterval(timer);
   }, [roomName, token]);
 
-  // The egress page plays the clip so recordings include it.
-  useAnnouncementAudio(mode !== "egress");
-
   const active = useMeetpp((s) => s.active);
   const settings = useMeetpp((s) => s.snap?.session.settings);
-  if (!active) return false;
-  return mode === "egress" ? settings?.in_recordings !== false : settings?.show_public === true;
+  const allowed = active && (mode === "egress" ? settings?.in_recordings !== false : settings?.show_public === true);
+  // The egress page plays the clip so recordings include it; the public view
+  // only when the board is shown there.
+  useAnnouncementAudio(mode !== "egress", allowed);
+  return allowed;
 }
 
 // ── Announcement audio ────────────────────────────────────────────────────
@@ -159,14 +174,17 @@ export function playAnnouncement(a: Pick<AnnounceMsg, "audio_url" | "title" | "s
 
 /** Plays each announcement once (respecting the user's mute preference and
  * the session's `speak` setting). */
-export function useAnnouncementAudio(respectMute: boolean): void {
+export function useAnnouncementAudio(respectMute: boolean, enabled = true): void {
   const lastAid = useRef<string | null>(null);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
   useEffect(
     () =>
       useMeetpp.subscribe((s) => {
         const a = s.announcement;
         if (!a || a.aid === lastAid.current) return;
         lastAid.current = a.aid;
+        if (!enabledRef.current) return;
         if (respectMute && !usePreferences.getState().notifications.speakAnnouncements) return;
         if (s.snap?.session.settings?.speak === false) return;
         playAnnouncement(a);

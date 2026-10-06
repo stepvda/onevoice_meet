@@ -23,7 +23,7 @@ from app.db import get_db
 from app.livekit_client import livekit_api
 from app.models import Meeting, Recording
 from app.routes.recordings import RecordingLayout
-from app.services.egress_mgr import reconcile_egress
+from app.services.egress_mgr import reconcile_egress, sync_egress_flags
 
 router = APIRouter(prefix="/v1")
 log = logging.getLogger(__name__)
@@ -103,7 +103,12 @@ async def stop_stream(meeting_id: str, user: RequireUser, db: Session = Depends(
     if not m.livestream_egress_id:
         # Idempotent: see comment in stop_recording. Treating "already off" as
         # success means a stale SPA / double-click / mid-egress-ended-webhook
-        # click doesn't surface as a confusing 404 toast.
+        # click doesn't surface as a confusing 404 toast. A Streaming pill
+        # left on (a missed webhook) is turned off.
+        try:
+            await sync_egress_flags(m.id, m.room_name)
+        except Exception:  # noqa: BLE001 — the pill is best-effort
+            log.exception("stream:stop: syncing the room-metadata flags failed for %s", m.id)
         return {"ok": True, "already_stopped": True}
 
     # If recording is also riding the same egress, restart with file-only so

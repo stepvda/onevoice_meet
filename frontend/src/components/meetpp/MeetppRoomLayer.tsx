@@ -363,8 +363,7 @@ function EditorsDialog({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   // Signed-in attendees map to `user-<sub>` identities; guests cannot be editors.
   const candidates = attendees
-    .filter((a) => a.person_key.startsWith("sub:"))
-    .map((a) => ({ identity: `user-${a.person_key.slice(4)}`, name: a.name }))
+    .flatMap((a) => (a.person_key?.startsWith("sub:") ? [{ identity: `user-${a.person_key.slice(4)}`, name: a.name }] : []))
     .filter((c) => c.identity !== self);
   return (
     <Dialog title={t("meetpp.editors.title", { defaultValue: "Editors" })}>

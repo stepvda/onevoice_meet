@@ -6,6 +6,7 @@ import { fmtDuration, sectionElapsed, sectionLabel } from "../../lib/meetpp/stat
 import { BOARD_KEY } from "../../lib/stage";
 import { toggleFocus } from "../../lib/stageView";
 import StageTileControls from "../StageTileControls";
+import BoardErrorBoundary from "./BoardErrorBoundary";
 import MeetppBoard from "./MeetppBoard";
 import { cx, useElementWidth, useNow } from "./ui";
 
@@ -22,7 +23,15 @@ export type BoardWindowSize = "main" | "cell" | "thumb";
  * summary. Viewers zoom it in their own view (double-click or the zoom
  * button); the host and co-hosts can make it the presenter.
  */
-export default function MeetppBoardWindow({
+export default function MeetppBoardWindow(props: { size: BoardWindowSize; variant?: "stage" | "public" | "egress" }) {
+  return (
+    <BoardErrorBoundary compact={props.size !== "main"}>
+      <BoardWindow {...props} />
+    </BoardErrorBoundary>
+  );
+}
+
+function BoardWindow({
   size,
   variant = "stage",
 }: {
@@ -44,14 +53,22 @@ export default function MeetppBoardWindow({
           {variant !== "egress" && size === "cell" && <StageTileControls tileKey={BOARD_KEY} stageKey={BOARD_KEY} className="right-2" />}
         </>
       ) : (
-        <MeetppBoardTile controls={variant !== "egress"} />
+        <BoardTile controls={variant !== "egress"} />
       )}
     </div>
   );
 }
 
 /** Compact summary of the board: live section, its time, the latest change. */
-export function MeetppBoardTile({ controls = true }: { controls?: boolean }) {
+export function MeetppBoardTile(props: { controls?: boolean }) {
+  return (
+    <BoardErrorBoundary compact>
+      <BoardTile {...props} />
+    </BoardErrorBoundary>
+  );
+}
+
+function BoardTile({ controls = true }: { controls?: boolean }) {
   const { t } = useTranslation();
   const snap = useMeetpp((s) => s.snap);
   const lastChange = useMeetpp((s) => s.lastChange);

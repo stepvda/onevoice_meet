@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import hmac
 import logging
 
 import httpx
@@ -17,6 +16,7 @@ from agent.tier2 import (
     has_repetition_loop,
 )
 from agent.tts import TTSCache, TTSUnavailable, clip_hash
+from tests.fakes import expected_signature
 
 SPEECH_SECRET = "speech-secret"
 
@@ -57,9 +57,7 @@ def test_tier2_prompt_budget():
 
 
 def verify(request: httpx.Request) -> None:
-    ts = request.headers["X-Meetpp-Timestamp"]
-    expected = hmac.new(SPEECH_SECRET.encode(), ts.encode() + b"." + request.content, hashlib.sha256).hexdigest()
-    assert request.headers["X-Meetpp-Signature"] == expected
+    assert request.headers["X-Meetpp-Signature"] == expected_signature(SPEECH_SECRET, request)
 
 
 async def test_transcribe_signs_body_and_limits_concurrency():
@@ -83,6 +81,8 @@ async def test_transcribe_signs_body_and_limits_concurrency():
     req = seen[0]
     assert req.url.path == "/transcribe"
     assert req.url.params["language"] == "en" and req.url.params["prompt"] == "Meeting of X. previous text"
+    # v2: the prompt and language are signed with the body
+    assert req.url.raw_path == b"/transcribe?language=en&prompt=Meeting+of+X.+previous+text"
     assert req.headers["content-type"] == "audio/ogg" and req.content == b"OggS-audio"
 
 

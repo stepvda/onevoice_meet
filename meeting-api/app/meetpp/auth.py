@@ -183,8 +183,6 @@ def session_editors(session: MeetppSession) -> set[str]:
 def principal_can_edit(session: MeetppSession, meeting: Meeting, principal: RoomPrincipal) -> bool:
     if principal.read_only:
         return False
-    if principal.room_admin:
-        return True
     if principal.identity in session_editors(session):
         return True
     if principal.identity.startswith("user-"):
@@ -196,8 +194,15 @@ def principal_can_edit(session: MeetppSession, meeting: Meeting, principal: Room
 # ─── Internal HMAC ─────────────────────────────────────────────────────────
 
 
-def internal_signature(timestamp: str, body: bytes) -> str:
-    msg = timestamp.encode("utf-8") + b"." + body
+# Signatures accepted within the window (signature → expiry): a captured
+# request cannot be replayed.
+_seen_signatures: dict[str, float] = {}
+
+
+def internal_signature(timestamp: str, method: str, target: str, body: bytes) -> str:
+    """v2: HMAC-SHA256 over the version, timestamp, method, raw path (with
+    `?query` when there is one) and the body's SHA-256."""
+    msg = ("v2\n" + timestamp + "\n" + method.upper() + "\n" + target + "\n").encode() + hashlib.sha256(body).hexdigest().encode()
     return hmac.new(
         (settings.meetpp_internal_secret or "").encode("utf-8"),
         msg,
@@ -205,7 +210,9 @@ def internal_signature(timestamp: str, body: bytes) -> str:
     ).hexdigest()
 
 
-def verify_internal_signature(timestamp: str | None, signature: str | None, body: bytes) -> None:
+def verify_internal_signature(
+    timestamp: str | None, signature: str | None, method: str, target: str, body: bytes
+) -> None:
     if not settings.meetpp_internal_secret:
         raise HTTPException(status_code=503, detail="internal API disabled")
     if not timestamp or not signature:
@@ -214,11 +221,28 @@ def verify_internal_signature(timestamp: str | None, signature: str | None, body
         ts = int(timestamp)
     except ValueError:
         raise HTTPException(status_code=401, detail="bad timestamp") from None
-    if abs(time.time() - ts) > HMAC_WINDOW_SECONDS:
+    now = time.time()
+    if abs(now - ts) > HMAC_WINDOW_SECONDS:
         raise HTTPException(status_code=401, detail="stale timestamp")
-    expected = internal_signature(timestamp, body)
+    expected = internal_signature(timestamp, method, target, body)
     if not hmac.compare_digest(expected, signature):
         raise HTTPException(status_code=401, detail="bad signature")
+    for sig, expiry in list(_seen_signatures.items()):
+        if expiry < now:
+            del _seen_signatures[sig]
+    if expected in _seen_signatures:
+        raise HTTPException(status_code=401, detail="replayed request")
+    # Kept until the timestamp can no longer pass the window check.
+    _seen_signatures[expected] = ts + HMAC_WINDOW_SECONDS + 1
+
+
+def request_target(request: Request) -> str:
+    """The raw request path, plus `?query` when there is one (as signed)."""
+    raw = request.scope.get("raw_path")
+    # ASGI servers give the path alone; some test clients append the query.
+    path = raw.decode("latin-1").split("?", 1)[0] if raw else request.url.path
+    query = request.scope.get("query_string") or b""
+    return path + ("?" + query.decode("latin-1") if query else "")
 
 
 async def require_internal(
@@ -227,7 +251,7 @@ async def require_internal(
     x_meetpp_signature: Annotated[str | None, Header()] = None,
 ) -> None:
     body = await request.body()
-    verify_internal_signature(x_meetpp_timestamp, x_meetpp_signature, body)
+    verify_internal_signature(x_meetpp_timestamp, x_meetpp_signature, request.method, request_target(request), body)
 
 
 # ─── Room token or chair JWT ────────────────────────────────────────────────
@@ -247,6 +271,8 @@ class Access:
     read_only: bool
     identity: str
     name: str
+    # Anonymous viewer of the public page (`viewer-` identity).
+    viewer: bool = False
 
 
 def resolve_access(session_id: str, request: Request, db: Session) -> Access:
@@ -261,12 +287,18 @@ def resolve_access(session_id: str, request: Request, db: Session) -> Access:
     token = request.headers.get("x-meet-room-token")
     if token:
         principal = principal_from_claims(verify_room_token(token), meeting.room_name)
+        viewer = principal.identity.startswith("viewer-")
+        if viewer and not _show_public(session):
+            raise HTTPException(status_code=404, detail="session not found")
         sub = principal.identity[5:] if principal.identity.startswith("user-") else None
-        is_chair = not principal.read_only and (principal.room_admin or (sub is not None and is_moderator(meeting, sub)))
+        # Chair rights follow the meeting's current owner/co-hosts, not the
+        # token's room_admin claim (a removed co-host keeps that for hours).
+        is_chair = not principal.read_only and sub is not None and is_moderator(meeting, sub)
         can_edit = is_chair or (not principal.read_only and principal.identity in session_editors(session))
         return Access(
             session=session, meeting=meeting, principal=principal, user=None, is_chair=is_chair,
             can_edit=can_edit, read_only=principal.read_only, identity=principal.identity, name=principal.name,
+            viewer=viewer,
         )
     authorization = request.headers.get("authorization")
     if authorization:
@@ -278,6 +310,13 @@ def resolve_access(session_id: str, request: Request, db: Session) -> Access:
             read_only=False, identity=f"user-{user.sub}", name=user.email or user.sub,
         )
     raise HTTPException(status_code=401, detail="missing X-Meet-Room-Token")
+
+
+def _show_public(session: MeetppSession) -> bool:
+    try:
+        return bool(json.loads(session.settings_json or "{}").get("show_public", False))
+    except (ValueError, AttributeError):
+        return False
 
 
 def room_access(session_id: str, request: Request, db: Session = Depends(get_db)) -> Access:

@@ -26,14 +26,24 @@ function anyModalOpen(): boolean {
   return !!document.querySelector('[role="dialog"][aria-modal="true"], [data-testid="shortcut-overlay"]');
 }
 
+let moveInFlight = false;
+
 /** Handle a Meet++ shortcut; returns true when the key was consumed. */
 function handleMeetppKey(e: KeyboardEvent): boolean {
   const mp = useMeetpp.getState();
   if (!mp.active || !mp.snap) return false;
-  // Chair: Next / Back work whatever is on the stage.
+  // Chair: Next / Back work whatever is on the stage. One move per key press:
+  // auto-repeat and presses while a move is in flight are swallowed (each move
+  // closes a point and starts its minutes).
   if (e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
     if (!mp.ctx.isChair) return false;
-    void (e.key === "ArrowRight" ? meetppActions.next() : meetppActions.back()).catch(() => undefined);
+    if (e.repeat || moveInFlight) return true;
+    moveInFlight = true;
+    void (e.key === "ArrowRight" ? meetppActions.next() : meetppActions.back())
+      .catch(() => undefined)
+      .finally(() => {
+        moveInFlight = false;
+      });
     return true;
   }
   // The board's own keys only while this viewer sees the full board (as the

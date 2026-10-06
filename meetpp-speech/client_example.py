@@ -3,9 +3,11 @@
 as meetpp-agent must (contract section 6.2):
 
     X-Meetpp-Timestamp: <unix seconds>
-    X-Meetpp-Signature: hex(HMAC_SHA256(secret, ts + "." + raw_body))
+    X-Meetpp-Signature: hex(HMAC_SHA256(secret, "v2\n" + ts + "\n" + METHOD + "\n"
+                                                + target + "\n" + hex(sha256(raw_body))))
 
-The query string (language, prompt) is not part of the signature.
+target = the path + "?" + query string exactly as sent (so language and prompt
+are signed). A signature is accepted once: a retry must be signed again.
 
 Usage:
     export MEETPP_SPEECH_URL=http://10.88.0.2:9310 MEETPP_SPEECH_SECRET=...
@@ -28,17 +30,17 @@ import urllib.parse
 import urllib.request
 
 
-def sign(secret: str, ts: int, body: bytes) -> str:
-    return hmac.new(secret.encode(), f"{ts}.".encode() + body, hashlib.sha256).hexdigest()
+def sign(secret: str, ts: int, method: str, target: str, body: bytes) -> str:
+    msg = f"v2\n{ts}\n{method}\n{target}\n".encode() + hashlib.sha256(body).hexdigest().encode()
+    return hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
 
 
 def _post(url: str, secret: str, body: bytes, content_type: str, timeout: float) -> tuple[int, dict, bytes]:
     ts = int(time.time())
-    req = urllib.request.Request(url, data=body, method="POST", headers={
-        "Content-Type": content_type,
-        "X-Meetpp-Timestamp": str(ts),
-        "X-Meetpp-Signature": sign(secret, ts, body),
-    })
+    req = urllib.request.Request(url, data=body, method="POST", headers={"Content-Type": content_type})
+    # req.selector is the request target urllib puts on the wire (path + query).
+    req.add_header("X-Meetpp-Timestamp", str(ts))
+    req.add_header("X-Meetpp-Signature", sign(secret, ts, "POST", req.selector, body))
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return resp.status, dict(resp.headers), resp.read()

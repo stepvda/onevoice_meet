@@ -201,9 +201,14 @@ export default function MeetppTranscript({ variant = "live", className, noSearch
     leftAtCount.current = segments.length;
     el.scrollTo({ top: Math.max(0, offsets[idx] - el.clientHeight / 3), behavior: reduced ? "auto" : "smooth" });
     setFlashSeq(seq);
+  }, [blocks, offsets, segments.length, reduced]);
+  // Own effect: the jump effect re-runs (rows measured, new captions) and
+  // would cancel the timer, leaving the block highlighted.
+  useEffect(() => {
+    if (flashSeq === null) return;
     const tm = window.setTimeout(() => setFlashSeq(null), 2500);
     return () => window.clearTimeout(tm);
-  }, [blocks, offsets, segments.length, reduced]);
+  }, [flashSeq]);
 
   const newCount = atBottom ? 0 : Math.max(0, segments.length - leftAtCount.current);
   const speakingNames = speaking.map((s) => s.name).filter(Boolean);

@@ -60,3 +60,33 @@ def test_encode_falls_back_to_wav(monkeypatch):
     assert ctype == "audio/wav" and data[:4] == b"RIFF"
     data, ctype = encode(_sine(24000, 0.5), 24000, "wav")
     assert ctype == "audio/wav" and data[:4] == b"RIFF"
+
+
+def _wav(sr: int, seconds: float, channels: int = 1) -> bytes:
+    buf = io.BytesIO()
+    sf.write(buf, _sine(sr, seconds, channels), sr, format="WAV", subtype="PCM_16")
+    return buf.getvalue()
+
+
+def test_too_long_is_refused_from_the_header_before_decoding(monkeypatch):
+    from meetpp_speech.audio import AudioTooLong
+
+    buf = io.BytesIO()
+    sf.write(buf, _sine(48000, 6.0), 48000, format="OGG", subtype="OPUS")  # small body, longer audio
+    reads = []
+    real_read = sf.SoundFile.read
+    monkeypatch.setattr(sf.SoundFile, "read", lambda self, *a, **k: reads.append(k) or real_read(self, *a, **k))
+    with pytest.raises(AudioTooLong):
+        decode_to_16k_mono(buf.getvalue(), max_s=5.0)
+    assert reads == []  # nothing decoded
+    x = decode_to_16k_mono(buf.getvalue(), max_s=6.5)
+    assert abs(len(x) / 16000 - 6.0) < 0.05
+    assert reads[-1]["frames"] == int(6.5 * 48000)  # the read itself is capped too
+
+
+def test_more_than_two_channels_or_odd_rates_are_refused():
+    with pytest.raises(AudioDecodeError, match="channels"):
+        decode_to_16k_mono(_wav(16000, 0.5, channels=3))
+    with pytest.raises(AudioDecodeError, match="sample rate"):
+        decode_to_16k_mono(_wav(192000, 0.1))
+    assert len(decode_to_16k_mono(_wav(44100, 0.5, channels=2), max_s=1.0)) == 8000

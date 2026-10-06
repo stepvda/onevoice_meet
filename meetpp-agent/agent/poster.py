@@ -1,7 +1,9 @@
 """Delivery to meeting-api's internal API (contract §2.4).
 
-* ``sign`` implements the shared HMAC scheme
-  ``X-Meetpp-Signature = hex(HMAC_SHA256(secret, ts + "." + body))``.
+* ``sign_request`` implements the shared HMAC scheme, version 2 (also used
+  for meetpp-speech): ``X-Meetpp-Signature = hex(HMAC_SHA256(secret,
+  "v2\\n" + ts + "\\n" + METHOD + "\\n" + target + "\\n" + hex(sha256(body))))``
+  where ``target`` is the raw path plus ``?query`` exactly as sent.
 * ``Poster`` is one ordered delivery queue per session on a persistent
   ``httpx.AsyncClient``. Items stay in order; on 5xx or network errors the
   head is retried with backoff for up to 5 minutes (then dropped with a
@@ -31,10 +33,18 @@ MAX_BATCH = 50
 BACKOFF_S = (1.0, 2.0, 5.0, 10.0)
 
 
-def sign(secret: str, body: bytes, ts: int | None = None) -> dict[str, str]:
+def signature(secret: str, ts: str, method: str, target: str, body: bytes) -> str:
+    msg = f"v2\n{ts}\n{method}\n{target}\n".encode("utf-8") + hashlib.sha256(body).hexdigest().encode("ascii")
+    return hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+
+
+def sign_request(secret: str, request: httpx.Request, ts: int | None = None) -> httpx.Request:
+    """Sign a built request in place: method, path + query as on the wire, body."""
     stamp = str(int(time.time()) if ts is None else int(ts))
-    sig = hmac.new(secret.encode("utf-8"), stamp.encode("utf-8") + b"." + body, hashlib.sha256).hexdigest()
-    return {"X-Meetpp-Timestamp": stamp, "X-Meetpp-Signature": sig}
+    target = request.url.raw_path.decode("latin-1")
+    request.headers["X-Meetpp-Timestamp"] = stamp
+    request.headers["X-Meetpp-Signature"] = signature(secret, stamp, request.method, target, request.content)
+    return request
 
 
 def dumps(body: Any) -> bytes:
@@ -53,9 +63,14 @@ class InternalApi:
         return f"{self.base_url}/api/v1/internal/meetpp/sessions/{sid}/{endpoint}"
 
     async def post(self, sid: str, endpoint: str, body: Any, timeout: float = 10.0) -> httpx.Response:
-        raw = dumps(body)
-        headers = {"Content-Type": "application/json", **sign(self.secret, raw)}
-        return await self.client.post(self.url(sid, endpoint), content=raw, headers=headers, timeout=timeout)
+        request = self.client.build_request(
+            "POST",
+            self.url(sid, endpoint),
+            content=dumps(body),
+            headers={"Content-Type": "application/json"},
+            timeout=timeout,
+        )
+        return await self.client.send(sign_request(self.secret, request))
 
 
 # kind → (endpoint, body key)

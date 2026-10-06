@@ -150,3 +150,17 @@ describe("meet-ai handling", () => {
     expect(consent).toHaveBeenCalledTimes(3);
   });
 });
+
+describe("meet-ai message validation", () => {
+  const enc = (o: unknown) => new TextEncoder().encode(JSON.stringify(o));
+  it("accepts well-formed messages and drops malformed ones", async () => {
+    const { decode } = await import("../session");
+    expect(decode(enc({ v: 1, type: "caption", seq: 3, identity: "user-1", name: "A", text: "Hello" }))).not.toBeNull();
+    expect(decode(enc({ v: 1, type: "state", version: 4, delta: {} }))?.type).toBe("state");
+    // A caption whose text is not a string used to throw in render.
+    expect(decode(enc({ v: 1, type: "caption", seq: 1e9, identity: "x", text: {} }))).toBeNull();
+    expect(decode(enc({ v: 1, type: "position", version: "9" }))).toBeNull();
+    expect(decode(enc({ v: 1, type: "unknown" }))).toBeNull();
+    expect(decode(new TextEncoder().encode("not json"))).toBeNull();
+  });
+});

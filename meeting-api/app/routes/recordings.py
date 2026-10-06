@@ -7,6 +7,7 @@ the final size/duration/status are filled in by the LiveKit webhook handler
 when the `egress_ended` event arrives.
 """
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal
@@ -112,7 +113,13 @@ async def stop_recording(meeting_id: str, user: RequireUser, db: Session = Depen
     if not rec:
         # Idempotent: from the user's POV the state is already "stopped".
         # Returning 404 here makes the SPA appear stuck on a Stop button
-        # that "doesn't work" — log shows e.g. four retries in 22 s.
+        # that "doesn't work" — log shows e.g. four retries in 22 s. A
+        # Recording pill left on (a missed webhook) is turned off.
+        from app.services.egress_mgr import sync_egress_flags
+        try:
+            await sync_egress_flags(m.id, m.room_name)
+        except Exception:  # noqa: BLE001 — the pill is best-effort
+            logging.getLogger(__name__).exception("recordings:stop: syncing the room-metadata flags failed for %s", m.id)
         return {"ok": True, "recording_id": None, "already_stopped": True}
 
     # If a stream is also active on this egress, restart with stream-only so

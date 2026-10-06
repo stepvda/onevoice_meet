@@ -167,6 +167,26 @@ def match_person(db: Session, session: MeetppSession, name: str | None) -> tuple
     return raw[:200], None
 
 
+def count_exceeds_present(vote: MeetppVote | None) -> bool:
+    """More votes counted than voting members present or represented."""
+    if vote is None or not vote.present_count:
+        return False
+    cast = int(vote.tally_for or 0) + int(vote.tally_against or 0) + int(vote.tally_abstain or 0)
+    return cast > int(vote.present_count)
+
+
+def _known_keys(db: Session, session: MeetppSession) -> dict[str, str]:
+    """Person key as a client may send it back (room data shows guests by an
+    alias) → the stored key."""
+    keys = [a.person_key for a in db.query(MeetppAttendee).filter_by(session_id=session.id).all()]
+    keys += [r.person_key for r in db.query(MeetppRoster).filter_by(series_id=session.series_id).all()]
+    out: dict[str, str] = {}
+    for k in keys:
+        out[k] = k
+        out[util.public_person_key(session.id, k) or k] = k
+    return out
+
+
 def apply_vote(
     db: Session,
     session: MeetppSession,
@@ -174,10 +194,13 @@ def apply_vote(
     data: dict,
     *,
     confirmed: bool | None = None,
+    ai: bool = False,
 ) -> MeetppVote:
     """Create or update the vote record of a decision. Eligible/present and
     quorum are always recomputed server-side; the result follows the series'
-    majority rule when tallies are known."""
+    majority rule when tallies are known. A count from the model (`ai`) that
+    exceeds the voting members present is kept but decides nothing: the
+    chair checks it in review."""
     series = db.get(MeetppSeries, session.series_id)
     vote = db.query(MeetppVote).filter_by(decision_id=decision.id).first()
     if vote is None:
@@ -198,6 +221,7 @@ def apply_vote(
     ballots: list[dict] | None = None
     if isinstance(ballots_in, list) and ballots_in:
         ballots = []
+        known = _known_keys(db, session)
         for b in ballots_in[:100]:
             if not isinstance(b, dict):
                 continue
@@ -208,7 +232,7 @@ def apply_vote(
             ballots.append(
                 {
                     "name": display,
-                    "person_key": b.get("person_key") or key,
+                    "person_key": known.get(str(b.get("person_key") or ""), key),
                     "choice": norm_choice(b.get("choice")),
                     "cast_by": util.truncate(b.get("cast_by"), 200) or display,
                     "proxy": bool(b.get("proxy")),
@@ -243,10 +267,9 @@ def apply_vote(
         tf = sum(1 for b in ballots if b["choice"] == "for")
         ta = sum(1 for b in ballots if b["choice"] == "against")
         tab = sum(1 for b in ballots if b["choice"] == "abstain")
-    present = int(q.get("voting_present") or 0)
-    if tf is not None and present:
-        # Never more votes in favour than voting members present or represented.
-        tf = min(tf, max(0, present - (ta or 0) - (tab or 0)))
+    # Whose count this is: the model's, unless a person entered or confirmed it
+    # (a person's count is never rewritten: they may know of votes we do not).
+    ai_count = ai or (tf is None and ta is None and tab is None and not decision.locked and not vote.confirmed)
     if tf is not None or ta is not None or tab is not None:
         vote.tally_for, vote.tally_against, vote.tally_abstain = tf or 0, ta or 0, tab or 0
     vote.eligible_count = q["voting_total"]
@@ -254,7 +277,10 @@ def apply_vote(
     vote.quorum_required = q["required"]
     vote.quorum_met = q["met"]
     rule = series.majority_rule if series else "ordinary"
-    result = compute_result(rule, vote.tally_for, vote.tally_against, vote.tally_abstain)
+    if ai_count and count_exceeds_present(vote):
+        result = None  # an impossible count from the model decides nothing
+    else:
+        result = compute_result(rule, vote.tally_for, vote.tally_against, vote.tally_abstain)
     if result is None and decision.status in ("adopted", "rejected"):
         result = decision.status
     vote.result = result

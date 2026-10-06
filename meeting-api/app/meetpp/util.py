@@ -1,6 +1,8 @@
 """Shared Meet++ helpers: identity, time, JSON and text similarity."""
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import re
 import unicodedata
@@ -94,6 +96,30 @@ def person_key_for_identity(identity: str | None) -> str | None:
 
 def valid_guest_key(key: str | None) -> bool:
     return bool(key and _GUEST_KEY_RE.match(key))
+
+
+def public_person_key(session_id: str, key: str | None) -> str | None:
+    """The person key as shown in room-visible data. A guest key is a bearer
+    secret (the consent post claims a person by it), so guests get an opaque
+    per-session alias instead; the `~` keeps the alias from being claimable."""
+    if not key or not key.startswith("guest:"):
+        return key
+    from app.config import settings
+
+    digest = hmac.new(
+        (settings.livekit_api_secret or "").encode("utf-8"), f"{session_id}|{key}".encode("utf-8"), hashlib.sha256
+    ).hexdigest()
+    return f"guest:~{digest[:20]}"
+
+
+def as_list(value: Any) -> list:
+    """An LLM field that should be a list: a lone string is one item, any
+    other non-list is none (iterating a string would give its characters)."""
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        return [value] if value.strip() else []
+    return []
 
 
 def name_key(name: str) -> str:

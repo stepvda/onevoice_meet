@@ -20,7 +20,7 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.meetpp import governance, outline as outline_mod, util
+from app.meetpp import agreement, governance, outline as outline_mod, util
 from app.meetpp.models import (
     MeetppAction,
     MeetppActionReport,
@@ -535,6 +535,16 @@ def _decision_fields(ctx: ApplyContext, d: MeetppDecision, op, *, evidence: list
     status = _norm_status(op.status, DECISION_STATUSES, None)
     if status == "pending" and not ctx.human:
         status = None
+    # The AI adopts only on agreement heard in the lines it cites; an opinion
+    # or an item being introduced stays proposed, and its vote is not taken.
+    unheard = (
+        not ctx.human and before != "adopted"
+        and (status == "adopted" or (status is None and op.vote))
+        and not _agreement_cited(ctx, evidence)
+    )
+    if unheard:
+        log.info("meetpp: %s not adopted: no agreement in the cited lines %s", d.ref or "decision", evidence)
+        status = "proposed" if before in ("pending", "proposed") else None
     if status:
         d.status = status
     if getattr(op, "decided_at_seq", None) is not None:
@@ -550,9 +560,9 @@ def _decision_fields(ctx: ApplyContext, d: MeetppDecision, op, *, evidence: list
             if e not in merged:
                 merged.append(e)
         d.evidence_json = util.dumps(merged[-30:])
-    if op.vote:
+    if op.vote and not unheard:
         vote_data = dict(op.vote)
-        governance.apply_vote(ctx.db, ctx.session, d, vote_data, confirmed=True if ctx.human else False)
+        governance.apply_vote(ctx.db, ctx.session, d, vote_data, confirmed=True if ctx.human else False, ai=not ctx.human)
         vote = ctx.db.query(MeetppVote).filter_by(decision_id=d.id).first()
         if vote is not None and vote.result and not status:
             d.status = vote.result
@@ -562,10 +572,22 @@ def _decision_fields(ctx: ApplyContext, d: MeetppDecision, op, *, evidence: list
     ):
         # Adopted with no count heard: recorded as taken with the assent of the
         # voting members present (the chair can correct it in review).
-        governance.apply_vote(ctx.db, ctx.session, d, {"method": "assent"}, confirmed=False)
+        governance.apply_vote(ctx.db, ctx.session, d, {"method": "assent"}, confirmed=False, ai=True)
     if ctx.human:
         d.locked = True
     return d.status != before and d.status in ("adopted", "rejected")
+
+
+def _agreement_cited(ctx: ApplyContext, evidence: list[int]) -> bool:
+    if not evidence:
+        return False
+    rows = (
+        ctx.db.query(MeetppSegment.seq, MeetppSegment.identity, MeetppSegment.text, MeetppSegment.text_refined)
+        .filter(MeetppSegment.session_id == ctx.session.id, MeetppSegment.seq.in_(evidence), MeetppSegment.is_gap.is_(False))
+        .order_by(MeetppSegment.seq)
+        .all()
+    )
+    return agreement.any_agreement((r.identity, r.text_refined or r.text or "") for r in rows)
 
 
 def _new_ref(ctx: ApplyContext, kind: str) -> str:
@@ -1205,7 +1227,7 @@ def section_dto(s: MeetppSection, o: outline_mod.Outline, session: MeetppSession
     }
 
 
-def vote_dto(v: MeetppVote | None, ballots: list[MeetppBallot]) -> dict | None:
+def vote_dto(v: MeetppVote | None, ballots: list[MeetppBallot], session_id: str) -> dict | None:
     if v is None:
         return None
     return {
@@ -1221,7 +1243,10 @@ def vote_dto(v: MeetppVote | None, ballots: list[MeetppBallot]) -> dict | None:
         "outcome_note": v.outcome_note,
         "confirmed": bool(v.confirmed),
         "ballots": [
-            {"name": b.name, "person_key": b.person_key, "choice": b.choice, "cast_by": b.cast_by, "proxy": bool(b.proxy)}
+            {
+                "name": b.name, "person_key": util.public_person_key(session_id, b.person_key), "choice": b.choice,
+                "cast_by": b.cast_by, "proxy": bool(b.proxy),
+            }
             for b in ballots
         ],
     }
@@ -1242,7 +1267,7 @@ def decision_dto(d: MeetppDecision, vote: MeetppVote | None, ballots: list[Meetp
         "locked": bool(d.locked),
         "evidence": util.loads(d.evidence_json, []),
         "previous": previous,
-        "vote": vote_dto(vote, ballots),
+        "vote": vote_dto(vote, ballots, d.session_id),
     }
 
 
@@ -1273,7 +1298,7 @@ def action_dto(
         "title": a.title,
         "description": a.description,
         "assignees": [
-            {"name": x.get("name"), "person_key": x.get("person_key")}
+            {"name": x.get("name"), "person_key": util.public_person_key(session.id, x.get("person_key"))}
             for x in util.loads(a.assignees_json, [])
             if isinstance(x, dict)
         ],
@@ -1319,7 +1344,7 @@ def minute_dto(m: MeetppMinute) -> dict:
 def attendee_dto(a: MeetppAttendee, include_email: bool = False) -> dict:
     return {
         "id": a.id,
-        "person_key": a.person_key,
+        "person_key": util.public_person_key(a.session_id, a.person_key),
         "name": a.display_name,
         "username": a.username,
         "email": a.email if include_email else None,
@@ -1366,7 +1391,7 @@ def segment_dto(s: MeetppSegment) -> dict:
         "seq": s.seq,
         "identity": s.identity,
         "name": s.name,
-        "person_key": s.person_key,
+        "person_key": util.public_person_key(s.session_id, s.person_key),
         "t_start": util.iso(s.t_start),
         "t_end": util.iso(s.t_end),
         "text": s.text,
@@ -1481,6 +1506,19 @@ def _collect(db: Session, session: MeetppSession, include_emails: bool) -> dict:
 def build_state(db: Session, session: MeetppSession, *, include_emails: bool = False) -> dict:
     data = _collect(db, session, include_emails)
     return {"v": 1, "type": "state", "sid": session.id, "version": session.state_version, **data}
+
+
+def without_person_keys(state: dict) -> dict:
+    """The state for a viewer of the public page: no person keys at all."""
+    for a in state.get("attendees") or []:
+        a["person_key"] = None
+    for d in state.get("decisions") or []:
+        for b in (d.get("vote") or {}).get("ballots") or []:
+            b["person_key"] = None
+    for a in state.get("actions") or []:
+        for x in a.get("assignees") or []:
+            x["person_key"] = None
+    return state
 
 
 def build_delta(db: Session, session: MeetppSession, changes: Changes) -> dict:

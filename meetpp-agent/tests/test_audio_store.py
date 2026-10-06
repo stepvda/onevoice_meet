@@ -66,3 +66,15 @@ def test_encode_clips_and_handles_short_audio():
     data = encode_opus(np.full(800, 2.0, dtype=np.float32))  # 50 ms, out of range
     assert data[:4] == b"OggS"
     assert len(decode_audio(data)) > 0
+
+
+def test_close_refuses_writes_and_never_recreates_the_directory(tmp_path):
+    store = AudioStore(tmp_path, "s", min_free_bytes=0)
+    assert store.write("u1", tone(8000), identity="x", name="X", t_start="a", t_end="b") is not None
+    store.close()
+    import shutil
+
+    shutil.rmtree(tmp_path / "s")  # meeting-api deleting the session
+    assert store.write("u2", tone(8000), identity="x", name="X", t_start="a", t_end="b") is None
+    assert not (tmp_path / "s").exists()
+    assert store.refused == 0 and store.errors == 0  # not a disk or encode problem

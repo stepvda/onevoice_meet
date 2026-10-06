@@ -79,6 +79,7 @@ class AudioStore:
         self._disk_usage = disk_usage
         self._lock = threading.Lock()
         self.ok = True  # False while the disk guard refuses writes
+        self.closed = False  # session deleted: never recreate the directory
         self.written = 0
         self.refused = 0
         self.errors = 0
@@ -121,7 +122,9 @@ class AudioStore:
         text: str = "",
     ) -> bytes | None:
         """Encode and store one utterance. Returns the Ogg/Opus bytes, or None
-        when refused (disk guard) or failed. Blocking: call off the loop."""
+        when refused (disk guard, closed) or failed. Blocking: call off the loop."""
+        if self.closed:
+            return None
         if not self.disk_ok():
             self.refused += 1
             return None
@@ -142,6 +145,8 @@ class AudioStore:
         }
         try:
             with self._lock:
+                if self.closed:
+                    return None
                 self.dir.mkdir(parents=True, exist_ok=True)
                 path = self.dir / f"{utterance_id}.ogg"
                 tmp = path.with_suffix(".ogg.tmp")
@@ -156,6 +161,12 @@ class AudioStore:
             return None
         self.written += 1
         return data
+
+    def close(self) -> None:
+        """No more writes. Waits for a write in progress, so once this returns
+        nothing recreates ``<sid>/audio/`` after meeting-api removed it."""
+        with self._lock:
+            self.closed = True
 
     def read(self, utterance_id: str) -> bytes | None:
         try:

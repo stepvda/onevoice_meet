@@ -415,11 +415,14 @@ async def room_active(room: str, db: Session = Depends(get_db)) -> dict:
 
 @router.get("/meetpp/sessions/{session_id}/state")
 async def get_state(session_id: str, acc: Access = Depends(room_access), db: Session = Depends(get_db)) -> dict:
-    return ops.build_state(db, acc.session, include_emails=acc.user is not None)
+    state = ops.build_state(db, acc.session, include_emails=acc.user is not None)
+    return ops.without_person_keys(state) if acc.viewer else state
 
 
 @router.get("/meetpp/sessions/{session_id}/transcript")
 async def get_transcript(session_id: str, after: int = 0, limit: int = 500, acc: Access = Depends(room_access), db: Session = Depends(get_db)) -> dict:
+    if acc.viewer:
+        raise HTTPException(status_code=404, detail="session not found")
     limit = max(1, min(int(limit or 500), 1000))
     rows = (
         db.query(MeetppSegment)
@@ -448,7 +451,7 @@ async def post_consent(session_id: str, body: ConsentBody, acc: Access = Depends
     try:
         await rt.set_consent(session_id, acc.identity, body.decision, body.person_key, body.name or acc.name)
     except rt.ConsentError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=exc.status, detail=str(exc)) from exc
     return {"ok": True}
 
 
@@ -750,11 +753,14 @@ async def put_rules(series_id: str, body: RulesBody, user: RequireUser, db: Sess
     if "quorum_required" in fields:
         series.quorum_required = max(1, int(body.quorum_required)) if body.quorum_required else None
     db.flush()
-    # Recompute the vote records of sessions that are not published yet.
+    # Recompute the vote records of sessions that are not published yet; a
+    # decision taken on a count follows its result under the new rules.
     for s in db.query(MeetppSession).filter(MeetppSession.series_id == series.id, MeetppSession.status != "published").all():
         for d in db.query(MeetppDecision).filter_by(session_id=s.id).all():
             if db.query(MeetppVote).filter_by(decision_id=d.id).first() is not None:
-                governance.apply_vote(db, s, d, {})
+                vote = governance.apply_vote(db, s, d, {})
+                if d.status in ("adopted", "rejected") and vote.result in ("adopted", "rejected"):
+                    d.status = vote.result
         await _publish(db, s, ops.Changes(session=True, quorum=True, decisions={d.id for d in db.query(MeetppDecision).filter_by(session_id=s.id).all()}))
     db.commit()
     return ops.series_dto(db, series)

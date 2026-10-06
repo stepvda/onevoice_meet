@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-PROMPT_VERSION = "v3.2"
+PROMPT_VERSION = "v3.3"
 
 TICK_EXAMPLE = {
     "topic": {"section": "S5", "sub": "b", "confidence": 0.86},
@@ -80,6 +80,10 @@ def tick_system(*, org: str, meeting_type_label: str) -> str:
         "the form \"that …\". Record how it was taken (\"Put by the chair as a voice vote; both directors present "
         "answered in favour.\") and any vote you can hear; ballots only with audible names. Every adopted or "
         "rejected decision carries a vote: when no count was taken and nobody objected, method \"assent\".\n"
+        "- adopted needs agreement you can quote: its evidence must include the line where the meeting agreed "
+        "(\"agreed\", \"yes\", \"all in favour\", \"that's carried\", another member's \"fine by me\"). An opinion "
+        "(\"my view is …\"), a suggestion nobody answered, or an item being introduced is not a decision: leave "
+        "it proposed. Without such a line an adoption is recorded as proposed.\n"
         "- When a decision is taken, give it a title that states the outcome (\"Rainwater tank — installed before the municipal "
         "connection\"), not the question that was asked.\n"
         "- DECISIONS TO TAKE are already on the record with a ref (status pending): when one is decided, "

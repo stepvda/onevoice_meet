@@ -117,6 +117,10 @@ def mark_tick(session_id: str, ok: bool) -> None:
         _tick_failing.setdefault(session_id, time.monotonic())
 
 
+def forget(session_id: str) -> None:
+    _tick_failing.pop(session_id, None)
+
+
 def llm_configured() -> bool:
     return bool(settings.llm_api_key)
 

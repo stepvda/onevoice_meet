@@ -12,9 +12,10 @@ from __future__ import annotations
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Path
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
@@ -31,6 +32,13 @@ from .worker import STTWorker
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("meetpp.agent")
 
+# meeting-api session ids are ULIDs (Crockford base32). The id names a
+# directory under MEETPP_DATA_DIR and goes into signed meeting-api URLs, so
+# nothing else (e.g. "../..") is accepted.
+SESSION_ID_RE = r"^[0-9A-HJKMNP-TV-Z]{26}$"
+START_TIMEOUT_S = 20.0
+REAP_INTERVAL_S = 30.0
+
 
 class State:
     services: Services | None = None
@@ -41,6 +49,7 @@ class State:
     sessions: dict[str, AgentSession] = {}
     closing: set[asyncio.Task] = set()
     load_task: asyncio.Task | None = None
+    reap_task: asyncio.Task | None = None
 
 
 state = State()
@@ -80,9 +89,11 @@ async def lifespan(app: FastAPI):
         config.SPEECH_URL or "off",
         config.DATA_DIR,
     )
+    state.reap_task = asyncio.create_task(_reap_loop())
     try:
         yield
     finally:
+        state.reap_task.cancel()
         for s in list(state.sessions.values()):
             try:
                 await asyncio.wait_for(s.close(), 30)
@@ -98,7 +109,7 @@ app = FastAPI(title="meetpp-agent", docs_url=None, redoc_url=None, openapi_url=N
 
 
 class StartBody(BaseModel):
-    session_id: str
+    session_id: str = Field(pattern=SESSION_ID_RE)
     room: str
     ws_url: str
     token: str
@@ -119,11 +130,43 @@ class TtsBody(BaseModel):
     voice: str = DEFAULT_VOICE
 
 
+SessionId = Annotated[str, Path(pattern=SESSION_ID_RE)]
+
+
 def _get(sid: str) -> AgentSession:
     s = state.sessions.get(sid)
     if s is None:
         raise HTTPException(status_code=404, detail="session not found")
     return s
+
+
+def _close_in_background(s: AgentSession) -> None:
+    s.mark_closing()  # before the 204: meeting-api removes <sid>/ right after it
+    task = asyncio.create_task(s.close())
+    state.closing.add(task)
+    task.add_done_callback(state.closing.discard)
+
+
+def reap_sessions() -> list[str]:
+    """Retire sessions no DELETE will come for (gave up, or stopped long ago)."""
+    retired = []
+    for sid, s in list(state.sessions.items()):
+        why = s.retire_reason()
+        if why:
+            log.warning("MEETPP_SESSION sid=%s retired without DELETE: %s", sid, why)
+            state.sessions.pop(sid, None)
+            _close_in_background(s)
+            retired.append(sid)
+    return retired
+
+
+async def _reap_loop() -> None:
+    while True:
+        await asyncio.sleep(REAP_INTERVAL_S)
+        try:
+            reap_sessions()
+        except Exception:  # noqa: BLE001
+            log.exception("MEETPP_SESSION reaper failed")
 
 
 @app.post("/sessions", status_code=201)
@@ -144,7 +187,8 @@ async def start_session(body: StartBody) -> dict:
     )
     state.sessions[body.session_id] = session  # reserve against a concurrent duplicate
     try:
-        await asyncio.wait_for(session.start(), 20)
+        # Safe to time out: the session never cancels a pending Room.connect.
+        await asyncio.wait_for(session.start(), START_TIMEOUT_S)
     except Exception as exc:  # noqa: BLE001
         state.sessions.pop(body.session_id, None)
         log.exception("MEETPP_SESSION sid=%s start failed", body.session_id)
@@ -157,7 +201,7 @@ async def start_session(body: StartBody) -> dict:
 
 
 @app.patch("/sessions/{sid}")
-async def patch_session(sid: str, body: PatchBody) -> dict:
+async def patch_session(sid: SessionId, body: PatchBody) -> dict:
     s = _get(sid)
     if body.glossary is not None:
         s.set_glossary(body.glossary)
@@ -169,18 +213,16 @@ async def patch_session(sid: str, body: PatchBody) -> dict:
 
 
 @app.post("/sessions/{sid}/finalize", status_code=202)
-async def finalize_session(sid: str) -> dict:
+async def finalize_session(sid: SessionId) -> dict:
     s = _get(sid)
     return {"ok": True, "final_pass": s.finalize()}
 
 
 @app.delete("/sessions/{sid}", status_code=204, response_class=Response)
-async def delete_session(sid: str) -> Response:
+async def delete_session(sid: SessionId) -> Response:
     s = state.sessions.pop(sid, None)
     if s is not None:
-        task = asyncio.create_task(s.close())
-        state.closing.add(task)
-        task.add_done_callback(state.closing.discard)
+        _close_in_background(s)
     return Response(status_code=204)
 
 

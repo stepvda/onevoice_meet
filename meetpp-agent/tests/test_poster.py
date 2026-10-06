@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import hmac
 import json
 import logging
 import time
@@ -10,24 +8,42 @@ import time
 import httpx
 import pytest
 
-from agent.poster import InternalApi, Poster, dumps, sign
-from tests.fakes import SECRET
+from agent.poster import InternalApi, Poster, sign_request, signature
+from tests.fakes import SECRET, expected_signature
+
+# Shared HMAC v2 test vector (same as meeting-api's and meetpp-speech's tests).
+VECTOR_TARGET = "/api/v1/internal/meetpp/sessions/01HZZZZZZZZZZZZZZZZZZZZZZZ/segments?x=1"
+VECTOR_SIG = "572404eb590905ef095aea5d1c8bfafbcd49bf92e158be425640ccdd3a868582"
 
 
-def meeting_api_signature(secret: str, timestamp: str, body: bytes) -> str:
-    """Copy of meeting-api app/meetpp/auth.py internal_signature()."""
-    msg = timestamp.encode("utf-8") + b"." + body
-    return hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+def test_signature_v2_test_vector():
+    assert signature("test-secret", "1700000000", "POST", VECTOR_TARGET, b'{"a":1}') == VECTOR_SIG
 
 
-def test_sign_matches_meeting_api_scheme():
-    body = dumps({"segments": [{"utterance_id": "abc", "text": "Café ✓"}]})
-    h = sign("s3cret", body, ts=1700000000)
-    assert h["X-Meetpp-Timestamp"] == "1700000000"
-    assert h["X-Meetpp-Signature"] == meeting_api_signature("s3cret", "1700000000", body)
-    # fixed vector: hex(HMAC_SHA256("k", "1." + "{}"))
-    assert sign("k", b"{}", ts=1)["X-Meetpp-Signature"] == hmac.new(b"k", b"1.{}", hashlib.sha256).hexdigest()
-    assert abs(int(sign("k", b"")["X-Meetpp-Timestamp"]) - time.time()) < 2
+async def test_sign_request_signs_method_path_query_and_body():
+    client = httpx.AsyncClient()
+    req = client.build_request(
+        "POST",
+        "http://meeting-api:8080/api/v1/internal/meetpp/sessions/01HZZZZZZZZZZZZZZZZZZZZZZZ/segments",
+        params={"x": "1"},
+        content=b'{"a":1}',
+    )
+    sign_request("test-secret", req, ts=1700000000)
+    assert req.headers["X-Meetpp-Timestamp"] == "1700000000"
+    assert req.headers["X-Meetpp-Signature"] == VECTOR_SIG
+    # the target is the encoded path + query exactly as sent on the wire
+    req = client.build_request("POST", "http://mac:9310/transcribe", params={"language": "en", "prompt": "Café board"}, content=b"x")
+    sign_request("k", req, ts=1)
+    assert req.url.raw_path == b"/transcribe?language=en&prompt=Caf%C3%A9+board"
+    assert req.headers["X-Meetpp-Signature"] == signature("k", "1", "POST", "/transcribe?language=en&prompt=Caf%C3%A9+board", b"x")
+    # any change to method, path, query or body breaks the signature
+    sig = req.headers["X-Meetpp-Signature"]
+    assert signature("k", "1", "POST", "/transcribe?language=en&prompt=other", b"x") != sig
+    assert signature("k", "1", "PUT", "/transcribe?language=en&prompt=Caf%C3%A9+board", b"x") != sig
+    assert signature("k", "1", "POST", "/transcribe?language=en&prompt=Caf%C3%A9+board", b"y") != sig
+    sign_request("k", req)
+    assert abs(int(req.headers["X-Meetpp-Timestamp"]) - time.time()) < 2
+    await client.aclose()
 
 
 class Script:
@@ -40,7 +56,7 @@ class Script:
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         ts = request.headers["X-Meetpp-Timestamp"]
-        assert request.headers["X-Meetpp-Signature"] == meeting_api_signature(SECRET, ts, request.content)
+        assert request.headers["X-Meetpp-Signature"] == expected_signature(SECRET, request)
         assert abs(int(ts) - time.time()) <= 60
         status = self.statuses.pop(0) if self.statuses else self.default
         endpoint = request.url.path.rsplit("/", 1)[-1]

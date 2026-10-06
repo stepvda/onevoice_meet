@@ -24,6 +24,7 @@ from app.routes.ti_cafe import (
     mark_left as ticafe_mark_left,
 )
 from app.livekit_client import livekit_api
+from app.services.egress_mgr import sync_egress_flags
 from app.services.playback_mgr import PLAYBACK_IDENTITY
 from app import stage
 from app.room_metadata import patch_room_metadata
@@ -254,7 +255,9 @@ async def _mute_track_for_playback(room_name: str, identity: str, track_sid: str
 def _stage_key(identity: str, source) -> str | None:
     """Stage key of a stream that takes the stage by itself (a screen share,
     the playback), else None (app/stage.py)."""
-    if identity.startswith(("composite-", "meetpp-")):
+    # Never on the stage (the compositor, the Meet++ agent, view-only
+    # viewers, egress recorders): no room-metadata round-trip when they leave.
+    if identity.startswith(("composite-", "meetpp-", "viewer-", "EG_")):
         return None
     if source == api.TrackSource.SCREEN_SHARE:
         return stage.screen_key(identity)
@@ -272,27 +275,6 @@ async def _stage_stream(room_name: str, key: str, started: bool) -> None:
         await patch_room_metadata(lk, room_name, lambda md: move(md, key), require_room=True)
     except Exception as exc:  # noqa: BLE001 — a missed hand-over must not fail the webhook
         log.warning("stage hand-over failed room=%s key=%s: %s", room_name, key, exc)
-    finally:
-        await lk.aclose()
-
-
-async def _clear_recording_metadata(room_name: str) -> None:
-    """Flip the `recording_active` / `streaming_active` flags back to False
-    on the LiveKit room metadata when an egress ends outside our normal
-    stop-endpoint flow (natural end, egress crash, max-duration cutoff).
-    The SPA listens to `RoomMetadataChanged` to drive the in-meeting
-    indicator pills — without this update they would stay stuck "on"
-    until the user refreshes."""
-    def change(current: dict) -> bool:
-        if not current.get("recording_active") and not current.get("streaming_active"):
-            return False
-        current["recording_active"] = False
-        current["streaming_active"] = False
-        return True
-
-    lk = livekit_api()
-    try:
-        await patch_room_metadata(lk, room_name, change, require_room=True)
     finally:
         await lk.aclose()
 
@@ -441,21 +423,17 @@ async def livekit_webhook(
         # Livestreams use a separate egress (no Recording row) but still
         # need cleanup on end — clear the meeting's active egress_id so the
         # toolbar button reverts to "Start streaming" on next page load.
+        ended_in: Meeting | None = None
         if etype == "egress_ended":
-            m = db.query(Meeting).filter_by(livestream_egress_id=info.egress_id).first()
-            if m:
-                m.livestream_egress_id = None
-                m.current_egress_layout = None
+            ended_in = db.query(Meeting).filter_by(livestream_egress_id=info.egress_id).first()
+            if ended_in:
+                ended_in.livestream_egress_id = None
+                ended_in.current_egress_layout = None
                 db.commit()
         rec = db.query(Recording).filter_by(egress_id=info.egress_id).first()
         if rec:
             if etype == "egress_ended":
-                # Reset the room-metadata recording flag so the SPA toolbar
-                # updates immediately. Run in the background so the webhook
-                # doesn't block on a LiveKit roundtrip.
-                meeting = db.query(Meeting).filter_by(id=rec.meeting_id).first()
-                if meeting:
-                    background.add_task(_clear_recording_metadata, meeting.room_name)
+                ended_in = ended_in or db.query(Meeting).filter_by(id=rec.meeting_id).first()
                 # EgressStatus: 3 = EGRESS_COMPLETE; anything else means failure.
                 rec.status = "completed" if info.status == 3 else "failed"
                 rec.ended_at = _now()
@@ -505,6 +483,13 @@ async def livekit_webhook(
                         from app.services.transcription import transcribe_recording
                         background.add_task(transcribe_recording, rec.id)
             db.commit()
+        if ended_in:
+            # Set the Recording / Streaming flags from what still runs (after
+            # the commits above), in the background so the webhook doesn't
+            # block on a LiveKit roundtrip.
+            background.add_task(
+                sync_egress_flags, ended_in.id, ended_in.room_name, ended_egress_id=info.egress_id
+            )
 
     elif etype in ("ingress_started", "ingress_updated", "ingress_ended") and event.ingress_info:
         # Video-playback ingress lifecycle. We advance the playlist when:

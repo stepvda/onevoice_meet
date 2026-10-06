@@ -286,8 +286,9 @@ def build_export(db: Session, session: MeetppSession) -> dict:
     next_meeting = None
     if nm.get("date_iso"):
         room = meeting.room_name if meeting else ""
-        if nm.get("room") == "new" and nm.get("room_name"):
-            room = nm["room_name"]
+        new_room = review.get("next_room") if isinstance(review.get("next_room"), dict) else {}
+        if nm.get("room") == "new" and new_room.get("room_name"):
+            room = new_room["room_name"]
         next_meeting = {"date_iso": nm.get("date_iso"), "location": f"{settings.public_url}/{room}" if room else None}
 
     return {

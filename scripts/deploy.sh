@@ -26,15 +26,21 @@ fi
 if [[ -n "${MEETPP_OPERATOR_TOKEN:-}" ]]; then
   echo "==> Checking for active Meet++ sessions…"
   # Capture the HTTP status separately: an auth/connection failure must NOT be
-  # mistaken for "zero active sessions".
-  probe=$(ssh "$HOST" "code=\$(curl -s -o /tmp/meetpp-status.json -w '%{http_code}' -H 'Authorization: Bearer ${MEETPP_OPERATOR_TOKEN}' http://localhost:8080/api/v1/admin/meetpp/status); echo \"\$code\"; [ \"\$code\" = 200 ] && grep -c '\"sid\"' /tmp/meetpp-status.json || echo 0" 2>/dev/null || true)
+  # mistaken for "zero active sessions". The sessions the agent serves are the
+  # running, paused and finalising ones (the endpoint also lists setup ones).
+  count_py='import json, sys; print(sum(s.get("status") in ("running", "paused", "finalising") for s in json.load(sys.stdin).get("active_sessions") or []))'
+  probe=$(ssh "$HOST" "code=\$(curl -s -o /tmp/meetpp-status.json -w '%{http_code}' -H 'Authorization: Bearer ${MEETPP_OPERATOR_TOKEN}' http://localhost:8080/api/v1/admin/meetpp/status); echo \"\$code\"; if [ \"\$code\" = 200 ]; then python3 -c $(printf '%q' "$count_py") < /tmp/meetpp-status.json || echo '?'; fi; rm -f /tmp/meetpp-status.json" 2>/dev/null || true)
   code=$(printf '%s' "$probe" | sed -n '1p')
   active=$(printf '%s' "$probe" | sed -n '2p')
   if [[ "$code" != "200" ]]; then
     echo "WARNING: Meet++ status endpoint not reachable/authorised (http ${code:-?}). Cannot verify whether a session is live. Continue? [yN]"
     read -r ans
     [[ "$ans" == "y" || "$ans" == "Y" ]] || exit 1
-  elif [[ "${active:-0}" -gt 0 ]]; then
+  elif ! [[ "$active" =~ ^[0-9]+$ ]]; then
+    echo "WARNING: could not read the Meet++ status response. Cannot verify whether a session is live. Continue? [yN]"
+    read -r ans
+    [[ "$ans" == "y" || "$ans" == "Y" ]] || exit 1
+  elif (( active > 0 )); then
     echo "WARNING: ${active} Meet++ session(s) active. Recreating the agent interrupts transcription. Continue? [yN]"
     read -r ans
     [[ "$ans" == "y" || "$ans" == "Y" ]] || exit 1

@@ -17,8 +17,8 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, ValidationError
 
 from . import __version__
-from .audio import TARGET_SR, AudioDecodeError, decode_to_16k_mono, encode, resample
-from .auth import SIG_HEADER, TS_HEADER, check_timestamp, verify
+from .audio import TARGET_SR, AudioDecodeError, AudioTooLong, decode_to_16k_mono, encode, resample
+from .auth import SIG_HEADER, TS_HEADER, ReplayGuard, check_timestamp, request_target, verify
 from .config import Settings
 from .repetition import detect_repetition
 from .stt import Transcriber
@@ -86,6 +86,8 @@ class Service:
             synthesizer = Synthesizer(settings.kokoro_model, settings.kokoro_voices, settings.kokoro_threads)
         self.tts = synthesizer
         self.gate = SttGate(settings.max_parallel, settings.queue_max_s)
+        self.replay = ReplayGuard(settings.clock_skew_s)
+        self.decode_sem = asyncio.Semaphore(settings.decode_parallel)
         self.tts_sem = asyncio.Semaphore(settings.tts_parallel)
         self.tts_running = 0
         self.tts_waiting = 0
@@ -163,16 +165,19 @@ async def read_body(request: Request, limit: int) -> bytes:
     return b"".join(chunks)
 
 
-async def authenticated_body(request: Request, settings: Settings, limit: int) -> bytes:
+async def authenticated_body(request: Request, settings: Settings, limit: int, replay: ReplayGuard) -> bytes:
     peer = request.client.host if request.client else "?"
     # Cheap timestamp check before reading the body.
     reason = check_timestamp(request.headers.get(TS_HEADER), settings.clock_skew_s)
     if reason is None:
         body = await read_body(request, limit)
+        sig = request.headers.get(SIG_HEADER)
         reason = verify(
-            settings.secret, request.headers.get(TS_HEADER), request.headers.get(SIG_HEADER),
-            body, settings.clock_skew_s,
+            settings.secret, request.headers.get(TS_HEADER), sig,
+            request.method, request_target(request.scope), body, settings.clock_skew_s,
         )
+        if reason is None and replay.replayed(sig):
+            reason = "replayed request"
         if reason is None:
             return body
     log.warning("auth rejected %s from %s: %s", request.url.path, peer, reason)
@@ -236,7 +241,7 @@ def create_app(settings: Settings, transcriber: Any = None, synthesizer: Any = N
         prompt: str | None = Query(None, max_length=8000),
     ) -> dict[str, Any]:
         svc: Service = request.app.state.svc
-        body = await authenticated_body(request, settings, settings.max_body_bytes)
+        body = await authenticated_body(request, settings, settings.max_body_bytes, svc.replay)
         language = language.strip().lower() or "en"
         if hasattr(svc.stt, "supports_language") and not svc.stt.supports_language(language):
             raise HTTPException(422, f"unsupported language {language!r}")
@@ -245,7 +250,11 @@ def create_app(settings: Settings, transcriber: Any = None, synthesizer: Any = N
             # Whisper keeps the end of a long prompt; do the same (contract: <= 600 chars).
             prompt = prompt[-settings.prompt_max_chars:] or None
         try:
-            audio = await asyncio.to_thread(decode_to_16k_mono, body)
+            # Decoding is CPU and memory heavy too: a few at a time, outside the STT gate.
+            async with svc.decode_sem:
+                audio = await asyncio.to_thread(decode_to_16k_mono, body, settings.max_audio_s)
+        except AudioTooLong:
+            raise HTTPException(413, f"audio longer than {settings.max_audio_s:.0f}s") from None
         except AudioDecodeError as exc:
             raise HTTPException(415, str(exc)) from None
         duration = len(audio) / TARGET_SR
@@ -299,7 +308,7 @@ def create_app(settings: Settings, transcriber: Any = None, synthesizer: Any = N
     @app.post("/tts")
     async def tts(request: Request) -> Response:
         svc: Service = request.app.state.svc
-        body = await authenticated_body(request, settings, 64 * 1024)
+        body = await authenticated_body(request, settings, 64 * 1024, svc.replay)
         try:
             req = TTSRequest.model_validate_json(body)
         except ValidationError as exc:

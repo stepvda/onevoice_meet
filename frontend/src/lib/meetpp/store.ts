@@ -458,6 +458,7 @@ export function clearSession(): void {
     transcriptReady: false,
     captions: [],
     proposal: null,
+    endRequest: null,
     undo: null,
     ...initialView,
   });

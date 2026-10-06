@@ -567,7 +567,7 @@ def _normalise_points(raw_points: list) -> list[dict]:
         if not isinstance(p, dict) or not str(p.get("title") or "").strip():
             continue
         subs = []
-        for j, sp in enumerate(p.get("subpoints") or []):
+        for j, sp in enumerate(util.as_list(p.get("subpoints"))):
             if isinstance(sp, dict) and str(sp.get("title") or "").strip():
                 subs.append({"label": chr(ord("a") + j) if j < 26 else str(j + 1), "title": util.truncate(sp["title"], 400), "body": util.truncate(sp.get("body"), 4000)})
             elif isinstance(sp, str) and sp.strip():
@@ -621,8 +621,8 @@ async def structure_agenda(db: Session, session_id: str, text: str) -> dict:
     if len(points) < 1:
         parsed = await _llm(db, session_id, "parse_agenda", prompts.build_agenda_structure_messages("\n".join(section)))
         if parsed:
-            points = _normalise_points(parsed.get("points") or [])
-            decisions = _normalise_decisions(parsed.get("decisions") or [], points)
+            points = _normalise_points(util.as_list(parsed.get("points")))
+            decisions = _normalise_decisions(util.as_list(parsed.get("decisions")), points)
             return {"format": fmt, "points": points, "decisions": decisions, "llm": True}
         return {"format": fmt, "points": [], "decisions": [], "llm": False}
     decisions: list[dict] = []
@@ -639,7 +639,7 @@ async def structure_agenda(db: Session, session_id: str, text: str) -> dict:
     if refined:
         llm_used = True
         by_number = {p["number"]: p for p in points}
-        for t in refined.get("points") or []:
+        for t in util.as_list(refined.get("points")):
             if not isinstance(t, dict) or str(t.get("number")) not in by_number:
                 continue
             p = by_number[str(t["number"])]
@@ -649,13 +649,13 @@ async def structure_agenda(db: Session, session_id: str, text: str) -> dict:
                     p["body"] = p["title"]
                 p["title"] = new_title
             subs = {sp["label"]: sp for sp in p["subpoints"]}
-            for st in t.get("subpoints") or []:
+            for st in util.as_list(t.get("subpoints")):
                 if isinstance(st, dict) and str(st.get("label") or "").strip("()").lower() in subs and st.get("title"):
                     sp = subs[str(st["label"]).strip("()").lower()]
                     if sp.get("body") is None:
                         sp["body"] = sp["title"]
                     sp["title"] = util.truncate(st["title"], 120)
-        decisions = _normalise_decisions(refined.get("decisions") or [], points)
+        decisions = _normalise_decisions(util.as_list(refined.get("decisions")), points)
     # The explicit cues ("Shall we …?", "Confirming: …", "Question for the
     # board: …") are reliable; add those the LLM left out, one per (sub-)point.
     covered = {(d["point"], d["sub"]) for d in decisions}
@@ -698,7 +698,7 @@ async def structure_previous_notes(db: Session, session_id: str, text: str) -> d
     if not parsed:
         return {"format": "generic", "attendance": [], "decisions": [], "actions": [], "llm_failed": True}
     actions = []
-    for i, a in enumerate(parsed.get("actions") or [], start=1):
+    for i, a in enumerate(util.as_list(parsed.get("actions")), start=1):
         if not isinstance(a, dict) or not str(a.get("title") or "").strip():
             continue
         actions.append(
@@ -708,7 +708,7 @@ async def structure_previous_notes(db: Session, session_id: str, text: str) -> d
                 "carried_forward": False,
                 "description": util.truncate(a.get("description"), 4000),
                 "status": _status_value(str(a.get("status") or "open").replace("_", " ")),
-                "assignees": [str(x)[:200] for x in (a.get("assignees") or []) if x][:10],
+                "assignees": [str(x)[:200] for x in util.as_list(a.get("assignees")) if x][:10],
                 "due": _dmy(str(a.get("due") or "")),
                 "completed": None,
                 "reported_note": None,
@@ -719,7 +719,7 @@ async def structure_previous_notes(db: Session, session_id: str, text: str) -> d
             }
         )
     attendance = []
-    for r in parsed.get("attendance") or []:
+    for r in util.as_list(parsed.get("attendance")):
         if isinstance(r, dict) and str(r.get("name") or "").strip():
             st = str(r.get("status") or "present").lower()
             attendance.append({"name": util.truncate(r["name"], 200), "username": util.truncate(r.get("username"), 200),
@@ -727,7 +727,7 @@ async def structure_previous_notes(db: Session, session_id: str, text: str) -> d
                                "represented_by": None, "mandate": None})
     decisions = [
         {"number": i, "title": util.truncate(d.get("title"), 300), "status": str(d.get("status") or "").lower() or None, "decided_on": None}
-        for i, d in enumerate(parsed.get("decisions") or [], start=1)
+        for i, d in enumerate(util.as_list(parsed.get("decisions")), start=1)
         if isinstance(d, dict) and d.get("title")
     ]
     return {"format": "generic", "attendance": attendance, "decisions": decisions, "actions": actions}
@@ -970,7 +970,8 @@ async def import_text(db: Session, session: MeetppSession, doc: MeetppDocument, 
     extraction so tests can feed text directly)."""
     if doc.kind == "agenda":
         structured = await structure_agenda(db, session.id, text)
-        session = db.get(MeetppSession, session.id)
+        # Re-read: the meeting may have started while the model read the agenda.
+        db.refresh(session)
         if not structured["points"]:
             doc.status, doc.error = "failed", "no agenda points found"
             doc.structured_json = util.dumps(structured)
@@ -990,7 +991,7 @@ async def import_text(db: Session, session: MeetppSession, doc: MeetppDocument, 
             structured["not_applied"] = "the agenda is only replaced during setup"
     else:
         structured = await structure_previous_notes(db, session.id, text)
-        session = db.get(MeetppSession, session.id)
+        db.refresh(session)
         if structured.get("llm_failed"):
             doc.status, doc.error = "failed", "not a meeting report and the LLM is unavailable"
             doc.structured_json = util.dumps(structured)

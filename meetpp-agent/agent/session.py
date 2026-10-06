@@ -31,7 +31,7 @@ from .audio_store import AudioStore
 from .consumer import TrackConsumer, livekit_pcm
 from .metrics import Rolling, iso, r
 from .poster import InternalApi, Poster
-from .stt import STTResult, build_prompt, tail_text
+from .stt import STTResult, blocklist_match, build_prompt, tail_text
 from .tier2 import (
     CONCURRENCY as TIER2_CONCURRENCY,
     FINAL_TIMEOUT_S,
@@ -57,12 +57,21 @@ BEHIND_S = 10.0
 LIVENESS_WINDOW_S = 20.0
 LIVENESS_SPEAKING_S = 10.0
 RECONNECT_BACKOFF_S = (1.0, 2.0, 5.0, 10.0)
+CONNECT_TIMEOUT_S = 5.0  # per signal-connection attempt, enforced by the SDK
 TIER2_CONTEXT_S = 30.0
+# Tier 2 first: how long the Mac Studio gets before tier 1 decodes the utterance
+# instead (it usually answers in well under a second).
+TIER2_FIRST_BUDGET_S = 4.0
 SDK_RECONNECT_GAP_S = 3.0
-FINAL_PASS_MAX_S = 15 * 60.0
+# finalize → final status. meeting-api waits MEETPP_FINAL_PASS_TIMEOUT_SECONDS
+# (300 s) for the verdict, then DELETEs the session and composes the minutes.
+FINAL_BUDGET_S = 270.0
+FINAL_STATUS_DRAIN_S = 20.0
 FINAL_BUSY_RETRIES = 60
+FINAL_ERROR_PAUSE_S = 1.0
 DRAIN_STT_FINAL_S = 180.0
 DRAIN_STT_CLOSE_S = 20.0
+STOPPED_TTL_S = 30 * 60.0  # a stopped session whose DELETE never came is retired
 
 
 def _is_standard(p) -> bool:
@@ -85,9 +94,13 @@ def _room_options():
     try:
         from livekit import rtc
 
-        return rtc.RoomOptions(auto_subscribe=False)
+        return rtc.RoomOptions(auto_subscribe=False, connect_timeout=CONNECT_TIMEOUT_S)
     except Exception:  # noqa: BLE001
         return None
+
+
+# Abandoned connects still finishing (strong references; see _connect).
+_abandoned: set[asyncio.Task] = set()
 
 
 @dataclass
@@ -107,6 +120,7 @@ class Services:
     rtf: Rolling = field(default_factory=Rolling)
     clock: Callable[[], float] = time.monotonic
     reconnect_backoff: tuple[float, ...] = RECONNECT_BACKOFF_S
+    tier2_first: bool = config.TIER2_FIRST
 
 
 class AgentSession:
@@ -141,7 +155,9 @@ class AgentSession:
         self.reconnecting = False
         self.gave_up = False
         self.capture_stopped = False
+        self.closing = False  # DELETE received: <sid>/ is being removed by meeting-api
         self.closed = False
+        self._stopped_at: float | None = None
         self.final_pass: str | None = None
 
         self.consumers: dict[str, TrackConsumer] = {}
@@ -162,6 +178,8 @@ class AgentSession:
         self.tier2_ok = 0
         self.tier2_fail = 0
         self.tier2_kept_t1 = 0
+        self.tier2_live = 0  # segments posted with tier-2 text first
+        self.tier1_fallbacks = 0
         self.reconnects = 0
         self.liveness_restarts = 0
         self.rtf = Rolling()
@@ -173,17 +191,21 @@ class AgentSession:
         self._refine_tasks: set[asyncio.Task] = set()
         self._reconnect_task: asyncio.Task | None = None
         self._final_task: asyncio.Task | None = None
+        self._tier2_first_last: asyncio.Task | None = None
         self._status_task: asyncio.Task | None = None
         self._status_lock = asyncio.Lock()
         self._status_frozen = False
         self._last_status_sig: str | None = None
         self._last_status_at = 0.0
+        self._status_failed = False
         self._last_summary = self._clock()
         self._sdk_outage_from: float | None = None
+        self._closing_started = False
 
     # ── lifecycle ─────────────────────────────────────────────────────────
     async def start(self) -> None:
-        await self._connect(self.ws_url, self.token)
+        if not await self._connect(self.ws_url, self.token):
+            return  # closed while joining
         self.poster.start()
         self._spawn(self._tick_loop())
         log.info(
@@ -196,24 +218,51 @@ class AgentSession:
             self.tier2_state(),
         )
 
-    async def _connect(self, ws_url: str, token: str) -> None:
+    async def _connect(self, ws_url: str, token: str) -> bool:
+        """Join the room. False when the session stopped while connecting
+        (the room is left again)."""
         room = self.services.room_factory()
         self._bind(room)
         url = self.services.ws_url_override or ws_url
         opts = _room_options()
-        if opts is not None:
-            await room.connect(url, token, options=opts)
-        else:
-            await room.connect(url, token)
+        connect = asyncio.ensure_future(room.connect(url, token, options=opts) if opts is not None else room.connect(url, token))
+        try:
+            await asyncio.shield(connect)
+        except asyncio.CancelledError:
+            # Never cancel Room.connect: livekit leaks its FFI event queue and
+            # the join still completes server-side (a ghost hidden participant).
+            # Let it finish and leave the room again.
+            task = asyncio.create_task(self._leave_abandoned(room, connect))
+            _abandoned.add(task)
+            task.add_done_callback(_abandoned.discard)
+            raise
+        if self.closed or self.capture_stopped:
+            await self._leave(room)
+            return False
         self._room = room
         self.connected = True
         self._sync_room()
+        return True
+
+    async def _leave_abandoned(self, room, connect: asyncio.Future) -> None:
+        await asyncio.wait([connect])  # never cancels it
+        if connect.cancelled() or connect.exception() is not None:
+            return  # failed: the SDK released everything itself
+        log.warning("MEETPP_SESSION sid=%s connect finished after it was abandoned: leaving the room", self.sid)
+        await self._leave(room)
+
+    @staticmethod
+    async def _leave(room) -> None:
+        try:
+            await room.disconnect()
+        except Exception:  # noqa: BLE001
+            pass
 
     def _bind(self, room) -> None:
         def guard(fn):
             def handler(*args):
-                if room is not self._room and self._room is not None:
-                    return  # event from a previous (dead) room
+                if room is not self._room and (self._room is not None or self.capture_stopped or self.closed):
+                    return  # event from a previous (dead) or abandoned room
                 try:
                     fn(*args)
                 except Exception:  # noqa: BLE001
@@ -293,7 +342,11 @@ class AgentSession:
         for sid, c in list(self.consumers.items()):
             if c.identity == p.identity:
                 self._stop_consumer(sid, flush=True)
+        # Forget their speaking history: an interval left open would count as
+        # speech forever and trip liveness on their next consumer.
         self._speaking_now.discard(p.identity)
+        self._speaking.pop(p.identity, None)
+        self.speaker_ok.pop(p.identity, None)
         if p.identity in self.present:
             self._presence_disconnected(p.identity)
 
@@ -324,8 +377,19 @@ class AgentSession:
                 iv[-1][1] = now
         self._speaking_now = current
 
+    def _end_speaking(self) -> None:
+        """Close every open active-speaker interval (connection lost: LiveKit
+        sends a fresh list once we are back)."""
+        now = self._clock()
+        for ident in self._speaking_now:
+            iv = self._speaking.get(ident)
+            if iv and iv[-1][1] is None:
+                iv[-1][1] = now
+        self._speaking_now = set()
+
     def _on_reconnecting(self, *args) -> None:
         self.reconnecting = True
+        self._end_speaking()
         self._sdk_outage_from = time.time()
         log.warning("MEETPP_SESSION sid=%s LiveKit connection interrupted; SDK reconnecting", self.sid)
 
@@ -401,20 +465,24 @@ class AgentSession:
         self.utterances += 1
         self.speaker_ok[c.identity] = True
         self._stt_outstanding += 1
-        self.services.worker.submit(
-            WorkItem(
-                session_id=self.sid,
-                utterance_id=uuid.uuid4().hex,
-                identity=c.identity,
-                name=c.name,
-                audio=utt.audio,
-                t_start=t_start,
-                t_end=t_end,
-                on_result=self._on_stt_result,
-                on_drop=self._on_stt_drop,
-                prompt_fn=self._prompt,
-            )
+        item = WorkItem(
+            session_id=self.sid,
+            utterance_id=uuid.uuid4().hex,
+            identity=c.identity,
+            name=c.name,
+            audio=utt.audio,
+            t_start=t_start,
+            t_end=t_end,
+            on_result=self._on_stt_result,
+            on_drop=self._on_stt_drop,
+            prompt_fn=self._prompt,
         )
+        if self.services.tier2_first and self._tier2_live() and not self.closing:
+            self._tier2_first_last = self._spawn(
+                self._tier2_first(item, self._tier2_first_last), self._store_tasks
+            )
+        else:
+            self.services.worker.submit(item)
 
     def _prompt(self) -> str | None:
         # Runs on the STT thread at decode time (latest glossary + context).
@@ -438,28 +506,46 @@ class AgentSession:
                 res.detail[:120],
             )
             return
+        self._post_segment(item, res.text, tier=1, avg_logprob=res.avg_logprob, no_speech_prob=res.no_speech_prob)
+        if item.meta.get("tier2_tried"):
+            # Tier 2 already had this utterance (and it is stored): it was busy
+            # or answered badly, so no near-live refinement; the final pass
+            # covers it.
+            item.audio = item.audio[:0]
+        elif not self.closing:  # no audio store (and no tier 2) for a deleted session
+            self._spawn(self._store_and_refine(item, res.text), self._store_tasks)
+
+    def _post_segment(
+        self,
+        item: WorkItem,
+        text: str,
+        *,
+        tier: int,
+        avg_logprob: float | None = None,
+        no_speech_prob: float | None = None,
+    ) -> None:
         self.decoded += 1
         self.last_segment_wall = time.time()
-        self.poster.segment(
-            {
-                "utterance_id": item.utterance_id,
-                "identity": item.identity,
-                "name": item.name,
-                "t_start": iso(item.t_start),
-                "t_end": iso(item.t_end),
-                "text": res.text,
-                "lang": config.LANGUAGE,
-                "avg_logprob": r(res.avg_logprob, 3),
-                "no_speech_prob": r(res.no_speech_prob, 3),
-            }
-        )
-        self.transcript = tail_text(f"{self.transcript} {res.text}", 1000)
-        self._texts[item.utterance_id] = {"t1": res.text, "t2": None, "t_end": item.t_end}
+        segment = {
+            "utterance_id": item.utterance_id,
+            "identity": item.identity,
+            "name": item.name,
+            "t_start": iso(item.t_start),
+            "t_end": iso(item.t_end),
+            "text": text,
+            "lang": config.LANGUAGE,
+            "avg_logprob": r(avg_logprob, 3),
+            "no_speech_prob": r(no_speech_prob, 3),
+        }
+        if tier == 2:
+            segment["tier"] = 2
+        self.poster.segment(segment)
+        self.transcript = tail_text(f"{self.transcript} {text}", 1000)
+        self._texts[item.utterance_id] = {"t1": text, "t2": text if tier == 2 else None, "t_end": item.t_end}
         self._timeline.append((item.t_end, item.utterance_id))
         if len(self._texts) > 2000:
             for uid in list(self._texts)[:500]:
                 self._texts.pop(uid, None)
-        self._spawn(self._store_and_refine(item, res.text), self._store_tasks)
 
     def _on_stt_drop(self, item: WorkItem, reason: str) -> None:
         self._stt_outstanding = max(0, self._stt_outstanding - 1)
@@ -482,6 +568,62 @@ class AgentSession:
                 "reason": reason,
             }
         )
+
+    # ── tier 2 first ──────────────────────────────────────────────────────
+    async def _tier2_first(self, item: WorkItem, previous: asyncio.Task | None) -> None:
+        """The Mac Studio transcribes the utterance and its text is the live
+        caption. Tier 1 decodes it only when tier 2 is busy, slow, failing or
+        answers with a degenerate text (same guards as the refinement)."""
+        data = await asyncio.to_thread(
+            self.store.write,
+            item.utterance_id,
+            item.audio,
+            identity=item.identity,
+            name=item.name,
+            t_start=iso(item.t_start),
+            t_end=iso(item.t_end),
+        )
+        if data is None or self.closing or not self._tier2_live():
+            self._tier1_fallback(item, "store" if data is None else "tier 2 down", stored=data is not None)
+            return
+        text = ""
+        why: str | None = None
+        res: dict = {}
+        prompt = build_tier2_prompt(self.glossary, self._context_before(item.t_start))
+        try:
+            res = await self.services.tier2.transcribe(data, prompt, timeout=TIER2_FIRST_BUDGET_S)
+            text = (res.get("text") or "").strip()
+            why = "empty" if not text else degenerate_reason(text, item.duration_s, bool(res.get("repetition")))
+        except Tier2Busy:
+            why = "busy"
+        except Tier2Error as exc:
+            self.tier2_fail += 1
+            why = str(exc)[:80]
+        if why:
+            self._tier1_fallback(item, why, stored=True)
+            return
+        self.tier2_ok += 1
+        # Keep captions in speaking order: post after the previous utterance.
+        if previous is not None and not previous.done():
+            await asyncio.wait([previous])
+        self._stt_outstanding = max(0, self._stt_outstanding - 1)
+        hit = blocklist_match(text)
+        if hit:
+            self.dropped["blocklist"] += 1
+            log.info("MEETPP_STT drop sid=%s utterance=%s identity=%s reason=blocklist tier=2 %s",
+                     self.sid, item.utterance_id, item.identity, hit[:60])
+            item.audio = item.audio[:0]
+            return
+        self.tier2_live += 1
+        self._post_segment(item, text, tier=2, avg_logprob=res.get("avg_logprob"))
+        item.audio = item.audio[:0]
+
+    def _tier1_fallback(self, item: WorkItem, why: str, *, stored: bool) -> None:
+        self.tier1_fallbacks += 1
+        log.info("MEETPP_TIER2 live fallback to tier 1 sid=%s utterance=%s reason=%s", self.sid, item.utterance_id, why)
+        if stored:
+            item.meta["tier2_tried"] = True
+        self.services.worker.submit(item)
 
     # ── audio store + near-live tier 2 ────────────────────────────────────
     async def _store_and_refine(self, item: WorkItem, text: str) -> None:
@@ -578,6 +720,7 @@ class AgentSession:
     async def _reconnect(self, reason) -> None:
         outage_from = time.time()
         self.reconnecting = True
+        self._end_speaking()
         self._last_status_sig = None
         log.warning(
             "MEETPP_SESSION sid=%s disconnected from room %s (reason=%s): reconnecting with a fresh token",
@@ -611,8 +754,11 @@ class AgentSession:
             except Exception as exc:  # noqa: BLE001
                 log.warning("MEETPP_SESSION sid=%s bad agent-token response: %s", self.sid, exc)
                 continue
+            if self.closed or self.capture_stopped:
+                continue  # ends the loop
             try:
-                await self._connect(ws_url, token)
+                if not await self._connect(ws_url, token):
+                    continue  # stopped while connecting (the new room was left again): ends the loop
             except Exception as exc:  # noqa: BLE001
                 log.warning("MEETPP_SESSION sid=%s reconnect attempt %d failed: %s", self.sid, attempt, exc)
                 continue
@@ -656,7 +802,7 @@ class AgentSession:
     def check_liveness(self, now: float | None = None) -> list[str]:
         now = self._clock() if now is None else now
         restarted: list[str] = []
-        if self.paused or not self.connected or self.capture_stopped:
+        if self.paused or not self.connected or self.reconnecting or self.capture_stopped:
             return restarted
         if now - self._resumed_at < LIVENESS_WINDOW_S:
             return restarted
@@ -734,6 +880,7 @@ class AgentSession:
             if self._status_frozen:
                 return
             ok = await self.poster.post_status(body)
+        self._status_failed = not ok
         if ok:
             self._last_status_sig = sig
 
@@ -742,7 +889,9 @@ class AgentSession:
             return
         body = self.status_body()
         sig = json.dumps([body["status"], body["tier2"], body["speakers"], body.get("final_pass")])
-        if sig == self._last_status_sig and now - self._last_status_at < STATUS_INTERVAL_S:
+        # A change is posted at once, unless the last post failed: then wait
+        # the interval like an unchanged status (no retry every tick).
+        if (sig == self._last_status_sig or self._status_failed) and now - self._last_status_at < STATUS_INTERVAL_S:
             return
         if self._status_task is not None and not self._status_task.done():
             return
@@ -762,7 +911,8 @@ class AgentSession:
             f"dropped={total_dropped}{f'({reasons})' if total_dropped else ''} "
             f"backlog_s={self.backlog_s():.1f} "
             f"rtf_p50={'-' if p50 is None else f'{p50:.2f}'} rtf_p95={'-' if p95 is None else f'{p95:.2f}'} "
-            f"tier2_ok={self.tier2_ok} tier2_fail={self.tier2_fail} last_segment_age_s={age}"
+            f"tier2_ok={self.tier2_ok} tier2_fail={self.tier2_fail} "
+            f"tier2_live={self.tier2_live} tier1_fallbacks={self.tier1_fallbacks} last_segment_age_s={age}"
         )
 
     async def _tick_loop(self) -> None:
@@ -777,6 +927,19 @@ class AgentSession:
                     log.info(self.summary_line())
             except Exception:  # noqa: BLE001
                 log.exception("MEETPP_SESSION sid=%s tick failed", self.sid)
+
+    def retire_reason(self, now: float | None = None) -> str | None:
+        """Why this session should go without waiting for a DELETE, or None:
+        meeting-api no longer knows it, or it stopped long ago (lost DELETE)."""
+        if self._closing_started:
+            return None
+        if self.gave_up:
+            return "session gone in meeting-api"
+        now = self._clock() if now is None else now
+        final_running = self._final_task is not None and not self._final_task.done()
+        if self._stopped_at is not None and not final_running and now - self._stopped_at >= STOPPED_TTL_S:
+            return f"stopped {now - self._stopped_at:.0f}s ago and never deleted"
+        return None
 
     def health(self) -> dict:
         return {
@@ -799,17 +962,16 @@ class AgentSession:
         return self.final_pass or "skipped"
 
     async def _stop_capture(self) -> None:
+        # A running _reconnect sees the flag and stops; it is not cancelled,
+        # since it may be inside Room.connect.
         self.capture_stopped = True
-        if self._reconnect_task is not None and not self._reconnect_task.done():
-            self._reconnect_task.cancel()
+        if self._stopped_at is None:
+            self._stopped_at = self._clock()
         await self._stop_all_consumers(flush=True)
         room, self._room = self._room, None
         self.connected = False
         if room is not None:
-            try:
-                await room.disconnect()
-            except Exception:  # noqa: BLE001
-                pass
+            await self._leave(room)
 
     async def _wait_stt(self, timeout: float) -> int:
         deadline = self._clock() + timeout
@@ -825,13 +987,19 @@ class AgentSession:
 
     async def _run_final(self) -> None:
         t0 = time.monotonic()
+        deadline = t0 + FINAL_BUDGET_S
+
+        def budget(cap: float) -> float:
+            return max(0.0, min(cap, deadline - time.monotonic()))
+
         log.info("MEETPP_FINAL sid=%s finalize: stopping capture and draining", self.sid)
         await self._stop_capture()
-        left = await self._wait_stt(DRAIN_STT_FINAL_S)
+        drain_s = budget(DRAIN_STT_FINAL_S)
+        left = await self._wait_stt(drain_s)
         if left:
-            log.warning("MEETPP_FINAL sid=%s %d utterances still queued after %.0fs", self.sid, left, DRAIN_STT_FINAL_S)
-        await self._wait_tasks(self._store_tasks, 60.0)
-        await self._wait_tasks(self._refine_tasks, NEAR_LIVE_BUDGET_S + 2)
+            log.warning("MEETPP_FINAL sid=%s %d utterances still queued after %.0fs", self.sid, left, drain_s)
+        await self._wait_tasks(self._store_tasks, budget(60.0))
+        await self._wait_tasks(self._refine_tasks, budget(NEAR_LIVE_BUDGET_S + 2))
         tier2 = self.services.tier2
         if tier2 is None:
             log.info("MEETPP_FINAL sid=%s tier 2 not configured: final pass skipped", self.sid)
@@ -845,9 +1013,9 @@ class AgentSession:
             return
         self.final_pass = "running"
         try:
-            ok = await asyncio.wait_for(self._final_pass(tier2), FINAL_PASS_MAX_S)
+            ok = await asyncio.wait_for(self._final_pass(tier2), budget(FINAL_BUDGET_S))
         except asyncio.TimeoutError:
-            log.warning("MEETPP_FINAL sid=%s final pass exceeded %.0fs", self.sid, FINAL_PASS_MAX_S)
+            log.warning("MEETPP_FINAL sid=%s final pass cut at %.0fs after finalize (budget)", self.sid, FINAL_BUDGET_S)
             ok = False
         except Exception:  # noqa: BLE001
             log.exception("MEETPP_FINAL sid=%s final pass crashed", self.sid)
@@ -894,6 +1062,9 @@ class AgentSession:
                     errors += 1
                     if errors >= 2:
                         raise
+                    # A same-second retry would be the identical signed request,
+                    # which meetpp-speech refuses as a replay.
+                    await asyncio.sleep(FINAL_ERROR_PAUSE_S)
 
         pending = list(entries)  # time order
         running: dict[asyncio.Task, dict] = {}
@@ -955,18 +1126,35 @@ class AgentSession:
                 context[ident] = tail_text(f"{context.get(ident, '')} {text}", 600)
 
     async def _set_final(self, value: str) -> None:
-        self.final_pass = value
-        # Refinements first, then the final status (ordered queue).
-        await self.poster.drain(60.0)
+        # Refinements first, then the final status (ordered queue). The verdict
+        # is set only now so that no periodic status announces it earlier.
+        await self.poster.drain(FINAL_STATUS_DRAIN_S)
         async with self._status_lock:
             self._status_frozen = True
+        self.final_pass = value
         self.poster.status(self.status_body())
 
+    def mark_closing(self) -> None:
+        """First step of a DELETE, synchronous: meeting-api removes <sid>/ as
+        soon as the DELETE returns, so nothing may write there any more."""
+        self.closing = True
+        self.store.close()
+
     async def close(self) -> None:
-        """DELETE: leave the room, no final pass (one already running ends normally)."""
-        if self.closed:
+        """DELETE: leave the room, no final pass (a running one is cancelled:
+        meeting-api has stopped waiting for it)."""
+        if self._closing_started:
             return
+        self._closing_started = True
+        self.mark_closing()
         log.info("MEETPP_SESSION sid=%s closing", self.sid)
+        final = self._final_task
+        if final is not None and not final.done():
+            final.cancel()
+            await asyncio.wait([final])
+            if self.final_pass == "running":
+                log.warning("MEETPP_FINAL sid=%s final pass cancelled by DELETE", self.sid)
+                self.final_pass = "failed"
         await self._stop_capture()
         left = await self._wait_stt(DRAIN_STT_CLOSE_S)
         if left:
@@ -982,8 +1170,6 @@ class AgentSession:
         await self._wait_tasks(self._store_tasks, 10.0)
         for t in list(self._refine_tasks):
             t.cancel()
-        if self._final_task is not None and not self._final_task.done():
-            await asyncio.wait([self._final_task], timeout=FINAL_PASS_MAX_S)
         self.closed = True
         log.info(self.summary_line())
         async with self._status_lock:

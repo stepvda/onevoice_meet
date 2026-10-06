@@ -36,6 +36,9 @@ LIVEKIT_WS_URL_INTERNAL = os.environ.get("LIVEKIT_WS_URL_INTERNAL", "").strip()
 
 SPEECH_URL = os.environ.get("MEETPP_SPEECH_URL", "").strip().rstrip("/")
 SPEECH_SECRET = os.environ.get("MEETPP_SPEECH_SECRET", "")
+# While tier 2 is up its text is the live caption and tier 1 only decodes what
+# tier 2 cannot answer in time; "0" goes back to tier 1 live + tier-2 refinement.
+TIER2_FIRST = os.environ.get("MEETPP_TIER2_FIRST", "1").strip().lower() not in ("0", "false", "no", "off")
 
 DATA_DIR = Path(os.environ.get("MEETPP_DATA_DIR", "/var/lib/meet/meetpp"))
 MIN_FREE_BYTES = int(_float("MEETPP_MIN_FREE_GB", 3.0) * 1024**3)

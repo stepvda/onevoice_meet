@@ -857,11 +857,23 @@ export function VoteEditor({ d, formal }: { d: DecisionDto; formal: boolean }) {
   const [fr, setFr] = useState<string>(v?.for != null ? String(v.for) : "");
   const [ag, setAg] = useState<string>(v?.against != null ? String(v.against) : "");
   const [ab, setAb] = useState<string>(v?.abstain != null ? String(v.abstain) : "");
-  const [ballots, setBallots] = useState(initialBallots);
+  const [ballots, setBallotsState] = useState(initialBallots);
+  // Once the chair edits a ballot, refreshed snapshots (every few seconds)
+  // must not reset the form; until then it follows the record.
+  const [touched, setTouched] = useState(false);
+  const setBallots: typeof setBallotsState = (next) => {
+    setTouched(true);
+    setBallotsState(next);
+  };
   const [confirmed, setConfirmed] = useState<boolean>(v?.confirmed ?? false);
   const [run, error] = useRun();
   const [saved, setSaved] = useState(false);
-  useEffect(() => setBallots(initialBallots), [initialBallots]);
+  const ballotsKey = JSON.stringify(initialBallots);
+  useEffect(() => {
+    if (!touched) setBallotsState(initialBallots);
+    // Compared by content: every snapshot builds new arrays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ballotsKey, touched]);
 
   const count = () => {
     setFr(String(ballots.filter((b) => b.choice === "for").length));
@@ -885,6 +897,8 @@ export function VoteEditor({ d, formal }: { d: DecisionDto; formal: boolean }) {
       })(),
     );
     setSaved(ok);
+    // Saved: follow the record again.
+    if (ok) setTouched(false);
   };
   const input = "w-20 rounded border border-slate-300 px-2 py-1 text-sm text-slate-800";
   return (

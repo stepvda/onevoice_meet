@@ -6,7 +6,6 @@ import os
 import time
 from pathlib import Path
 
-import pytest
 from jose import jwt
 
 from app.config import settings
@@ -29,38 +28,12 @@ def _room(room: str, identity: str, name: str, owner: bool = False) -> dict:
     return {"X-Meet-Room-Token": mint_participant_token(room_name=room, identity=identity, display_name=name, is_owner=owner)}
 
 
-def _internal(body: dict) -> tuple[bytes, dict]:
+def _internal(path: str, body: dict, method: str = "POST") -> tuple[bytes, dict]:
+    """A request signed like the agent signs it (v2: method and path too)."""
     raw = json.dumps(body).encode()
     ts = str(int(time.time()))
-    return raw, {"X-Meetpp-Timestamp": ts, "X-Meetpp-Signature": internal_signature(ts, raw), "Content-Type": "application/json"}
-
-
-@pytest.fixture
-def api(fakes, monkeypatch, tmp_path):
-    from fastapi.testclient import TestClient
-
-    from app.main import app
-
-    async def _no_resume():
-        return None
-
-    monkeypatch.setattr(rt.runtime, "start", _no_resume)
-    monkeypatch.setattr(settings, "meetpp_data_dir", str(tmp_path))
-    with TestClient(app) as client:
-        yield client
-
-
-@pytest.fixture
-def meeting():
-    db = SessionLocal()
-    try:
-        m = Meeting(id=util.ulid(), room_name=f"room-{util.ulid().lower()}", display_title="Board meeting #9",
-                    owner_user_id="42", owner_name="Chair Person", owner_email="chair@example.org", cohost_user_ids='["43"]')
-        db.add(m)
-        db.commit()
-        return m
-    finally:
-        db.close()
+    sig = internal_signature(ts, method, path, raw)
+    return raw, {"X-Meetpp-Timestamp": ts, "X-Meetpp-Signature": sig, "Content-Type": "application/json"}
 
 
 def test_full_flow(api, fakes, meeting, tmp_path):
@@ -112,7 +85,7 @@ def test_full_flow(api, fakes, meeting, tmp_path):
     assert api.post(f"/api/v1/meetpp/sessions/{sid}/consent", headers=guest_room, json={"decision": "accept", "person_key": "guest:abcdef123456"}).status_code == 200
     assert api.post(f"/api/v1/meetpp/sessions/{sid}/consent", headers=guest_room, json={"decision": "maybe", "person_key": "guest:abcdef123456"}).status_code == 400
 
-    raw, headers = _internal({"segments": [
+    raw, headers = _internal(f"/api/v1/internal/meetpp/sessions/{sid}/segments", {"segments": [
         {"utterance_id": "u1", "identity": "user-42", "name": "Chair Person", "t_start": util.iso(util.now()), "t_end": util.iso(util.now()), "text": "Welcome all."},
         {"utterance_id": "u2", "identity": "anon-01ABC", "name": "Guest Gina", "t_start": util.iso(util.now()), "t_end": util.iso(util.now()), "text": "Hello."},
     ]})
@@ -120,11 +93,11 @@ def test_full_flow(api, fakes, meeting, tmp_path):
     assert r.status_code == 200 and r.json() == {"ok": True, "seqs": {"u1": 1, "u2": 2}}
     headers["X-Meetpp-Signature"] = "0" * 64
     assert api.post(f"/api/v1/internal/meetpp/sessions/{sid}/segments", content=raw, headers=headers).status_code == 401
-    raw, headers = _internal({"events": [{"identity": "user-43", "name": "Ben Hartley", "kind": "standard", "event": "connected", "at": util.iso(util.now())}]})
+    raw, headers = _internal(f"/api/v1/internal/meetpp/sessions/{sid}/presence", {"events": [{"identity": "user-43", "name": "Ben Hartley", "kind": "standard", "event": "connected", "at": util.iso(util.now())}]})
     assert api.post(f"/api/v1/internal/meetpp/sessions/{sid}/presence", content=raw, headers=headers).json() == {"ok": True}
-    raw, headers = _internal({"status": "listening", "backlog_s": 0.5, "speakers": [], "tier2": "up"})
+    raw, headers = _internal(f"/api/v1/internal/meetpp/sessions/{sid}/agent-status", {"status": "listening", "backlog_s": 0.5, "speakers": [], "tier2": "up"})
     assert api.post(f"/api/v1/internal/meetpp/sessions/{sid}/agent-status", content=raw, headers=headers).json() == {"ok": True}
-    raw, headers = _internal({})
+    raw, headers = _internal(f"/api/v1/internal/meetpp/sessions/{sid}/agent-token", {})
     tok = api.post(f"/api/v1/internal/meetpp/sessions/{sid}/agent-token", content=raw, headers=headers).json()
     assert tok["token"] and tok["ws_url"] == settings.meetpp_agent_ws_url
 

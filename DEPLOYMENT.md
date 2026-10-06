@@ -400,6 +400,9 @@ Meet++ ships disabled. After the first `scripts/deploy.sh` that includes the
 `meetpp-agent` service:
 
 1. Add the keys from `.env.example` (section "Meet++") to `/opt/meet/.env`.
+   `meetpp-agent` does not read `.env` as a whole: it gets only the variables
+   listed under its `environment:` in `docker-compose.yml` (a new agent
+   setting must be added there too).
    At minimum:
    - `MEETPP_INTERNAL_SECRET=$(openssl rand -hex 32)`
    - `LLM_API_KEY=<provider key>` (leave empty for captions-only mode)
@@ -407,8 +410,9 @@ Meet++ ships disabled. After the first `scripts/deploy.sh` that includes the
    - `MEETPP_ENABLED=false` for the first boot
 2. `cd /opt/meet && docker compose -p meet up -d meeting-api meetpp-agent`
    (recreates meeting-api; egress is not touched).
-3. Smoke test: `curl -fsS http://localhost:8080/api/health`, then
-   `docker compose -p meet exec meetpp-agent curl -fsS http://localhost:8091/health`.
+3. Smoke test: `curl -fsS http://localhost:8080/api/health`, then (the agent
+   image has no curl)
+   `docker compose -p meet exec meetpp-agent python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8091/health', timeout=5).read().decode())"`.
 4. Enable the pilot: set `MEETPP_ENABLED=true` and, optionally,
    `MEETPP_PILOT_OWNER_SUBS=["<owner sub>"]`, then
    `docker compose -p meet up -d meeting-api`.
@@ -437,7 +441,7 @@ New `.env` keys (see `.env.example`, section "Meet++ v3"):
 `meetpp-agent` now mounts all of `/var/lib/meet/meetpp` (audio store +
 TTS cache) and reaches the Mac Studio over the host's WireGuard tunnel
 (`wg0`: 10.88.0.1 ↔ 10.88.0.2). Check from the container:
-`docker compose -p meet exec meetpp-agent curl -fsS http://10.88.0.2:9310/health`.
+`docker compose -p meet exec meetpp-agent python -c "import urllib.request; print(urllib.request.urlopen('http://10.88.0.2:9310/health', timeout=5).read().decode())"`.
 
 #### Tier-2 speech service on the Mac Studio
 

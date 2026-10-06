@@ -45,11 +45,20 @@ def test_board_is_presenter_while_meetpp_runs_and_shares_hand_it_back():
     assert stage.board_started(md) and md["presenter_identity"] == stage.BOARD_KEY
     # Someone shares: the share takes the stage, the board comes back after it.
     assert stage.stream_started(md, "user-bob#screen")
-    assert md == {"presenter_identity": "user-bob#screen", "presenter_prev": stage.BOARD_KEY}
-    # A second share takes over; the board is still what comes back.
+    assert md == {
+        "presenter_identity": "user-bob#screen", "presenter_prev": stage.BOARD_KEY,
+        "stage_streams": ["user-bob#screen"],
+    }
+    # A second share takes over; when it stops, Bob (still sharing) gets the
+    # stage back, and the board is still what comes back after him.
     assert stage.stream_started(md, "user-carol#screen")
-    assert md["presenter_prev"] == stage.BOARD_KEY
+    assert md["presenter_identity"] == "user-carol#screen" and md["presenter_prev"] == stage.BOARD_KEY
     assert stage.stream_stopped(md, "user-carol#screen")
+    assert md == {
+        "presenter_identity": "user-bob#screen", "presenter_prev": stage.BOARD_KEY,
+        "stage_streams": ["user-bob#screen"],
+    }
+    assert stage.stream_stopped(md, "user-bob#screen")
     assert md == {"presenter_identity": stage.BOARD_KEY}
     # Meet++ ends: the board leaves the stage.
     assert stage.board_ended(md) and md["presenter_identity"] is None
@@ -57,22 +66,70 @@ def test_board_is_presenter_while_meetpp_runs_and_shares_hand_it_back():
 
 def test_no_presenter_no_move_and_the_hosts_choice_stands():
     md: dict = {}
+    # Without a presenter a share only joins the live streams (the stage
+    # ladder shows it).
+    assert stage.stream_started(md, "user-bob#screen")
+    assert md == {"stage_streams": ["user-bob#screen"]}
     assert not stage.stream_started(md, "user-bob#screen")
+    assert stage.stream_stopped(md, "user-bob#screen") and md == {}
     assert not stage.stream_stopped(md, "user-bob#screen")
     md = {"presenter_identity": "user-alice"}
     stage.stream_started(md, stage.PLAYBACK_KEY)
-    assert md == {"presenter_identity": "playback", "presenter_prev": "user-alice"}
+    assert md == {"presenter_identity": "playback", "presenter_prev": "user-alice", "stage_streams": ["playback"]}
     # The host presents the board during the playback: nothing comes back later.
     stage.chosen(md, stage.BOARD_KEY)
+    assert md == {"presenter_identity": stage.BOARD_KEY, "stage_streams": ["playback"]}
+    assert stage.stream_stopped(md, stage.PLAYBACK_KEY)
     assert md == {"presenter_identity": stage.BOARD_KEY}
-    assert not stage.stream_stopped(md, stage.PLAYBACK_KEY)
 
 
 def test_meetpp_starting_during_a_share_follows_the_share():
-    md = {"presenter_identity": "user-bob#screen", "presenter_prev": "user-alice"}
+    md = {"presenter_identity": "user-bob#screen", "presenter_prev": "user-alice", "stage_streams": ["user-bob#screen"]}
     assert stage.board_started(md)
-    assert md == {"presenter_identity": "user-bob#screen", "presenter_prev": stage.BOARD_KEY}
-    assert stage.board_ended(md) and md == {"presenter_identity": "user-bob#screen"}
+    assert md["presenter_identity"] == "user-bob#screen" and md["presenter_prev"] == stage.BOARD_KEY
+    assert stage.board_ended(md)
+    assert md == {"presenter_identity": "user-bob#screen", "stage_streams": ["user-bob#screen"]}
+
+
+def test_meetpp_starting_during_a_share_without_presenter_follows_it():
+    md: dict = {}
+    stage.stream_started(md, stage.PLAYBACK_KEY)
+    stage.stream_started(md, "user-bob#screen")
+    assert stage.board_started(md)
+    assert md == {"presenter_prev": stage.BOARD_KEY, "stage_streams": ["playback", "user-bob#screen"]}
+    # The share stops while the playback still runs: the playback keeps the stage.
+    assert stage.stream_stopped(md, "user-bob#screen")
+    assert md == {"presenter_prev": stage.BOARD_KEY, "stage_streams": ["playback"]}
+    # The last stream stops: the board comes on the stage.
+    assert stage.stream_stopped(md, stage.PLAYBACK_KEY)
+    assert md == {"presenter_identity": stage.BOARD_KEY}
+
+
+def test_meetpp_starting_replaces_a_presented_camera_even_during_a_share():
+    md: dict = {}
+    stage.stream_started(md, "user-bob#screen")
+    stage.chosen(md, "user-alice")
+    assert stage.board_started(md)
+    assert md == {"presenter_identity": stage.BOARD_KEY, "stage_streams": ["user-bob#screen"]}
+    assert stage.stream_stopped(md, "user-bob#screen")
+    assert md == {"presenter_identity": stage.BOARD_KEY}
+
+
+def test_a_stopped_presented_stream_hands_over_to_the_most_recent_live_one():
+    md = {"presenter_identity": "user-alice"}
+    stage.stream_started(md, "user-bob#screen")
+    stage.stream_started(md, stage.PLAYBACK_KEY)
+    stage.stream_started(md, "user-carol#screen")
+    # Bob restarts his share: it is the most recent again.
+    stage.stream_started(md, "user-bob#screen")
+    assert md["stage_streams"] == ["playback", "user-carol#screen", "user-bob#screen"]
+    assert stage.stream_stopped(md, "user-bob#screen")
+    assert md["presenter_identity"] == "user-carol#screen"
+    # A stream that is not on the stage stops: only the list changes.
+    assert stage.stream_stopped(md, stage.PLAYBACK_KEY)
+    assert md == {"presenter_identity": "user-carol#screen", "presenter_prev": "user-alice", "stage_streams": ["user-carol#screen"]}
+    assert stage.stream_stopped(md, "user-carol#screen")
+    assert md == {"presenter_identity": "user-alice"}
 
 
 async def test_concurrent_metadata_patches_are_serialised():
@@ -100,10 +157,13 @@ async def test_webhook_hands_the_stage_to_a_screen_share(monkeypatch):
     assert webhooks._stage_key("playback", api.TrackSource.CAMERA) == "playback"
     assert webhooks._stage_key("user-bob", api.TrackSource.CAMERA) is None
     assert webhooks._stage_key("composite-room", api.TrackSource.SCREEN_SHARE) is None
+    assert webhooks._stage_key("viewer-01J", api.TrackSource.SCREEN_SHARE) is None
+    assert webhooks._stage_key("EG_abc", api.TrackSource.SCREEN_SHARE) is None
 
     lk = FakeLK({"presenter_identity": stage.BOARD_KEY})
     monkeypatch.setattr(webhooks, "livekit_api", lambda: lk)
     await webhooks._stage_stream("room", "user-bob#screen", True)
     assert lk.md["presenter_identity"] == "user-bob#screen"
+    assert lk.md["stage_streams"] == ["user-bob#screen"]
     await webhooks._stage_stream("room", "user-bob#screen", False)
     assert lk.md == {"presenter_identity": stage.BOARD_KEY}

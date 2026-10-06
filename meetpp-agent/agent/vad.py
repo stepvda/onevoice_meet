@@ -11,13 +11,15 @@ If the model cannot be loaded the agent does *not* silently degrade: it logs
 CRITICAL and reports ``vad="energy"`` in /health, using a crude energy gate.
 
 Segmentation (per speaker stream):
-  start   speech prob >= 0.5 for 250 ms (a frame < 0.35 resets the run)
+  start   speech prob >= 0.5 for 250 ms (a frame < 0.35 resets the run; a run
+          that has not started an utterance within 1 s is dropped)
   end     800 ms after the first frame < 0.35, unless a frame >= 0.5 comes back
   min     400 ms of speech (onset → silence start), shorter blips discarded
   pre     300 ms of audio before the detected onset
   post    150 ms of audio after the silence start
-  max     15 s; cut at the lowest-energy 30 ms window in the last 3 s and
-          continue the utterance from there
+  max     15 s; cut at the lowest-energy 30 ms window in the 3 s before the
+          15 s mark and continue the utterance from there (repeatedly, so no
+          utterance is ever longer than 15 s)
 """
 from __future__ import annotations
 
@@ -43,6 +45,7 @@ SILERO_SOURCE = "https://github.com/snakers4/silero-vad/raw/master/src/silero_va
 START_PROB = 0.5
 END_PROB = 0.35
 START_MS = 250
+RUN_MAX_MS = 1000
 END_SILENCE_MS = 800
 MIN_SPEECH_MS = 400
 PRE_ROLL_MS = 300
@@ -249,6 +252,7 @@ class UtteranceSegmenter:
         start_prob: float = START_PROB,
         end_prob: float = END_PROB,
         start_ms: int = START_MS,
+        run_max_ms: int = RUN_MAX_MS,
         end_silence_ms: int = END_SILENCE_MS,
         min_speech_ms: int = MIN_SPEECH_MS,
         pre_roll_ms: int = PRE_ROLL_MS,
@@ -260,10 +264,12 @@ class UtteranceSegmenter:
         self.start_prob = start_prob
         self.end_prob = end_prob
         self.start_samples = _ms(start_ms)
+        self.run_max = _ms(run_max_ms)
         self.end_samples = _ms(end_silence_ms)
         self.min_speech = _ms(min_speech_ms)
         self.pre = _ms(pre_roll_ms)
         self.post = _ms(post_roll_ms)
+        self.idle_max = self.pre + self.run_max  # idle buffer: pre-roll of the oldest live run
         self.max_samples = int(max_utterance_s * SAMPLE_RATE)
         self.cut_search = int(cut_search_s * SAMPLE_RATE)
         self.short_discarded = 0
@@ -292,9 +298,7 @@ class UtteranceSegmenter:
             self._pending = np.concatenate([self._pending, pcm.astype(np.float32, copy=False)])
         n_frames = len(self._pending) // FRAME
         for i in range(n_frames):
-            u = self._push_frame(self._pending[i * FRAME : (i + 1) * FRAME])
-            if u is not None:
-                out.append(u)
+            out.extend(self._push_frame(self._pending[i * FRAME : (i + 1) * FRAME]))
         if n_frames:
             self._pending = self._pending[n_frames * FRAME :].copy()
         return out
@@ -325,45 +329,53 @@ class UtteranceSegmenter:
         self._onset = 0
         self._silence_start: int | None = None
 
-    def _push_frame(self, frame: np.ndarray) -> Utterance | None:
+    def _push_frame(self, frame: np.ndarray) -> list[Utterance]:
         frame_start = self._total
         self._total += FRAME
         p = self.vad.prob(frame)
         self.last_prob = p
         self._buf.append(frame)
         if not self._in_speech:
+            if self._run_start is not None and self._total - self._run_start > self.run_max:
+                # Probabilities between 0.35 and 0.5 never reset a run; without
+                # this it would pin the idle buffer (and the onset) for minutes.
+                self._run_start = None
+                self._run_speech = 0
             if p >= self.start_prob:
                 if self._run_start is None:
                     self._run_start = frame_start
                 self._run_speech += FRAME
                 if self._run_speech >= self.start_samples:
                     self._open(self._run_start)
-                    return None
+                    return []
             elif p < self.end_prob:
                 self._run_start = None
                 self._run_speech = 0
             keep_from = (self._run_start if self._run_start is not None else self._total) - self.pre
+            keep_from = max(keep_from, self._total - self.idle_max)
             if keep_from > self._buf_start:
                 self._buf.drop_front(keep_from - self._buf_start)
                 self._buf_start = keep_from
-            return None
+            return []
         # in speech
         if p >= self.start_prob:
             self._silence_start = None
         elif p < self.end_prob and self._silence_start is None:
             self._silence_start = frame_start
         if self._silence_start is not None and self._total - self._silence_start >= self.end_samples:
-            return self._finish(self._silence_start + self.post)
-        if len(self._buf) >= self.max_samples:
-            return self._cut()
-        return None
+            u = self._finish(self._silence_start + self.post)
+            return [] if u is None else [u]
+        out = []
+        while len(self._buf) >= self.max_samples:
+            out.append(self._cut())
+        return out
 
     def _open(self, onset: int) -> None:
-        start = max(self._buf_start, onset - self.pre)
+        start = max(self._buf_start, onset - self.pre, self._total - self.idle_max)
         self._buf.drop_front(start - self._buf_start)
         self._buf_start = start
         self._in_speech = True
-        self._onset = onset
+        self._onset = max(onset, start)
         self._silence_start = None
         self._run_start = None
         self._run_speech = 0
@@ -385,7 +397,7 @@ class UtteranceSegmenter:
 
     def _cut(self) -> Utterance:
         data = self._buf.view()
-        cut = lowest_energy_cut(data, self.cut_search)
+        cut = lowest_energy_cut(data[: self.max_samples], self.cut_search)
         audio = data[:cut].copy()
         start = self._buf_start
         speech = max(0, start + cut - self._onset)

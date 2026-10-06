@@ -119,6 +119,39 @@ def test_max_length_cut_at_lowest_energy_window():
     assert rest.end_sample == len(audio)
 
 
+def test_hovering_probability_never_pins_the_onset():
+    """One frame >= 0.5, then ~54 s hovering in [0.35, 0.5): the run must not
+    stay open (it once gave a 55 s utterance starting 54 s too early)."""
+    probs = [0.0] * 10 + [0.6] + [0.4] * 1700 + [0.9] * 40 + [0.1] * 40
+    seg = UtteranceSegmenter(ScriptedVAD(probs))
+    audio = tone(len(probs) * F)
+    utts, peak = [], 0
+    for i in range(0, len(audio), 160):
+        utts.extend(seg.process(audio[i : i + 160]))
+        if not seg.in_speech:
+            peak = max(peak, len(seg._buf))
+    assert len(utts) == 1
+    onset = (10 + 1 + 1700) * F
+    assert utts[0].start_sample == onset - 4800  # the usual 300 ms pre-roll
+    assert utts[0].duration_s < 2.0
+    assert peak <= 4800 + 16000 + 2 * F  # idle buffer: pre-roll + 1 s run, not the whole minute
+
+
+def test_cut_repeats_until_every_piece_fits():
+    # A run allowed to last a minute opens a ~55 s utterance at once: it must
+    # come out as consecutive pieces of at most 15 s, nothing lost.
+    probs = [0.0] * 10 + [0.6] + [0.4] * 1700 + [0.9] * 40 + [0.1] * 40
+    seg = UtteranceSegmenter(ScriptedVAD(probs), run_max_ms=60_000)
+    rng = np.random.default_rng(2)
+    audio = (0.3 * rng.standard_normal(len(probs) * F)).astype(np.float32)
+    utts = feed(seg, audio)
+    assert len(utts) >= 4
+    assert all(len(u.audio) <= 15 * 16000 for u in utts)
+    assert all(u.cut for u in utts[:-1])
+    assert all(a.end_sample == b.start_sample for a, b in zip(utts, utts[1:]))
+    assert utts[0].start_sample == 10 * F - 4800
+
+
 def test_lowest_energy_cut_helper():
     buf = np.ones(48000, dtype=np.float32)
     buf[30000:30480] = 0.0

@@ -66,6 +66,11 @@ def detect(text: str) -> tuple[str, int | None] | None:
     return None
 
 
+def forget(session_id: str) -> None:
+    for key in [k for k in _last if k[0] == session_id]:
+        del _last[key]
+
+
 def _cooled(session_id: str, kind: str) -> bool:
     now = time.monotonic()
     if now - _last.get((session_id, kind), -1e9) < COOLDOWN_SECONDS:

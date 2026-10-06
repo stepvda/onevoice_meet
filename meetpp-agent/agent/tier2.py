@@ -1,7 +1,8 @@
 """Tier-2 client for meetpp-speech on the Mac Studio (contract §6.2).
 
 * ``POST /transcribe?language=en&prompt=…`` with the Ogg/Opus utterance as
-  body, HMAC-signed with ``MEETPP_SPEECH_SECRET``; at most 2 in flight.
+  body, HMAC-signed (v2: method, path, query and body) with
+  ``MEETPP_SPEECH_SECRET``; at most 2 in flight.
 * ``POST /tts`` for announcement clips.
 * ``GET /health`` every 30 s; 3 consecutive failures → "down" (tier 1 keeps
   running); one success → "up" again.
@@ -20,7 +21,7 @@ from typing import Callable
 import httpx
 
 from . import config
-from .poster import dumps, sign
+from .poster import dumps, sign_request
 from .stt import tail_text
 
 log = logging.getLogger("meetpp.agent")
@@ -214,15 +215,16 @@ class Tier2Client:
         model, repetition}``. ``timeout`` covers queueing for a slot too."""
 
         async def _call() -> dict:
-            async with self._sem:
-                headers = {"Content-Type": content_type, **sign(self.secret, audio)}
-                r = await self.client.post(
+            async with self._sem:  # sign at send time: waiting for a slot must not age the timestamp
+                request = self.client.build_request(
+                    "POST",
                     f"{self.base_url}/transcribe",
                     params={"language": language, "prompt": (prompt or "")[-PROMPT_MAX_CHARS:]},
                     content=audio,
-                    headers=headers,
+                    headers={"Content-Type": content_type},
                     timeout=timeout,
                 )
+                r = await self.client.send(sign_request(self.secret, request))
             if r.status_code == 503:
                 try:
                     retry_after = float(r.headers.get("Retry-After") or 2)
@@ -246,10 +248,15 @@ class Tier2Client:
     async def tts(self, text: str, voice: str, timeout: float = 30.0) -> tuple[bytes, str]:
         """Returns (audio bytes, content type): audio/ogg, or audio/wav when
         the service could not encode Opus."""
-        raw = dumps({"text": text, "voice": voice, "format": "ogg"})
-        headers = {"Content-Type": "application/json", **sign(self.secret, raw)}
+        request = self.client.build_request(
+            "POST",
+            f"{self.base_url}/tts",
+            content=dumps({"text": text, "voice": voice, "format": "ogg"}),
+            headers={"Content-Type": "application/json"},
+            timeout=timeout,
+        )
         try:
-            r = await self.client.post(f"{self.base_url}/tts", content=raw, headers=headers, timeout=timeout)
+            r = await self.client.send(sign_request(self.secret, request))
         except httpx.HTTPError as exc:
             raise Tier2Error(f"{type(exc).__name__}: {exc}") from exc
         if r.status_code >= 400 or not r.content:

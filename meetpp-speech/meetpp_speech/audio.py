@@ -15,9 +15,15 @@ import soxr
 
 TARGET_SR = 16000
 OPUS_RATES = (8000, 12000, 16000, 24000, 48000)
+MAX_CHANNELS = 2
+MAX_RATE = 96000
 
 
 class AudioDecodeError(ValueError):
+    pass
+
+
+class AudioTooLong(AudioDecodeError):
     pass
 
 
@@ -27,12 +33,30 @@ def resample(x: np.ndarray, sr_in: int, sr_out: int) -> np.ndarray:
     return np.ascontiguousarray(soxr.resample(x, sr_in, sr_out, quality="HQ"), dtype=np.float32)
 
 
-def decode_to_16k_mono(data: bytes) -> np.ndarray:
-    """Decode WAV / Ogg-Opus / Ogg-Vorbis / FLAC / AIFF bytes to 16 kHz mono float32."""
+def decode_to_16k_mono(data: bytes, max_s: float | None = None) -> np.ndarray:
+    """Decode WAV / Ogg-Opus / Ogg-Vorbis / FLAC / AIFF bytes to 16 kHz mono float32.
+
+    With `max_s`, the length in the header is checked before anything is
+    decoded (a small compressed body can hold hours of audio) and the read is
+    capped, so a file whose header understates its length cannot get past it.
+    """
     if not data:
         raise AudioDecodeError("empty body")
     try:
-        x, sr = sf.read(io.BytesIO(data), dtype="float32", always_2d=True)
+        with sf.SoundFile(io.BytesIO(data)) as f:
+            sr, channels = f.samplerate, f.channels
+            if channels > MAX_CHANNELS:
+                raise AudioDecodeError(f"{channels} channels (at most {MAX_CHANNELS})")
+            if not 0 < sr <= MAX_RATE:
+                raise AudioDecodeError(f"unsupported sample rate {sr}")
+            cap = -1
+            if max_s is not None:
+                cap = int(max_s * sr)
+                if f.frames > cap:
+                    raise AudioTooLong(f"audio longer than {max_s:.0f}s")
+            x = f.read(frames=cap, dtype="float32", always_2d=True)
+    except AudioDecodeError:
+        raise
     except Exception as exc:  # soundfile raises LibsndfileError / RuntimeError / TypeError
         raise AudioDecodeError(f"cannot decode audio: {exc}") from None
     if x.size == 0:

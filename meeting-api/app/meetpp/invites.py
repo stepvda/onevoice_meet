@@ -180,21 +180,22 @@ def _outputs_dir(session: MeetppSession) -> Path:
     return p
 
 
-def _write_output(db: Session, session: MeetppSession, kind: str, filename: str, data: bytes, version: int, recipients=None, results=None) -> MeetppOutput:
+def _write_file(session: MeetppSession, filename: str, data: bytes, version: int) -> str:
     path = _outputs_dir(session) / f"v{version}-{filename}"
     path.write_bytes(data)
-    row = MeetppOutput(
+    return str(path)
+
+
+def _output_row(session: MeetppSession, kind: str, filename: str, path: str, version: int, recipients=None) -> MeetppOutput:
+    return MeetppOutput(
         id=util.ulid(),
         session_id=session.id,
         kind=kind,
         version=version,
-        path=str(path),
+        path=path,
         filename=filename,
         recipients_json=util.dumps(recipients or []),
-        results_json=util.dumps(results) if results is not None else None,
     )
-    db.add(row)
-    return row
 
 
 def output_dto(o: MeetppOutput) -> dict:
@@ -238,9 +239,39 @@ def _safe_name(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", text).strip("-")[:60] or "meeting"
 
 
+def _next_meeting_room(db: Session, session: MeetppSession, meeting: Meeting, stored: dict, nm: dict, when: datetime) -> Meeting:
+    """The meeting the invitation is for: this room, or with room "new" one
+    new meeting, created on the first publish and reused on re-publishing."""
+    if nm.get("room") != "new":
+        return meeting
+    duration = int(nm.get("duration_min") or 60)
+    ref = stored.get("next_room") if isinstance(stored.get("next_room"), dict) else {}
+    nxt = db.get(Meeting, ref.get("meeting_id")) if ref.get("meeting_id") else None
+    if nxt is None:
+        nxt = Meeting(
+            id=util.ulid(),
+            room_name=f"{meeting.room_name[:40]}-{util.ulid()[-6:].lower()}",
+            display_title=meeting.display_title,
+            owner_user_id=meeting.owner_user_id,
+            owner_email=meeting.owner_email,
+            owner_name=meeting.owner_name,
+            scheduled_at=when,
+            duration_minutes=duration,
+            meetpp_series_id=session.series_id,
+        )
+        db.add(nxt)
+        db.flush()
+    else:
+        nxt.scheduled_at = when
+        nxt.duration_minutes = duration
+    stored["next_room"] = {"meeting_id": nxt.id, "room_name": nxt.room_name}
+    return nxt
+
+
 async def publish(db: Session, session: MeetppSession) -> dict:
     """Render, invite, send, snapshot, delete audio. Re-publishing writes a
-    new version and sends again."""
+    new version and sends again. The database is written before rendering and
+    after sending, never across them (SQLite: one writer at a time)."""
     meeting = db.get(Meeting, session.meeting_id)
     if meeting is None:
         raise ValueError("meeting not found")
@@ -250,43 +281,27 @@ async def publish(db: Session, session: MeetppSession) -> dict:
     # Proposed actions are accepted by publishing; open ones are carried.
     for a in db.query(MeetppAction).filter_by(session_id=session.id, status="proposed").all():
         a.status = "open"
-    db.flush()
     stored = util.loads(session.review_json, {})
     stored.update({k: review[k] for k in ("next_meeting", "next_agenda", "recipients", "distribution")})
+    nm = review["next_meeting"]
+    when = util.parse_dt(nm.get("date_iso"))
+    target = _next_meeting_room(db, session, meeting, stored, nm, when) if when is not None else meeting
     session.review_json = util.dumps(stored)
-    db.flush()
+    db.commit()
 
     data = export_mod.build_export(db, session)
     stamp = util.aware(session.started_at or session.created_at).strftime("%Y-%m-%d")
     base = f"{_safe_name(meeting.display_title)}-{stamp}"
     report_pdf = await asyncio.to_thread(report.render_meeting_report, data)
-    outputs = [_write_output(db, session, "report_pdf", f"{base}-report.pdf", report_pdf, version)]
+    files = [("report_pdf", f"{base}-report.pdf", _write_file(session, f"{base}-report.pdf", report_pdf, version), None)]
 
-    nm = review["next_meeting"]
-    when = util.parse_dt(nm.get("date_iso"))
     agenda_pdf = None
     ics_text = None
-    next_meeting_id = None
+    next_meeting_id = target.id if target is not meeting else None
+    join_url = f"{settings.public_url}/{target.room_name}"
     if when is not None:
         agenda_pdf = await asyncio.to_thread(report.render_agenda, data)
-        outputs.append(_write_output(db, session, "agenda_pdf", f"{base}-next-agenda.pdf", agenda_pdf, version))
-        room = meeting.room_name
-        if nm.get("room") == "new":
-            nxt = Meeting(
-                id=util.ulid(),
-                room_name=f"{meeting.room_name[:40]}-{util.ulid()[-6:].lower()}",
-                display_title=meeting.display_title,
-                owner_user_id=meeting.owner_user_id,
-                owner_email=meeting.owner_email,
-                owner_name=meeting.owner_name,
-                scheduled_at=when,
-                duration_minutes=int(nm.get("duration_min") or 60),
-                meetpp_series_id=session.series_id,
-            )
-            db.add(nxt)
-            db.flush()
-            room, next_meeting_id = nxt.room_name, nxt.id
-        join_url = f"{settings.public_url}/{room}"
+        files.append(("agenda_pdf", f"{base}-next-agenda.pdf", _write_file(session, f"{base}-next-agenda.pdf", agenda_pdf, version), None))
         agenda_text = "\n".join(f"{i}. {it['title']}" for i, it in enumerate(review["next_agenda"], start=1))
         ics_text = ics_invite(
             uid=f"meetpp-{session.series_id}-{when.strftime('%Y%m%dT%H%M')}@meet.witysk.org",
@@ -300,7 +315,7 @@ async def publish(db: Session, session: MeetppSession) -> dict:
             attendees=review["recipients"]["invite"],
             description_text=(agenda_text + "\n\n" if agenda_text else "") + f"Join: {join_url}",
         )
-        outputs.append(_write_output(db, session, "ics", "invite.ics", ics_text.encode("utf-8"), version, review["recipients"]["invite"]))
+        files.append(("ics", "invite.ics", _write_file(session, "invite.ics", ics_text.encode("utf-8"), version), review["recipients"]["invite"]))
 
     results: list[dict] = []
     dist = review["distribution"]
@@ -326,11 +341,15 @@ async def publish(db: Session, session: MeetppSession) -> dict:
             ok = await send_email(
                 to=r["email"],
                 subject=f"Invitation: {meeting.display_title} — {when.strftime('%d/%m/%Y %H:%M')} UTC",
-                html=_email_html(f"Dear {r['name']},", [f"You are invited to {meeting.display_title}. The agenda is attached."], f"{settings.public_url}/{meeting.room_name}", "Join the meeting"),
+                html=_email_html(f"Dear {r['name']},", [f"You are invited to {meeting.display_title}. The agenda is attached."], join_url, "Join the meeting"),
                 reply_to=reply_to,
                 attachments=atts,
             )
             results.append({"kind": "invite", "email": r["email"], "ok": bool(ok)})
+
+    outputs = [_output_row(session, kind, filename, path, version, recipients) for kind, filename, path, recipients in files]
+    for row in outputs:
+        db.add(row)
     if results:
         db.add(
             MeetppOutput(

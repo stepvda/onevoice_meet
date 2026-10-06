@@ -68,7 +68,7 @@ owner/co-host (`is_moderator`) → 404 otherwise; **room** = LiveKit room token
 in `X-Meet-Room-Token` for the session's room (any participant; egress and
 public-viewer tokens are read-only); **room-chair** = room token whose
 identity is a chair or a designated editor; **internal** = HMAC
-(`X-Meetpp-Timestamp`, `X-Meetpp-Signature = hex(HMAC_SHA256(MEETPP_INTERNAL_SECRET, ts + "." + body))`, ±60 s).
+(`X-Meetpp-Timestamp`, `X-Meetpp-Signature`, signing v2 — see §12; ±60 s, a repeated signature is refused).
 
 ### 2.1 Setup and lifecycle (chair)
 - `POST /meetings/{meeting_id}/meetpp/sessions` body `{template:"agenda"|"goal", mode:"lead"|"assist"="lead", series_id?:str, meeting_type?:"informal"|"board"|"general_assembly", goal?:str}` → `201 {session: SessionMeta, series: Series, imported_actions: [ActionDto]}`; creates the fixed sections immediately (status `setup`).
@@ -115,11 +115,12 @@ identity is a chair or a designated editor; **internal** = HMAC
 
 ### 2.4 Internal (agent → meeting-api, HMAC)
 - `POST /internal/meetpp/sessions/{sid}/segments` body
-  `{segments:[{utterance_id, identity, name, t_start, t_end, text, lang, avg_logprob, no_speech_prob}],
+  `{segments:[{utterance_id, identity, name, t_start, t_end, text, lang, avg_logprob, no_speech_prob, tier?:2}],
     refinements:[{utterance_id, text, final:bool}],
     gaps:[{identity?, name?, t_from, t_to, reason}]}` → `{ok, seqs:{utterance_id: seq}}`.
   All three arrays optional. Server assigns `seq`; refinements set `text_refined`/`tier=2`
-  and broadcast `caption-update`; `final:true` refinements come from the post-meeting pass.
+  and broadcast `caption-update`; `final:true` refinements come from the post-meeting pass. A segment with `tier:2`
+  was transcribed live by tier 2 (§12): stored with `text_refined = text`, `tier=2`, captioned with `tier:2`.
   Gap reasons: `overloaded`, `agent_reconnect`, `consumer_restart`, `liveness`; meeting-api adds `agent_restart` for agent downtime it detects itself.
 - `POST /internal/meetpp/sessions/{sid}/presence` body `{events:[{identity, name, kind:"standard"|..., event:"connected"|"disconnected", at}]}`
 - `POST /internal/meetpp/sessions/{sid}/agent-status` body `{status:"listening"|"behind"|"reconnecting"|"paused"|"offline", backlog_s, rtf_p50?, speakers:[{identity, name, ok:bool}], tier2:"up"|"down"|"off", final_pass?:"running"|"done"|"failed"|"skipped"}` (`skipped` = tier 2 not configured or unavailable)
@@ -161,7 +162,7 @@ Human ops use ids (not refs). Any human edit sets `locked=true` on the item; AI 
 ## 4. Real-time messages (LiveKit data, topic `meet-ai`, RELIABLE, server-published)
 
 Envelope `{"v":1,"type":…}`. Payload ≤ 8 KB (otherwise send without `delta`; clients refetch).
-- `caption` `{seq, identity, name, person_key, t_start, text, tier:1}`
+- `caption` `{seq, identity, name, person_key, t_start, text, tier:1|2}`
 - `caption-update` `{seq, text, tier:2}`
 - `gap` `{seq, t_from, t_to, reason, name?}`
 - `state` `{version, delta?:{session?:Partial<SessionMeta>, sections?:[], decisions?:[], actions?:[], minutes?:[], attendees?:[], attachments?:[], documents?:[], quorum?:{}|null, removed?:[{kind, id}]}, activations:[Activation]}`
@@ -212,7 +213,7 @@ directory is a shared volume between agent and meeting-api; meeting-api
 deletes `<sid>/audio/` at publish and the retention job after 7 days.
 
 ### 6.2 meetpp-agent → meetpp-speech (`MEETPP_SPEECH_URL`, e.g. `http://10.88.0.2:9310`)
-Auth: `X-Meetpp-Timestamp`, `X-Meetpp-Signature = hex(HMAC_SHA256(MEETPP_SPEECH_SECRET, ts + "." + body))`, ±60 s.
+Auth: `X-Meetpp-Timestamp`, `X-Meetpp-Signature`, signing v2 with `MEETPP_SPEECH_SECRET` (§12), ±60 s, replays refused.
 - `POST /transcribe?language=en&prompt=<urlencoded ≤ 600 chars>` body = audio bytes (`audio/ogg` Opus or `audio/wav`) → `{text, avg_logprob, duration_s, rtf, model, repetition:bool}`
 - `POST /tts` JSON `{text, voice:"am_michael", format:"ogg"}` → `audio/ogg` bytes
 - `GET /health` → `{ok, model:"large-v3-turbo", tts:"kokoro", queue, busy, rtf_p50}`
@@ -410,3 +411,32 @@ screen share, and takes part in the room layout (frontend `lib/stage.ts`, backen
   a "Presenter" badge.
 - Store: `stageTakeover` and `drawerOpen` are gone; `boardOnStage` (this viewer sees the full board) and
   `boardPresenter`. The board's keyboard shortcuts act only while `boardOnStage` (chair Next/Back always).
+
+## 12. Review fixes, tier 2 first and the adoption gate (Release 1.2.1)
+
+- **Signing v2** (agent → meeting-api and agent → meetpp-speech): `X-Meetpp-Signature =
+  hex(HMAC_SHA256(secret, "v2\n" + ts + "\n" + METHOD + "\n" + target + "\n" + hex(sha256(body))))`, where
+  `target` is the raw path plus `?query` when there is one. ±60 s; an accepted signature is remembered for the window
+  and a repeat gets 401, so every retry is re-signed. Test vector: secret `test-secret`, ts `1700000000`, `POST`,
+  target `/api/v1/internal/meetpp/sessions/01HZZZZZZZZZZZZZZZZZZZZZZZ/segments?x=1`, body `{"a":1}` →
+  `572404eb590905ef095aea5d1c8bfafbcd49bf92e158be425640ccdd3a868582`. meeting-api, meetpp-agent and meetpp-speech
+  are deployed together.
+- **Tier 2 first** (agent, `MEETPP_TIER2_FIRST`, default on): while tier 2 is up every utterance is stored and sent to
+  meetpp-speech first (budget 4 s); its text is posted as the segment with `tier:2` and is the live caption. Tier 1
+  decodes the utterance only when tier 2 is busy (503), fails, exceeds the budget or answers with a degenerate text
+  (repetition, compression, too long, empty); such an utterance gets no near-live refinement (the final pass covers
+  it). Segments are posted in speaking order. Whole-utterance hallucinations (tier-1 blocklist) are dropped. With tier
+  2 down or `MEETPP_TIER2_FIRST=0`, tier 1 is live and tier 2 refines, as before.
+- **Adoption gate** (`app/meetpp/agreement.py`): an AI op may set a decision to adopted (or adopt it through a vote)
+  only when one of the lines it cites shows agreement — an agreement phrase (agreed, approved, unanimously, carried,
+  no objection, the resolution is, let's go with …; not negated, not in a question) or a reply that is nothing but
+  assent ("Yes.", "To all? Yeah.") from someone other than the speaker of the first cited line. Otherwise the
+  decision is (or stays) proposed and the model's vote is not applied. People are not gated. Prompt v3.3 asks the
+  model to cite the agreeing line.
+- **Guests in room data** appear as an opaque per-session alias `guest:~<20 hex>` (state, deltas, captions,
+  transcript, ballots, assignees); a chair's ballot that sends the alias back is mapped to the real key. Public
+  viewers get `/state` with `person_key: null` and no `/transcript`; bus messages are not sent to viewers unless the
+  board is public.
+- **Stage streams**: the room metadata keeps the live screen shares and playback in `stage_streams` (oldest first).
+  When the presented stream stops, the stage goes to the most recent stream still live, else to `presenter_prev`;
+  Meet++ starting while a stream holds the stage follows it.

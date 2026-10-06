@@ -185,6 +185,7 @@ export default function EgressLayoutPiP() {
     let pipOverlayIdentity = overlayHint;
     let currentLayout: EgressLayout = initialLayout;
     let presenterId: string | null = null;
+    let lastSpeaker: string | null = null;
 
     function compositeTrack(): RemoteVideoTrack | null {
       for (const p of room.remoteParticipants.values()) {
@@ -216,6 +217,8 @@ export default function EgressLayoutPiP() {
           // to undefined on a real unsubscribe, so `!t` is enough.
           if (!t) return;
           if (pub.source !== Track.Source.Camera && pub.source !== Track.Source.ScreenShare) return;
+          // A muted camera would be a black frame on the main stage.
+          if (pub.source === Track.Source.Camera && pub.isMuted) return;
           const c = candidate(p.identity, pub.source === Track.Source.ScreenShare);
           if (tracks.has(c.key)) return;
           cands.push(c);
@@ -231,8 +234,12 @@ export default function EgressLayoutPiP() {
     // share > playback > board > active speaker > any cam.
     function mainKey(): string | null {
       if (compositeTrack()) return null;
-      const speaker = room.activeSpeakers.find((p) => !p.isLocal)?.identity ?? null;
-      return pickMainKey(stage().cands, presenterId, speaker);
+      // The last speaker stays the speaker through a silence, as in the live
+      // room (PresenterSpotlight keeps it too); otherwise the recording would
+      // cut to an arbitrary camera at every pause.
+      const speaking = room.activeSpeakers.find((p) => !p.isLocal)?.identity;
+      if (speaking) lastSpeaker = speaking;
+      return pickMainKey(stage().cands, presenterId, lastSpeaker);
     }
 
     function boardIsMain(): boolean {

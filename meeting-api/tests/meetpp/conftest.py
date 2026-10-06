@@ -140,6 +140,36 @@ def fakes(monkeypatch):
     llm.reset_breakers()
 
 
+@pytest.fixture
+def api(fakes, monkeypatch, tmp_path):
+    """The app over HTTP (no session resume at startup)."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    async def _no_resume():
+        return None
+
+    monkeypatch.setattr(rt.runtime, "start", _no_resume)
+    monkeypatch.setattr(settings, "meetpp_data_dir", str(tmp_path))
+    with TestClient(app) as client:
+        yield client
+
+
+@pytest.fixture
+def meeting():
+    """A meeting owned by user 42 with user 43 as co-host."""
+    db = SessionLocal()
+    try:
+        m = Meeting(id=util.ulid(), room_name=f"room-{util.ulid().lower()}", display_title="Board meeting #9",
+                    owner_user_id="42", owner_name="Chair Person", owner_email="chair@example.org", cohost_user_ids='["43"]')
+        db.add(m)
+        db.commit()
+        return m
+    finally:
+        db.close()
+
+
 async def drain():
     """Let fire-and-forget tasks (announcements) finish."""
     for _ in range(5):

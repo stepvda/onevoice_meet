@@ -96,7 +96,9 @@ def test_real_flood_gets_503(live, speech):
     """8 simultaneous 18 s utterances: 2 run, 1 waits (18 s <= 30 s), the 4th would exceed 30 s."""
     data = speech["long"]["wav"]
     with ThreadPoolExecutor(8) as pool:
-        results = list(pool.map(lambda _: transcribe(live["url"], live["secret"], data, "audio/wav", timeout=120)[0],
+        # distinct prompts: 8 identical signed requests in one second would be replays (401)
+        results = list(pool.map(lambda i: transcribe(live["url"], live["secret"], data, "audio/wav",
+                                                     prompt=f"Utterance {i}.", timeout=120)[0],
                                 range(8)))
     print(f"\n[flood] statuses {sorted(results)}")
     assert results.count(503) >= 4 and results.count(200) >= 2

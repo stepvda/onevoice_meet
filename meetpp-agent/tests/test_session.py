@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import re
+import shutil
 from types import SimpleNamespace
 
 import httpx
@@ -230,12 +231,13 @@ async def test_stt_results_drops_and_gaps(tmp_path, caplog):
     ]
     assert gaps == [{"identity": "user-alice", "name": "Alice", "t_from": iso(1_790_000_000.0), "t_to": iso(1_790_000_001.0), "reason": "overloaded"}]
     assert "The budget is approved." in s._prompt()
-    await asyncio.sleep(0.2)
+    await asyncio.wait_for(asyncio.gather(*list(s._store_tasks)), 5)
     assert (tmp_path / "S1" / "audio" / f"{'a' * 32}.ogg").exists()  # stored after decode
     line = s.summary_line()
     assert re.match(
         r"MEETPP_STT sid=S1 speakers=\d+ consumers_alive=\d+ utterances=\d+ decoded=1 dropped=2\(hallucination:1,overloaded:1\) "
-        r"backlog_s=\d+\.\d rtf_p50=0\.20 rtf_p95=0\.20 tier2_ok=0 tier2_fail=0 last_segment_age_s=\d+$",
+        r"backlog_s=\d+\.\d rtf_p50=0\.20 rtf_p95=0\.20 tier2_ok=0 tier2_fail=0 "
+        r"tier2_live=0 tier1_fallbacks=0 last_segment_age_s=\d+$",
         line,
     ), line
     await s.close()
@@ -413,4 +415,312 @@ async def test_near_live_drops_on_503_without_retry(tmp_path):
     await s.poster.drain(2)
     assert len(calls) == 1 and rec.items("refinements") == [] and s.tier2_fail == 1
     assert len(rec.items("segments")) == 1  # tier 1 stands
+    await s.close()
+
+
+# ── review fixes ──
+
+
+async def test_liveness_forgets_a_speaker_who_left_mid_sentence(tmp_path):
+    now = [1000.0]
+    rec = Recorder()
+    s, f = await start_session(tmp_path, rec, clock=lambda: now[0])
+    p, room = f.parts[0], f.rooms[0]
+    s._resumed_at = 0.0
+    room.subscribe_complete(p.alice, p.a_mic)
+    await settle()
+    room.emit("active_speakers_changed", [p.alice])  # LiveKit: Alice speaking...
+    now[0] = 1003.0
+    s.speaker_ok["user-alice"] = False
+    room.emit("participant_disconnected", p.alice)  # ...and gone, without a new speaker list
+    assert "user-alice" not in s.speaker_ok
+    room.emit("participant_connected", p.alice)  # she rejoins and stays silent
+    room.subscribe_complete(p.alice, p.a_mic)
+    await settle()
+    c = s.consumers["TR_a_mic"]
+    restarted = []
+    c.restart = lambda reason: restarted.append(reason)
+    c.started_at, c.last_activity = 1003.0, 0.0
+    for t in (1030.0, 1050.0, 1070.0):
+        now[0] = t
+        assert s.speaking_seconds("user-alice", t - 20, t) == 0.0
+        assert s.check_liveness() == []
+    assert restarted == [] and s.speakers()[0]["ok"] is True
+    await s.poster.drain(2)
+    assert [g for g in rec.items("gaps") if g["reason"] == "liveness"] == []
+    await s.close()
+
+
+async def test_liveness_is_off_while_reconnecting_and_open_intervals_close(tmp_path):
+    now = [1000.0]
+    rec = Recorder()
+    s, f = await start_session(tmp_path, rec, clock=lambda: now[0])
+    p, room = f.parts[0], f.rooms[0]
+    s._resumed_at = 0.0
+    room.subscribe_complete(p.alice, p.a_mic)
+    await settle()
+    c = s.consumers["TR_a_mic"]
+    restarted = []
+    c.restart = lambda reason: restarted.append(reason)
+    c.started_at, c.last_activity = 1000.0, 0.0
+    room.emit("active_speakers_changed", [p.alice])
+    now[0] = 1002.0
+    room.emit("reconnecting")
+    now[0] = 1025.0
+    assert s.check_liveness() == []  # SDK reconnecting: no verdict
+    room.emit("reconnected")
+    assert s.speaking_seconds("user-alice", 1005.0, 1025.0) == 0.0  # closed at 1002
+    assert s.check_liveness() == [] and restarted == []
+    await s.close()
+
+
+class SlowRooms:
+    """room_factory: room 1 connects at once; later rooms wait for `release`."""
+
+    def __init__(self):
+        self.rooms: list[FakeRoom] = []
+        self.release = asyncio.Event()
+        self.cancelled = 0
+
+    def __call__(self):
+        outer = self
+
+        class Room(FakeRoom):
+            async def connect(self, url, token, options=None):
+                if outer.rooms.index(self) > 0:
+                    try:
+                        await outer.release.wait()
+                    except asyncio.CancelledError:
+                        outer.cancelled += 1
+                        raise
+                await super().connect(url, token, options)
+
+        room = Room()
+        build_room(room)
+        self.rooms.append(room)
+        return room
+
+
+async def test_close_during_reconnect_never_cancels_the_connect(tmp_path):
+    rec = Recorder()
+    services = make_services(tmp_path, rec)
+    services.room_factory = factory = SlowRooms()
+    s = AgentSession("S1", "room-1", "ws://lk", "tok-1", services=services, accepted=["user-alice"])
+    await s.start()
+    factory.rooms[0].emit("disconnected", "SIGNAL_CLOSE")
+    for _ in range(100):
+        await asyncio.sleep(0.01)
+        if len(factory.rooms) == 2:
+            break
+    assert len(factory.rooms) == 2  # second room is connecting
+    await asyncio.wait_for(s.close(), 5)
+    room2 = factory.rooms[1]
+    assert factory.cancelled == 0 and not room2.disconnected
+    factory.release.set()  # the join completes after the session closed
+    for _ in range(100):
+        await asyncio.sleep(0.01)
+        if room2.disconnected:
+            break
+    assert factory.cancelled == 0 and room2.connected_with == ("ws://lk", "fresh-token")
+    assert room2.disconnected and s._room is None and s.reconnects == 0  # left again, not adopted
+    assert "TR_a_mic" not in s.consumers
+
+
+async def test_delete_does_not_recreate_the_audio_directory(tmp_path):
+    rec = Recorder()
+    s, f = await start_session(tmp_path, rec)
+    s._stt_outstanding = 1  # one utterance still being decoded
+    closing = asyncio.create_task(s.close())
+    s.mark_closing()  # what the DELETE handler does before answering 204
+    await asyncio.sleep(0.05)
+    shutil.rmtree(tmp_path / "S1", ignore_errors=True)  # meeting-api removes <sid>/ after the 204
+    item = WorkItem(session_id="S1", utterance_id="e" * 32, identity="user-alice", name="Alice", audio=tone(16000),
+                    t_start=1_790_000_000.0, t_end=1_790_000_001.0, on_result=s._on_stt_result, on_drop=s._on_stt_drop)
+    s._on_stt_result(item, STTResult(text="late words", audio_s=1, elapsed_s=0.2))
+    await asyncio.wait_for(closing, 5)
+    assert not (tmp_path / "S1").exists()
+    assert s.store.write("f" * 32, tone(8000), identity="x", name="X", t_start="a", t_end="b") is None
+    assert not (tmp_path / "S1").exists()
+    assert [x["text"] for x in rec.items("segments")] == ["late words"]  # tier-1 text of the drain still goes out
+
+
+async def test_final_pass_stays_within_meeting_api_budget(tmp_path, monkeypatch):
+    from agent import session as session_mod
+
+    monkeypatch.setattr(session_mod, "FINAL_BUDGET_S", 0.5)
+    rec = Recorder()
+
+    async def handler(request):
+        if request.url.path == "/health":
+            return httpx.Response(200, json={"ok": True})
+        await asyncio.sleep(30)  # the Mac never answers in time
+        return httpx.Response(200, json={"text": "late"})
+
+    t2 = Tier2Client("http://mac", "x", httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+    await t2.check_health()
+    s, f = await start_session(tmp_path, rec, tier2=t2)
+    s.store.write("u1", tone(8000), identity="user-alice", name="Alice", t_start="2026-10-06T10:00:01.000Z", t_end="2026-10-06T10:00:01.500Z")
+    s.finalize()
+    await asyncio.wait_for(s._final_task, 3)
+    await s.poster.drain(2)
+    assert rec.of("agent-status")[-1]["final_pass"] == "failed"
+    assert session_mod.FINAL_BUDGET_S + session_mod.FINAL_STATUS_DRAIN_S < 300  # meeting-api's wait
+    await s.close()
+
+
+async def test_delete_cancels_a_running_final_pass(tmp_path):
+    rec = Recorder()
+    started = asyncio.Event()
+
+    async def handler(request):
+        if request.url.path == "/health":
+            return httpx.Response(200, json={"ok": True})
+        started.set()
+        await asyncio.sleep(30)
+        return httpx.Response(200, json={"text": "late"})
+
+    t2 = Tier2Client("http://mac", "x", httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+    await t2.check_health()
+    s, f = await start_session(tmp_path, rec, tier2=t2)
+    s.store.write("u1", tone(8000), identity="user-alice", name="Alice", t_start="2026-10-06T10:00:01.000Z", t_end="2026-10-06T10:00:01.500Z")
+    s.finalize()
+    await asyncio.wait_for(started.wait(), 3)
+    await asyncio.wait_for(s.close(), 3)  # not the 15 minutes it used to wait
+    assert s._final_task.cancelled()
+    assert rec.of("agent-status")[-1] == {**rec.of("agent-status")[-1], "status": "offline", "final_pass": "failed"}
+    assert rec.items("refinements") == []
+
+
+async def test_failed_status_post_waits_the_interval(tmp_path):
+    now = [1000.0]
+    rec = Recorder()
+    s, f = await start_session(tmp_path, rec, clock=lambda: now[0])
+    rec.responses["agent-status"] = [(500, {})] * 20
+    s._maybe_post_status(now[0])
+    await settle()
+    assert len(rec.of("agent-status")) == 1
+    for _ in range(4):  # ticks within the interval: no retry storm
+        now[0] += 1.0
+        s._maybe_post_status(now[0])
+        await settle()
+    assert len(rec.of("agent-status")) == 1
+    now[0] += 1.0
+    s._maybe_post_status(now[0])
+    await settle()
+    assert len(rec.of("agent-status")) == 2
+    rec.responses["agent-status"] = []
+    await s.close()
+
+
+async def test_retire_reason(tmp_path):
+    from agent import session as session_mod
+
+    now = [1000.0]
+    rec = Recorder()
+    s, f = await start_session(tmp_path, rec, clock=lambda: now[0])
+    assert s.retire_reason() is None
+    s.gave_up = True
+    assert "gone" in s.retire_reason()
+    s.gave_up = False
+    s.finalize()
+    await asyncio.wait_for(s._final_task, 5)
+    assert s.retire_reason() is None  # finalized: meeting-api will DELETE
+    now[0] += session_mod.STOPPED_TTL_S
+    assert "never deleted" in s.retire_reason()
+    await s.close()
+    assert s.retire_reason() is None
+
+
+# ── tier 2 first ──
+
+
+def _utterance(s, seconds: float = 1.0, t0: float = 1_790_000_000.0):
+    consumer = SimpleNamespace(identity="user-alice", name="Alice")
+    s._on_utterance(consumer, SimpleNamespace(audio=tone(int(16000 * seconds))), t0, t0 + seconds)
+
+
+async def _tier2(handler):
+    async def routed(request):
+        if request.url.path == "/health":
+            return httpx.Response(200, json={"ok": True})
+        return await handler(request)
+
+    t2 = Tier2Client("http://mac", "x", httpx.AsyncClient(transport=httpx.MockTransport(routed)))
+    await t2.check_health()
+    return t2
+
+
+async def test_tier2_text_is_the_live_caption_in_speaking_order(tmp_path):
+    rec = Recorder()
+    sizes: list[int] = []
+    both = asyncio.Event()
+
+    async def handler(request):
+        sizes.append(len(request.content))
+        if len(sizes) == 2:
+            both.set()
+        await both.wait()
+        first = len(request.content) == max(sizes)  # the 2 s utterance
+        if first:
+            await asyncio.sleep(0.2)  # the first utterance answers last
+        return httpx.Response(200, json={"text": f"Line {1 if first else 2} from the Mac Studio.", "avg_logprob": -0.2})
+
+    s, f = await start_session(tmp_path, rec, tier2=await _tier2(handler))
+    _utterance(s, 2.0)
+    _utterance(s, 1.0, t0=1_790_000_003.0)
+    await asyncio.wait_for(asyncio.gather(*list(s._store_tasks)), 5)
+    await s.poster.drain(2)
+    segs = rec.items("segments")
+    assert [x["text"] for x in segs] == ["Line 1 from the Mac Studio.", "Line 2 from the Mac Studio."]
+    assert all(x["tier"] == 2 for x in segs)
+    assert s.services.worker.pending() == 0 and rec.items("refinements") == []
+    assert s.tier2_live == 2 and s._stt_outstanding == 0
+    # Stored once each for the final pass.
+    assert len(list((tmp_path / "S1" / "audio").glob("*.ogg"))) == 2
+    await s.close()
+
+
+async def test_tier1_decodes_when_tier2_is_busy_or_degenerate(tmp_path):
+    rec = Recorder()
+    replies = iter([httpx.Response(503, headers={"Retry-After": "2"}),
+                    httpx.Response(200, json={"text": "say say say say say say say say say"})])
+
+    async def handler(request):
+        return next(replies)
+
+    s, f = await start_session(tmp_path, rec, tier2=await _tier2(handler))
+    s.services.worker._dispatch = lambda fn, *a: fn(*a)
+    _utterance(s)
+    _utterance(s, t0=1_790_000_002.0)
+    await asyncio.wait_for(asyncio.gather(*list(s._store_tasks)), 5)
+    w = s.services.worker
+    assert w.pending() == 2 and s.tier1_fallbacks == 2
+    w.process_one(w.next_item())
+    w.process_one(w.next_item())
+    await settle()
+    await asyncio.wait_for(asyncio.gather(*list(s._store_tasks)), 5)
+    await s.poster.drain(2)
+    segs = rec.items("segments")
+    assert [x["text"] for x in segs] == ["hello world", "hello world"] and "tier" not in segs[0]
+    # No second tier-2 call (near-live refinement) and no second store write.
+    assert rec.items("refinements") == [] and s._stt_outstanding == 0
+    assert len(list((tmp_path / "S1" / "audio").glob("*.ogg"))) == 2
+    await s.close()
+
+
+async def test_tier2_hallucination_is_dropped_and_tier1_live_when_off(tmp_path):
+    rec = Recorder()
+
+    async def handler(request):
+        return httpx.Response(200, json={"text": "Subtitles by the Amara.org community"})
+
+    s, f = await start_session(tmp_path, rec, tier2=await _tier2(handler))
+    _utterance(s)
+    await asyncio.wait_for(asyncio.gather(*list(s._store_tasks)), 5)
+    await s.poster.drain(2)
+    assert rec.items("segments") == [] and s.dropped["blocklist"] == 1 and s._stt_outstanding == 0
+    # Switched off: tier 1 is live again and tier 2 only refines.
+    s.services.tier2_first = False
+    _utterance(s, t0=1_790_000_002.0)
+    assert s.services.worker.pending() == 1
     await s.close()

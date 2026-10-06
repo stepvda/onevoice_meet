@@ -51,7 +51,7 @@ NO_RESOLUTION = "No resolution was put."
 MAX_TRANSCRIPT_CHARS = 60000
 
 # Sections being composed right now (one composition per section at a time).
-_in_flight: set[tuple[str, str]] = set()
+_in_flight: dict[tuple[str, str], asyncio.Task] = {}
 
 
 def _type_label(series: MeetppSeries | None) -> str:
@@ -192,17 +192,21 @@ def _heading(o: outline_mod.Outline, s: MeetppSection) -> str:
     return f"{num}. {s.title}" if num else s.title
 
 
-async def compose_section(session_id: str, section_id: str, *, force: bool = False) -> str:
+async def compose_section(session_id: str, section_id: str, *, force: bool = False, wait: bool = False) -> str:
     """Compose (or re-compose) the narrative of one top-level section.
-    Returns the resulting minute status."""
+    Returns the resulting minute status. While the section is being composed
+    already, returns "composing" — or with `wait` (the finalisation, which
+    must not go on with a draft still being written), waits for that one and
+    composes again from the transcript as it is now."""
     key = (session_id, section_id)
-    if key in _in_flight:
-        return "composing"
-    _in_flight.add(key)
-    try:
-        return await _compose_section(session_id, section_id, force=force)
-    finally:
-        _in_flight.discard(key)
+    while key in _in_flight:
+        if not wait:
+            return "composing"
+        await asyncio.wait({_in_flight[key]})
+    task = asyncio.get_running_loop().create_task(_compose_section(session_id, section_id, force=force))
+    _in_flight[key] = task
+    task.add_done_callback(lambda t: _in_flight.pop(key) if _in_flight.get(key) is t else None)
+    return await task
 
 
 async def _compose_section(session_id: str, section_id: str, *, force: bool) -> str:
@@ -226,123 +230,131 @@ async def _compose_section(session_id: str, section_id: str, *, force: bool) -> 
         minute.error = None
         changes = ops.Changes(minutes={minute.id})
         await bus.publish_changes(db, session, changes)
-
-        series = db.get(MeetppSeries, session.series_id)
-        ids = subtree_ids(o, top)
-        decisions = (
-            db.query(MeetppDecision)
-            .filter(MeetppDecision.session_id == session.id, MeetppDecision.section_id.in_(ids))
-            .order_by(MeetppDecision.created_at)
-            .all()
-        )
-        adopted = [d for d in decisions if d.status == "adopted"]
-        actions = (
-            db.query(MeetppAction)
-            .filter(MeetppAction.session_id == session.id, MeetppAction.section_id.in_(ids))
-            .all()
-        )
-        home = outline_mod.previous_actions_home(o)
-        if top.kind == "previous_actions" or (home is not None and top.id == home.id):
-            # The previous actions reported on here, plus any action raised here.
-            previous = [a for a in ops.session_actions(db, session) if ops.is_previous_action(a, session)]
-            actions = previous + [a for a in actions if a not in previous]
-        notes: list[str] = []
-        for m in db.query(MeetppMinute).filter(MeetppMinute.session_id == session.id, MeetppMinute.section_id.in_(ids)).all():
-            label = o.numbers.get(m.section_id or "") or ""
-            for n in util.loads(m.notes_json, []):
-                notes.append(f"- {('(' + label + ') ') if label and m.section_id != top.id else ''}{n.get('text')}")
-        segments = section_segments(db, session, o, top)
-        transcript = [_seg_dict(s) for s in segments]
-        total = 0
-        trimmed: list[dict] = []
-        for line in reversed(transcript):
-            total += len(line["text"]) + 30
-            if total > MAX_TRANSCRIPT_CHARS:
-                break
-            trimmed.append(line)
-        transcript = list(reversed(trimmed))
-        tier = source_tier(segments)
-        substantial = sum(util.word_count(s["text"]) for s in transcript) >= SUBSTANTIAL_TRANSCRIPT_WORDS
-        members = [
-            f"{a.display_name} ({a.status})"
-            for a in db.query(MeetppAttendee).filter_by(session_id=session.id).order_by(MeetppAttendee.display_name).all()
-        ]
-        subpoints = [
-            f"{o.numbers.get(c.id) or '-'} {c.title}" + (f" — {c.body}" if c.body else "")
-            for c in o.children.get(top.id, [])
-        ]
-        decision_lines = [
-            f"{d.ref} [{d.status.upper()}] {d.title}" + (f" — resolution: {d.resolution}" if d.resolution else "")
-            + (f" — how taken: {d.how_taken}" if d.how_taken else "")
-            for d in decisions
-            if d.status != "pending"
-        ] + [f"{d.ref} [NOT TAKEN] {d.title}" for d in decisions if d.status == "pending"]
-        action_lines = []
-        for a in actions:
-            who = ", ".join(x.get("name", "") for x in util.loads(a.assignees_json, []) if isinstance(x, dict))
-            action_lines.append(f"{a.ref} [{a.status}] {a.title}" + (f" — {who}" if who else "") + (f" — due {a.due_date}" if a.due_date else ""))
-
-        transcript_words = sum(util.word_count(s["text"]) for s in transcript)
-        new_actions = [a for a in actions if not ops.is_previous_action(a, session)]
-        discussed = (
-            transcript_words >= MIN_DISCUSSION_WORDS
-            or bool(notes)
-            or any(d.status != "pending" for d in decisions)
-            or bool(new_actions)
-        )
-        if not discussed:
-            # Never let the agenda text pass for discussion (FDD §8.7).
-            narrative = (
-                "The item was opened but not discussed in substance."
-                if (top.started_at or top.ended_at or (top.elapsed_seconds or 0) > 0)
-                else "_Not discussed._"
-            )
-            if adopted:
-                narrative = finish_markdown(narrative, adopted, kind=top.kind)
-            return await _store(db, session, top.id, narrative, [], tier, None, force)
-        if not llm.llm_configured():
-            return await _store(db, session, top.id, None, [], tier, "the LLM is not configured", force)
-
-        target_words = max(TARGET_MIN, min(TARGET_MAX, int(transcript_words * TARGET_RATIO)))
-        messages = prompts.build_section_messages(
-            target_words=target_words,
-            org=settings.meetpp_org_name,
-            meeting_type_label=_type_label(series),
-            heading=_heading(o, top),
-            agenda_body=top.body,
-            subpoints=subpoints,
-            members=members,
-            decisions=decision_lines,
-            actions=action_lines,
-            notes=notes,
-            transcript=transcript,
-        )
-
-        def _validate(parsed: dict) -> str | None:
-            return validate_section(markdown_of(parsed), adopted, substantial)
-
         try:
-            parsed, _result = await llm.complete_parsed(
-                db=db,
-                purpose="compose_section",
-                messages=messages,
-                max_tokens=6000,
-                temperature=0.3,
-                session_id=session.id,
-                validate=_validate,
-            )
-        except llm.LLMError as exc:
-            log.warning("MEETPP_COMPOSE sid=%s section=%s status=failed error=%s", session.id, top.id, exc)
-            return await _store(db, session, top.id, None, [], tier, str(exc)[:300], force)
-        markdown = finish_markdown(markdown_of(parsed), adopted, kind=top.kind)
-        if util.word_count(markdown) > max(TARGET_SLACK * target_words, target_words + TARGET_SLACK_WORDS):
-            shorter = await _condense(db, session, series, markdown, target_words, adopted, substantial)
-            if shorter:
-                markdown = finish_markdown(shorter, adopted, kind=top.kind)
-        verify = [str(v)[:300] for v in (parsed.get("verify") or []) if v][:20]
-        return await _store(db, session, top.id, markdown, verify, tier, None, force)
+            return await _compose_body(db, session, o, top, force)
+        except Exception as exc:  # noqa: BLE001 — never leave the minute "composing"
+            log.exception("MEETPP_COMPOSE sid=%s section=%s failed", session_id, top.id)
+            db.rollback()
+            return await _store(db, session, top.id, None, [], "", f"{type(exc).__name__}: {exc}"[:300], force)
     finally:
         db.close()
+
+
+async def _compose_body(db: Session, session: MeetppSession, o: outline_mod.Outline, top: MeetppSection, force: bool) -> str:
+    series = db.get(MeetppSeries, session.series_id)
+    ids = subtree_ids(o, top)
+    decisions = (
+        db.query(MeetppDecision)
+        .filter(MeetppDecision.session_id == session.id, MeetppDecision.section_id.in_(ids))
+        .order_by(MeetppDecision.created_at)
+        .all()
+    )
+    adopted = [d for d in decisions if d.status == "adopted"]
+    actions = (
+        db.query(MeetppAction)
+        .filter(MeetppAction.session_id == session.id, MeetppAction.section_id.in_(ids))
+        .all()
+    )
+    home = outline_mod.previous_actions_home(o)
+    if top.kind == "previous_actions" or (home is not None and top.id == home.id):
+        # The previous actions reported on here, plus any action raised here.
+        previous = [a for a in ops.session_actions(db, session) if ops.is_previous_action(a, session)]
+        actions = previous + [a for a in actions if a not in previous]
+    notes: list[str] = []
+    for m in db.query(MeetppMinute).filter(MeetppMinute.session_id == session.id, MeetppMinute.section_id.in_(ids)).all():
+        label = o.numbers.get(m.section_id or "") or ""
+        for n in util.loads(m.notes_json, []):
+            notes.append(f"- {('(' + label + ') ') if label and m.section_id != top.id else ''}{n.get('text')}")
+    segments = section_segments(db, session, o, top)
+    transcript = [_seg_dict(s) for s in segments]
+    total = 0
+    trimmed: list[dict] = []
+    for line in reversed(transcript):
+        total += len(line["text"]) + 30
+        if total > MAX_TRANSCRIPT_CHARS:
+            break
+        trimmed.append(line)
+    transcript = list(reversed(trimmed))
+    tier = source_tier(segments)
+    substantial = sum(util.word_count(s["text"]) for s in transcript) >= SUBSTANTIAL_TRANSCRIPT_WORDS
+    members = [
+        f"{a.display_name} ({a.status})"
+        for a in db.query(MeetppAttendee).filter_by(session_id=session.id).order_by(MeetppAttendee.display_name).all()
+    ]
+    subpoints = [
+        f"{o.numbers.get(c.id) or '-'} {c.title}" + (f" — {c.body}" if c.body else "")
+        for c in o.children.get(top.id, [])
+    ]
+    decision_lines = [
+        f"{d.ref} [{d.status.upper()}] {d.title}" + (f" — resolution: {d.resolution}" if d.resolution else "")
+        + (f" — how taken: {d.how_taken}" if d.how_taken else "")
+        for d in decisions
+        if d.status != "pending"
+    ] + [f"{d.ref} [NOT TAKEN] {d.title}" for d in decisions if d.status == "pending"]
+    action_lines = []
+    for a in actions:
+        who = ", ".join(x.get("name", "") for x in util.loads(a.assignees_json, []) if isinstance(x, dict))
+        action_lines.append(f"{a.ref} [{a.status}] {a.title}" + (f" — {who}" if who else "") + (f" — due {a.due_date}" if a.due_date else ""))
+
+    transcript_words = sum(util.word_count(s["text"]) for s in transcript)
+    new_actions = [a for a in actions if not ops.is_previous_action(a, session)]
+    discussed = (
+        transcript_words >= MIN_DISCUSSION_WORDS
+        or bool(notes)
+        or any(d.status != "pending" for d in decisions)
+        or bool(new_actions)
+    )
+    if not discussed:
+        # Never let the agenda text pass for discussion (FDD §8.7).
+        narrative = (
+            "The item was opened but not discussed in substance."
+            if (top.started_at or top.ended_at or (top.elapsed_seconds or 0) > 0)
+            else "_Not discussed._"
+        )
+        if adopted:
+            narrative = finish_markdown(narrative, adopted, kind=top.kind)
+        return await _store(db, session, top.id, narrative, [], tier, None, force)
+    if not llm.llm_configured():
+        return await _store(db, session, top.id, None, [], tier, "the LLM is not configured", force)
+
+    target_words = max(TARGET_MIN, min(TARGET_MAX, int(transcript_words * TARGET_RATIO)))
+    messages = prompts.build_section_messages(
+        target_words=target_words,
+        org=settings.meetpp_org_name,
+        meeting_type_label=_type_label(series),
+        heading=_heading(o, top),
+        agenda_body=top.body,
+        subpoints=subpoints,
+        members=members,
+        decisions=decision_lines,
+        actions=action_lines,
+        notes=notes,
+        transcript=transcript,
+    )
+
+    def _validate(parsed: dict) -> str | None:
+        return validate_section(markdown_of(parsed), adopted, substantial)
+
+    try:
+        parsed, _result = await llm.complete_parsed(
+            db=db,
+            purpose="compose_section",
+            messages=messages,
+            max_tokens=6000,
+            temperature=0.3,
+            session_id=session.id,
+            validate=_validate,
+        )
+    except llm.LLMError as exc:
+        log.warning("MEETPP_COMPOSE sid=%s section=%s status=failed error=%s", session.id, top.id, exc)
+        return await _store(db, session, top.id, None, [], tier, str(exc)[:300], force)
+    markdown = finish_markdown(markdown_of(parsed), adopted, kind=top.kind)
+    if util.word_count(markdown) > max(TARGET_SLACK * target_words, target_words + TARGET_SLACK_WORDS):
+        shorter = await _condense(db, session, series, markdown, target_words, adopted, substantial)
+        if shorter:
+            markdown = finish_markdown(shorter, adopted, kind=top.kind)
+    verify = [str(v)[:300] for v in util.as_list(parsed.get("verify")) if v][:20]
+    return await _store(db, session, top.id, markdown, verify, tier, None, force)
 
 
 # Condense: one key point per ~35 words of the target.
@@ -437,6 +449,7 @@ async def reconcile_previous_actions(session_id: str) -> int:
         if not minutes.strip():
             return 0
         by_ref = {a.ref: a for a in candidates}
+        status_before = {a.id: a.status for a in candidates}
         lines = []
         for a in candidates:
             who = ", ".join(x.get("name", "") for x in util.loads(a.assignees_json, []) if isinstance(x, dict))
@@ -461,9 +474,13 @@ async def reconcile_previous_actions(session_id: str) -> int:
         except llm.LLMError as exc:
             log.info("MEETPP_RECONCILE sid=%s failed: %s", session.id, exc)
             return 0
+        # The chair may have changed an action while the model read: re-read,
+        # and leave alone what is now locked, changed or reported.
+        db.expire_all()
+        session = db.get(MeetppSession, session_id)
         changes = ops.Changes()
         count = 0
-        for r in parsed.get("reports") or []:
+        for r in util.as_list(parsed.get("reports")):
             if not isinstance(r, dict) or r.get("ref") not in by_ref:
                 continue
             note = util.truncate(str(r.get("note") or "").strip(), 600)
@@ -471,7 +488,14 @@ async def reconcile_previous_actions(session_id: str) -> int:
             if not note or not util.quote_in(str(r.get("quote") or ""), minutes):
                 log.info("MEETPP_RECONCILE sid=%s dropped %s (quote not in the minutes)", session.id, r.get("ref"))
                 continue
-            a = by_ref[r["ref"]]
+            a = db.get(MeetppAction, by_ref[r["ref"]].id)
+            if a is None or a.locked or a.status != status_before[a.id]:
+                continue
+            if db.query(MeetppActionReport.id).filter(
+                MeetppActionReport.action_id == a.id, MeetppActionReport.session_id == session.id,
+                MeetppActionReport.note.isnot(None), MeetppActionReport.note != "",
+            ).first() is not None:
+                continue
             status = str(r.get("status") or "").strip().lower().replace(" ", "_")
             if status in ("open", "in_progress", "done", "cancelled") and status != a.status:
                 a.status = status
@@ -538,13 +562,19 @@ async def verify_closed_previous_actions(session_id: str) -> int:
             log.info("MEETPP_VERIFY sid=%s failed, closures kept: %s", session.id, exc)
             return 0
         confirmed = {
-            c["ref"] for c in parsed.get("confirmed") or []
+            c["ref"] for c in util.as_list(parsed.get("confirmed"))
             if isinstance(c, dict) and c.get("ref") in by_ref and util.quote_in(str(c.get("quote") or ""), transcript)
         }
+        # Re-read: an action the chair confirmed (locked) or changed meanwhile stays.
+        db.expire_all()
+        session = db.get(MeetppSession, session_id)
         changes = ops.Changes()
         reopened = 0
         for ref, a in by_ref.items():
             if ref in confirmed:
+                continue
+            a = db.get(MeetppAction, a.id)
+            if a is None or a.locked or a.status != "done":
                 continue
             a.status = "open"
             a.completed_at = None
@@ -615,14 +645,19 @@ async def verify_ai_decisions(session_id: str) -> int:
             log.info("MEETPP_VERIFY sid=%s decisions not checked: %s", session.id, exc)
             return 0
         confirmed = {
-            c["ref"] for c in parsed.get("confirmed") or []
+            c["ref"] for c in util.as_list(parsed.get("confirmed"))
             if isinstance(c, dict) and c.get("ref") in by_ref and util.quote_in(str(c.get("quote") or ""), transcript)
         }
+        db.expire_all()
+        session = db.get(MeetppSession, session_id)
         o = outline_mod.load(db, session.id)
         changes = ops.Changes()
         flagged = 0
         for ref, d in by_ref.items():
             if ref in confirmed:
+                continue
+            d = db.get(MeetppDecision, d.id)
+            if d is None or d.confirmed or d.locked:
                 continue
             section = o.by_id.get(d.section_id or "")
             if section is None:
@@ -867,6 +902,20 @@ def _set_part(db: Session, session: MeetppSession, kind: str, markdown: str | No
     changes.minutes.add(m.id)
 
 
+def _count_checks(db: Session, session: MeetppSession) -> list[str]:
+    """Votes the model counted beyond the voting members present: kept as
+    heard, deciding nothing, for the chair to check."""
+    out = []
+    for d in db.query(MeetppDecision).filter_by(session_id=session.id, locked=False).order_by(MeetppDecision.created_at).all():
+        v = db.query(MeetppVote).filter_by(decision_id=d.id).first()
+        if v is not None and not v.confirmed and governance.count_exceeds_present(v):
+            out.append(
+                f"{d.ref} “{util.truncate(d.title, 80)}”: the count recorded ({v.tally_for} for, {v.tally_against} against, "
+                f"{v.tally_abstain} abstaining) is more than the {v.present_count} voting members present — check the vote"
+            )
+    return out
+
+
 async def compose_final(session_id: str) -> dict:
     """Opening, adjournment (LLM with deterministic fallback), record of voting
     and provenance (deterministic). Returns final_json."""
@@ -904,7 +953,8 @@ async def compose_final(session_id: str) -> dict:
                 llm_out = {}
         db.expire_all()
         session = db.get(MeetppSession, session_id)
-        verify.extend(str(v)[:300] for v in (llm_out.get("verify") or []) if v)
+        verify.extend(str(v)[:300] for v in util.as_list(llm_out.get("verify")) if v)
+        verify.extend(_count_checks(db, session))
         verify = list(dict.fromkeys(verify))[:30]
         changes = ops.Changes()
         _set_part(db, session, "opening", str(llm_out.get("opening") or "").strip() or default_opening(f), changes)
@@ -914,7 +964,7 @@ async def compose_final(session_id: str) -> dict:
         final = util.loads(session.final_json, {})
         o = outline_mod.load(db, session.id)
         next_agenda = []
-        for item in llm_out.get("next_agenda") or []:
+        for item in util.as_list(llm_out.get("next_agenda")):
             if isinstance(item, dict) and item.get("title"):
                 next_agenda.append({"title": util.truncate(item["title"], 300), "body": util.truncate(item.get("body"), 2000)})
             elif isinstance(item, str) and item.strip():
@@ -924,7 +974,7 @@ async def compose_final(session_id: str) -> dict:
                 next_agenda.append({"title": s.title, "body": s.body})
         final.update(
             {
-                "summary": [str(x)[:400] for x in (llm_out.get("summary") or []) if x][:5],
+                "summary": [str(x)[:400] for x in util.as_list(llm_out.get("summary")) if x][:5],
                 "next_agenda": next_agenda[:30],
                 "required_next": [
                     {"name": a.display_name, "reason": a.required_reason}

@@ -15,10 +15,17 @@ Specification: `docs/meetpp-v3-contract.md` §6.2 and §8, FDD v3.1 §7.2, §7.4
 
 ## API
 
-All POSTs need `X-Meetpp-Timestamp: <unix seconds>` and
-`X-Meetpp-Signature: hex(HMAC_SHA256(MEETPP_SPEECH_SECRET, ts + "." + raw_body))`.
-A timestamp more than ±60 s from the Mac's clock, or a bad signature, gets **401**. Only the raw body is
-signed, as the contract specifies. The query string (`language`, `prompt`) is not signed.
+All POSTs need `X-Meetpp-Timestamp: <unix seconds>` and `X-Meetpp-Signature` (HMAC version 2):
+
+```
+X-Meetpp-Signature = hex(HMAC_SHA256(MEETPP_SPEECH_SECRET,
+    "v2\n" + ts + "\n" + METHOD + "\n" + target + "\n" + hex(SHA256(raw_body))))
+```
+
+`target` is the raw request path plus `?` + the raw query string when there is one, exactly as sent
+(e.g. `/transcribe?language=en&prompt=Meeting%20of%20…`), so `language` and `prompt` are signed too.
+A timestamp more than ±60 s from the Mac's clock, a bad signature, or a signature that was already
+accepted (replay; a retry must be signed again) gets **401**.
 
 | Endpoint | Request | Response |
 |---|---|---|
@@ -37,7 +44,8 @@ signed, as the contract specifies. The query string (`language`, `prompt`) is no
 - Extra response fields: `no_speech_prob`, `compression_ratio`, `temperature`, `wait_s`
   (queue wait), and `text_raw`/`repetition_ngram`/`repetition_count` when a loop is found.
 - `avg_logprob` is `null` when Whisper found no speech; `text` is then `""`.
-- Errors: 401 (auth), 413 (body > 32 MB or audio > 300 s), 415 (undecodable audio),
+- Errors: 401 (auth), 413 (body > 4 MB or audio > 300 s, checked from the header before decoding),
+  415 (undecodable audio, more than 2 channels or a sample rate above 96 kHz),
   422 (unknown language), 503 + `Retry-After: 2` (queue full), 500 (model failure).
 
 Concurrency: at most **2 transcriptions run at once**, each in a worker thread.
@@ -164,17 +172,20 @@ check from turn with `curl http://10.88.0.2:9310/health`.
 SECRET=$(sed -n 's/^MEETPP_SPEECH_SECRET=//p' ~/.config/meetpp-speech/env)
 URL=http://10.88.0.2:9310
 
-# transcribe (the signature covers the body only; the query string is not signed)
+# transcribe (signed: method, path + query exactly as sent, SHA-256 of the body)
+TARGET='/transcribe?language=en&prompt=Meeting%20of%20the%20Witysk%20association.'
 TS=$(date +%s)
-SIG=$( { printf '%s.' "$TS"; cat utterance.ogg; } | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.*= //')
-curl -sS -X POST "$URL/transcribe?language=en&prompt=Meeting%20of%20the%20Witysk%20association." \
+BODY_SHA=$(shasum -a 256 utterance.ogg | cut -d' ' -f1)
+SIG=$(printf 'v2\n%s\nPOST\n%s\n%s' "$TS" "$TARGET" "$BODY_SHA" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.*= //')
+curl -sS -X POST "$URL$TARGET" \
   -H "Content-Type: audio/ogg" -H "X-Meetpp-Timestamp: $TS" -H "X-Meetpp-Signature: $SIG" \
   --data-binary @utterance.ogg
 
 # tts
 BODY='{"text":"Item three: approval of the budget.","voice":"am_michael","format":"ogg"}'
 TS=$(date +%s)
-SIG=$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.*= //')
+BODY_SHA=$(printf '%s' "$BODY" | shasum -a 256 | cut -d' ' -f1)
+SIG=$(printf 'v2\n%s\nPOST\n/tts\n%s' "$TS" "$BODY_SHA" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.*= //')
 curl -sS -X POST "$URL/tts" -H "Content-Type: application/json" \
   -H "X-Meetpp-Timestamp: $TS" -H "X-Meetpp-Signature: $SIG" --data "$BODY" -o clip.ogg
 ```

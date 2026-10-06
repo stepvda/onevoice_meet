@@ -256,8 +256,9 @@ export function handleMessage(msg: MeetAiMessage, opts: { roomName?: string | nu
         t_start: msg.t_start ?? null,
         t_end: null,
         text: msg.text,
-        text_refined: null,
-        tier: 1,
+        // Tier 2 first: the Mac Studio's text is already the final line.
+        text_refined: msg.tier === 2 ? msg.text : null,
+        tier: msg.tier === 2 ? 2 : 1,
         is_gap: false,
         gap_reason: null,
       };
@@ -293,6 +294,9 @@ export function handleMessage(msg: MeetAiMessage, opts: { roomName?: string | nu
       return;
     case "position": {
       if (!s.snap) return;
+      // Older than the board's state (e.g. delivered after a refetch): the
+      // server sends position before the state delta of the same version.
+      if (msg.version <= s.snap.version) return;
       applyPosition(msg);
       // The authoritative section statuses come with a state delta of the
       // same version; refetch if it has not arrived shortly after.
@@ -339,13 +343,49 @@ export function handleMessage(msg: MeetAiMessage, opts: { roomName?: string | nu
   }
 }
 
-function decode(payload: Uint8Array): MeetAiMessage | null {
+// Required fields per message type (contract §4). A message that does not
+// match is dropped: one malformed caption used to throw in render and blank
+// the board — and, on the egress page, end the recording.
+type Kind = "string" | "number" | "object" | "array" | "string?" | "number?";
+const SHAPES: Record<string, Record<string, Kind>> = {
+  caption: { seq: "number", text: "string", identity: "string", name: "string?", person_key: "string?", t_start: "string?" },
+  "caption-update": { seq: "number", text: "string" },
+  gap: { seq: "number", reason: "string", t_from: "string?", t_to: "string?", name: "string?" },
+  state: { version: "number", activations: "array" },
+  position: { version: "number", live_section_id: "string?", prev_section_id: "string?", by: "string?", undo_until: "string?" },
+  announce: { kind: "string?", title: "string?", subtitle: "string?", audio_url: "string?" },
+  proposal: { pid: "string", to_section_id: "string", title: "string?", reason: "string?", confidence: "number?" },
+  agent: { status: "string", speakers: "array" },
+  session: { state: "string" },
+  end_request: { heard: "string" },
+};
+
+function fits(value: unknown, kind: Kind): boolean {
+  const optional = kind.endsWith("?");
+  if (optional && (value === undefined || value === null)) return true;
+  const k = optional ? kind.slice(0, -1) : kind;
+  if (k === "array") return Array.isArray(value);
+  if (k === "object") return typeof value === "object" && value !== null && !Array.isArray(value);
+  if (k === "number") return typeof value === "number" && Number.isFinite(value);
+  return typeof value === k;
+}
+
+export function decode(payload: Uint8Array): MeetAiMessage | null {
+  let msg: unknown;
   try {
-    const msg = JSON.parse(new TextDecoder().decode(payload));
-    return msg && typeof msg.type === "string" ? (msg as MeetAiMessage) : null;
+    msg = JSON.parse(new TextDecoder().decode(payload));
   } catch {
     return null;
   }
+  if (!msg || typeof msg !== "object") return null;
+  const m = msg as Record<string, unknown>;
+  const shape = typeof m.type === "string" ? SHAPES[m.type] : undefined;
+  if (!shape) return null;
+  if (m.type === "state" && m.activations === undefined) m.activations = [];
+  for (const [field, kind] of Object.entries(shape)) {
+    if (!fits(m[field], kind)) return null;
+  }
+  return m as unknown as MeetAiMessage;
 }
 
 const BOT_PREFIXES = ["meetpp-", "composite-", "playback", "EG_", "egress"];
@@ -356,10 +396,20 @@ export function isBotIdentity(identity: string): boolean {
 
 /** Wire a LiveKit room: data channel, active speakers, reconnects. */
 export function attachRoom(room: Room, roomName: string): () => void {
-  const onData = (payload: Uint8Array, _p?: unknown, _k?: unknown, topic?: string) => {
+  const onData = (payload: Uint8Array, participant?: Participant, _k?: unknown, topic?: string) => {
     if (topic !== MEET_AI_TOPIC) return;
+    // Only meeting-api publishes on this topic, through the server API: its
+    // packets carry no participant. Anything a participant publishes here is
+    // forged (every participant may publish data) and is ignored.
+    if (participant) return;
     const msg = decode(payload);
-    if (msg) handleMessage(msg, { roomName });
+    if (!msg) return;
+    // A message of another Meet++ session (a stale one) is ignored; a new
+    // session announces itself with session/started, which re-discovers.
+    const msgSid = (msg as { sid?: unknown }).sid;
+    const current = S().sid;
+    if (typeof msgSid === "string" && current && msgSid !== current && msg.type !== "session") return;
+    handleMessage(msg, { roomName });
   };
   const onSpeakers = (speakers: Participant[]) => {
     setSpeaking(
@@ -378,7 +428,6 @@ export function attachRoom(room: Room, roomName: string): () => void {
   room.on(RoomEvent.DataReceived, onData);
   room.on(RoomEvent.ActiveSpeakersChanged, onSpeakers);
   room.on(RoomEvent.Reconnected, onReconnected);
-  room.on(RoomEvent.SignalReconnecting, () => undefined);
   return () => {
     room.off(RoomEvent.DataReceived, onData);
     room.off(RoomEvent.ActiveSpeakersChanged, onSpeakers);

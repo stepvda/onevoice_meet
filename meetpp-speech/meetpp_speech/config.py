@@ -54,7 +54,8 @@ class Settings:
     max_parallel: int = 2          # transcriptions running at once
     queue_max_s: float = 30.0      # seconds of audio allowed to wait for a slot
     max_audio_s: float = 300.0     # longest single request accepted
-    max_body_bytes: int = 32 * 1024 * 1024
+    max_body_bytes: int = 4 * 1024 * 1024  # 300 s of Opus at 24 kbit/s is ~0.9 MB
+    decode_parallel: int = 2       # audio decodes running at once
     tts_parallel: int = 1
     tts_queue_max: int = 4         # TTS requests allowed to wait
     tts_max_chars: int = 400
