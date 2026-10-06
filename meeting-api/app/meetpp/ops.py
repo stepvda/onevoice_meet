@@ -1199,6 +1199,9 @@ def section_dto(s: MeetppSection, o: outline_mod.Outline, session: MeetppSession
         "source": s.source,
         "locked": bool(s.locked),
         "counts": counts.get(s.id, {"decisions": 0, "actions": 0}),
+        # The section that lists the previous actions (the agenda's own
+        # actions point when there is one, else "Previous actions").
+        "previous_actions_home": s.id == _prev_section_id(o),
     }
 
 
@@ -1244,10 +1247,8 @@ def decision_dto(d: MeetppDecision, vote: MeetppVote | None, ballots: list[Meetp
 
 
 def _prev_section_id(o: outline_mod.Outline) -> str | None:
-    for s in o.tops():
-        if s.kind == "previous_actions":
-            return s.id
-    return None
+    home = outline_mod.previous_actions_home(o)
+    return home.id if home is not None else None
 
 
 def action_section_id(db: Session, session: MeetppSession, a: MeetppAction, o: outline_mod.Outline | None = None) -> str | None:

@@ -25,6 +25,17 @@ from app.meetpp.models import (
 )
 
 AOB_RE = re.compile(r"any other (urgent )?(business|matters?)|\baob\b|a\.o\.b", re.IGNORECASE)
+# An agenda point that reviews the previous actions ("Actions from 30 September",
+# "Review of open actions", "Matters arising"): it becomes their home and the
+# fixed "Previous actions" section is skipped, so they are listed once.
+ACTIONS_POINT_RE = re.compile(
+    r"^\s*(previous|open|outstanding|pending|follow[- ]?up)\s+actions?\b"
+    r"|^\s*actions?\s+(from|of|since|review|list|arising|follow[- ]?up|status|update)\b"
+    r"|^\s*(review|status|update)\s+(of\s+)?(the\s+)?(previous\s+|open\s+|outstanding\s+)?actions?\b"
+    r"|^\s*action\s+(items?|list|points?|log)\b"
+    r"|^\s*matters\s+arising\b",
+    re.IGNORECASE,
+)
 
 FIXED_TITLES = {
     "opening": "Opening",
@@ -165,6 +176,23 @@ def create_fixed_sections(db: Session, session: MeetppSession) -> list[MeetppSec
     return out
 
 
+def actions_point(o: "Outline") -> MeetppSection | None:
+    """The agenda point that reviews the previous actions, if the agenda has one."""
+    for s in o.tops():
+        if s.kind == "agenda" and ACTIONS_POINT_RE.search(s.title or ""):
+            return s
+    return None
+
+
+def previous_actions_home(o: "Outline") -> MeetppSection | None:
+    """Where the previous actions are listed, reported on and minuted: the
+    agenda's own actions point, else the fixed "Previous actions" section."""
+    point = actions_point(o)
+    if point is not None:
+        return point
+    return next((s for s in o.tops() if s.kind == "previous_actions"), None)
+
+
 def has_open_previous_actions(db: Session, session: MeetppSession) -> bool:
     return (
         db.query(MeetppAction.id)
@@ -190,15 +218,16 @@ def has_open_previous_actions(db: Session, session: MeetppSession) -> bool:
 
 
 def apply_skip_rules(db: Session, session: MeetppSession) -> list[str]:
-    """Skip `previous_actions` without open series actions and `aob` when the
-    last agenda point is an AOB point. Only pending/skipped rows change."""
+    """Skip `previous_actions` without open series actions or when an agenda
+    point reviews them, and `aob` when the last agenda point is an AOB point.
+    Only pending/skipped rows change."""
     db.flush()
     o = load(db, session.id)
     changed: list[str] = []
     agenda_tops = [s for s in o.tops() if s.kind == "agenda"]
     last_is_aob = bool(agenda_tops) and bool(AOB_RE.search(agenda_tops[-1].title or ""))
     want = {
-        "previous_actions": not has_open_previous_actions(db, session),
+        "previous_actions": actions_point(o) is not None or not has_open_previous_actions(db, session),
         "aob": last_is_aob,
     }
     for s in o.tops():

@@ -791,17 +791,52 @@ def _roster_empty(db: Session, session: MeetppSession) -> bool:
     return db.query(MeetppRoster.id).filter_by(series_id=session.series_id).first() is None
 
 
-def import_previous_notes(db: Session, session: MeetppSession, structured: dict) -> tuple[ops.Changes, dict]:
-    """Open actions → series actions (origin pdf, To review); the attendance
-    table seeds an empty roster (voting members) and expected attendees."""
-    changes = ops.Changes()
-    counts = {"open_actions": 0, "roster_members": 0}
+_STATUS_RANK = {"open": 0, "in_progress": 1}
+
+
+def _names(raw) -> set[str]:
+    return {util.norm_name(n if isinstance(n, str) else (n or {}).get("name", "")) for n in raw or []} - {""}
+
+
+def _same_action(title: str, assignees: set[str], row: MeetppAction) -> bool:
+    """The same follow-up action, as two documents word it: close titles, or
+    related titles with a shared assignee."""
+    j = util.jaccard(title, row.title)
+    if j >= 0.6:
+        return True
+    return j >= 0.35 and bool(assignees & _names(util.loads(row.assignees_json, [])))
+
+
+def merge_actions(db: Session, session: MeetppSession, actions: list[dict], changes: ops.Changes) -> int:
+    """Open follow-up actions from a setup PDF → series actions (origin pdf, To
+    review). An action that overlaps one already known (from the other PDF, or
+    an earlier meeting) is merged into it rather than listed twice: missing
+    fields are filled in, progress notes appended, and the further status kept.
+    Returns the number of new actions."""
     series = db.get(MeetppSeries, session.series_id)
     existing = db.query(MeetppAction).filter_by(series_id=session.series_id).all()
-    for a in structured.get("actions") or []:
-        if a.get("status") not in ("open", "in_progress"):
+    added = 0
+    for a in actions:
+        if a.get("status") not in ("open", "in_progress") or not str(a.get("title") or "").strip():
             continue
-        if any(util.jaccard(x.title, a["title"]) >= 0.85 for x in existing):
+        names = _names(a.get("assignees"))
+        match = next((x for x in existing if _same_action(a["title"], names, x)), None)
+        if match is not None:
+            if match.locked:
+                continue
+            desc = (a.get("description") or "").strip()
+            if desc and desc not in (match.description or ""):
+                match.description = f"{match.description}\n\n{desc}" if match.description else desc
+            if not match.due_date and a.get("due"):
+                match.due_date = a["due"]
+            if not util.loads(match.assignees_json, []) and names:
+                match.assignees_json = util.dumps([{"name": n, "person_key": None} for n in a.get("assignees") or []])
+            notes = (a.get("progress_notes") or "").strip()
+            if notes and notes not in (match.progress_notes or ""):
+                match.progress_notes = f"{match.progress_notes}\n{notes}" if match.progress_notes else notes
+            if _STATUS_RANK.get(a.get("status"), 0) > _STATUS_RANK.get(match.status, 0) and match.status in _STATUS_RANK:
+                match.status = a["status"]
+            changes.actions.add(match.id)
             continue
         series.action_counter = int(series.action_counter or 0) + 1
         row = MeetppAction(
@@ -813,7 +848,7 @@ def import_previous_notes(db: Session, session: MeetppSession, structured: dict)
             description=a.get("description"),
             assignees_json=util.dumps([{"name": n, "person_key": None} for n in a.get("assignees") or []]),
             due_date=a.get("due"),
-            status="open",
+            status="in_progress" if a.get("status") == "in_progress" else "open",
             progress_notes=a.get("progress_notes"),
             origin="pdf",
             evidence_json="[]",
@@ -821,7 +856,17 @@ def import_previous_notes(db: Session, session: MeetppSession, structured: dict)
         db.add(row)
         existing.append(row)
         changes.actions.add(row.id)
-        counts["open_actions"] += 1
+        added += 1
+    db.flush()
+    return added
+
+
+def import_previous_notes(db: Session, session: MeetppSession, structured: dict) -> tuple[ops.Changes, dict]:
+    """Open actions → series actions (origin pdf, To review); the attendance
+    table seeds an empty roster (voting members) and expected attendees."""
+    changes = ops.Changes()
+    counts = {"open_actions": 0, "roster_members": 0}
+    counts["open_actions"] = merge_actions(db, session, structured.get("actions") or [], changes)
     if structured.get("attendance") and _roster_empty(db, session):
         for r in structured["attendance"]:
             name = (r.get("name") or "").strip()
@@ -923,6 +968,14 @@ async def import_text(db: Session, session: MeetppSession, doc: MeetppDocument, 
         changes = ops.Changes()
         if session.status == "setup":
             changes = import_agenda(db, session, structured)
+            if structured.get("format") == "om_report":
+                # An agenda in the report format may list the follow-up actions
+                # too: merged with those of the previous report, never twice.
+                actions = parse_actions(split_om(clean_lines(text)).get("Follow-up actions", []))
+                if actions:
+                    structured["actions"] = actions
+                    merge_actions(db, session, actions, changes)
+                    changes.sections.update(outline_mod.apply_skip_rules(db, session))
         else:
             structured["not_applied"] = "the agenda is only replaced during setup"
     else:

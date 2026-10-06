@@ -232,7 +232,8 @@ async def test_import_previous_report_seeds_roster_actions_and_attendees(fakes):
     assert doc_dto["title"] == "Report of Riverside board (2026-09-27)"
     assert [d["title"][:20] for d in structured["decisions"]] == ["Approve the minutes ", "Rainwater tank — buy"]
     actions = query(lambda db: db.query(MeetppAction).filter_by(session_id=sid).order_by(MeetppAction.ref).all())
-    assert len(actions) == 3 and all(a.status == "open" and a.origin == "pdf" for a in actions)
+    # The report's status is kept ("In progress" stays in progress).
+    assert len(actions) == 3 and all(a.status in ("open", "in_progress") and a.origin == "pdf" for a in actions)
     assert {a.title for a in actions} >= {"Draft the volunteer handbook"}
     roster = query(lambda db: db.query(MeetppRoster).filter_by(series_id=get(MeetppSession, sid).series_id).all())
     assert {r.person_key for r in roster} == {"name:alice moreau", "name:ben hartley", "name:chloe varga"}

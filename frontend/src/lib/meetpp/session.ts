@@ -16,6 +16,7 @@ import {
   setAgent,
   setConsentState,
   setProposal,
+  setEndRequest,
   setProviderLabel,
   setSpeaking,
   showAnnouncement,
@@ -317,6 +318,9 @@ export function handleMessage(msg: MeetAiMessage, opts: { roomName?: string | nu
       });
       return;
     }
+    case "end_request":
+      setEndRequest(msg.heard || "end this meeting");
+      return;
     case "agent":
       setAgent({ status: msg.status, backlog_s: msg.backlog_s ?? null, speakers: msg.speakers ?? [], tier2: msg.tier2 ?? "off" });
       return;

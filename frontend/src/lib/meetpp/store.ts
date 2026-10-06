@@ -6,6 +6,7 @@ import {
   applyRefinement,
   mergeSegments,
   outlineOrder,
+  previousActionsHome,
   sectionLabel,
   sortSections,
   tabHasContentFor,
@@ -87,6 +88,8 @@ export interface MeetppStore {
 
   agent: AgentInfo | null;
   proposal: LiveProposal | null;
+  /** The chair said "end this meeting": what was heard, awaiting confirmation. */
+  endRequest: { heard: string; at: number } | null;
   undo: { from: string | null; to: string | null; until: number } | null;
   announcement: (AnnounceMsg & { at: number }) | null;
   speaking: Array<{ identity: string; name: string }>;
@@ -141,6 +144,7 @@ export const useMeetpp = create<MeetppStore>(() => ({
   captions: [],
   agent: null,
   proposal: null,
+  endRequest: null,
   undo: null,
   announcement: null,
   speaking: [],
@@ -179,6 +183,30 @@ function onShow(entry: FocusEntry, at: number): void {
   announceLive(describeActivation(entry));
 }
 
+/** The view an item activation returns to (tab and viewed section). */
+interface FocusView {
+  tab: Tab;
+  viewedSectionId: string | null;
+}
+
+function captureView(): FocusView {
+  const s = get();
+  return { tab: s.tab, viewedSectionId: s.viewedSectionId };
+}
+
+function restoreView(view: unknown): void {
+  const v = view as FocusView;
+  const s = get();
+  const live = s.snap?.session.live_section_id ?? null;
+  const sectionId = v.viewedSectionId ?? live;
+  set({
+    tab: v.tab,
+    viewedSectionId: v.viewedSectionId,
+    highlight: null,
+    scrollReq: { sectionId, itemId: null, nonce: ++scrollNonce },
+  });
+}
+
 function onChange(snap: FocusSnapshot): void {
   const s = get();
   const patch: Partial<MeetppStore> = {};
@@ -193,7 +221,7 @@ function onChange(snap: FocusSnapshot): void {
 export function configureFocus(alwaysFollow: boolean): FocusQueue {
   if (fq && fq.alwaysFollow === alwaysFollow) return fq;
   fq?.stop();
-  fq = new FocusQueue({ show: onShow, onChange, alwaysFollow });
+  fq = new FocusQueue({ show: onShow, onChange, alwaysFollow, capture: captureView, restore: restoreView });
   fq.start();
   set({ follow: { mode: "following", pausedUntil: 0 } });
   return fq;
@@ -413,6 +441,7 @@ export function endSession(): void {
     active: false,
     endedSid: s.sid,
     proposal: null,
+    endRequest: null,
     undo: null,
     consentPrompt: false,
     announcement: s.announcement,
@@ -468,6 +497,11 @@ const NOT_NOW_MS = 3 * 60 * 1000;
 function isSuppressed(target: string): boolean {
   const until = suppressed.get(target);
   return until !== undefined && until > Date.now();
+}
+
+export function setEndRequest(heard: string | null): void {
+  if (heard && !get().ctx.isChair) return;
+  set({ endRequest: heard ? { heard, at: Date.now() } : null });
 }
 
 export function setProposal(p: LiveProposal | null): void {
@@ -605,7 +639,7 @@ export function showItem(kind: "decision" | "action", id: string): void {
   if (!item) return;
   let sectionId = item.section_id;
   if (kind === "action" && (item as { previous?: boolean }).previous) {
-    sectionId = s.snap.sections.find((x) => x.kind === "previous_actions")?.id ?? sectionId;
+    sectionId = previousActionsHome(s.snap.sections)?.id ?? sectionId;
   }
   const live = s.snap.session.live_section_id;
   const unseen = { ...s.unseen };

@@ -5,7 +5,7 @@ import { ChevronDown, ExternalLink, Sparkles } from "lucide-react";
 import type { Room } from "livekit-client";
 import { api } from "../../lib/api";
 import { chooseConsent, meetppActions, reopenConsent } from "../../lib/meetpp/session";
-import { useMeetpp } from "../../lib/meetpp/store";
+import { setEndRequest, useMeetpp } from "../../lib/meetpp/store";
 import { BOARD_KEY } from "../../lib/stage";
 import { setFocus } from "../../lib/stageView";
 import { useMeetppRoom } from "./useMeetppSession";
@@ -62,6 +62,22 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
     const r = btnRef.current?.getBoundingClientRect();
     if (r) setMenuPos({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) });
     setMenuOpen((v) => !v);
+  };
+
+  // "End this meeting" heard from the chair: confirm in a dialog (v3.2).
+  const endRequest = useMeetpp((s) => s.endRequest);
+  const [ending, setEnding] = useState(false);
+  const confirmSpokenEnd = async () => {
+    setEnding(true);
+    try {
+      const sid = await meetppActions.end();
+      setEndRequest(null);
+      setEndedSid(sid);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setEnding(false);
+    }
   };
 
   const endMeeting = async () => {
@@ -195,6 +211,30 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
                   {t("meetpp.menu.end", { defaultValue: "End Meet++" })}
                 </MenuItem>
               </MenuPanel>
+            )}
+
+            {endRequest && active && isOwner && (
+              <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" data-testid="meetpp-end-request">
+                <div role="dialog" aria-modal="true" aria-labelledby="meetpp-end-title" className="w-full max-w-md rounded-2xl bg-white p-5 text-slate-800 shadow-2xl">
+                  <h2 id="meetpp-end-title" className="text-lg font-semibold">
+                    {t("meetpp.endRequest.title", { defaultValue: "End the meeting?" })}
+                  </h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {t("meetpp.endRequest.heard", { defaultValue: "Heard: “{{text}}”", text: endRequest.heard })}
+                  </p>
+                  <p className="mt-2 text-sm">
+                    {t("meetpp.endRequest.body", { defaultValue: "Meet++ stops taking notes and prepares the minutes and the report for your review." })}
+                  </p>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button type="button" autoFocus className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-50" onClick={() => setEndRequest(null)}>
+                      {t("meetpp.endRequest.keep", { defaultValue: "Keep going" })}
+                    </button>
+                    <button type="button" disabled={ending} className="rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60" onClick={() => void confirmSpokenEnd()}>
+                      {t("meetpp.endRequest.end", { defaultValue: "End the meeting" })}
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {err && (

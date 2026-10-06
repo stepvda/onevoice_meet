@@ -403,7 +403,9 @@ def _position_texts(o: outline_mod.Outline, target, *, back: bool) -> tuple[str,
     return title, speech
 
 
-async def _after_move(db, session: MeetppSession, res: outline_mod.MoveResult, *, by: str, compose_delay: float) -> int | None:
+async def _after_move(
+    db, session: MeetppSession, res: outline_mod.MoveResult, *, by: str, compose_delay: float, subtitle: str | None = None,
+) -> int | None:
     changes = ops.Changes(session=True, sections=set(res.changed), minutes=set(res.minutes_changed))
     changes.activate("topic", res.live_id)
 
@@ -428,7 +430,8 @@ async def _after_move(db, session: MeetppSession, res: outline_mod.MoveResult, *
     back = prev is not None and o.later(prev, target) if target is not None else False
     if target is not None:
         title, speech = _position_texts(o, target, back=back)
-        subtitle = "AI moved the meeting on — the chair can undo" if by == "ai" else ""
+        if subtitle is None:
+            subtitle = "AI moved the meeting on — the chair can undo" if by == "ai" else ""
         asyncio.get_running_loop().create_task(
             announce(session.id, kind="position", title=title, subtitle=subtitle, speech=speech)
         )
@@ -525,11 +528,13 @@ async def ingest(session_id: str, body: dict) -> dict:
     seqs: dict[str, int] = {}
     messages: list[dict] = []
     cue = False
+    heard: list[tuple[str, str]] = []  # chair / co-host lines, for spoken commands
     try:
         session = db.get(MeetppSession, session_id)
         if session is None:
             return {"ok": False, "seqs": {}}
         room = _room(db, session)
+        chairs = set(chair_identities(db.get(Meeting, session.meeting_id)))
         ident_map = identity_map(db, session_id)
         consents = {c.person_key: c.decision for c in db.query(MeetppConsent).filter_by(session_id=session_id).all()}
         max_seq = db.query(func.max(MeetppSegment.seq)).filter(MeetppSegment.session_id == session_id).scalar() or 0
@@ -579,6 +584,8 @@ async def ingest(session_id: str, body: dict) -> dict:
                 seqs[uid] = max_seq
             talk[key] = talk.get(key, 0.0) + max(0.0, (t_end - t_start).total_seconds())
             cue = cue or bool(CUE_RE.search(text))
+            if identity in chairs:
+                heard.append((identity, text))
             messages.append(
                 bus.message(
                     "caption", session_id, seq=max_seq, identity=identity, name=seg.name, person_key=key,
@@ -638,6 +645,10 @@ async def ingest(session_id: str, body: dict) -> dict:
         db.close()
     for msg in messages:
         await bus.send(room, msg)
+    if heard:
+        from app.meetpp import commands
+
+        await commands.handle(session_id, heard)
     if messages:
         runtime.poke(session_id, "cue" if cue else None)
     return {"ok": True, "seqs": seqs}

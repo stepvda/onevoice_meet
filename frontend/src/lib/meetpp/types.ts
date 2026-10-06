@@ -109,6 +109,9 @@ export interface SectionDto {
   source: string;
   locked: boolean;
   counts: { decisions: number; actions: number };
+  /** The section that lists the previous actions: the agenda's own actions
+   * point when it has one, else "Previous actions" (v3.2). */
+  previous_actions_home?: boolean;
 }
 
 export type BallotChoice = "for" | "against" | "abstain" | "not_recorded";
@@ -413,7 +416,16 @@ export interface SessionMsg {
   sid?: string;
 }
 
+/** The chair said "end this meeting": ask them to confirm (v3.2). */
+export interface EndRequestMsg {
+  v: 1;
+  type: "end_request";
+  heard: string;
+  identity?: string;
+}
+
 export type MeetAiMessage =
+  | EndRequestMsg
   | CaptionMsg
   | CaptionUpdateMsg
   | GapMsg

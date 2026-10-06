@@ -230,8 +230,11 @@ async def _compose_section(session_id: str, section_id: str, *, force: bool) -> 
             .filter(MeetppAction.session_id == session.id, MeetppAction.section_id.in_(ids))
             .all()
         )
-        if top.kind == "previous_actions":
-            actions = [a for a in ops.session_actions(db, session) if ops.is_previous_action(a, session)]
+        home = outline_mod.previous_actions_home(o)
+        if top.kind == "previous_actions" or (home is not None and top.id == home.id):
+            # The previous actions reported on here, plus any action raised here.
+            previous = [a for a in ops.session_actions(db, session) if ops.is_previous_action(a, session)]
+            actions = previous + [a for a in actions if a not in previous]
         notes: list[str] = []
         for m in db.query(MeetppMinute).filter(MeetppMinute.session_id == session.id, MeetppMinute.section_id.in_(ids)).all():
             label = o.numbers.get(m.section_id or "") or ""

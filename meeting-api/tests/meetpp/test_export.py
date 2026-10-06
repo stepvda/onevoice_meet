@@ -21,7 +21,7 @@ SESSION_META_KEYS = {
     "editors", "undo", "proposal", "agent", "ai", "jobs", "quorum_required", "voting_body",
 }
 SECTION_KEYS = {"id", "kind", "parent_id", "position", "number", "title", "body", "presenter", "timebox_minutes", "status",
-                "started_at", "ended_at", "elapsed_seconds", "source", "locked", "counts"}
+                "started_at", "ended_at", "elapsed_seconds", "source", "locked", "counts", "previous_actions_home"}
 DECISION_KEYS = {"id", "ref", "section_id", "title", "resolution", "how_taken", "status", "decided_at", "origin", "confirmed",
                  "locked", "evidence", "previous", "vote"}
 VOTE_KEYS = {"method", "for", "against", "abstain", "eligible", "present", "quorum_required", "quorum_met", "result",

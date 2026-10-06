@@ -49,7 +49,11 @@ export default function MeetppOutline({ variant = "full", canChair, canEdit, onP
 
   if (!snap) return null;
   const live = snap.session.live_section_id;
-  const rows = sections.filter((s) => !(s.parent_id && collapsed[s.parent_id]));
+  // A skipped "Previous actions" is not shown: the agenda's own actions point
+  // (or nothing to review) took its place.
+  const rows = sections.filter(
+    (s) => !(s.parent_id && collapsed[s.parent_id]) && !(s.kind === "previous_actions" && s.status === "skipped"),
+  );
 
   const run = async (p: Promise<unknown>) => {
     setError(null);
@@ -139,7 +143,7 @@ export default function MeetppOutline({ variant = "full", canChair, canEdit, onP
           const over = isLive && tb > 0 && elapsed > tb;
           const nudge = isLive && tb > 0 && elapsed >= tb * 1.5 && canChair;
           const counts =
-            s.kind === "previous_actions" && previousStats.total > 0
+            (s.previous_actions_home || s.kind === "previous_actions") && previousStats.total > 0
               ? `${previousStats.reported}/${previousStats.total}`
               : s.counts && (s.counts.decisions || s.counts.actions)
                 ? `${s.counts.decisions}·${s.counts.actions}`

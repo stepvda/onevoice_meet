@@ -16,6 +16,10 @@
  *    the LAST interaction. Programmatic scrolls never call interact().
  *  - Catch-up: the first show after a pause takes only the newest waiting
  *    activation and clears the rest.
+ *  - Return: an item activation (decision, action, attendance) is shown for
+ *    MIN_DISPLAY_MS and then the view the user was on before it comes back
+ *    (captured when the first item of a burst is shown). A topic activation or
+ *    a manual interaction during the burst cancels the return.
  *  - Follow off: activations are not queued at all until Follow is on again.
  *  - Egress (alwaysFollow): never pauses, cannot be switched off.
  */
@@ -58,6 +62,10 @@ export interface FocusSnapshot {
 export interface FocusQueueOptions {
   /** Apply an activation (programmatic: set tab, expand + scroll, highlight). */
   show: (entry: FocusEntry, at: number) => void;
+  /** The view to come back to after item activations (tab, section, …). */
+  capture?: () => unknown;
+  /** Go back to a view returned by capture(). */
+  restore?: (view: unknown) => void;
   /** Called whenever the follow mode, the current entry or the queue changes. */
   onChange?: (snap: FocusSnapshot) => void;
   now?: () => number;
@@ -81,6 +89,8 @@ export class FocusQueue {
   private shownAt = 0;
   private queue: FocusEntry[] = [];
   private order = 0;
+  /** View before the current burst of item activations (null: no return). */
+  private home: { view: unknown } | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private lastMode: FollowMode = "following";
 
@@ -107,6 +117,7 @@ export class FocusQueue {
   reset(): void {
     this.queue = [];
     this.current = null;
+    this.home = null;
     this.shownAt = 0;
     this.pausedUntil = 0;
     this.pausedSinceShow = false;
@@ -163,6 +174,8 @@ export class FocusQueue {
     if (this.opts.alwaysFollow) return;
     this.pausedUntil = this.now() + this.pauseMs;
     this.pausedSinceShow = true;
+    // The user went somewhere themselves: no return to the earlier view.
+    this.home = null;
     this.emit();
   }
 
@@ -186,6 +199,7 @@ export class FocusQueue {
     if (!on) {
       this.queue = [];
       this.current = null;
+      this.home = null;
     }
     this.emit();
     if (on) this.pump();
@@ -199,10 +213,18 @@ export class FocusQueue {
   pump(): void {
     const now = this.now();
     let changed = false;
-    // The display time of the shown activation is over: release it.
+    // The display time of the shown activation is over: release it, and after
+    // the last of a burst of item activations go back to the earlier view.
     if (this.current && now - this.shownAt >= this.minDisplay) {
       this.current = null;
       changed = true;
+      // Anything still waiting (another item, or a topic that becomes the new
+      // place to stay) is shown first.
+      if (this.home && this.queue.length === 0 && now >= this.pausedUntil && this.follow) {
+        const home = this.home;
+        this.home = null;
+        this.opts.restore?.(home.view);
+      }
     }
     const mode = this.mode(now);
     if (mode !== this.lastMode) changed = true;
@@ -218,6 +240,12 @@ export class FocusQueue {
     const next = catchUp ? this.queue.pop()! : this.queue.shift()!;
     if (catchUp) this.queue = [];
     this.pausedSinceShow = false;
+    if (next.kind === "topic") {
+      // The meeting moved on: the topic is where the board stays.
+      this.home = null;
+    } else if (!this.home && this.opts.capture) {
+      this.home = { view: this.opts.capture() };
+    }
     this.current = next;
     this.shownAt = now;
     this.opts.show({ ...next, items: [...next.items] }, now);

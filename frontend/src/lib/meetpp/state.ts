@@ -325,11 +325,17 @@ export function fmtClock(iso: string | null | undefined, withSeconds = true): st
 
 // ── Tab content per section ───────────────────────────────────────────────
 
+/** Where the previous actions are listed: the agenda's own actions point when
+ * it has one, else the Previous actions section (FDD §5.5, v3.2). */
+export function previousActionsHome(sections: SectionDto[]): SectionDto | null {
+  return sections.find((s) => s.previous_actions_home) ?? sections.find((s) => s.kind === "previous_actions") ?? null;
+}
+
 /** Section a decision/action is grouped under on the board. Previous (series)
- * actions are listed under the Previous actions section (FDD §5.5). */
+ * actions are listed under their home section (FDD §5.5). */
 export function actionGroupSection(a: ActionDto, sections: SectionDto[]): string | null {
   if (a.previous) {
-    const prev = sections.find((s) => s.kind === "previous_actions");
+    const prev = previousActionsHome(sections);
     if (prev) return prev.id;
   }
   if (a.section_id && sections.some((s) => s.id === a.section_id)) return a.section_id;

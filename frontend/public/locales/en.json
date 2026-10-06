@@ -1661,6 +1661,13 @@
       "title": "Vote record",
       "toConfirm": "vote to confirm",
       "voice": "Voice vote"
+    },
+    "endRequest": {
+      "title": "End the meeting?",
+      "heard": "Heard: “{{text}}”",
+      "body": "Meet++ stops taking notes and prepares the minutes and the report for your review.",
+      "keep": "Keep going",
+      "end": "End the meeting"
     }
   },
   "stage": {

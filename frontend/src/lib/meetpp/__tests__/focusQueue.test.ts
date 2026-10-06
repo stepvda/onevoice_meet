@@ -266,3 +266,70 @@ describe("FocusQueue (FDD §5.7 / Appendix B)", () => {
     q.stop();
   });
 });
+
+describe("FocusQueue return to the earlier view", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function withHome() {
+    let view = "agenda:live";
+    const restored: Array<{ view: unknown; at: number }> = [];
+    const shown: FocusEntry[] = [];
+    const q = new FocusQueue({
+      show: (entry) => {
+        shown.push(entry);
+        view = `${entry.tab}:${entry.sectionId}`;
+      },
+      capture: () => view,
+      restore: (v) => {
+        restored.push({ view: v, at: Date.now() - T0 });
+        view = String(v);
+      },
+    });
+    q.start();
+    return { q, shown, restored, view: () => view };
+  }
+
+  it("shows a new decision for 5 s, then goes back to where the user was", () => {
+    const { q, restored, view } = withHome();
+    q.push(decision("p2", "d1"));
+    expect(view()).toBe("decisions:p2");
+    at(MIN_DISPLAY_MS - 250);
+    expect(restored).toHaveLength(0);
+    at(MIN_DISPLAY_MS + 250);
+    expect(restored).toEqual([{ view: "agenda:live", at: MIN_DISPLAY_MS }]);
+    expect(view()).toBe("agenda:live");
+  });
+
+  it("returns once after a burst of items, to the view before the first one", () => {
+    const { q, shown, restored } = withHome();
+    q.push(decision("p2", "d1"));
+    q.push(action("p2", "a1"));
+    at(MIN_DISPLAY_MS + 250);
+    expect(shown.map((e) => e.tab)).toEqual(["decisions", "actions"]);
+    expect(restored).toHaveLength(0);
+    at(2 * MIN_DISPLAY_MS + 500);
+    expect(restored.map((r) => r.view)).toEqual(["agenda:live"]);
+  });
+
+  it("does not return after a topic change or a manual click", () => {
+    const a = withHome();
+    a.q.push(decision("p2", "d1"));
+    a.q.push(topic("p3"));
+    at(2 * MIN_DISPLAY_MS + 500);
+    expect(a.restored).toHaveLength(0);
+    a.q.stop();
+
+    vi.setSystemTime(T0);
+    const b = withHome();
+    b.q.push(action("p2", "a1"));
+    b.q.interact();
+    at(PAUSE_MS + 1000);
+    expect(b.restored).toHaveLength(0);
+  });
+});

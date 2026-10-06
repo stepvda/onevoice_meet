@@ -237,7 +237,7 @@ async def test_advance_ignored_while_suppressed_after_chair_move(fakes):
     sid = await running(fakes)
     ids = sids(sid)
     await rt.chair_move(sid, "next")
-    await say(sid, "42", "Alice Moreau", "Next item please.")
+    await say(sid, "43", "Ben Hartley", "Shall we take the garden now?")
     fakes.llm.add("tick", {"topic": {"section": pid(sid, "Community garden"), "confidence": 0.9},
                            "advance": {"to": pid(sid, "Community garden"), "confidence": 0.95}})
     await rt.tick(sid)
@@ -307,7 +307,7 @@ async def test_scattered_later_topics_do_not_move(fakes):
 async def test_assist_mode_proposes_to_chairs_and_not_now(fakes):
     sid = await running(fakes, mode="assist")
     ids = sids(sid)
-    await say(sid, "42", "Alice Moreau", "Next item.")
+    await say(sid, "43", "Ben Hartley", "Next item, perhaps?")
     S = pid(sid, "Approval of the minutes")
     fakes.llm.add("tick", {"topic": {"section": S, "confidence": 0.9}, "advance": {"to": S, "confidence": 0.9, "reason": "next item"}})
     await rt.tick(sid)
@@ -330,7 +330,7 @@ async def test_assist_mode_proposes_to_chairs_and_not_now(fakes):
 async def test_accepting_a_proposal_moves(fakes):
     sid = await running(fakes, mode="assist")
     ids = sids(sid)
-    await say(sid, "42", "Alice Moreau", "Next item.")
+    await say(sid, "43", "Ben Hartley", "Next item, perhaps?")
     S = pid(sid, "Approval of the minutes")
     fakes.llm.add("tick", {"advance": {"to": S, "confidence": 0.7}})
     await rt.tick(sid)
