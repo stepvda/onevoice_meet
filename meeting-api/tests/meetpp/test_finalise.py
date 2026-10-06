@@ -277,3 +277,29 @@ async def test_reconcile_reports_previous_actions_only_from_quoted_minutes(fakes
     note = query(lambda db: db.query(MeetppActionReport).filter_by(action_id=rows["A-1"].id).one().note)
     assert note == "Both quotes were received; the tank was ordered."
     assert "ACTIONS:\nA-1 · Ask two suppliers" in fakes.llm.prompts("compose_actions")[0]
+
+
+async def test_closures_not_confirmed_by_the_transcript_are_reopened(fakes):
+    from app.meetpp.models import MeetppAction, MeetppActionReport
+
+    sid = await _meeting_with_decision(fakes)
+    s1 = await say(sid, "42", "Alice Moreau", "The tank quotes are in, so that action is finished.")
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, sid)
+        for ref, title in (("A-1", "Collect two tank quotes"), ("A-2", "Prove the full restore")):
+            db.add(MeetppAction(id=util.ulid(), series_id=session.series_id, session_id=sid, ref=ref, title=title,
+                                status="done", completed_at=util.now(), origin="pdf"))
+        db.add(MeetppAction(id=util.ulid(), series_id=session.series_id, session_id=sid, ref="A-3", title="Paint the shed",
+                            status="done", completed_at=util.now(), origin="pdf", locked=True))
+        db.commit()
+    finally:
+        db.close()
+    fakes.llm.add("compose_actions", {"confirmed": [
+        {"ref": "A-1", "quote": "The tank quotes are in, so that action is finished."},
+        {"ref": "A-2", "quote": "The restore is complete."},  # not in the transcript
+    ]})
+    assert await compose.verify_closed_previous_actions(sid) == 1
+    rows = {a.ref: a for a in query(lambda db: db.query(MeetppAction).filter_by(session_id=sid).all())}
+    assert rows["A-1"].status == "done" and rows["A-2"].status == "open" and rows["A-2"].completed_at is None
+    assert rows["A-3"].status == "done"  # the chair's own change stands

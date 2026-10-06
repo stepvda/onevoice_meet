@@ -666,6 +666,16 @@ async def structure_agenda(db: Session, session_id: str, text: str) -> dict:
             covered.add(key)
     order = {p["number"]: i for i, p in enumerate(points)}
     decisions.sort(key=lambda d: (order.get(d["point"], 0), d["sub"] or ""))
+    # A title that is still a cut-off first sentence ("On September 29, 2026,
+    # Anthropic published …") takes the title of the point's decision to take.
+    for p in points:
+        title = p.get("title") or ""
+        if len(title) > 80 or title.endswith("…"):
+            d = next((d for d in decisions if d["point"] == p["number"] and not d["sub"]), None)
+            if d and len(d["title"]) <= 80:
+                if p.get("body") is None:
+                    p["body"] = title
+                p["title"] = d["title"]
     return {"format": fmt, "points": points, "decisions": decisions, "llm": llm_used}
 
 

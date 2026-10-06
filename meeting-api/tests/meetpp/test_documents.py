@@ -364,3 +364,18 @@ def test_pdf_byte_checks():
     assert ingest.validate_extracted({"page_count": 2, "text": "x" * 100}, 50) == (False, "noTextLayer")
     assert ingest.validate_extracted({"error": "encrypted"}, 50) == (False, "encrypted")
     _ = Path
+
+
+async def test_cut_off_point_title_takes_the_decision_title(fakes):
+    from app.meetpp import ingest
+
+    text = "Agenda\n1. Approve the minutes of meeting #3.\n2. On 29 September the town published its water plan, which sets out where tanks may stand and how large they may be before …\nResolved that the association installs the rainwater tank before winter?\n"
+    fakes.llm.add("parse_agenda", {"points": [], "decisions": [
+        {"point": "2", "title": "Install the rainwater tank", "resolution": "that the association installs the rainwater tank before winter"}]})
+    db = SessionLocal()
+    try:
+        out = await ingest.structure_agenda(db, make_session(), text)
+    finally:
+        db.close()
+    titles = [p["title"] for p in out["points"]]
+    assert titles[1] == "Install the rainwater tank" and out["points"][1]["body"].startswith("On 29 September")

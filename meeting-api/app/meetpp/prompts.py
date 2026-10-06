@@ -275,6 +275,19 @@ def build_reconcile_messages(*, org: str, meeting_type_label: str, actions: list
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
+def build_verify_closed_messages(*, actions: list[str], transcript: str) -> list[dict]:
+    """Previous actions closed during the meeting, checked against the transcript."""
+    system = (
+        "These follow-up actions were marked done during a meeting. For each one, find the line of the transcript where "
+        "a speaker says that this particular work is finished, and copy that line's words into \"quote\" exactly. A "
+        "remark about related or general work does not count (\"the backup works\" does not finish \"prove the full "
+        "restore\"), nor does a remark that it is still to be done. Leave out every action with no such line. Return "
+        "json only: {\"confirmed\": [{\"ref\": \"A-7\", \"quote\": \"...\"}]}."
+    )
+    user = "ACTIONS MARKED DONE:\n" + "\n".join(actions) + "\n\nTRANSCRIPT:\n" + transcript
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
 # ─── Final composition (C.3) ───────────────────────────────────────────────
 
 FINAL_EXAMPLE = {

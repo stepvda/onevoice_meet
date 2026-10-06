@@ -1456,6 +1456,8 @@ async def _job_final(session_id: str) -> None:
     # Previous actions that came up inside the agenda points (no report taken
     # live) are reported from the composed minutes before the final document.
     await compose.reconcile_previous_actions(session_id)
+    # …and previous actions the AI closed must be confirmed by the transcript.
+    await compose.verify_closed_previous_actions(session_id)
     await compose.compose_final(session_id)
     await _set_job(session_id, "final", status="done", error=None)
 

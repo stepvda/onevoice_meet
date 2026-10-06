@@ -446,13 +446,9 @@ async def reconcile_previous_actions(session_id: str) -> int:
             )
 
         def _validate(parsed: dict) -> str | None:
-            reports = parsed.get("reports")
-            if not isinstance(reports, list):
-                return "reports must be a list"
-            unknown = [r.get("ref") for r in reports if isinstance(r, dict) and r.get("ref") not in by_ref]
-            if unknown:
-                return f"unknown refs {unknown[:5]}; use only the refs listed"
-            return None
+            # Lenient: refs not listed (an action reported live) are dropped
+            # below, and so is every report whose quote is not in the minutes.
+            return None if isinstance(parsed.get("reports"), list) else "reports must be a list"
 
         try:
             parsed, _ = await llm.complete_parsed(
@@ -498,6 +494,82 @@ async def reconcile_previous_actions(session_id: str) -> int:
         return count
     except Exception:  # noqa: BLE001 — finalisation goes on without it
         log.exception("meetpp: reconciling previous actions failed for %s", session_id)
+        db.rollback()
+        return 0
+    finally:
+        db.close()
+
+
+VERIFY_MAX_TRANSCRIPT_CHARS = 120000
+
+
+async def verify_closed_previous_actions(session_id: str) -> int:
+    """At finalisation: every previous action the AI marked done during the
+    meeting must be confirmed by a transcript line saying that this work is
+    finished (quoted, and found in the transcript); otherwise it is reopened.
+    A wrong "done" drops an action from the carried-forward list unseen, a
+    wrong "open" stays in view (replay: "prove the full restore" was closed on
+    "the restore worked fine" although "the running platform" was not yet
+    restored). Human changes (locked) are kept. Returns the number reopened.
+    Never raises."""
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, session_id)
+        if session is None or not llm.llm_configured():
+            return 0
+        start = util.aware(session.started_at or session.created_at)
+        closed = [
+            a for a in ops.session_actions(db, session)
+            if ops.is_previous_action(a, session) and a.status == "done" and not a.locked
+            and a.completed_at is not None and (start is None or util.aware(a.completed_at) >= start)
+        ]
+        if not closed:
+            return 0
+        segs = (
+            db.query(MeetppSegment)
+            .filter(MeetppSegment.session_id == session.id, MeetppSegment.is_gap.is_(False))
+            .order_by(MeetppSegment.seq)
+            .all()
+        )
+        transcript = "\n".join(f"{s.name or 'Unknown'}: {s.best_text}" for s in segs)[-VERIFY_MAX_TRANSCRIPT_CHARS:]
+        if not transcript.strip():
+            return 0
+        by_ref = {a.ref: a for a in closed}
+        lines = [f"{a.ref} · {a.title}" + (f" — {util.truncate(a.description, 240)}" if a.description else "") for a in closed]
+        try:
+            parsed, _ = await llm.complete_parsed(
+                db=db, purpose="compose_actions", session_id=session.id, temperature=0.0, max_tokens=2000,
+                messages=prompts.build_verify_closed_messages(actions=lines, transcript=transcript),
+                validate=lambda p: None if isinstance(p.get("confirmed"), list) else "confirmed must be a list",
+            )
+        except llm.LLMError as exc:
+            log.info("MEETPP_VERIFY sid=%s failed, closures kept: %s", session.id, exc)
+            return 0
+        flat = util.normalize_text(transcript)
+        confirmed = set()
+        for c in parsed.get("confirmed") or []:
+            if isinstance(c, dict) and c.get("ref") in by_ref:
+                quote = util.normalize_text(str(c.get("quote") or ""))
+                if len(quote) >= 15 and quote in flat:
+                    confirmed.add(c["ref"])
+        changes = ops.Changes()
+        reopened = 0
+        for ref, a in by_ref.items():
+            if ref in confirmed:
+                continue
+            a.status = "open"
+            a.completed_at = None
+            report = db.query(MeetppActionReport).filter_by(action_id=a.id, session_id=session.id).first()
+            if report is not None:
+                report.status_at_report = "open"
+            changes.actions.add(a.id)
+            reopened += 1
+        db.flush()
+        await bus.publish_changes(db, session, changes)
+        log.info("MEETPP_VERIFY sid=%s closed=%s confirmed=%s reopened=%s", session.id, len(closed), len(confirmed), reopened)
+        return reopened
+    except Exception:  # noqa: BLE001 — finalisation goes on without it
+        log.exception("meetpp: verifying closed actions failed for %s", session_id)
         db.rollback()
         return 0
     finally:
