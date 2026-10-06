@@ -8,7 +8,11 @@ and rendered to the meeting report PDF.
 
 Everything runs against a throw-away SQLite database. Speaker labels are not
 in a plain whisper transcript, so all speech is attributed to one speaker
-unless the JSON segments carry a "speaker" field.
+unless the JSON segments carry a "speaker" field (a display name from
+--people, e.g. from a diarisation pass); --chair makes that person the
+meeting owner, whose spoken commands are acted on. --as-of reopens actions
+that the previous report shows as completed on or after that time (a report
+downloaded after the replayed meeting already carries its outcomes).
 
 Usage (from meeting-api/, with LLM_API_KEY in the environment):
 
@@ -55,6 +59,8 @@ async def main() -> int:
     ap.add_argument("--people", default="", help="comma list 'sub:Name' joining the meeting")
     ap.add_argument("--speaker", default="Meeting audio", help="name used when segments have no speaker")
     ap.add_argument("--max-minutes", type=float, default=0, help="stop after N minutes of meeting time (0 = all)")
+    ap.add_argument("--chair", default="", help="sub (from --people) of the chair = meeting owner")
+    ap.add_argument("--as-of", default="", help="ISO time: actions completed at or after it are treated as still open")
     args = ap.parse_args()
 
     out = Path(args.out).resolve()
@@ -63,6 +69,20 @@ async def main() -> int:
     out.mkdir(parents=True)
     _env(out)
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+    import logging
+
+    class _MovesOnly(logging.Filter):
+        def filter(self, record):
+            msg = record.getMessage()
+            return "MEETPP_COMMAND" in msg or "MEETPP_POSITION" in msg
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.addFilter(_MovesOnly())
+    handler.setFormatter(logging.Formatter("    %(message)s"))
+    meetpp_log = logging.getLogger("app.meetpp")
+    meetpp_log.setLevel(logging.INFO)
+    meetpp_log.addHandler(handler)
 
     from app.config import settings
     from app.db import SessionLocal, engine
@@ -140,8 +160,11 @@ async def main() -> int:
 
     # ── meeting, series, session ───────────────────────────────────────────
     db = SessionLocal()
+    people = [p.split(":", 1) for p in args.people.split(",") if ":" in p]
+    by_name = {name.strip(): sub.strip() for sub, name in people}
+    chair_name = next((name for sub, name in people if sub == args.chair), "Chair")
     meeting = Meeting(id=util.ulid(), room_name="replay-room", display_title=args.title,
-                      owner_user_id="chair", owner_name="Chair", owner_email="chair@example.org",
+                      owner_user_id=args.chair or "chair", owner_name=chair_name, owner_email="chair@example.org",
                       scheduled_at=t0)
     db.add(meeting)
     series = MeetppSeries(id=util.ulid(), owner_sub="chair", title=args.title, meeting_id=meeting.id,
@@ -178,6 +201,21 @@ async def main() -> int:
         print(f"[doc] {kind}: status={doc.status} error={doc.error} summary={doc.summary_json}")
         db.close()
 
+    if args.as_of:
+        as_of = datetime.fromisoformat(args.as_of.replace("Z", "+00:00")).date().isoformat()
+        real_parse = ingest.parse_actions
+
+        def _as_of(lines):
+            out = real_parse(lines)
+            for a in out:
+                done_at = str(a.get("completed") or "")[:10]
+                if a.get("status") == "done" and done_at and done_at >= as_of:
+                    a["status"], a["completed"], a["completion_note"] = "open", None, None
+                    notes = [ln for ln in str(a.get("progress_notes") or "").splitlines() if as_of not in ln]
+                    a["progress_notes"] = "\n".join(notes) or None
+            return out
+
+        ingest.parse_actions = _as_of  # type: ignore[assignment]
     if args.previous:
         await add_doc(args.previous, "previous_notes")
     if args.agenda:
@@ -186,17 +224,18 @@ async def main() -> int:
     # ── start, people join ────────────────────────────────────────────────
     clock["t"] = t0
     await rt.start_session(sid)
-    people = [p.split(":", 1) for p in args.people.split(",") if ":" in p]
     for sub, name in people:
         ident = f"user-{sub}"
         await rt.presence(sid, [{"identity": ident, "name": name, "kind": "standard", "event": "connected"}])
         await rt.set_consent(sid, ident, "accept", f"sub:{sub}", name)
+    segs = json.loads(Path(args.transcript).read_text())["segments"]
+    diarised = all(seg.get("speaker") in by_name for seg in segs if (seg.get("text") or "").strip())
     speaker_ident = "user-replay-audio"
-    await rt.presence(sid, [{"identity": speaker_ident, "name": args.speaker, "kind": "standard", "event": "connected"}])
-    await rt.set_consent(sid, speaker_ident, "accept", "sub:replay-audio", args.speaker)
+    if not diarised:
+        await rt.presence(sid, [{"identity": speaker_ident, "name": args.speaker, "kind": "standard", "event": "connected"}])
+        await rt.set_consent(sid, speaker_ident, "accept", "sub:replay-audio", args.speaker)
 
     # ── replay ─────────────────────────────────────────────────────────────
-    segs = json.loads(Path(args.transcript).read_text())["segments"]
     tick_s = float(settings.meetpp_tick_seconds)
     next_tick = t0 + timedelta(seconds=tick_s)
     stats = {"ticks": 0, "applied": 0, "rejected": 0, "notes": 0, "moves": 0}
@@ -222,7 +261,7 @@ async def main() -> int:
         if not text:
             continue
         name = seg.get("speaker") or args.speaker
-        ident = speaker_ident if not seg.get("speaker") else f"user-{name.lower().replace(' ', '-')}"
+        ident = f"user-{by_name[name]}" if name in by_name else speaker_ident
         await rt.ingest(sid, {"segments": [{"utterance_id": f"u{i}", "identity": ident, "name": name,
                                              "t_start": util.iso(st), "t_end": util.iso(en), "text": text, "lang": "en"}]})
         for m in sent[n_sent:]:

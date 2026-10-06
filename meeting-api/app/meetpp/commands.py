@@ -16,11 +16,14 @@ log = logging.getLogger("app.meetpp")
 
 _VERB = r"(?:go|move|skip|jump|proceed|continue|carry\s+on|let'?s\s+(?:go|move|continue))"
 _POINT = r"(?:agenda\s+)?(?:point|item|topic|section|subject)s?"
-NEXT_RE = re.compile(
-    rf"\b{_VERB}\b[^.?!]{{0,25}}?\bnext\b[^.?!]{{0,12}}?\b{_POINT}\b"
-    rf"|^\W*(?:ok(?:ay)?\W+|right\W+|so\W+)?(?:the\s+)?next\s+{_POINT}\b",
+NEXT_RE = re.compile(rf"\b{_VERB}\b[^.?!]{{0,25}}?\bnext\b[^.?!]{{0,12}}?\b{_POINT}\b", re.IGNORECASE)
+# "Next item." / "OK, next item please." as a whole sentence; not "so the next
+# item there, the declaration is not a lawsuit" (a list being read out).
+NEXT_ALONE_RE = re.compile(
+    rf"^\W*(?:(?:ok(?:ay)?|right|all\s+right|good|so)\W+)*(?:the\s+)?next\s+{_POINT}\W*(?:please)?\W*$",
     re.IGNORECASE,
 )
+_SENTENCE = re.compile(r"[^.?!]+[.?!]*")
 _NUMBERS = {
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
     "ten": 10, "eleven": 11, "twelve": 12, "first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5,
@@ -58,6 +61,8 @@ def detect(text: str) -> tuple[str, int | None] | None:
             raw = m.group(1).lower()
             return ("goto", int(raw) if raw.isdigit() else _NUMBERS[raw])
         return (kind, None)
+    if any(NEXT_ALONE_RE.match(sentence) for sentence in _SENTENCE.findall(t)):
+        return ("next", None)
     return None
 
 
