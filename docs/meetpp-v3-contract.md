@@ -369,9 +369,12 @@ the real LLM (`meeting-api/tools/meetpp_replay.py`).
 
 **Minutes**
 - Section length target = ⅓ of the section's transcript words, 80–1,500 (prompt `LENGTH: about N words`). A draft
-  over 1.5 × the target (and 150 words over) is condensed by a second call (`compose_condense`) that sees only the
-  draft; the result must be shorter, at least half the target, and keep every adopted decision's RESOLVED block —
-  otherwise the draft stands. Only drafts over 6,000 words are refused. (Re-prompting the composer did not shorten.)
+  over 1.5 × the target (and 150 words over) is condensed in two calls (`compose_condense`): (1) at most
+  target / 35 key points, one sentence each, tagged `[n.m]` with their sub-point; (2) minutes written from those points
+  alone, under the draft's `### n.m` sub-headings, without RESOLVED blocks (finish_markdown adds them back). The result
+  must be shorter than the draft and at least half the target, else the draft stands; only drafts over 6,000 words are
+  refused. Asked to shorten the draft itself, the model copied it (meeting replay: 3,397 → 3,397 words); the two-call
+  form gave 3,397 → 696, 2,082 → 951 and 916 → 476 for targets of 1,100, 950 and 480.
 
 **Votes and roster**
 - An adopted decision with no vote in a board or general-assembly meeting is recorded as taken by assent (ballots:

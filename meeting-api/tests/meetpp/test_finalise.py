@@ -77,16 +77,20 @@ async def test_overlong_draft_is_condensed_or_kept(fakes):
     sid = await _meeting_with_decision(fakes)
     ids = sids(sid)
     long_md = "The directors discussed the minutes at length. " * 60 + "\n\n" + SECTION_MD
-    short_md = "The directors discussed the minutes.\n\n" + SECTION_MD
+    short_md = "The chair put the minutes of meeting #8 to the board, and both directors present agreed. " * 3
     fakes.llm.add("compose_section", {"markdown": long_md, "verify": ["meeting #8"]})
-    fakes.llm.add("compose_condense", {"markdown": short_md})
+    # Key points first, then minutes written from them alone.
+    fakes.llm.add("compose_condense", {"points": ["The minutes of meeting #8 were approved."]}, {"markdown": short_md})
     assert await compose.compose_section(sid, ids["Approval of the minutes"]) == "composed"
     m = _minute(sid, ids["Approval of the minutes"])
-    assert m.narrative_md.startswith("The directors discussed the minutes.\n") and util.loads(m.verify_json, []) == ["meeting #8"]
-    assert "LENGTH: about" in fakes.llm.prompts("compose_condense")[0]
-    # A condensed draft that drops the RESOLVED block (twice) is refused: the long draft stands.
+    assert m.narrative_md.startswith("The chair put the minutes") and util.loads(m.verify_json, []) == ["meeting #8"]
+    # The RESOLVED block is added back for the adopted decision.
+    assert m.narrative_md.endswith("> **RESOLVED:** that the minutes of meeting #8 are approved")
+    prompts_ = fakes.llm.prompts("compose_condense")
+    assert "RESOLVED" in prompts_[0] and "KEY POINTS:\n- The minutes of meeting #8 were approved." in prompts_[1]
+    # Minutes cut too far (twice) are refused: the long draft stands.
     fakes.llm.add("compose_section", {"markdown": long_md, "verify": []})
-    fakes.llm.add("compose_condense", {"markdown": "Short."}, {"markdown": "Short again."})
+    fakes.llm.add("compose_condense", {"points": ["Approved."]}, {"markdown": "Approved."}, {"markdown": "Approved again."})
     assert await compose.compose_section(sid, ids["Approval of the minutes"], force=True) == "composed"
     assert util.word_count(_minute(sid, ids["Approval of the minutes"]).narrative_md) > 300
 

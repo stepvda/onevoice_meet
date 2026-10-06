@@ -331,6 +331,10 @@ async def _compose_section(session_id: str, section_id: str, *, force: bool) -> 
         db.close()
 
 
+# Condense: one key point per ~35 words of the target.
+WORDS_PER_POINT = 35
+
+
 async def _condense(
     db: Session,
     session: MeetppSession,
@@ -340,9 +344,19 @@ async def _condense(
     adopted: list[MeetppDecision],
     substantial: bool,
 ) -> str | None:
-    """Shorten an over-long section draft; None keeps the draft."""
+    """Shorten an over-long section draft in two calls — its key points, then
+    minutes written from those points alone; None keeps the draft. The RESOLVED
+    blocks are added back by finish_markdown."""
+    max_points = max(4, round(target_words / WORDS_PER_POINT))
+    headings = re.findall(r"^### .+$", markdown, re.M)
 
-    def _validate(parsed: dict) -> str | None:
+    def _valid_points(parsed: dict) -> str | None:
+        points = parsed.get("points")
+        if not isinstance(points, list) or not [x for x in points if str(x).strip()]:
+            return "no key points"
+        return None
+
+    def _valid_minutes(parsed: dict) -> str | None:
         md = str(parsed.get("markdown") or "")
         error = validate_section(md, adopted, substantial)
         if error:
@@ -351,25 +365,25 @@ async def _condense(
         if words >= util.word_count(markdown):
             return "the minutes are not shorter"
         if words < target_words // 2:
-            return f"the minutes were cut too far ({words} words; about {target_words} were asked)"
-        blocks = resolved_blocks(md)
-        for d in adopted:
-            if not any(_matches(b, d) for b in blocks):
-                return f"the RESOLVED block of {d.ref} was dropped"
+            return f"the minutes are too short ({words} words; about {target_words} were asked)"
+        if re.search(r"\[\d+(\.\d+)*\]", md):
+            return "write the sub-headings, not the bracketed numbers"
         return None
 
     try:
         parsed, _ = await llm.complete_parsed(
-            db=db,
-            purpose="compose_condense",
-            messages=prompts.build_condense_messages(
+            db=db, purpose="compose_condense", session_id=session.id, temperature=0.2, max_tokens=4000,
+            messages=prompts.build_condense_points_messages(markdown=markdown, max_points=max_points),
+            validate=_valid_points,
+        )
+        points = [str(x).strip() for x in parsed["points"] if str(x).strip()][: max_points + 5]
+        parsed, _ = await llm.complete_parsed(
+            db=db, purpose="compose_condense", session_id=session.id, temperature=0.3, max_tokens=4000,
+            messages=prompts.build_condense_write_messages(
                 org=settings.meetpp_org_name, meeting_type_label=_type_label(series),
-                markdown=markdown, target_words=target_words,
+                points=points, headings=headings, target_words=target_words,
             ),
-            max_tokens=6000,
-            temperature=0.2,
-            session_id=session.id,
-            validate=_validate,
+            validate=_valid_minutes,
         )
     except llm.LLMError as exc:
         log.info("MEETPP_COMPOSE sid=%s condense failed, keeping the draft: %s", session.id, exc)

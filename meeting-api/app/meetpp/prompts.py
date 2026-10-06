@@ -223,17 +223,33 @@ def build_section_messages(
     ]
 
 
-def build_condense_messages(*, org: str, meeting_type_label: str, markdown: str, target_words: int) -> list[dict]:
+def build_condense_points_messages(*, markdown: str, max_points: int) -> list[dict]:
+    """Condense, step 1: the key points of an over-long section draft. (Asked
+    to shorten the draft itself, the model mostly copies it.)"""
     system = (
-        f"You shorten the minutes of one agenda section of a {meeting_type_label.lower()} of {org}, in English.\n"
-        "Keep: every \"> **RESOLVED:** …\" block word for word, what was decided and how, every undertaking and who "
-        "took it on, the \"### n.m\" sub-headings that still have content, names, figures and dates, and the final "
-        "\"No resolution was put.\" sentence when there is one.\n"
-        "Remove: repetition, minor remarks, asides and procedural chatter; merge sentences that say the same thing.\n"
-        "Same style: formal minutes, third person, past tense. Do not add anything that is not in the draft.\n"
-        "Return json only: {\"markdown\": \"...\"}."
+        "From the minutes of one agenda section, list the key points for the official record: what was reported, "
+        f"argued, decided or undertaken, and by whom. At most {max_points} points, one sentence each, in the order "
+        "they occur. When the minutes have \"### n.m\" sub-headings, start each point with the number in square "
+        "brackets, e.g. \"[6.2] …\". Merge points that say the same thing; leave out examples, quotations, asides and "
+        "the RESOLVED blocks. Return json only: {\"points\": [\"...\"]}."
     )
-    user = f"LENGTH: about {target_words} words\n\nMINUTES:\n{markdown}"
+    return [{"role": "system", "content": system}, {"role": "user", "content": markdown}]
+
+
+def build_condense_write_messages(
+    *, org: str, meeting_type_label: str, points: list[str], headings: list[str], target_words: int
+) -> list[dict]:
+    """Condense, step 2: the minutes written from the key points alone."""
+    heads = "\n".join(headings) or "(none)"
+    system = (
+        f"Write the minutes of one agenda section of a {meeting_type_label.lower()} of {org} from the key points "
+        "given, in formal minutes style: third person, past tense, names as given, connected prose. Group related "
+        "points into paragraphs of three to six sentences. When points carry a number in square brackets, put them "
+        "under the matching sub-heading, written on its own line exactly as listed in SUB-HEADINGS; never write the "
+        "bracketed numbers. Add nothing that is not in the points, and do not write RESOLVED blocks (they are added "
+        f"for you). About {target_words} words. Return json only: {{\"markdown\": \"...\"}}."
+    )
+    user = f"SUB-HEADINGS:\n{heads}\n\nKEY POINTS:\n" + "\n".join(f"- {p}" for p in points)
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
