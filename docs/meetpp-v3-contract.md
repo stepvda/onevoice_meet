@@ -433,6 +433,8 @@ screen share, and takes part in the room layout (frontend `lib/stage.ts`, backen
   line by another speaker ("that's a good idea", "let's go with that", "that's okay", "I like that", "I agree", or a
   reply that is nothing but assent: "Yes.", "To all? Yeah."). Negated or asked phrases do not count. Otherwise the
   decision is (or stays) proposed and the model's vote is not applied; the next tick sees it proposed and re-cites.
+  The cited lines (with the 3 lines before each) must also share a content word with the decision's title or
+  resolution, so agreement to another proposal cannot adopt it.
   People are not gated. Prompt v3.3 asks the model to cite the agreeing line.
 - **Guests in room data** appear as an opaque per-session alias `guest:~<20 hex>` (state, deltas, captions,
   transcript, ballots, assignees); a chair's ballot that sends the alias back is mapped to the real key. Public

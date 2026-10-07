@@ -15,8 +15,10 @@ transcript lines it cites show agreement, sentence by sentence:
     they choose, let's go with the other one").
 
 Phrases that are negated ("I don't agree") or asked ("all in favour?") do
-not count. Otherwise the decision stays proposed; a later tick that cites
-the agreeing line adopts it.
+not count. And the cited lines must be about the decision (`about`): a
+replay adopted "keep model backups" on "I think it's a good idea, so let's
+do that", said about another proposal. Otherwise the decision stays
+proposed; a later tick that cites the agreeing line adopts it.
 """
 from __future__ import annotations
 
@@ -119,3 +121,31 @@ def any_agreement(lines: Iterable[tuple[str | None, str]]) -> bool:
             return True
         speakers.add(who)
     return False
+
+
+# Words that say nothing about what a decision is about.
+_COMMON = {
+    "about", "after", "again", "agree", "agreed", "agreement", "also", "approve", "approved", "because", "been",
+    "before", "being", "board", "could", "decide", "decided", "decision", "directors", "does", "doing", "done",
+    "from", "going", "good", "have", "here", "idea", "into", "just", "know", "like", "make", "meeting", "more",
+    "motion", "need", "only", "other", "over", "propose", "proposal", "really", "resolution", "resolved", "said",
+    "should", "some", "something", "that", "their", "them", "then", "there", "these", "they", "thing", "things",
+    "think", "this", "those", "through", "under", "very", "vote", "want", "well", "were", "what", "when", "where",
+    "which", "while", "will", "with", "would", "yeah", "your",
+}
+_STEM = 5
+
+
+def _stems(text: str) -> set[str]:
+    return {w[:_STEM] for w in _WORD.findall((text or "").lower().replace("’", "'"))
+            if len(w) >= 4 and w not in _COMMON}
+
+
+def about(subject: str, texts: Iterable[str]) -> bool:
+    """The cited lines share a content word with the decision's title or
+    resolution (crude stems: "backups" ~ "backup", "separating" ~
+    "separate"). Without a subject there is nothing to check."""
+    want = _stems(subject)
+    if not want:
+        return True
+    return any(_stems(t) & want for t in texts)

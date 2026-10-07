@@ -57,3 +57,14 @@ def test_a_response_must_answer_someone_else():
     # A declared outcome counts from anyone, the chair included.
     assert any_agreement([proposal, ("ana", "Good, that's agreed then.")])
     assert not any_agreement([])
+
+
+def test_the_cited_exchange_must_be_about_the_decision():
+    from app.meetpp.agreement import about
+
+    subject = "Keep backups of the latest models"
+    assert about(subject, ["Should we keep a backup of the newest model?", "Yes."])
+    # Agreement to something else: nothing about backups or models.
+    assert not about(subject, ["Are we good with splitting the terms and the privacy policy?",
+                               "I think it's a good idea, so let's try to do that."])
+    assert about("", ["anything"])

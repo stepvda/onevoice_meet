@@ -505,7 +505,7 @@ async def test_adopted_without_a_count_is_recorded_as_assent_in_a_board_meeting(
     # An assent sent with zero counts is counted from the ballots; a count
     # above the voting members present is kept as heard but decides nothing
     # (the chair checks it in review).
-    s2 = await say(sid, "43", "Ben Hartley", "And the shed: all in favour? Yes. Agreed.")
+    s2 = await say(sid, "43", "Ben Hartley", "And the shed and the fence: all in favour? Yes. Agreed.")
     fakes.llm.add("tick", {"ops": [
         {"op": "decision.add", "section": pid(sid, "Approval of the minutes"), "title": "Shed repainted",
          "resolution": "that the shed is repainted", "status": "adopted", "evidence": [s2],
@@ -650,6 +650,14 @@ async def test_ai_adopts_only_on_agreement_in_the_cited_lines(fakes):
     d = get(MeetppDecision, d.id)
     assert d.status == "adopted" and d.decided_seq == s3
     assert query(lambda db: db.query(MeetppVote).filter_by(decision_id=d.id).one()).method == "assent"
+    # Agreement to something else does not adopt it.
+    s5 = await say(sid, "42", "Alice Moreau", "Shall we move the plant sale to May?")
+    s6 = await say(sid, "43", "Ben Hartley", "Yes, that's a good idea, let's do that.")
+    fakes.llm.add("tick", {"ops": [{"op": "decision.add", "section": sec, "title": "Replace the shed roof",
+                                    "status": "adopted", "evidence": [s5, s6]}]})
+    await rt.tick(sid)
+    roof = query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid, title="Replace the shed roof").one())
+    assert roof.status == "proposed"
     # A suggestion nobody answered stays proposed too.
     s4 = await say(sid, "42", "Alice Moreau", "We could also paint the gate.")
     rows = query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid).count())
@@ -657,4 +665,4 @@ async def test_ai_adopts_only_on_agreement_in_the_cited_lines(fakes):
                                     "status": "adopted", "evidence": [s4]}]})
     await rt.tick(sid)
     gate = query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid, title="Paint the gate").one())
-    assert gate.status == "proposed" and rows == 1
+    assert gate.status == "proposed" and rows == 2

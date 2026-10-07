@@ -540,7 +540,7 @@ def _decision_fields(ctx: ApplyContext, d: MeetppDecision, op, *, evidence: list
     unheard = (
         not ctx.human and before != "adopted"
         and (status == "adopted" or (status is None and op.vote))
-        and not _agreement_cited(ctx, evidence)
+        and not _agreement_cited(ctx, evidence, f"{d.title or ''} {d.resolution or ''} {op.title or ''} {op.resolution or ''}")
     )
     if unheard:
         log.info("meetpp: %s not adopted: no agreement in the cited lines %s", d.ref or "decision", evidence)
@@ -578,16 +578,24 @@ def _decision_fields(ctx: ApplyContext, d: MeetppDecision, op, *, evidence: list
     return d.status != before and d.status in ("adopted", "rejected")
 
 
-def _agreement_cited(ctx: ApplyContext, evidence: list[int]) -> bool:
+# Lines before a cited line that also tell what the exchange is about (the
+# vote "Will you both be in favour? Yes. Approved." follows the proposal).
+ABOUT_LEAD_LINES = 3
+
+
+def _agreement_cited(ctx: ApplyContext, evidence: list[int], subject: str) -> bool:
     if not evidence:
         return False
+    around = {e - k for e in evidence for k in range(ABOUT_LEAD_LINES + 1)}
     rows = (
         ctx.db.query(MeetppSegment.seq, MeetppSegment.identity, MeetppSegment.text, MeetppSegment.text_refined)
-        .filter(MeetppSegment.session_id == ctx.session.id, MeetppSegment.seq.in_(evidence), MeetppSegment.is_gap.is_(False))
+        .filter(MeetppSegment.session_id == ctx.session.id, MeetppSegment.seq.in_(around), MeetppSegment.is_gap.is_(False))
         .order_by(MeetppSegment.seq)
         .all()
     )
-    return agreement.any_agreement((r.identity, r.text_refined or r.text or "") for r in rows)
+    cited = set(evidence)
+    lines = [(r.identity, r.text_refined or r.text or "") for r in rows if r.seq in cited]
+    return agreement.any_agreement(lines) and agreement.about(subject, (r.text_refined or r.text or "" for r in rows))
 
 
 def _new_ref(ctx: ApplyContext, kind: str) -> str:
