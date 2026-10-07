@@ -100,9 +100,23 @@ describe("meet-ai handling", () => {
     const s = useMeetpp.getState();
     expect(s.snap?.version).toBe(13);
     expect(s.badges.d2).toBe("new");
+    // A person's board stays on its tab: the Decisions tab counts and flashes,
+    // and the decision is highlighted where the Agenda lists it.
+    expect(s.tab).toBe("agenda");
+    expect(s.viewedSectionId).toBeNull();
+    expect(s.unseen.decisions).toBe(1);
+    expect(s.flash?.tab).toBe("decisions");
+    expect(s.highlight).toMatchObject({ tab: "agenda", items: ["d2"] });
+  });
+
+  it("the recording view still switches to the tab of a change", () => {
+    configureFocus(true);
+    handleMessage({ v: 1, type: "state", version: 11, delta: { decisions: [{ id: "d1", ref: "D-1", title: "A", section_id: "s2" } as never] }, activations: [{ kind: "decision", tab: "decisions", section_id: "s2", item_id: "d1", prio: 5 }] });
+    const s = useMeetpp.getState();
     expect(s.tab).toBe("decisions");
     expect(s.viewedSectionId).toBe("s2");
-    expect(s.highlight?.items).toEqual(["d2"]);
+    expect(s.highlight?.items).toEqual(["d1"]);
+    configureFocus(false);
   });
 
   it("marks NEW vs UPDATED badges and keeps them for activations dropped by a pause", () => {
@@ -118,7 +132,7 @@ describe("meet-ai handling", () => {
     expect(useMeetpp.getState().proposal?.pid).toBe("p1");
     handleMessage({ v: 1, type: "state", version: 11, delta: { minutes: [{ id: "m1", section_id: "s1", notes: [{ text: "n", evidence: [1], at: null }] } as never] }, activations: [] });
     expect(useMeetpp.getState().proposal?.pid).toBe("p1");
-    expect(useMeetpp.getState().unseen.minutes).toBe(true);
+    expect(useMeetpp.getState().unseen.minutes).toBe(1);
     handleMessage({ v: 1, type: "position", version: 12, live_section_id: "s2", prev_section_id: "s1", by: "chair", undo_until: null });
     expect(useMeetpp.getState().proposal).toBeNull();
     expect(useMeetpp.getState().snap?.session.live_section_id).toBe("s2");

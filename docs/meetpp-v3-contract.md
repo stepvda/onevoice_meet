@@ -443,3 +443,24 @@ screen share, and takes part in the room layout (frontend `lib/stage.ts`, backen
 - **Stage streams**: the room metadata keeps the live screen shares and playback in `stage_streams` (oldest first).
   When the presented stream stops, the stage goes to the most recent stream still live, else to `presenter_prev`;
   Meet++ starting while a stream holds the stage follows it.
+
+## 13. Board stays put; agenda points carry their record (Release 1.3)
+
+From the first live use of Release 1.2:
+- **No automatic tab switching** on a person's board (store.ts `inPlace`). A change on another tab adds to that
+  tab's counter (`unseen[tab]`, now a number) and makes it flash (`flash`). A change on the tab being viewed is
+  highlighted in place and scrolled into view only when out of sight (`scrollReq.ifHidden`); there is no return
+  jump afterwards. On the Agenda tab, decisions and actions are highlighted where the point lists them. A new live
+  point scrolls only the Agenda and Minutes tabs. The point the meeting leaves stays expanded where it was open.
+  The recording / livestream view (egress) keeps switching tabs as before.
+- **Actions linked to agenda points**: `action.update` takes `section` / `section_id`. For an action of this
+  meeting it moves the action to that point; for a previous action it sets `meetpp_action_reports.section_id` (the
+  point it is about at this meeting; the actions point itself = unlinked). A previous action reported on while the
+  meeting is at another agenda point is linked to that point automatically. `ActionDto.topic_section_id` gives the
+  point (previous actions stay grouped under the actions point via `section_id`). The tick prompt (v3.4) shows the
+  links and asks the model to give the point. People change the link in the action's or decision's edit form.
+- **Agenda tab per point**: its decisions, its actions (raised there or linked, with what was reported) and its
+  minutes. A point's composition includes the linked previous actions, their reports and the transcript lines they
+  cite.
+- **Live draft minutes**: while a point is live, its minutes are composed as a draft at most every 180 s once
+  120 more words were said on it (runtime `LIVE_DRAFT_*`); the composition when the point closes is unchanged.

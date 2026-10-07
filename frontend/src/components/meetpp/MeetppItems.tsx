@@ -6,10 +6,11 @@ import {
   jumpToTranscript,
   selectItem,
   useMeetpp,
+  viewSection,
 } from "../../lib/meetpp/store";
 import { meetppActions } from "../../lib/meetpp/session";
 import { meetppApi } from "../../lib/meetpp/api";
-import { fmtClock, lowerBound } from "../../lib/meetpp/state";
+import { actionPoint, fmtClock, linkablePoints, lowerBound, previousActionsHome, sectionLabel } from "../../lib/meetpp/state";
 import type {
   ActionDto,
   AttachmentDto,
@@ -154,9 +155,9 @@ export function Provenance({ origin, evidence, at, id, kind }: { origin: string;
   );
 }
 
-const DECISION_TONE: Record<string, Tone> = { adopted: "green", rejected: "red", withdrawn: "slate", proposed: "blue", pending: "amber" };
+export const DECISION_TONE: Record<string, Tone> = { adopted: "green", rejected: "red", withdrawn: "slate", proposed: "blue", pending: "amber" };
 
-function useDecisionStatusLabel() {
+export function useDecisionStatusLabel() {
   const { t } = useTranslation();
   return (status: string) =>
     ({
@@ -187,6 +188,7 @@ export function DecisionCard({ d, canEdit, canVote }: { d: DecisionDto; canEdit:
   const statusLabel = useDecisionStatusLabel();
   const methodLabel = useVoteMethodLabel();
   const formal = useMeetpp((s) => s.snap?.session.meeting_type !== "informal");
+  const pointOptions = usePointOptions();
   const [editing, setEditing] = useState(false);
   const [voting, setVoting] = useState(false);
   const [run, error] = useRun();
@@ -258,9 +260,11 @@ export function DecisionCard({ d, canEdit, canVote }: { d: DecisionDto; canEdit:
               value: d.status,
               options: ["pending", "proposed", "adopted", "rejected", "withdrawn"].map((s) => [s, statusLabel(s)]),
             },
+            ...(pointOptions.length ? [{ key: "section_id", label: t("meetpp.decision.point", { defaultValue: "Agenda point" }), value: d.section_id ?? "", options: pointOptions }] : []),
           ]}
           onCancel={() => setEditing(false)}
           onSave={async (changed) => {
+            if (!changed.section_id) delete changed.section_id;
             if (Object.keys(changed).length === 0) return setEditing(false);
             if (await run(ops([{ op: "decision.update", id: d.id, ...changed }]))) setEditing(false);
           }}
@@ -271,11 +275,42 @@ export function DecisionCard({ d, canEdit, canVote }: { d: DecisionDto; canEdit:
   );
 }
 
+// ── Agenda point link ─────────────────────────────────────────────────────
+
+/** Options of the "Agenda point" field; `none` adds an unlinked choice. */
+function usePointOptions(none?: string): Array<[string, string]> {
+  const sections = useMeetpp((s) => s.snap?.sections);
+  return useMemo(() => {
+    const opts = linkablePoints(sections ?? []).map((x) => [x.id, sectionLabel(x)] as [string, string]);
+    return none !== undefined ? [["", none] as [string, string], ...opts] : opts;
+  }, [sections, none]);
+}
+
+/** "About: 4. Funding" — the agenda point a previous action is about. */
+function PointChip({ sectionId }: { sectionId: string }) {
+  const { t } = useTranslation();
+  const section = useMeetpp((s) => s.snap?.sections.find((x) => x.id === sectionId) ?? null);
+  if (!section) return null;
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        viewSection(sectionId, true);
+      }}
+      className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-800 hover:bg-indigo-100"
+      title={t("meetpp.action.aboutHint", { defaultValue: "Listed under this agenda point too" })}
+    >
+      {t("meetpp.action.about", { defaultValue: "About: {{point}}", point: sectionLabel(section) })}
+    </button>
+  );
+}
+
 // ── Action ────────────────────────────────────────────────────────────────
 
-const ACTION_TONE: Record<string, Tone> = { proposed: "slate", open: "blue", in_progress: "blue", done: "green", cancelled: "red" };
+export const ACTION_TONE: Record<string, Tone> = { proposed: "slate", open: "blue", in_progress: "blue", done: "green", cancelled: "red" };
 
-function useActionStatusLabel() {
+export function useActionStatusLabel() {
   const { t } = useTranslation();
   return (status: string) =>
     ({
@@ -293,6 +328,9 @@ export function ActionCard({ a, canEdit }: { a: ActionDto; canEdit: boolean }) {
   const [editing, setEditing] = useState(false);
   const [run, error] = useRun();
   const toReview = a.previous && !a.report;
+  const home = useMeetpp((s) => (s.snap ? previousActionsHome(s.snap.sections)?.id ?? null : null));
+  const pointOptions = usePointOptions(a.previous ? t("meetpp.action.notLinked", { defaultValue: "— not linked to an agenda point" }) : undefined);
+  const point = actionPoint(a);
   return (
     <ItemFrame id={a.id} kind="action" evidence={a.evidence} dashed={toReview}>
       <div className="pr-14 text-[14px] font-semibold leading-snug text-slate-900">
@@ -328,6 +366,7 @@ export function ActionCard({ a, canEdit }: { a: ActionDto; canEdit: boolean }) {
         )}
         {toReview && <Pill tone={ACTION_TONE[a.status] ?? "slate"}>{statusLabel(a.status)}</Pill>}
         {a.carried_forward && <Pill tone="indigo">{t("meetpp.action.carried", { defaultValue: "carried forward" })}</Pill>}
+        {a.previous && point && <PointChip sectionId={point} />}
         <Provenance origin={a.origin} evidence={a.evidence} at={a.report?.at ?? null} id={a.id} kind="action" />
       </div>
       {canEdit && !editing && (
@@ -361,12 +400,21 @@ export function ActionCard({ a, canEdit }: { a: ActionDto; canEdit: boolean }) {
               options: ["proposed", "open", "in_progress", "done", "cancelled"].map((s) => [s, statusLabel(s)]),
             },
             ...(a.previous ? [{ key: "report_note", label: t("meetpp.action.reportNote", { defaultValue: "Reported at this meeting" }), value: a.report?.note ?? "", multiline: true }] : []),
+            ...(pointOptions.length > (a.previous ? 1 : 0)
+              ? [{ key: "point", label: t("meetpp.action.point", { defaultValue: "Agenda point" }), value: point ?? "", options: pointOptions }]
+              : []),
           ]}
           onCancel={() => setEditing(false)}
           onSave={async (changed) => {
             const patch: Record<string, unknown> = { ...changed };
             if ("assignees" in patch) patch.assignees = String(patch.assignees).split(",").map((x) => x.trim()).filter(Boolean);
             if ("due" in patch && !patch.due) patch.due = null;
+            if ("point" in patch) {
+              // Unlinking a previous action = linking it to the actions point.
+              const target = (patch.point as string) || (a.previous ? home : null);
+              delete patch.point;
+              if (target) patch.section_id = target;
+            }
             if (Object.keys(patch).length === 0) return setEditing(false);
             if (await run(ops([{ op: "action.update", id: a.id, ...patch }]))) setEditing(false);
           }}
@@ -446,8 +494,15 @@ export function MinutesBlock({ m, section, isLive, canChair, canEdit }: { m: Min
         : m?.source_tier === "mixed"
           ? t("meetpp.minutes.tierMixed", { defaultValue: "mixed transcript" })
           : "";
+  const draft = isLive && !!narrative;
   const statusLine =
-    status === "composing"
+    isLive
+      ? status === "composing"
+        ? t("meetpp.minutes.drafting", { defaultValue: "updating the draft…" })
+        : narrative && m?.composed_at
+          ? t("meetpp.minutes.draft", { defaultValue: "Draft · updated {{at}} · refreshed every few minutes while the point is discussed", at: fmtClock(m.composed_at, false) })
+          : ""
+      : status === "composing"
       ? t("meetpp.minutes.composing", { defaultValue: "composing…" })
       : status === "failed"
         ? t("meetpp.minutes.failed", { defaultValue: "Composition failed" })
@@ -456,9 +511,10 @@ export function MinutesBlock({ m, section, isLive, canChair, canEdit }: { m: Min
           : status === "composed"
             ? t("meetpp.minutes.composed", { defaultValue: "Composed v{{v}} · {{at}}", v: m?.version ?? 1, at: fmtClock(m?.composed_at, false) })
             : "";
-  const showRunning = isLive || !narrative || showNotes || status === "failed" || status === "composing";
+  const showRunning = !narrative || showNotes || status === "failed" || (status === "composing" && !isLive);
   return (
     <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+      {isLive && statusLine && <div className={cx("text-[11px] text-slate-500", status === "composing" && "italic")}>{statusLine}</div>}
       {(statusLine || canChair || canEdit) && !isLive && (
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
           {statusLine && <span className={cx(status === "failed" && "font-semibold text-rose-600", status === "composing" && "italic")}>{statusLine}</span>}
@@ -491,7 +547,7 @@ export function MinutesBlock({ m, section, isLive, canChair, canEdit }: { m: Min
           <div className="mt-1 text-[10px] text-slate-400">{t("meetpp.minutes.editHint", { defaultValue: "Ctrl+Enter saves · Esc cancels · saving locks this part" })}</div>
         </div>
       ) : (
-        narrative && !isLive && <MdView text={narrative} />
+        narrative && <div className={cx(draft && "rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-2 py-1")}><MdView text={narrative} /></div>
       )}
       {showRunning && (
         <div>
@@ -524,7 +580,7 @@ export function MinutesBlock({ m, section, isLive, canChair, canEdit }: { m: Min
           )}
         </div>
       )}
-      {narrative && !isLive && notes.length > 0 && (
+      {narrative && notes.length > 0 && (
         <button type="button" className="text-[11px] text-blue-700 hover:underline" onClick={() => setShowNotes((v) => !v)}>
           {showNotes ? t("meetpp.minutes.hideNotes", { defaultValue: "Hide running notes" }) : t("meetpp.minutes.showNotes", { defaultValue: "Show running notes" })}
         </button>

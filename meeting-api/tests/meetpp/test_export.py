@@ -27,7 +27,8 @@ DECISION_KEYS = {"id", "ref", "section_id", "title", "resolution", "how_taken", 
 VOTE_KEYS = {"method", "for", "against", "abstain", "eligible", "present", "quorum_required", "quorum_met", "result",
              "outcome_note", "confirmed", "ballots"}
 ACTION_KEYS = {"id", "ref", "section_id", "title", "description", "assignees", "due", "status", "decision_ref", "completed_at",
-               "completion_note", "progress_notes", "origin", "locked", "evidence", "previous", "carried_forward", "report"}
+               "completion_note", "progress_notes", "origin", "locked", "evidence", "previous", "carried_forward", "report",
+               "topic_section_id"}
 MINUTE_KEYS = {"id", "kind", "section_id", "notes", "narrative_md", "version", "status", "source_tier", "composed_at", "locked", "error"}
 ATTENDEE_KEYS = {"id", "person_key", "name", "username", "email", "status", "online", "voting", "represented_by", "mandate_ref",
                  "opted_out", "required_next", "required_reason", "talk_seconds"}

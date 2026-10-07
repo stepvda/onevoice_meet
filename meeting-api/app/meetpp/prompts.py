@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-PROMPT_VERSION = "v3.3"
+PROMPT_VERSION = "v3.4"
 
 TICK_EXAMPLE = {
     "topic": {"section": "S5", "sub": "b", "confidence": 0.86},
@@ -50,7 +50,7 @@ TICK_SCHEMA = """{
   {"op":"decision.add","section":"S<n>","title":"<=300","resolution":"that …","how_taken":"<=600","status":"proposed|adopted|rejected|withdrawn","decided_at_seq":<seq>|null,"vote":{"method":"voice|show_of_hands|assent|consensus|roll_call","for":n,"against":n,"abstain":n,"ballots":[{"person":"<name>","choice":"for|against|abstain"}]}|null,"evidence":[seq,…]},
   {"op":"decision.update","ref":"D-<n>","title"?,"resolution"?,"how_taken"?,"status"?,"decided_at_seq"?,"vote"?,"evidence":[seq,…]},
   {"op":"action.add","section":"S<n>","title":"<=300","description"?,"assignees":["<name>"],"due":"YYYY-MM-DD"|null,"from_decision":"D-<n>"|null,"evidence":[seq,…]},
-  {"op":"action.update","ref":"A-<n>","status"?:"open|in_progress|done|cancelled","report_note"?,"progress_note"?,"completion_note"?,"due"?,"assignees"?,"evidence":[seq,…]},
+  {"op":"action.update","ref":"A-<n>","section"?:"S<n>","status"?:"open|in_progress|done|cancelled","report_note"?,"progress_note"?,"completion_note"?,"due"?,"assignees"?,"evidence":[seq,…]},
   {"op":"attendance.set","person":"<name>","status":"present|represented|absent|excused","represented_by"?,"evidence":[seq,…]},
   {"op":"attendance.require_next","person":"<name>","reason":"<=300","evidence":[seq,…]},
   {"op":"section.add","kind":"subpoint|aob","parent":"S<n>"?,"title":"<=300"},
@@ -95,6 +95,9 @@ def tick_system(*, org: str, meeting_type_label: str) -> str:
         "- For previous actions (A-n, marked TO REVIEW until reported) record what was reported about them at "
         "this meeting (report_note), status changes (done with a completion_note) and progress notes. Every "
         "action.update on a previous action carries a report_note.\n"
+        "- When an action (previous or new) is about one of the agenda points, give that point as section in your "
+        "first update of it (\"section\":\"S<n>\"), so that it is listed under that point with what was said "
+        "about it — also while the actions are being reviewed under another point.\n"
         "- Set an action to done only when it is said that this particular action is finished. A general remark "
         "(\"that closes off the garden actions\") does not cover an item named as not yet done (\"the only thing "
         "we didn't do is …\", \"keep that open\"): that one stays open, with a report_note saying what remains.\n"

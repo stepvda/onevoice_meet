@@ -666,3 +666,79 @@ async def test_ai_adopts_only_on_agreement_in_the_cited_lines(fakes):
     await rt.tick(sid)
     gate = query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid, title="Paint the gate").one())
     assert gate.status == "proposed" and rows == 2
+
+
+def _previous_action(sid: str, ref: str, title: str) -> str:
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, sid)
+        a = MeetppAction(id=util.ulid(), series_id=session.series_id, session_id=sid, ref=ref, title=title, status="open", origin="pdf")
+        db.add(a)
+        db.commit()
+        return a.id
+    finally:
+        db.close()
+
+
+async def test_actions_are_linked_to_the_agenda_point_they_are_about(fakes):
+    sid = await running(fakes)
+    ids = sids(sid)
+    tank = _previous_action(sid, "A-7", "Get a quote for the rainwater tank")
+    budget = _previous_action(sid, "A-8", "Draft the 2027 budget")
+    # Reviewed under the actions point, but about the garden: listed there too.
+    s1 = await say(sid, "43", "Ben Hartley", "The quote for the tank came in at four hundred euros.")
+    fakes.llm.add("tick", {"ops": [{"op": "action.update", "ref": "A-7", "section": pid(sid, "Community garden"),
+                                    "report_note": "Quote received: 400 euros.", "evidence": [s1]}]})
+    assert (await rt.tick(sid))["applied"] == 1
+    r = query(lambda db: db.query(MeetppActionReport).filter_by(action_id=tank, session_id=sid).one())
+    assert r.section_id == ids["Community garden"]
+    dto = next(a for a in fakes.bus.last("state")["delta"]["actions"] if a["id"] == tank)
+    assert dto["topic_section_id"] == ids["Community garden"] and dto["previous"]
+    # Linking again to the same point is no change for the model.
+    s2 = await say(sid, "43", "Ben Hartley", "So the tank quote is in.")
+    fakes.llm.add("tick", {"ops": [{"op": "action.update", "ref": "A-7", "section": pid(sid, "Community garden"),
+                                    "report_note": "Quote received: 400 euros.", "evidence": [s2]}]})
+    assert (await rt.tick(sid))["applied"] == 0
+    # Reported while the meeting is at the budget point: linked to it.
+    await rt.chair_move(sid, "move", ids["Budget 2027"])
+    s3 = await say(sid, "42", "Alice Moreau", "The budget draft is half done.")
+    fakes.llm.add("tick", {"ops": [{"op": "action.update", "ref": "A-8", "status": "in_progress",
+                                    "report_note": "Half done.", "evidence": [s3]}]})
+    assert (await rt.tick(sid))["applied"] == 1
+    r = query(lambda db: db.query(MeetppActionReport).filter_by(action_id=budget, session_id=sid).one())
+    assert r.section_id == ids["Budget 2027"]
+    # A person moves a new action to another point.
+    s4 = await say(sid, "42", "Alice Moreau", "Ben will order the tank.")
+    fakes.llm.add("tick", {"ops": [{"op": "action.add", "section": pid(sid, "Budget 2027"), "title": "Order the tank",
+                                    "assignees": ["Ben Hartley"], "evidence": [s4]}]})
+    await rt.tick(sid)
+    new = query(lambda db: db.query(MeetppAction).filter_by(session_id=sid, title="Order the tank").one())
+    db = SessionLocal()
+    try:
+        session = db.get(MeetppSession, sid)
+        from app.meetpp import ops as ops_mod
+
+        ctx = ops_mod.ApplyContext(db=db, session=session, actor="user-42")
+        ops_mod.apply_ops(ctx, [{"op": "action.update", "id": new.id, "section_id": ids["Community garden"]}])
+        db.commit()
+    finally:
+        db.close()
+    assert get(MeetppAction, new.id).section_id == ids["Community garden"]
+
+
+async def test_live_point_minutes_are_drafted_while_it_is_discussed(fakes, monkeypatch):
+    sid = await running(fakes)
+    scheduled: list[str] = []
+    monkeypatch.setattr(compose, "schedule_section", lambda session_id, section_id, **kw: scheduled.append(section_id))
+    runner = rt.SessionRunner(sid)
+    runner._live_draft(1000.0)
+    assert scheduled == []  # nothing said yet
+    for i in range(6):
+        await say(sid, "42", "Alice Moreau", " ".join(["We talked about the rainwater tank and the municipal connection."] * 3))
+    runner._live_draft(1000.0)
+    live = query(lambda db: db.get(MeetppSession, sid).live_section_id)
+    assert scheduled == [live]
+    runner._live_draft(1100.0)  # at most every three minutes
+    assert scheduled == [live]
+    runner._live_draft(1200.0)
+    assert scheduled == [live, live]

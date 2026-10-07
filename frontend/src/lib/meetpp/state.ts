@@ -342,6 +342,20 @@ export function actionGroupSection(a: ActionDto, sections: SectionDto[]): string
   return null;
 }
 
+/** The agenda point an action is about: where it was raised, or for a
+ * previous action the point it was linked to at this meeting. */
+export function actionPoint(a: ActionDto): string | null {
+  return a.previous ? a.topic_section_id ?? null : a.topic_section_id ?? a.section_id ?? null;
+}
+
+/** Points an item can be linked to: agenda points and their sub-points, in
+ * outline order, not the fixed parts of the meeting. */
+export function linkablePoints(sections: SectionDto[]): SectionDto[] {
+  return outlineOrder(sections).filter(
+    (s) => s.status !== "skipped" && !["opening", "previous_actions", "new_actions", "closing"].includes(s.kind) && !s.previous_actions_home,
+  );
+}
+
 export function decisionGroupSection(d: DecisionDto, sections: SectionDto[]): string | null {
   if (d.section_id && sections.some((s) => s.id === d.section_id)) return d.section_id;
   return null;

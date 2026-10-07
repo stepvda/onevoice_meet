@@ -170,6 +170,28 @@ describe("Meet++ board renders (SSR smoke test)", () => {
     expect(participant).not.toContain("btn-meetpp-next");
   });
 
+  it("lists each agenda point's decisions, linked actions and live draft minutes", () => {
+    load(true);
+    const snap = useMeetpp.getState().snap!;
+    useMeetpp.setState({
+      tab: "agenda",
+      snap: {
+        ...snap,
+        // A previous action reviewed under the actions point, linked to point 3.
+        actions: snap.actions.map((a) => (a.id === "a1" ? { ...a, topic_section_id: "p3", report: { note: "Quote received from the supplier", status: "open", at: now } } : a)),
+        minutes: snap.minutes.map((m) => (m.id === "m3" ? { ...m, narrative_md: "The meeting agreed to one more week of testing.", status: "composed", composed_at: now } : m)),
+      },
+    });
+    const html = renderToString(<MeetppBoard variant="stage" />);
+    const point = html.slice(html.indexOf('data-group="p3"'));
+    for (const text of ["D-2", "A-13", "Quote received from the supplier", "A-14", "Minutes — live draft", "one more week of testing"]) {
+      expect(point).toContain(text);
+    }
+    // Not under the other points.
+    const p1 = html.slice(html.indexOf('data-group="p1"'), html.indexOf('data-group="p2"'));
+    expect(p1).not.toContain("A-13");
+  });
+
   it("renders badges after an activation", () => {
     load(true);
     processActivations([{ kind: "decision", tab: "decisions", section_id: "p3", item_id: "d2", prio: 5 }], new Set(["d2"]));

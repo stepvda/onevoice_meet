@@ -82,6 +82,10 @@ def section_segments(db: Session, session: MeetppSession, o: outline_mod.Outline
         cited.update(util.loads(d.evidence_json, []))
     for a in db.query(MeetppAction).filter(MeetppAction.session_id == session.id, MeetppAction.section_id.in_(ids)).all():
         cited.update(util.loads(a.evidence_json, []))
+    # What was said about previous actions linked to this point (they are
+    # reviewed under the actions point).
+    for r in db.query(MeetppActionReport).filter(MeetppActionReport.session_id == session.id, MeetppActionReport.section_id.in_(ids)).all():
+        cited.update(util.loads(r.evidence_json, []))
     q = db.query(MeetppSegment).filter(MeetppSegment.session_id == session.id, MeetppSegment.is_gap.is_(False))
     cond = MeetppSegment.section_id.in_(ids)
     if cited:
@@ -260,6 +264,12 @@ async def _compose_body(db: Session, session: MeetppSession, o: outline_mod.Outl
         # The previous actions reported on here, plus any action raised here.
         previous = [a for a in ops.session_actions(db, session) if ops.is_previous_action(a, session)]
         actions = previous + [a for a in actions if a not in previous]
+    reports = {r.action_id: r for r in db.query(MeetppActionReport).filter_by(session_id=session.id).all()}
+    linked = {aid for aid, r in reports.items() if r.section_id in ids}
+    if linked:
+        # Previous actions linked to this point: what was reported about them
+        # belongs to its discussion too.
+        actions = actions + [a for a in ops.session_actions(db, session) if a.id in linked and a not in actions]
     notes: list[str] = []
     for m in db.query(MeetppMinute).filter(MeetppMinute.session_id == session.id, MeetppMinute.section_id.in_(ids)).all():
         label = o.numbers.get(m.section_id or "") or ""
@@ -294,7 +304,11 @@ async def _compose_body(db: Session, session: MeetppSession, o: outline_mod.Outl
     action_lines = []
     for a in actions:
         who = ", ".join(x.get("name", "") for x in util.loads(a.assignees_json, []) if isinstance(x, dict))
-        action_lines.append(f"{a.ref} [{a.status}] {a.title}" + (f" — {who}" if who else "") + (f" — due {a.due_date}" if a.due_date else ""))
+        r = reports.get(a.id) if ops.is_previous_action(a, session) else None
+        action_lines.append(
+            f"{a.ref} [{a.status}] {a.title}" + (f" — {who}" if who else "") + (f" — due {a.due_date}" if a.due_date else "")
+            + (f" — reported at this meeting: {r.note}" if r is not None and r.note else "")
+        )
 
     transcript_words = sum(util.word_count(s["text"]) for s in transcript)
     new_actions = [a for a in actions if not ops.is_previous_action(a, session)]
@@ -303,6 +317,7 @@ async def _compose_body(db: Session, session: MeetppSession, o: outline_mod.Outl
         or bool(notes)
         or any(d.status != "pending" for d in decisions)
         or bool(new_actions)
+        or any(reports[aid].note for aid in linked)
     )
     if not discussed:
         # Never let the agenda text pass for discussion (FDD §8.7).

@@ -189,6 +189,10 @@ class ActionAdd(_Op):
 class ActionUpdate(_Op):
     ref: Ref = None
     id: Ref = None
+    # The agenda point the action is about (S<n> / id): a previous action is
+    # listed there as well; an action of this meeting moves there.
+    section: Ref = None
+    section_id: Ref = None
     title: Text300 = None
     description: Text4000 = None
     status: Text200 = None
@@ -760,6 +764,9 @@ def _action_update_is_noop(ctx: ApplyContext, a: MeetppAction, op: ActionUpdate,
     if op.assignees:
         return False
     report = ctx.db.query(MeetppActionReport).filter_by(action_id=a.id, session_id=ctx.session.id).first()
+    target = _link_target(ctx, op)
+    if target is not None and target.id != _linked_section_id(ctx, a, report):
+        return False
     for text, existing in (
         (op.report_note, report.note if report else None),
         (op.completion_note, a.completion_note),
@@ -813,11 +820,53 @@ def _apply_action_update(ctx: ApplyContext, op: ActionUpdate) -> str:
     if evidence:
         ev = util.loads(a.evidence_json, [])
         a.evidence_json = util.dumps((ev + [e for e in evidence if e not in ev])[-30:])
+    _link_action(ctx, a, report, _link_target(ctx, op))
     if ctx.human:
         a.locked = True
     ctx.changes.actions.add(a.id)
     ctx.changes.activate("action", action_section_id(ctx.db, ctx.session, a, ctx.outline), a.id)
     return a.ref
+
+
+def _link_target(ctx: ApplyContext, op: ActionUpdate) -> MeetppSection | None:
+    if not (op.section or op.section_id):
+        return None
+    return ctx.outline.resolve(op.section_id) or ctx.outline.resolve(op.section)
+
+
+def _linked_section_id(ctx: ApplyContext, a: MeetppAction, report: MeetppActionReport | None) -> str | None:
+    if is_previous_action(a, ctx.session):
+        return report.section_id if report is not None else None
+    return a.section_id
+
+
+def _link_action(ctx: ApplyContext, a: MeetppAction, report: MeetppActionReport | None, target: MeetppSection | None) -> None:
+    """Link the action to the agenda point it is about. Without an explicit
+    point, a previous action reported on while the meeting is at another
+    agenda point is linked to that point."""
+    o = ctx.outline
+    home = _prev_section_id(o)
+    previous = is_previous_action(a, ctx.session)
+    if target is None:
+        if not previous or ctx.human or report is None or report.section_id:
+            return
+        at = o.by_id.get(ctx.topic_section_id or ctx.session.live_section_id or "")
+        if at is None or at.kind != "agenda" or at.id == home or o.top(at).id == home:
+            return
+        target = at
+    if previous:
+        report = report or _report_for(ctx, a)
+        # Linking to the review point itself is unlinking.
+        new = None if target.id == home else target.id
+        if report.section_id != new:
+            if report.section_id:
+                ctx.changes.sections.add(report.section_id)
+            report.section_id = new
+            if new:
+                ctx.changes.sections.add(new)
+    elif target.id != a.section_id:
+        ctx.changes.sections.update({a.section_id or "", target.id})
+        a.section_id = target.id
 
 
 def _attendee_for(ctx: ApplyContext, person: str, create_status: str) -> MeetppAttendee | None:
@@ -1326,6 +1375,9 @@ def action_dto(
             if report is not None
             else None
         ),
+        # The agenda point the action is about in this meeting (a previous
+        # action stays grouped under the actions point: section_id).
+        "topic_section_id": (report.section_id if report is not None else None) if previous else section_id,
     }
 
 

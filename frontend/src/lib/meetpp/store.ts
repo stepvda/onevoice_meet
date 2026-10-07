@@ -31,6 +31,11 @@ import type {
  * The view state is per client (FDD §5.3). Automatic activations go through
  * the FocusQueue (focusQueue.ts); programmatic tab/scroll changes made by the
  * queue never count as user interactions.
+ *
+ * Only the recording / livestream view (egress) switches tabs on its own. A
+ * person's board stays on the tab they chose: a change on another tab counts
+ * up on that tab and makes it flash; a change on their tab is highlighted in
+ * place and scrolled into view when it is out of sight.
  */
 
 export type ClientMode = "participant" | "egress" | "public" | "review" | "none";
@@ -101,11 +106,15 @@ export interface MeetppStore {
   tab: Tab;
   /** null = the live section. */
   viewedSectionId: string | null;
-  unseen: Partial<Record<Tab, boolean>>;
+  /** Changes on each tab since it was last looked at. */
+  unseen: Partial<Record<Tab, number>>;
+  /** A tab that just received a change it does not show (it flashes). */
+  flash: { tab: Tab; nonce: number } | null;
   badges: Record<string, "new" | "updated">;
   highlight: Highlight | null;
   follow: { mode: FollowMode; pausedUntil: number };
-  scrollReq: { sectionId: string | null; itemId: string | null; nonce: number } | null;
+  /** ifHidden: only scroll when the target is out of sight (automatic). */
+  scrollReq: { sectionId: string | null; itemId: string | null; nonce: number; ifHidden?: boolean } | null;
   selected: Selected | null;
   transcriptJump: { seq: number; nonce: number } | null;
   liveMsg: { text: string; nonce: number } | null;
@@ -123,6 +132,7 @@ const initialView = {
   tab: "agenda" as Tab,
   viewedSectionId: null,
   unseen: {},
+  flash: null,
   badges: {},
   highlight: null,
   scrollReq: null,
@@ -165,8 +175,12 @@ let scrollNonce = 0;
 // ── Focus queue binding ───────────────────────────────────────────────────
 
 let fq: FocusQueue | null = null;
+/** People's boards never change tab on their own (egress does). */
+let inPlace = true;
+let flashNonce = 0;
 
 function onShow(entry: FocusEntry, at: number): void {
+  if (inPlace) return showInPlace(entry, at);
   const s = get();
   const live = s.snap?.session.live_section_id ?? null;
   const sectionId = entry.sectionId ?? s.viewedSectionId ?? live;
@@ -179,6 +193,25 @@ function onShow(entry: FocusEntry, at: number): void {
     scrollReq: { sectionId, itemId: entry.items[0] ?? null, nonce: ++scrollNonce },
     unseen,
     expanded: sectionId ? { ...s.expanded, [`${entry.tab}:${sectionId}`]: true } : s.expanded,
+  });
+  announceLive(describeActivation(entry));
+}
+
+/** Highlight the change on the tab being looked at, without moving the
+ * viewer: no tab switch, no change of the viewed section, no return jump. An
+ * item is scrolled into view only when it is out of sight (MeetppTabs); a
+ * new live point only on the tabs organised by point. */
+function showInPlace(entry: FocusEntry, at: number): void {
+  const s = get();
+  if (entry.tab !== s.tab) return;
+  const live = s.snap?.session.live_section_id ?? null;
+  const sectionId = entry.sectionId ?? live;
+  const item = entry.items[0] ?? null;
+  const scroll = item !== null || (entry.kind === "topic" && (s.tab === "agenda" || s.tab === "minutes") && s.viewedSectionId === null);
+  set({
+    highlight: { tab: entry.tab, sectionId, items: entry.items, startedAt: at },
+    scrollReq: scroll ? { sectionId, itemId: item, nonce: ++scrollNonce, ifHidden: true } : s.scrollReq,
+    expanded: sectionId && item ? { ...s.expanded, [`${entry.tab}:${sectionId}`]: true } : s.expanded,
   });
   announceLive(describeActivation(entry));
 }
@@ -221,7 +254,11 @@ function onChange(snap: FocusSnapshot): void {
 export function configureFocus(alwaysFollow: boolean): FocusQueue {
   if (fq && fq.alwaysFollow === alwaysFollow) return fq;
   fq?.stop();
-  fq = new FocusQueue({ show: onShow, onChange, alwaysFollow, capture: captureView, restore: restoreView });
+  inPlace = !alwaysFollow;
+  // In place there is no earlier view to go back to.
+  fq = inPlace
+    ? new FocusQueue({ show: onShow, onChange, alwaysFollow })
+    : new FocusQueue({ show: onShow, onChange, alwaysFollow, capture: captureView, restore: restoreView });
   fq.start();
   set({ follow: { mode: "following", pausedUntil: 0 } });
   return fq;
@@ -357,9 +394,18 @@ export function mergeDelta(version: number, delta: StateDelta): void {
   if (delta.session?.agent) patch.agent = delta.session.agent;
   // Minutes notes / composition never activate; they only mark the tab unseen.
   const unseen = { ...s.unseen };
-  if (delta.minutes?.length && s.tab !== "minutes") unseen.minutes = true;
-  if ((delta.attachments?.length || delta.documents?.length) && s.tab !== "papers") unseen.papers = true;
+  let flash: Tab | null = null;
+  if (delta.minutes?.length && s.tab !== "minutes") {
+    unseen.minutes = (unseen.minutes ?? 0) + delta.minutes.length;
+    flash = "minutes";
+  }
+  const papers = (delta.attachments?.length ?? 0) + (delta.documents?.length ?? 0);
+  if (papers && s.tab !== "papers") {
+    unseen.papers = (unseen.papers ?? 0) + papers;
+    flash = "papers";
+  }
   patch.unseen = unseen;
+  if (flash && inPlace) patch.flash = { tab: flash, nonce: ++flashNonce };
   set(patch);
 }
 
@@ -378,16 +424,29 @@ export function processActivations(activations: Activation[] | undefined, before
   const badges = { ...s.badges };
   const unseen = { ...s.unseen };
   let lastChange = s.lastChange;
+  let flash: Tab | null = null;
   for (const a of activations) {
     const tab = a.tab as Tab;
     if (a.item_id) badges[a.item_id] = before.has(a.item_id) ? (badges[a.item_id] === "new" ? "new" : "updated") : "new";
-    if (s.tab !== tab || s.follow.mode !== "following") unseen[tab] = true;
+    const elsewhere = s.tab !== tab;
+    if (a.kind !== "topic" && (elsewhere || (!inPlace && s.follow.mode !== "following"))) {
+      unseen[tab] = (unseen[tab] ?? 0) + 1;
+      if (elsewhere) flash = tab;
+    }
     if (a.kind !== "topic" || !lastChange) lastChange = { label: changeLabel(a), tab, sectionId: a.section_id, at: Date.now() };
   }
-  set({ badges, unseen, lastChange });
+  set({ badges, unseen, lastChange, ...(flash && inPlace ? { flash: { tab: flash, nonce: ++flashNonce } } : {}) });
   const q = focusQueue();
   for (const a of activations) {
-    q.push({ kind: a.kind, tab: a.tab as Tab, sectionId: a.section_id ?? null, itemId: a.item_id ?? null, prio: a.prio });
+    // In place, only what the viewer's tab shows is highlighted — the Agenda
+    // lists each point's decisions and actions too.
+    if (inPlace && a.tab !== s.tab && a.kind !== "topic") {
+      if (s.tab === "agenda" && a.item_id && (a.kind === "decision" || a.kind === "action")) {
+        q.push({ kind: a.kind, tab: "agenda", sectionId: a.section_id ?? null, itemId: a.item_id, prio: a.prio });
+      }
+      continue;
+    }
+    q.push({ kind: a.kind, tab: inPlace && a.kind === "topic" ? s.tab : (a.tab as Tab), sectionId: a.section_id ?? null, itemId: a.item_id ?? null, prio: a.prio });
   }
 }
 
@@ -428,8 +487,16 @@ export function applyPosition(msg: PositionMsg): void {
     patch.undo = null;
   }
   if (s.proposal && s.proposal.to === live) patch.proposal = null;
-  if (s.viewedSectionId === null) {
-    patch.scrollReq = { sectionId: live, itemId: null, nonce: ++scrollNonce };
+  if (s.viewedSectionId === null && (!inPlace || s.tab === "agenda" || s.tab === "minutes")) {
+    patch.scrollReq = { sectionId: live, itemId: null, nonce: ++scrollNonce, ifHidden: inPlace };
+  }
+  // The point the meeting leaves stays open where it was open as the live
+  // one: a list someone is reading must not fold up under them.
+  const prev = msg.prev_section_id;
+  if (prev && inPlace) {
+    const expanded = { ...s.expanded };
+    for (const tab of ["decisions", "actions", "minutes"] as Tab[]) expanded[`${tab}:${prev}`] ??= true;
+    patch.expanded = expanded;
   }
   set(patch);
 }

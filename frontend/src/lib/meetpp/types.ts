@@ -187,6 +187,9 @@ export interface ActionDto {
   previous: boolean;
   carried_forward: boolean;
   report: { note: string; status: string | null; at: string | null } | null;
+  /** The agenda point the action is about in this meeting (a previous action
+   * stays grouped under the actions point: section_id). */
+  topic_section_id?: string | null;
 }
 
 export interface MinuteNote {

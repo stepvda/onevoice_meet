@@ -326,6 +326,9 @@ class MeetppActionReport(Base):
     note: Mapped[str] = mapped_column(Text, default="", nullable=False)
     status_at_report: Mapped[str | None] = mapped_column(String(20))
     evidence_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    # The agenda point of this meeting the action is about (a previous action
+    # is reviewed under the actions point but listed there too).
+    section_id: Mapped[str | None] = mapped_column(String(26))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 

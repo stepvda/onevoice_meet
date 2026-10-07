@@ -53,6 +53,11 @@ CUE_RE = re.compile(
 WINDOW_SECONDS = 120
 CATCHUP_SECONDS = 180
 THROTTLED_TICK_SECONDS = 30
+# Live draft of the minutes of the point being discussed: refreshed at most
+# this often, and only once this much more has been said on it.
+LIVE_DRAFT_SECONDS = 180
+LIVE_DRAFT_MIN_WORDS = 120
+LIVE_DRAFT_CHECK_SECONDS = 15
 RECONCILE_SECONDS = 20
 LEASE_TTL = 30
 LEASE_RENEW_SECONDS = 10
@@ -913,11 +918,12 @@ def _prompt_data(db, session: MeetppSession, o: outline_mod.Outline, window: lis
             if report is None:
                 prev_lines.append(base + " · TO REVIEW" + (f" — {util.truncate(a.description, 200)}" if a.description else ""))
             else:
-                prev_lines.append(base + (f" · reported: {util.truncate(report.note, 200)}" if report.note else " · reported"))
+                linked = f" · about {pid[report.section_id]}" if report.section_id in pid else ""
+                prev_lines.append(base + linked + (f" · reported: {util.truncate(report.note, 200)}" if report.note else " · reported"))
         elif in_focus(a.section_id):
-            action_lines.append(base + (" [locked]" if a.locked else ""))
+            action_lines.append(base + f" · {pid.get(a.section_id or '', '?')}" + (" [locked]" if a.locked else ""))
         else:
-            action_lines.append(f"{a.ref} · {util.truncate(a.title, 80)}")
+            action_lines.append(f"{a.ref} · {pid.get(a.section_id or '', '?')} · {util.truncate(a.title, 80)}")
     notes = []
     if live is not None:
         m = db.query(MeetppMinute).filter_by(session_id=session.id, kind="section", section_id=o.top(live).id).first()
@@ -1679,6 +1685,9 @@ class SessionRunner:
         self._last_renew = 0.0
         self._last_reconcile = 0.0
         self._last_timebox = 0.0
+        self._last_draft_check = 0.0
+        # top section id → monotonic time its live draft was last started
+        self._drafted: dict[str, float] = {}
         self._agent_started = False
         self._not_connected = 0
         self.finished = False
@@ -1769,7 +1778,44 @@ class SessionRunner:
         if status == "running" and now - self._last_timebox >= 5:
             self._last_timebox = now
             await self._timebox()
+        if status == "running" and now - self._last_draft_check >= LIVE_DRAFT_CHECK_SECONDS:
+            self._last_draft_check = now
+            self._live_draft(now)
         return True
+
+    def _live_draft(self, now: float) -> None:
+        """Compose a draft of the live point's minutes while it is discussed;
+        the final composition still runs when the point closes."""
+        db = SessionLocal()
+        try:
+            session = db.get(MeetppSession, self.session_id)
+            if session is None or not session.live_section_id or not llm.llm_configured() or llm.over_budget(db, session.id):
+                return
+            o = outline_mod.load(db, session.id)
+            live = o.by_id.get(session.live_section_id)
+            if live is None:
+                return
+            top = o.top(live)
+            if now - self._drafted.get(top.id, -1e9) < LIVE_DRAFT_SECONDS:
+                return
+            m = db.query(MeetppMinute).filter_by(session_id=session.id, kind="section", section_id=top.id).first()
+            if m is not None and (m.locked or m.status == "composing"):
+                return
+            since = util.aware(m.composed_at) if m is not None and m.composed_at else None
+            q = db.query(MeetppSegment.text).filter(
+                MeetppSegment.session_id == session.id,
+                MeetppSegment.section_id.in_(compose.subtree_ids(o, top)),
+                MeetppSegment.is_gap.is_(False),
+            )
+            if since is not None:
+                q = q.filter(MeetppSegment.created_at > since)
+            if sum(util.word_count(t) for (t,) in q.all()) < LIVE_DRAFT_MIN_WORDS:
+                return
+        finally:
+            db.close()
+        self._drafted[top.id] = now
+        log.info("MEETPP_COMPOSE sid=%s section=%s live draft", self.session_id, top.id)
+        compose.schedule_section(self.session_id, top.id)
 
     def _tick_due(self, db, session: MeetppSession) -> bool:
         if self.tick_task is not None and not self.tick_task.done():

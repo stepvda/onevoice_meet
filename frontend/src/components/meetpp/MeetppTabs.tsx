@@ -7,16 +7,19 @@ import {
   interact,
   markTabSeen,
   selectTab,
+  showItem,
   toggleGroup,
   useMeetpp,
 } from "../../lib/meetpp/store";
 import { meetppActions } from "../../lib/meetpp/session";
 import { MIN_DISPLAY_MS } from "../../lib/meetpp/focusQueue";
-import { actionGroupSection, decisionGroupSection, outlineOrder, sectionLabel } from "../../lib/meetpp/state";
+import { actionGroupSection, actionPoint, decisionGroupSection, fmtClock, outlineOrder, sectionLabel } from "../../lib/meetpp/state";
 import { TABS, type ActionDto, type DecisionDto, type SectionDto, type Tab } from "../../lib/meetpp/types";
 import {
+  ACTION_TONE,
   ActionCard,
   AddItem,
+  DECISION_TONE,
   AttachmentCard,
   AttendanceTable,
   DecisionCard,
@@ -25,16 +28,20 @@ import {
   ErrorLine,
   MinutesBlock,
   SmallBtn,
+  useActionStatusLabel,
+  useDecisionStatusLabel,
   useRun,
 } from "./MeetppItems";
-import { InlineInput, Pill, cx, useReducedMotion } from "./ui";
+import { InlineInput, MdView, Pill, cx, useReducedMotion } from "./ui";
 
 /**
  * Content tabs (FDD §5.5): Agenda · Decisions · Actions · Minutes ·
  * Attendance · Papers — the sections of the final report — with counters,
- * unseen dots and the activation highlight + 5 s progress bar. Content is
- * grouped per outline section. WAI-ARIA tab pattern; activations change the
- * visible tab without moving keyboard focus.
+ * the number of changes not yet seen (the tab flashes when one arrives) and
+ * the activation highlight + 5 s progress bar. Content is grouped per outline
+ * section; the Agenda shows each point with its decisions, actions and draft
+ * minutes. WAI-ARIA tab pattern. Only the recording view changes tab on its
+ * own (store.ts).
  */
 
 interface Props {
@@ -65,6 +72,7 @@ export default function MeetppTabs({ canChair, canEdit, canSnapshot, readOnly, c
   const snap = useMeetpp((s) => s.snap);
   const tab = useMeetpp((s) => s.tab);
   const unseen = useMeetpp((s) => s.unseen);
+  const flash = useMeetpp((s) => s.flash);
   const highlight = useMeetpp((s) => s.highlight);
   const viewed = useMeetpp((s) => effectiveViewed(s));
   const scrollReq = useMeetpp((s) => s.scrollReq);
@@ -89,6 +97,12 @@ export default function MeetppTabs({ canChair, canEdit, canSnapshot, readOnly, c
         (scrollReq.sectionId && pane.querySelector<HTMLElement>(`[data-group="${CSS.escape(scrollReq.sectionId)}"]`)) ||
         null;
       if (!target) return;
+      if (scrollReq.ifHidden) {
+        // Automatic: leave the reader where they are when it is already in sight.
+        const r = target.getBoundingClientRect();
+        const p = pane.getBoundingClientRect();
+        if (r.top >= p.top && r.top < p.bottom - 24) return;
+      }
       const top = target.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop - 8;
       const want = scrollReq.itemId ? top - pane.clientHeight / 3 : top;
       pane.scrollTo({ top: Math.max(0, want), behavior: reduced ? "auto" : "smooth" });
@@ -132,6 +146,7 @@ export default function MeetppTabs({ canChair, canEdit, canSnapshot, readOnly, c
         {TABS.map((tb, i) => {
           const active = tb === tab;
           const hot = highlight?.tab === tb;
+          const changes = active ? 0 : unseen[tb] ?? 0;
           return (
             <button
               key={tb}
@@ -145,13 +160,22 @@ export default function MeetppTabs({ canChair, canEdit, canSnapshot, readOnly, c
               onKeyDown={(e) => onTabKey(e, i)}
               className={cx(
                 "relative flex-shrink-0 whitespace-nowrap rounded-t-lg border-b-2 px-3 py-2 text-[13px] font-medium",
-                hot ? "border-amber-500 bg-amber-100 text-amber-900 ring-2 ring-amber-400" : active ? "border-blue-600 text-blue-700" : "border-transparent text-slate-600 hover:text-slate-900",
+                hot && active ? "border-amber-500 bg-amber-100 text-amber-900 ring-2 ring-amber-400" : active ? "border-blue-600 text-blue-700" : "border-transparent text-slate-600 hover:text-slate-900",
               )}
             >
-              {label(tb)}
-              {counts[tb] ? <span className="ml-1 tabular-nums">{counts[tb]}</span> : null}
-              {unseen[tb] && !active && (
-                <span className="absolute right-0.5 top-1 h-2 w-2 rounded-full bg-amber-500" aria-label={t("meetpp.tabs.unseen", { defaultValue: "new changes" })} />
+              <TabFlash nonce={flash?.tab === tb ? flash.nonce : null} reduced={reduced} />
+              <span className="relative">
+                {label(tb)}
+                {counts[tb] ? <span className="ml-1 tabular-nums">{counts[tb]}</span> : null}
+              </span>
+              {changes > 0 && (
+                <span
+                  className="relative ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-[18px] text-white tabular-nums"
+                  aria-label={t("meetpp.tabs.unseenCount", { defaultValue: "{{n}} new changes", n: changes })}
+                  title={t("meetpp.tabs.unseenCount", { defaultValue: "{{n}} new changes", n: changes })}
+                >
+                  {changes > 99 ? "99+" : changes}
+                </span>
               )}
             </button>
           );
@@ -187,7 +211,7 @@ export default function MeetppTabs({ canChair, canEdit, canSnapshot, readOnly, c
         onInputCapture={manual}
         className={cx("min-h-0 flex-1 overflow-y-auto px-3 py-2 outline-none", compact && "text-[13px]")}
       >
-        {tab === "agenda" && <AgendaTab canEdit={canEdit && !readOnly} />}
+        {tab === "agenda" && <AgendaTab canEdit={canEdit && !readOnly} canChair={canChair && !readOnly} />}
         {tab === "decisions" && <DecisionsTab canEdit={canEdit && !readOnly} canVote={canChair && !readOnly} />}
         {tab === "actions" && <ActionsTab canEdit={canEdit && !readOnly} />}
         {tab === "minutes" && <MinutesTab canChair={canChair && !readOnly} canEdit={canEdit && !readOnly} />}
@@ -196,6 +220,20 @@ export default function MeetppTabs({ canChair, canEdit, canSnapshot, readOnly, c
       </div>
     </div>
   );
+}
+
+/** A short amber flash behind a tab that just received a change it does not
+ * show (a steady tint with reduced motion). */
+function TabFlash({ nonce, reduced }: { nonce: number | null; reduced: boolean }) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    if (nonce === null) return;
+    setOn(true);
+    const timer = window.setTimeout(() => setOn(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [nonce]);
+  if (!on) return null;
+  return <span aria-hidden className={cx("absolute inset-0 rounded-t-lg bg-amber-200", reduced ? "opacity-70" : "animate-pulse")} />;
 }
 
 function ProgressBar({ startedAt, reduced }: { startedAt: number | null; reduced: boolean }) {
@@ -342,7 +380,7 @@ function useBadgeCounter() {
 
 /** One block per top-level section: description, presenter, timebox and the
  * sub-points as a checklist (○ pending / ● live / ✓ done). */
-function AgendaTab({ canEdit }: { canEdit: boolean }) {
+function AgendaTab({ canEdit, canChair }: { canEdit: boolean; canChair: boolean }) {
   const { t } = useTranslation();
   const snap = useMeetpp((s) => s.snap)!;
   const viewed = useMeetpp((s) => effectiveViewed(s));
@@ -452,6 +490,7 @@ function AgendaTab({ canEdit }: { canEdit: boolean }) {
                 ))}
               </ul>
             )}
+            <PointRecord point={s} subs={subs} isLive={isLive} canChair={canChair} />
             {showAdd && (
               <div className="mt-1">
                 {addingSub === s.id ? (
@@ -478,6 +517,140 @@ function AgendaTab({ canEdit }: { canEdit: boolean }) {
       {visible.length === 0 && <Empty text={t("meetpp.agenda.empty", { defaultValue: "No agenda points yet." })} />}
       {error && <ErrorLine text={error} />}
     </div>
+  );
+}
+
+/** Under an agenda point: its decisions, its actions (raised there, or
+ * previous actions linked to it with what was reported) and its minutes —
+ * a draft refreshed while the point is discussed. Rows open the item in its
+ * own tab. */
+function PointRecord({ point, subs, isLive, canChair }: { point: SectionDto; subs: SectionDto[]; isLive: boolean; canChair: boolean }) {
+  const { t } = useTranslation();
+  const decisionsAll = useMeetpp((s) => s.snap?.decisions);
+  const actionsAll = useMeetpp((s) => s.snap?.actions);
+  const minute = useMeetpp((s) => s.snap?.minutes.find((m) => m.section_id === point.id && (m.kind === "section" || !m.kind)) ?? null);
+  const decisionLabel = useDecisionStatusLabel();
+  const actionLabel = useActionStatusLabel();
+  const [minutesOpen, setMinutesOpen] = useState<boolean | null>(null);
+  const ids = useMemo(() => new Set([point.id, ...subs.map((c) => c.id)]), [point.id, subs]);
+  const decisions = useMemo(() => (decisionsAll ?? []).filter((d) => !d.previous && d.section_id && ids.has(d.section_id)), [decisionsAll, ids]);
+  const actions = useMemo(
+    () =>
+      (actionsAll ?? []).filter((a) => {
+        const p = actionPoint(a);
+        return p !== null && ids.has(p);
+      }),
+    [actionsAll, ids],
+  );
+  const narrative = minute?.narrative_md ?? "";
+  const notes = minute?.notes ?? [];
+  const hasMinutes = !!narrative || notes.length > 0 || minute?.status === "composing";
+  if (!decisions.length && !actions.length && !hasMinutes) return null;
+  const showMinutes = minutesOpen ?? isLive;
+  const heading = "text-[11px] font-semibold uppercase tracking-wide text-slate-500";
+  return (
+    <div className="mt-2 space-y-2 border-t border-slate-100 pt-2" onClick={(e) => e.stopPropagation()}>
+      {decisions.length > 0 && (
+        <div>
+          <div className={heading}>{t("meetpp.point.decisions", { defaultValue: "Decisions ({{n}})", n: decisions.length })}</div>
+          <div className="mt-0.5 space-y-0.5">
+            {decisions.map((d) => (
+              <RecordRow key={d.id} id={d.id} kind="decision" refText={d.ref} title={d.title} status={decisionLabel(d.status)} tone={DECISION_TONE[d.status] ?? "slate"} />
+            ))}
+          </div>
+        </div>
+      )}
+      {actions.length > 0 && (
+        <div>
+          <div className={heading}>{t("meetpp.point.actions", { defaultValue: "Actions ({{n}})", n: actions.length })}</div>
+          <div className="mt-0.5 space-y-0.5">
+            {actions.map((a) => (
+              <RecordRow
+                key={a.id}
+                id={a.id}
+                kind="action"
+                refText={a.ref}
+                title={a.title}
+                status={actionLabel(a.status)}
+                tone={ACTION_TONE[a.status] ?? "slate"}
+                meta={[a.assignees?.map((x) => x.name).join(", "), a.due ? t("meetpp.point.due", { defaultValue: "due {{d}}", d: a.due }) : "", a.previous ? t("meetpp.point.previous", { defaultValue: "previous action" }) : ""]
+                  .filter(Boolean)
+                  .join(" · ")}
+                note={a.previous ? a.report?.note : a.progress_notes ?? undefined}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      {hasMinutes && (
+        <div>
+          <button type="button" className={cx(heading, "inline-flex items-center gap-1 hover:text-slate-700")} onClick={() => setMinutesOpen(!showMinutes)} aria-expanded={showMinutes}>
+            {showMinutes ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+            {isLive
+              ? t("meetpp.point.minutesDraft", { defaultValue: "Minutes — live draft" })
+              : t("meetpp.point.minutes", { defaultValue: "Minutes" })}
+            {minute?.composed_at && narrative && (
+              <span className="font-normal normal-case tracking-normal text-slate-400">· {fmtClock(minute.composed_at, false)}</span>
+            )}
+          </button>
+          {showMinutes &&
+            (isLive || !narrative ? (
+              <div className="mt-1">
+                <MinutesBlock m={minute} section={point} isLive={isLive} canChair={canChair} canEdit={false} />
+              </div>
+            ) : (
+              <div className="mt-1 text-[13px]">
+                <MdView text={narrative} />
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecordRow({
+  id,
+  kind,
+  refText,
+  title,
+  status,
+  tone,
+  meta,
+  note,
+}: {
+  id: string;
+  kind: "decision" | "action";
+  refText: string;
+  title: string;
+  status: string;
+  tone: Parameters<typeof Pill>[0]["tone"];
+  meta?: string;
+  note?: string;
+}) {
+  const { t } = useTranslation();
+  const hot = useMeetpp((s) => s.highlight?.tab === "agenda" && s.highlight.items.includes(id));
+  const badge = useMeetpp((s) => s.badges[id]);
+  return (
+    <button
+      type="button"
+      data-item={id}
+      onClick={() => showItem(kind, id)}
+      title={kind === "decision" ? t("meetpp.point.openDecision", { defaultValue: "Open in Decisions" }) : t("meetpp.point.openAction", { defaultValue: "Open in Actions" })}
+      className={cx(
+        "block w-full rounded-lg border px-2 py-1 text-left text-[13px] transition-colors",
+        hot ? "border-amber-400 bg-amber-50" : "border-transparent hover:border-slate-200 hover:bg-slate-50",
+      )}
+    >
+      <span className="flex items-start gap-1.5">
+        <span className="mt-px flex-shrink-0 text-slate-500">{refText}</span>
+        <span className="min-w-0 flex-1 text-slate-800">{title}</span>
+        {badge && <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-500" aria-label={badge} />}
+        <Pill tone={tone}>{status}</Pill>
+      </span>
+      {meta && <span className="block pl-0 text-[11px] text-slate-500">{meta}</span>}
+      {note && <span className="mt-0.5 line-clamp-2 block text-[12px] text-slate-600">{note}</span>}
+    </button>
   );
 }
 
