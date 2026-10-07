@@ -493,10 +493,11 @@ async def test_prompt_shows_next_point_text(fakes):
 
 async def test_adopted_without_a_count_is_recorded_as_assent_in_a_board_meeting(fakes):
     sid = await running(fakes, meeting_type="board")
-    s1 = await say(sid, "42", "Alice Moreau", "So we keep the hall booking. Agreed? Yes, fine by me.")
+    s0 = await say(sid, "42", "Alice Moreau", "So we keep the hall booking. Agreed?")
+    s1 = await say(sid, "43", "Ben Hartley", "Yes, fine by me.")
     fakes.llm.add("tick", {"ops": [{"op": "decision.add", "section": pid(sid, "Approval of the minutes"),
                                     "title": "Hall booking kept", "resolution": "that the hall booking is kept",
-                                    "status": "adopted", "evidence": [s1]}]})
+                                    "status": "adopted", "evidence": [s0, s1]}]})
     assert (await rt.tick(sid))["applied"] == 1
     d = query(lambda db: db.query(MeetppDecision).filter_by(session_id=sid).one())
     v = query(lambda db: db.query(MeetppVote).filter_by(decision_id=d.id).one())

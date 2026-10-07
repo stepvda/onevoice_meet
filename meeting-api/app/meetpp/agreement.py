@@ -2,39 +2,51 @@
 
 Replaying a real meeting showed the language model marking decisions adopted
 on an opinion ("my view of it is …") and while an agenda point was still
-being introduced. So the model may only mark a decision adopted when one of
-the transcript lines it cites shows agreement, sentence by sentence:
+being introduced. So the model may only mark a decision adopted when the
+transcript lines it cites show agreement, sentence by sentence:
 
-  - an agreement phrase ("agreed", "unanimously approved", "we all agree",
-    "no objection", "the resolution is", "let's go with that", "that's
-    fine" …), not negated ("I don't agree") and not asked ("in favour?");
-  - or a reply that is nothing but assent ("Yes.", "To all? Yeah.", "Okay,
-    great.") from someone other than the speaker who opened the cited
-    exchange: the proposer's own "yeah" is a back-channel, not consent.
+  - a declared outcome, from anyone (the chair announcing it included):
+    "agreed", "unanimously approved", "we all agree", "carried", "no
+    objection", "the resolution is", "decided" …;
+  - a response that answers someone else in the cited exchange: "that's a
+    good idea", "let's go with that", "that's okay", "I like that", "I
+    agree", or a reply that is nothing but assent ("Yes.", "To all? Yeah.").
+    The same words inside one person's monologue are not consent ("whichever
+    they choose, let's go with the other one").
 
-Otherwise the decision stays proposed; a later tick that cites the agreeing
-line adopts it.
+Phrases that are negated ("I don't agree") or asked ("all in favour?") do
+not count. Otherwise the decision stays proposed; a later tick that cites
+the agreeing line adopts it.
 """
 from __future__ import annotations
 
 import re
 from collections.abc import Iterable
 
-_PHRASE = re.compile(
+_DECLARED = re.compile(
     r"""\b(?:
         agreed|approved|adopted|carried|unanimous(?:ly)?|unanimity|consensus|seconded|accepted
-      | (?:i|we|all|both|everyone|everybody|you)\ (?:\w+\ )?(?:agree|approve|accept|concur)
+      | (?:we|all|both|everyone|everybody)\ (?:\w+\ )?(?:agree|approve|accept|concur)s?
       | in\ agreement|(?:have|reached|got)\ (?:an?\ )?agreement
-      | in\ favou?r
       | motion\ (?:passes|passed|carries)
       | (?:no|without)\ (?:objections?|opposition)
-      | i\ second
       | resolved|(?:the|our)\ resolution\ (?:is|on)
       | decided|(?:the|our)\ decision\ is
+      | so\ be\ it|(?:it's|that's)\ settled
+      | sign(?:ed)?\ off\ on
+    )\b""",
+    re.I | re.X,
+)
+_RESPONSE = re.compile(
+    r"""\b(?:
+        i\ (?:\w+\ ){0,2}(?:agree|approve|accept|concur)
+      | in\ favou?r|i\ second
       | (?:we'll|we\ will|let's|let\ us)\ (?:go\ (?:with|ahead)|do\ (?:it|that|this)|proceed)
       | sounds\ good|that\ works|works\ for\ (?:me|us)|fine\ (?:with|by)\ (?:me|us)
-      | so\ be\ it|(?:it's|that's)\ (?:a\ deal|settled|fine|okay|ok)|deal
-      | sign(?:ed)?\ off\ on
+      | (?:it's|that's)\ (?:a\ deal|fine|okay|ok)
+      | (?:a\ )?(?:good|great)\ idea
+      | i\ (?:\w+\ ){0,2}(?:like|love)\ (?:that|this|it|the\ idea)
+      | happy\ with\ (?:that|it|this)
     )\b""",
     re.I | re.X,
 )
@@ -47,8 +59,8 @@ _NEGATED = re.compile(
 _SENTENCE = re.compile(r"[^.?!]+[.?!]*")
 _WORD = re.compile(r"[a-z']+")
 
-# A sentence is plain assent when it holds one CORE word and, apart from
-# fillers and SUPPORT words, at most one other word.
+# A reply is plain assent when it holds one CORE word and, apart from fillers
+# and SUPPORT words, at most one other word — and no negation ("Not sure.").
 _CORE = {
     "yes", "yeah", "yep", "yup", "aye", "ok", "okay", "sure", "exactly", "absolutely",
     "definitely", "certainly", "indeed", "agreed", "perfect", "correct", "alright", "totally",
@@ -56,6 +68,7 @@ _CORE = {
 }
 _SUPPORT = {"good", "right", "all", "of", "course", "both", "me", "too", "for", "it", "that", "that's", "very", "sounds"}
 _FILLER = {"um", "uh", "er", "erm", "hmm", "mm", "mhm", "so", "well", "oh", "and", "then"}
+_NEGATIONS = {"no", "not", "nope", "never", "don't", "nah"}
 ASSENT_WORDS = 6
 
 
@@ -64,13 +77,20 @@ def _statements(text: str) -> list[str]:
     return [s.strip() for s in _SENTENCE.findall(text or "") if s.strip() and not s.strip().endswith("?")]
 
 
-def phrase_agreement(text: str) -> bool:
+def _says(pattern: re.Pattern, text: str) -> bool:
     for sentence in _statements(text):
-        for m in _PHRASE.finditer(sentence):
-            if _NEGATED.search(sentence[max(0, m.start() - 40):m.start()]):
-                continue
-            return True
+        for m in pattern.finditer(sentence):
+            if not _NEGATED.search(sentence[max(0, m.start() - 40):m.start()]):
+                return True
     return False
+
+
+def declared_agreement(text: str) -> bool:
+    return _says(_DECLARED, text)
+
+
+def response_agreement(text: str) -> bool:
+    return _says(_RESPONSE, text)
 
 
 def plain_assent(text: str) -> bool:
@@ -80,17 +100,22 @@ def plain_assent(text: str) -> bool:
     words = [w for s in _statements(text) for w in _WORD.findall(s.lower()) if w not in _FILLER]
     if not words or len(words) > ASSENT_WORDS or not any(w in _CORE for w in words):
         return False
+    if any(w in _NEGATIONS for w in words):
+        return False
     return sum(1 for w in words if w not in _CORE and w not in _SUPPORT) <= 1
 
 
 def any_agreement(lines: Iterable[tuple[str | None, str]]) -> bool:
     """`lines` are the cited transcript lines as (speaker, text), in transcript
     order. True when one of them shows agreement (see the module docstring)."""
-    lines = list(lines)
-    opener = next((who for who, _ in lines if who), None)
+    speakers: set[str | None] = set()
     for who, text in lines:
-        if phrase_agreement(text):
+        if declared_agreement(text):
             return True
-        if plain_assent(text) and (opener is None or who is None or who != opener):
+        # Answers someone: an earlier cited line is another speaker's (an
+        # unknown speaker is given the benefit of the doubt).
+        answers = bool(speakers - {who}) or (who is None and bool(speakers))
+        if answers and (response_agreement(text) or plain_assent(text)):
             return True
+        speakers.add(who)
     return False

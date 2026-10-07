@@ -428,11 +428,12 @@ screen share, and takes part in the room layout (frontend `lib/stage.ts`, backen
   it). Segments are posted in speaking order. Whole-utterance hallucinations (tier-1 blocklist) are dropped. With tier
   2 down or `MEETPP_TIER2_FIRST=0`, tier 1 is live and tier 2 refines, as before.
 - **Adoption gate** (`app/meetpp/agreement.py`): an AI op may set a decision to adopted (or adopt it through a vote)
-  only when one of the lines it cites shows agreement — an agreement phrase (agreed, approved, unanimously, carried,
-  no objection, the resolution is, let's go with …; not negated, not in a question) or a reply that is nothing but
-  assent ("Yes.", "To all? Yeah.") from someone other than the speaker of the first cited line. Otherwise the
-  decision is (or stays) proposed and the model's vote is not applied. People are not gated. Prompt v3.3 asks the
-  model to cite the agreeing line.
+  only when the lines it cites show agreement: a declared outcome from anyone ("agreed", "unanimously approved", "we
+  all agree", "carried", "no objection", "the resolution is", "decided"), or a response that answers an earlier cited
+  line by another speaker ("that's a good idea", "let's go with that", "that's okay", "I like that", "I agree", or a
+  reply that is nothing but assent: "Yes.", "To all? Yeah."). Negated or asked phrases do not count. Otherwise the
+  decision is (or stays) proposed and the model's vote is not applied; the next tick sees it proposed and re-cites.
+  People are not gated. Prompt v3.3 asks the model to cite the agreeing line.
 - **Guests in room data** appear as an opaque per-session alias `guest:~<20 hex>` (state, deltas, captions,
   transcript, ballots, assignees); a chair's ballot that sends the alias back is mapped to the real key. Public
   viewers get `/state` with `person_key: null` and no `/transcript`; bus messages are not sent to viewers unless the
