@@ -10,6 +10,8 @@ def test_declared_outcomes():
     assert declared_agreement("No objections? Then it's carried.")
     assert declared_agreement("Good, that's agreed then.")
     assert declared_agreement("I think we all agree on the tank size.")
+    assert declared_agreement("So a full safety check every quarter we're settling on.")
+    assert declared_agreement("Okay, so it sounds like we're basically settled on a check at least once a quarter.")
 
 
 def test_responses():
@@ -18,6 +20,7 @@ def test_responses():
     assert response_agreement("Let's go with the second quote.")
     assert response_agreement("I can order it next week. That's okay.")
     assert response_agreement("I guess I kind of like that.")
+    assert response_agreement("Yeah, quarterly seems fine for me.")
 
 
 def test_proposals_questions_and_negations_are_not_agreement():
@@ -30,6 +33,8 @@ def test_proposals_questions_and_negations_are_not_agreement():
         "I disagree.",
         "That's not a good idea.",
         "It depends on how we deal with the data.",
+        "Are we settled on that for now?",
+        "We haven't settled on a date yet.",
     ):
         assert not declared_agreement(text) and not response_agreement(text), text
 

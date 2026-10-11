@@ -52,22 +52,27 @@ async def _meeting_with_decision(fakes):
 async def test_section_composition_validates_and_appends(fakes):
     sid = await _meeting_with_decision(fakes)
     ids = sids(sid)
-    # First draft adds a RESOLVED block for something that was not adopted → repair.
-    bad = SECTION_MD + "\n\n> **RESOLVED:** that the budget is doubled."
-    fakes.llm.add("compose_section", {"markdown": bad, "verify": []}, {"markdown": "The chair put the minutes to the board; both directors agreed.", "verify": ["meeting #8"]})
+    # The draft has a RESOLVED block for something that was not adopted: it
+    # becomes a proposal and the chair is asked to check (no repair, no failure).
+    bad = "The chair put the minutes to the board; both directors agreed.\n\n> **RESOLVED:** that the budget is doubled."
+    fakes.llm.add("compose_section", {"markdown": bad, "verify": ["meeting #8"]})
     status = await compose.compose_section(sid, ids["Approval of the minutes"])
     assert status == "composed"
     m = _minute(sid, ids["Approval of the minutes"])
     assert m.version == 1 and m.source_tier == "live" and m.composed_at is not None
+    assert "It was proposed that the budget is doubled." in m.narrative_md
+    assert "RESOLVED:** that the budget" not in m.narrative_md
     # The missing RESOLVED block for the adopted decision was appended.
     assert m.narrative_md.endswith("> **RESOLVED:** that the minutes of meeting #8 are approved")
-    assert util.loads(m.verify_json, []) == ["meeting #8"]
-    assert "budget is doubled" not in m.narrative_md
+    verify = util.loads(m.verify_json, [])
+    assert verify[0] == "meeting #8" and "budget is doubled" in verify[1] and "check whether the meeting adopted it" in verify[1]
     prompt = fakes.llm.prompts("compose_section")[0]
     assert "[ADOPTED]" in prompt and "### n.m" not in prompt
     # Length target: a third of the words spoken, never below the floor.
     assert f"LENGTH: about {compose.TARGET_MIN} words" in prompt
     assert compose.validate_section("word " * 2000, [], True) is None
+    md, notes = compose.drop_unadopted_resolutions(SECTION_MD, [], [])
+    assert md.endswith("It was proposed that the minutes of meeting #8 are approved.") and len(notes) == 1
     assert "too long" in compose.validate_section("word " * (compose.MAX_WORDS + 1), [], True)
     # No decision → "No resolution was put." is appended.
     assert compose.finish_markdown("Discussion only.", []) == "Discussion only.\n\nNo resolution was put."

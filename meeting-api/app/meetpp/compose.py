@@ -149,6 +149,10 @@ def markdown_of(parsed: dict) -> str:
 
 
 def validate_section(markdown: str, adopted: list[MeetppDecision], substantial: bool) -> str | None:
+    """Reasons to ask the model again. A RESOLVED block for a decision that
+    is not adopted is no reason: drop_unadopted_resolutions() turns it into a
+    proposal and asks the chair to check (a whole section of minutes was lost
+    to it once)."""
     md = (markdown or "").strip()
     if not md:
         return "the markdown is empty"
@@ -157,10 +161,48 @@ def validate_section(markdown: str, adopted: list[MeetppDecision], substantial: 
         return f"the minutes are too long ({words} words; at most {MAX_WORDS})"
     if substantial and words < MIN_WORDS:
         return f"the minutes are too short ({words} words; at least {MIN_WORDS})"
-    for block in resolved_blocks(md):
-        if not any(_matches(block, d) for d in adopted):
-            return f"RESOLVED block for a decision that was not adopted: {block[:120]!r}"
     return None
+
+
+_RESOLVED_LINE = re.compile(r"^\s*>\s*(?:\*\*\s*RESOLVED\s*:?\s*\*\*\s*:?|RESOLVED\s*:)\s*", re.I)
+
+
+def drop_unadopted_resolutions(
+    markdown: str, adopted: list[MeetppDecision], decisions: list[MeetppDecision]
+) -> tuple[str, list[str]]:
+    """Rewrite each `> **RESOLVED:** that …` block that matches no adopted
+    decision as "It was proposed that …", and return a note for the chair per
+    block: the discussion may show an agreement the record does not have."""
+    out: list[str] = []
+    notes: list[str] = []
+    lines = (markdown or "").splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        m = _RESOLVED_LINE.match(line)
+        if not m:
+            out.append(line)
+            i += 1
+            continue
+        block = [line[m.end():].strip()]
+        j = i + 1
+        while j < len(lines) and lines[j].strip().startswith(">") and not _RESOLVED_LINE.match(lines[j]):
+            block.append(lines[j].strip().lstrip(">").strip())
+            j += 1
+        text = " ".join(x for x in block if x).strip()
+        if any(_matches(text, d) for d in adopted):
+            out.extend(lines[i:j])
+        else:
+            body = re.sub(r"^that\s+", "", text, flags=re.I).rstrip(". ")
+            out.append(f"It was proposed that {body}." if body else "")
+            known = next((d for d in decisions if _matches(text, d)), None)
+            notes.append(
+                f"The draft recorded \"that {body}\" as resolved, but "
+                + (f"{known.ref} is recorded as {known.status}" if known is not None else "no adopted decision matches it")
+                + ": check whether the meeting adopted it (set the decision to adopted in the review to add the resolution)."
+            )
+        i = j
+    return "\n".join(out).strip(), notes
 
 
 def _resolution_text(d: MeetppDecision) -> str:
@@ -363,12 +405,16 @@ async def _compose_body(db: Session, session: MeetppSession, o: outline_mod.Outl
     except llm.LLMError as exc:
         log.warning("MEETPP_COMPOSE sid=%s section=%s status=failed error=%s", session.id, top.id, exc)
         return await _store(db, session, top.id, None, [], tier, str(exc)[:300], force)
-    markdown = finish_markdown(markdown_of(parsed), adopted, kind=top.kind)
+    markdown, checks = drop_unadopted_resolutions(markdown_of(parsed), adopted, decisions)
+    markdown = finish_markdown(markdown, adopted, kind=top.kind)
     if util.word_count(markdown) > max(TARGET_SLACK * target_words, target_words + TARGET_SLACK_WORDS):
         shorter = await _condense(db, session, series, markdown, target_words, adopted, substantial)
         if shorter:
+            shorter, more = drop_unadopted_resolutions(shorter, adopted, decisions)
+            checks += [c for c in more if c not in checks]
             markdown = finish_markdown(shorter, adopted, kind=top.kind)
     verify = [str(v)[:300] for v in util.as_list(parsed.get("verify")) if v][:20]
+    verify += [c[:300] for c in checks if c[:300] not in verify]
     return await _store(db, session, top.id, markdown, verify, tier, None, force)
 
 

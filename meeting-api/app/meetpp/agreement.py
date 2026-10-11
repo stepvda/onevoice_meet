@@ -7,7 +7,7 @@ transcript lines it cites show agreement, sentence by sentence:
 
   - a declared outcome, from anyone (the chair announcing it included):
     "agreed", "unanimously approved", "we all agree", "carried", "no
-    objection", "the resolution is", "decided" …;
+    objection", "the resolution is", "we're settled on", "decided" …;
   - a response that answers someone else in the cited exchange: "that's a
     good idea", "let's go with that", "that's okay", "I like that", "I
     agree", or a reply that is nothing but assent ("Yes.", "To all? Yeah.").
@@ -33,6 +33,7 @@ _DECLARED = re.compile(
       | motion\ (?:passes|passed|carries)
       | (?:no|without)\ (?:objections?|opposition)
       | resolved|(?:the|our)\ resolution\ (?:is|on)
+      | settl(?:ed|ing)\ on|(?:we're|we\ are|we've|we\ have)\ (?:\w+\ )?settled
       | decided|(?:the|our)\ decision\ is
       | so\ be\ it|(?:it's|that's)\ settled
       | sign(?:ed)?\ off\ on
@@ -44,7 +45,8 @@ _RESPONSE = re.compile(
         i\ (?:\w+\ ){0,2}(?:agree|approve|accept|concur)
       | in\ favou?r|i\ second
       | (?:we'll|we\ will|let's|let\ us)\ (?:go\ (?:with|ahead)|do\ (?:it|that|this)|proceed)
-      | sounds\ good|that\ works|works\ for\ (?:me|us)|fine\ (?:with|by)\ (?:me|us)
+      | sounds\ good|that\ works|works\ for\ (?:me|us)|fine\ (?:with|by|for)\ (?:me|us)
+      | (?:seems|sounds|looks)\ (?:fine|good|great|right|ok|okay)
       | (?:it's|that's)\ (?:a\ deal|fine|okay|ok)
       | (?:a\ )?(?:good|great)\ idea
       | i\ (?:\w+\ ){0,2}(?:like|love)\ (?:that|this|it|the\ idea)
