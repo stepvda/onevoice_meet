@@ -153,6 +153,11 @@ class MeetppSession(Base):
     agent_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
     final_pass_done: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     error: Mapped[str | None] = mapped_column(String(500))
+    # Prepared from One Voice Mail (app/meetpp/external.py): Mail's id of the
+    # sitting, and {open_url, next_occurrence, next_agenda_sent, next_agenda,
+    # left_action_ids, ...}. Null for sessions set up in Meet.
+    external_ref: Mapped[str | None] = mapped_column(String(200))
+    external_json: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -204,12 +209,14 @@ class MeetppSection(Base):
     timebox_minutes: Mapped[int | None] = mapped_column(Integer)
     # pending | live | done | deferred | skipped
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
-    source: Mapped[str] = mapped_column(String(10), default="template")  # template | pdf | user | ai
+    source: Mapped[str] = mapped_column(String(10), default="template")  # template | pdf | user | ai | mail
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Accumulated live seconds (sections can be reopened with Back).
     elapsed_seconds: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Mail's agenda item id for a point prepared from One Voice Mail.
+    external_ref: Mapped[str | None] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -234,9 +241,11 @@ class MeetppDecision(Base):
     decided_seq: Mapped[int | None] = mapped_column(Integer)
     # Chair confirmed the record (AI decisions start unconfirmed).
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    origin: Mapped[str] = mapped_column(String(20), default="ai")  # ai | user | pdf
+    origin: Mapped[str] = mapped_column(String(20), default="ai")  # ai | user | pdf | mail
     locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     evidence_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    # Mail's decision id (origin mail), reported back in the external result.
+    external_ref: Mapped[str | None] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -303,9 +312,12 @@ class MeetppAction(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completion_note: Mapped[str | None] = mapped_column(Text)
     progress_notes: Mapped[str | None] = mapped_column(Text)
-    origin: Mapped[str] = mapped_column(String(20), default="ai")  # ai | user | pdf
+    origin: Mapped[str] = mapped_column(String(20), default="ai")  # ai | user | pdf | mail
     locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     evidence_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    # Mail's action id (origin mail): imported as a previous action of the
+    # series, upserted by this ref and reported back in the external result.
+    external_ref: Mapped[str | None] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 

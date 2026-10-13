@@ -107,6 +107,25 @@ class Settings(BaseSettings):
     # shared secret. Meet-native tokens ALWAYS stay HS256 (minted locally).
     onevoice_jwks_url: str = "https://one.witysk.org/.well-known/jwks.json"
 
+    # ─── One Voice Mail integration (docs/MAIL_INTEGRATION.md) ─────────────
+    # Mail mints ES256 tokens (audience `meet`) for its users and calls the
+    # API with them; the SPA is embedded in Mail's Meet page. MAIL_ISSUER is
+    # Mail's JWT issuer (e.g. https://mail.witysk.org); empty turns the
+    # integration off, and such tokens are refused like any unknown ES256 one.
+    mail_issuer: str = ""
+    # Mail's JWKS. Empty = `<MAIL_ISSUER>/.well-known/jwks.json`.
+    mail_jwks_url: str = ""
+    mail_audience: str = "meet"
+    # Meet → Mail webhook for Meet++ status changes and draft agendas of
+    # meetings created by Mail (HMAC-SHA256 with the shared secret). Either
+    # empty = no webhooks; Mail still polls, so a lost webhook only delays.
+    mail_webhook_url: str = ""
+    mail_webhook_secret: str = ""
+    # Origins allowed to embed the SPA (comma-separated), served unauthenticated
+    # by GET /api/v1/embed/config. Caddy's MEET_FRAME_ANCESTORS must allow the
+    # same origins or the browser refuses the frame.
+    embed_parent_origins: str = ""
+
     # coturn
     turn_host: str = "turn.witysk.org"
     turn_static_auth_secret: str = ""
@@ -278,6 +297,18 @@ class Settings(BaseSettings):
     stt_degrade_model: str = "base"
     stt_threads: int = 2
     stt_compute_type: str = "int8"
+
+    @property
+    def mail_issuer_normalised(self) -> str:
+        return (self.mail_issuer or "").strip().rstrip("/")
+
+    @property
+    def mail_jwks_endpoint(self) -> str:
+        return (self.mail_jwks_url or "").strip() or f"{self.mail_issuer_normalised}/.well-known/jwks.json"
+
+    @property
+    def embed_parent_origin_list(self) -> list[str]:
+        return [o.strip().rstrip("/") for o in (self.embed_parent_origins or "").split(",") if o.strip()]
 
 
 settings = Settings()

@@ -222,6 +222,17 @@ class Meeting(Base):
     meetpp_series_id: Mapped[str | None] = mapped_column(String(26), nullable=True)
     meetpp_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    # Guests may join with the link (and the password when one is set)
+    # without the meeting being listed anywhere — what `list_for_anonymous`
+    # gives, minus the public listing. Set by One Voice Mail for the meetings
+    # it creates (calendar events, Meetings).
+    allow_anonymous: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Created by another system: `external_source` names it ("mail") and
+    # `external_ref` is that system's key ("event:<uid>", "meeting:<id>").
+    # Meet++ status webhooks go out for meetings with external_source "mail".
+    external_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    external_ref: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
     participants: Mapped[list["MeetingParticipant"]] = relationship(back_populates="meeting")
     recordings: Mapped[list["Recording"]] = relationship(back_populates="meeting")
 
@@ -308,7 +319,7 @@ class UserPreferences(Base):
 class User(Base):
     """Unified user account.
 
-    Two `kind` values:
+    Three `kind` values:
       - "sso": auto-provisioned on first authenticated request from a one.witysk.org
         SSO user. `external_id` holds the one.witysk.org `user_id` (string). They
         always have admin rights (meeting creation). Their `password_hash` is null
@@ -319,6 +330,11 @@ class User(Base):
         (trial_started_at set, trial_used flips True). After trial expires,
         meeting creation is blocked unless they hold a valid voucher entitlement
         or paid PayPal subscription (Phase 3).
+      - "mail": a One Voice Mail user who has not linked One Voice,
+        auto-provisioned from a Mail-minted token. `external_id` is
+        "mail:<Mail user id>"; email and name follow the token. Like SSO they
+        always have admin rights and have no trial, billing or vouchers (a Mail
+        user who linked One Voice is their "sso" row instead).
 
     Authorization is computed lazily by `User.is_admin_now(now)` rather than
     persisted, so trial / voucher / subscription expiry doesn't need a cron
@@ -327,8 +343,8 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    kind: Mapped[str] = mapped_column(String, nullable=False)  # "sso" | "native"
-    # SSO: one.witysk.org user_id. Native: null.
+    kind: Mapped[str] = mapped_column(String, nullable=False)  # "sso" | "native" | "mail"
+    # SSO: one.witysk.org user_id. Mail: "mail:<Mail user id>". Native: null.
     external_id: Mapped[str | None] = mapped_column(String, unique=True, index=True)
     # Login email — required for native, optional for SSO (we may not see it
     # in the JWT today; the SPA can PATCH /v1/me to fill it in later).
@@ -377,10 +393,10 @@ class User(Base):
     def is_admin_now(self, now: datetime) -> bool:
         """Compute meeting-creation rights at this instant.
 
-        SSO is always admin. Native is admin while *any* of: trial active,
-        voucher entitlement still valid, paid subscription still valid.
-        Computed on demand so we never have to sweep stale flags."""
-        if self.kind == "sso":
+        SSO and Mail users are always admin. Native is admin while *any* of:
+        trial active, voucher entitlement still valid, paid subscription still
+        valid. Computed on demand so we never have to sweep stale flags."""
+        if self.kind in ("sso", "mail"):
             return True
         if self.trial_started_at is not None:
             ends = self.trial_started_at + timedelta(days=10)

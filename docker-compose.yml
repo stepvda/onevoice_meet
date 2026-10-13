@@ -35,6 +35,10 @@ services:
       # Caddyfile. The host dir must exist and be readable by Caddy — see the
       # HLS deploy runbook (mkdir -p /var/lib/meet/recordings/hls).
       - /var/lib/meet/recordings/hls:/srv/hls:ro
+    # Origins allowed to frame the SPA (One Voice Mail's Meet page), read by
+    # the Caddyfile's spa_headers when it is loaded. Space-separated.
+    environment:
+      MEET_FRAME_ANCESTORS: ${MEET_FRAME_ANCESTORS:-https://mail.witysk.org}
     # Needed so Caddy's reverse_proxy can reach LiveKit, which runs with
     # network_mode: host and is NOT on the Docker bridge network.
     extra_hosts:

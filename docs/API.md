@@ -33,11 +33,26 @@ The `meeting-api` service exposes a versioned REST API under `/api/v1/*`. This d
 | DELETE | `/api/v1/meetings/{meeting_id}/branding`   | Owner    | Remove branding image.                                                   |
 | GET    | `/api/v1/rooms/{room_name}/branding`       | —        | Public branding image (served in lobby).                                 |
 
+Create also takes `allow_anonymous` and `integration {source, ref}`; PATCH also
+takes `scheduled_at`, `ends_at`, `duration_minutes`, `recurrence_rule`,
+`password` (`null`/`""` removes it) and `allow_anonymous`; meetings carry
+`join_url`, `allow_anonymous`, `has_password`, `external_source`,
+`external_ref`. See [MAIL_INTEGRATION.md](MAIL_INTEGRATION.md).
+
+## One Voice Mail integration
+
+| Method | Path | Auth | Purpose |
+| ------ | ---- | ---- | ------- |
+| GET    | `/api/v1/embed/config` | — | `{parent_origins}`: origins allowed to embed the SPA. |
+| PUT    | `/api/v1/meetings/{meeting_id}/meetpp/external` | Owner / co-host | Prepare Meet++ for one sitting of a Mail meeting (409 `meetpp_closed` / `meetpp_busy`). |
+| GET    | `/api/v1/meetpp/sessions/{sid}/external` | Owner / co-host | The sitting's outcome in Mail's terms (minutes, decisions, actions, attendance). |
+| POST   | `/api/v1/meetpp/sessions/{sid}/external/next-agenda` | Owner / co-host | Send the draft agenda of the next sitting to Mail. |
+
 ## Anonymous join
 
 | Method | Path                                       | Auth | Purpose                                                                            |
 | ------ | ------------------------------------------ | ---- | ---------------------------------------------------------------------------------- |
-| POST   | `/api/v1/rooms/{room_name}/anon-token`     | —    | Mint a LiveKit token for an anonymous joiner. Rate-limited at `ANON_TOKEN_RATE_PER_HOUR`. |
+| POST   | `/api/v1/rooms/{room_name}/anon-token`     | —    | Mint a LiveKit token for an anonymous joiner (meetings with `list_for_anonymous` or `allow_anonymous`). Rate-limited at `ANON_TOKEN_RATE_PER_HOUR`. |
 | GET    | `/api/v1/rooms/{room_name}/wait/{wait_token}` | —  | Poll waiting-room status (waiting / admitted / denied).                            |
 
 ## Moderation

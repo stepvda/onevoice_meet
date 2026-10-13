@@ -33,6 +33,7 @@ from app.auth import (
     _user_from_claims,
     decode_access_token,
     is_bootstrap_admin_email,
+    is_mail_issuer,
     issue_meet_token,
 )
 from app.config import settings
@@ -337,11 +338,16 @@ def refresh_session(
         token is recognisably meet-minted, not a one.witysk.org original).
 
     The incoming token must still be valid — an expired token cannot renew
-    itself; the SPA handles that case via the SSO iframe instead."""
+    itself; the SPA handles that case via the SSO iframe instead.
+
+    Tokens minted by One Voice Mail are refused: Mail stays the authority
+    for its sessions (the embedded SPA asks Mail for a new token instead)."""
     token = _extract_bearer(authorization)
     claims = decode_access_token(token)  # 401s on expired/invalid
     if claims.get("type") != "access":
         raise HTTPException(status_code=401, detail="only access tokens can be refreshed")
+    if is_mail_issuer(claims.get("iss")):
+        raise HTTPException(status_code=403, detail="tokens issued by One Voice Mail are renewed by Mail")
     u = _user_from_claims(claims, db)
     if u.is_disabled:
         raise HTTPException(status_code=403, detail="account suspended")
@@ -416,6 +422,9 @@ def update_me(body: UpdateMeBody, user: RequireUser, db: Session = Depends(get_d
     # of truth and any change here would just diverge.
     if u.kind == "sso":
         raise HTTPException(status_code=403, detail="SSO accounts manage profile on one.witysk.org")
+    # Mail users likewise: name and email follow their Mail token.
+    if u.kind == "mail":
+        raise HTTPException(status_code=403, detail="Mail accounts manage their profile in One Voice Mail")
     if body.name is not None:
         u.name = body.name.strip() or None
     if body.email is not None:
@@ -465,6 +474,8 @@ async def upload_facepic(
         raise HTTPException(status_code=404, detail="account not found")
     if u.kind == "sso":
         raise HTTPException(status_code=403, detail="SSO accounts upload their facepic on one.witysk.org")
+    if u.kind == "mail":
+        raise HTTPException(status_code=403, detail="Mail accounts manage their profile in One Voice Mail")
 
     ct = (file.content_type or "").lower()
     ext = _ALLOWED_FACEPIC_TYPES.get(ct)
@@ -503,6 +514,8 @@ def delete_facepic(user: RequireUser, db: Session = Depends(get_db)) -> MeOut:
         raise HTTPException(status_code=404, detail="account not found")
     if u.kind == "sso":
         raise HTTPException(status_code=403, detail="SSO accounts manage their facepic on one.witysk.org")
+    if u.kind == "mail":
+        raise HTTPException(status_code=403, detail="Mail accounts manage their profile in One Voice Mail")
     if u.facepic_path:
         try:
             Path(u.facepic_path).unlink(missing_ok=True)

@@ -16,12 +16,15 @@
     }
 }
 
-# Locked-down framing/security headers for the normal SPA surface. Shared by
-# the catch-all fallback and the /on-demand share-page proxy so the two can
-# never drift apart.
+# Framing/security headers for the normal SPA surface. Shared by the
+# catch-all fallback and the /on-demand share-page proxy so the two can never
+# drift apart. The SPA may be framed only by itself and by One Voice Mail's
+# Meet page (MEET_FRAME_ANCESTORS, space-separated origins, default
+# https://mail.witysk.org; the SPA's embed mode additionally checks the parent
+# against EMBED_PARENT_ORIGINS). No X-Frame-Options here: it cannot name an
+# allowed origin, and browsers that honour frame-ancestors ignore it anyway.
 (spa_headers) {
-    header X-Frame-Options "DENY"
-    header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://www.paypalobjects.com; img-src 'self' data: blob: https://storage.googleapis.com https://www.paypal.com https://www.paypalobjects.com https://t.paypal.com; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org https://cdn.jsdelivr.net https://storage.googleapis.com https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.sandbox.paypal.com https://t.paypal.com; frame-src https://one.witysk.org https://www.paypal.com https://www.sandbox.paypal.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://www.paypal.com https://www.paypalobjects.com; style-src 'self' 'unsafe-inline' https://www.paypalobjects.com; img-src 'self' data: blob: https://storage.googleapis.com https://www.paypal.com https://www.paypalobjects.com https://t.paypal.com; media-src 'self' blob:; connect-src 'self' wss://meet.witysk.org https://one.witysk.org https://cdn.jsdelivr.net https://storage.googleapis.com https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.sandbox.paypal.com https://t.paypal.com; frame-src https://one.witysk.org https://www.paypal.com https://www.sandbox.paypal.com; worker-src 'self' blob:; frame-ancestors 'self' {$MEET_FRAME_ANCESTORS:https://mail.witysk.org}; base-uri 'self'; form-action 'self'"
 }
 
 meet.witysk.org {
@@ -155,7 +158,7 @@ meet.witysk.org {
         reverse_proxy meeting-api:8080
     }
 
-    # Frontend SPA fallback — locked-down framing for all other paths.
+    # Frontend SPA fallback — framing limited to Meet and One Voice Mail.
     # CSP rationale (Phase 12):
     #   - self for scripts/styles bundled by Vite
     #   - wss://meet.witysk.org for LiveKit signaling

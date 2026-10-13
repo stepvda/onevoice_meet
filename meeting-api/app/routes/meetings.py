@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from passlib.hash import argon2
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ulid import ULID
@@ -93,6 +93,31 @@ def _normalise_public_slug(raw: str | None) -> str | None:
 router = APIRouter(prefix="/v1")
 
 
+MIN_DURATION_MINUTES = 5
+MAX_DURATION_MINUTES = 8 * 60
+
+
+def _clamped_duration(value):
+    """Durations outside 5 min – 8 h are clamped rather than refused: One
+    Voice Mail sends the length of any calendar event (an all-day event is
+    1440), and the value only feeds the .ics."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return max(MIN_DURATION_MINUTES, min(MAX_DURATION_MINUTES, int(value)))
+    return value
+
+
+def _short_name(value):
+    """Display names are cut to 120 characters (Mail may send an e-mail address)."""
+    return value.strip()[:120] if isinstance(value, str) else value
+
+
+class IntegrationIn(BaseModel):
+    """The system that creates the meeting on its user's behalf (One Voice
+    Mail: `{source: "mail", ref: "event:<uid>" | "meeting:<id>"}`)."""
+    source: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,19}$")
+    ref: str = Field(min_length=1, max_length=200)
+
+
 class CreateMeetingBody(BaseModel):
     display_title: str = Field(min_length=1, max_length=200)
     scheduled_at: datetime | None = None
@@ -140,11 +165,26 @@ class CreateMeetingBody(BaseModel):
     livestream_rumble_enabled: bool = False
     livestream_rumble_rtmps_url: str | None = Field(default=None, max_length=500)
     livestream_rumble_stream_key: str | None = Field(default=None, max_length=500)
+    # Guests may join with the link (+ password) without a public listing.
+    allow_anonymous: bool = False
+    integration: IntegrationIn | None = None
+
+    _duration = field_validator("duration_minutes", mode="before")(_clamped_duration)
+    _display_name = field_validator("display_name", mode="before")(_short_name)
 
 
 class UpdateMeetingBody(BaseModel):
     """Partial update — owner-only. Fields left unset are not changed."""
     display_title: str | None = Field(default=None, min_length=1, max_length=200)
+    # Schedule and access, as on create (One Voice Mail keeps them in step
+    # with the calendar event / meeting). `null` clears a time; `password`
+    # null or "" removes the password.
+    scheduled_at: datetime | None = None
+    ends_at: datetime | None = None
+    duration_minutes: int | None = Field(default=None, ge=5, le=8 * 60)
+    recurrence_rule: str | None = Field(default=None, max_length=200)
+    password: str | None = Field(default=None, max_length=200)
+    allow_anonymous: bool | None = None
     list_for_authenticated: bool | None = None
     list_for_anonymous: bool | None = None
     recording_mode: str | None = Field(default=None, pattern="^(manual|auto_on_start|off)$")
@@ -180,6 +220,8 @@ class UpdateMeetingBody(BaseModel):
     # checked for uniqueness across all meetings.
     public_enabled: bool | None = None
     public_slug: str | None = Field(default=None, max_length=80)
+
+    _duration = field_validator("duration_minutes", mode="before")(_clamped_duration)
 
 
 class MeetingOut(BaseModel):
@@ -261,6 +303,16 @@ class MeetingOut(BaseModel):
     public_enabled: bool = False
     public_slug: str | None = None
     public_url: str | None = None
+    # Shareable link (https://meet.witysk.org/<room>), also on create's envelope.
+    join_url: str | None = None
+    allow_anonymous: bool = False
+    has_password: bool = False
+    external_source: str | None = None
+    external_ref: str | None = None
+
+
+def _join_url(m: Meeting) -> str:
+    return f"{settings.public_url}/{m.room_name}"
 
 
 def _branding_url(m: Meeting) -> str | None:
@@ -336,6 +388,11 @@ def _to_out(m: Meeting) -> MeetingOut:
         public_enabled=bool(m.public_enabled),
         public_slug=m.public_slug,
         public_url=_public_url(m),
+        join_url=_join_url(m),
+        allow_anonymous=bool(m.allow_anonymous),
+        has_password=bool(m.require_password and m.password_hash),
+        external_source=m.external_source,
+        external_ref=m.external_ref,
     )
 
 
@@ -435,6 +492,9 @@ def create_meeting(body: CreateMeetingBody, user: RequireAdmin, db: Session = De
         livestream_rumble_enabled=bool(body.livestream_rumble_enabled),
         livestream_rumble_rtmps_url=(body.livestream_rumble_rtmps_url or "").strip() or None,
         livestream_rumble_stream_key=(body.livestream_rumble_stream_key or "").strip() or None,
+        allow_anonymous=bool(body.allow_anonymous),
+        external_source=body.integration.source if body.integration else None,
+        external_ref=body.integration.ref.strip() if body.integration else None,
     )
     db.add(meeting)
     db.commit()
@@ -447,7 +507,7 @@ def create_meeting(body: CreateMeetingBody, user: RequireAdmin, db: Session = De
         "meeting": _to_out(meeting).model_dump(),
         # Shareable URL format: https://meet.witysk.org/<3-word-slug>
         # (no `/j/` prefix). The SPA routes `/<slug>` to the lobby.
-        "join_url": f"{settings.public_url}/{meeting.room_name}",
+        "join_url": _join_url(meeting),
     }
 
 
@@ -705,9 +765,9 @@ async def update_meeting(
     db: Session = Depends(get_db),
 ) -> dict:
     """Owner or co-host updates editable operational fields on a meeting:
-    visibility, title, recording mode, livestream destinations, video
-    playback config. The owner-only operations (delete, branding, co-host
-    grants) remain gated separately. When the meeting has an active
+    visibility, title, schedule, password, anonymous joining, recording mode,
+    livestream destinations, video playback config. The owner-only
+    operations (delete, branding, co-host grants) remain gated separately. When the meeting has an active
     livestream egress and the destination set changes, we call LiveKit
     `UpdateStreamRequest` to add/remove URLs without restarting the
     egress — so a new destination starts receiving the stream the same
@@ -724,6 +784,27 @@ async def update_meeting(
         m.display_title = body.display_title
     if body.recording_mode is not None:
         m.recording_mode = body.recording_mode
+
+    # Schedule and access. Presence in the body matters here (an explicit
+    # `null` clears), unlike the toggles below where `None` means "unchanged".
+    sent = body.model_fields_set
+    if "scheduled_at" in sent:
+        m.scheduled_at = body.scheduled_at
+    if "ends_at" in sent:
+        m.ends_at = body.ends_at
+    if "duration_minutes" in sent:
+        m.duration_minutes = body.duration_minutes
+    if "recurrence_rule" in sent:
+        m.recurrence_rule = _validated_rrule(body.recurrence_rule)
+    if "password" in sent:
+        if body.password:
+            m.password_hash = argon2.hash(body.password)
+            m.require_password = True
+        else:
+            m.password_hash = None
+            m.require_password = False
+    if body.allow_anonymous is not None:
+        m.allow_anonymous = body.allow_anonymous
 
     # Visibility: anonymous implies authenticated.
     if body.list_for_anonymous is not None:

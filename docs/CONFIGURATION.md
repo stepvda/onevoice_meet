@@ -56,6 +56,22 @@ If you're integrating with `one.witysk.org` or a similar SSO issuer, deploy `one
 
 To swap in a different SSO issuer, set `JWT_SECRET_KEY` to match its secret. The auth layer accepts any HS256 token signed with that key, so any issuer that emits compatible tokens (subject + signature) works.
 
+## One Voice Mail integration
+
+Mail embeds the SPA in its Meet page, creates meetings for calendar events and
+its Meetings app, and prepares Meet++ sittings. See
+[MAIL_INTEGRATION.md](MAIL_INTEGRATION.md).
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `MAIL_ISSUER` | _(empty)_ | Mail's JWT issuer, e.g. `https://mail.witysk.org`. Empty turns the integration off: Mail-minted tokens are refused. |
+| `MAIL_JWKS_URL` | `<MAIL_ISSUER>/.well-known/jwks.json` | Mail's ES256 public keys (cached 10 minutes, refetched for an unknown `kid`). |
+| `MAIL_AUDIENCE` | `meet` | Required `aud` of Mail's tokens (Mail's `MEET_TOKEN_AUDIENCE`). |
+| `MAIL_WEBHOOK_URL` | _(empty)_ | Meet++ webhooks to Mail, e.g. `https://mail.witysk.org/api/meet/webhook`. Empty = no webhooks (Mail polls). |
+| `MAIL_WEBHOOK_SECRET` | _(empty)_ | HMAC-SHA256 key of the webhooks; the same value as Mail's `MEET_WEBHOOK_SECRET`. |
+| `EMBED_PARENT_ORIGINS` | _(empty)_ | Comma-separated origins allowed to embed the SPA (`GET /api/v1/embed/config`), e.g. `https://mail.witysk.org`. |
+| `MEET_FRAME_ANCESTORS` | `https://mail.witysk.org` | Read by **Caddy** (not meeting-api): space-separated origins the SPA pages may be framed by (`frame-ancestors 'self' …`). Keep it in step with `EMBED_PARENT_ORIGINS`. |
+
 ## Platform admin
 
 | Variable | Default | Notes |

@@ -194,22 +194,26 @@ def previous_actions_home(o: "Outline") -> MeetppSection | None:
 
 
 def has_open_previous_actions(db: Session, session: MeetppSession) -> bool:
+    # Open Mail actions that Mail no longer lists for this sitting left it.
+    left = util.loads(session.external_json, {}).get("left_action_ids") or []
     return (
         db.query(MeetppAction.id)
         .filter(
             MeetppAction.series_id == session.series_id,
             MeetppAction.session_id != session.id,
             MeetppAction.status.in_(OPEN_ACTION_STATUSES),
+            MeetppAction.id.notin_(left),
         )
         .first()
         is not None
     ) or (
-        # Actions imported from a previous-notes PDF are raised "in" this
-        # session (origin pdf) but are previous actions all the same.
+        # Actions imported from a previous-notes PDF or from One Voice Mail are
+        # raised "in" this session (origin pdf / mail) but are previous actions
+        # all the same.
         db.query(MeetppAction.id)
         .filter(
             MeetppAction.session_id == session.id,
-            MeetppAction.origin == "pdf",
+            MeetppAction.origin.in_(("pdf", "mail")),
             MeetppAction.status.in_(OPEN_ACTION_STATUSES),
         )
         .first()

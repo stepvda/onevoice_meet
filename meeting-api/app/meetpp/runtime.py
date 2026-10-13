@@ -176,11 +176,17 @@ def _user_profile(db, sub: str) -> dict:
             user = db.query(User).filter_by(id=int(sub[2:]), kind="native").first()
         except ValueError:
             user = None
+    elif sub.startswith("mail:"):
+        user = db.query(User).filter_by(external_id=sub, kind="mail").first()
     else:
         user = db.query(User).filter_by(external_id=sub, kind="sso").first()
     if user is None:
         return {}
     return {"name": user.name, "username": user.username, "email": user.email}
+
+
+def _same_email(a: str | None, b: str | None) -> bool:
+    return bool(a and b and a.strip().lower() == b.strip().lower())
 
 
 def _merge_attendee(db, keep: MeetppAttendee, other: MeetppAttendee) -> None:
@@ -223,14 +229,15 @@ def upsert_roster(db, session: MeetppSession, key: str, name: str, *, username: 
     r = db.query(MeetppRoster).filter_by(series_id=session.series_id, person_key=key).first()
     if r is None and key.startswith("sub:"):
         # Only a signed-in user takes over a seeded row (a guest's name is
-        # whatever they typed).
+        # whatever they typed). Rows from One Voice Mail's roster also match
+        # by e-mail.
         needle = util.norm_name(name)
         for cand in db.query(MeetppRoster).filter(
             MeetppRoster.series_id == session.series_id, MeetppRoster.person_key.like("name:%")
         ).all():
             if (username and cand.username and cand.username.lstrip("@").lower() == username.lstrip("@").lower()) or (
                 needle and util.norm_name(cand.display_name) == needle
-            ):
+            ) or _same_email(email, cand.email):
                 cand.person_key = key
                 r = cand
                 break
@@ -274,14 +281,16 @@ def find_attendee(db, session: MeetppSession, *, key: str | None, identity: str 
     return None
 
 
-def _seeded_match(db, session: MeetppSession, name: str | None, username: str | None) -> MeetppAttendee | None:
+def _seeded_match(
+    db, session: MeetppSession, name: str | None, username: str | None, email: str | None = None,
+) -> MeetppAttendee | None:
     needle = util.norm_name(name)
     for a in db.query(MeetppAttendee).filter(
         MeetppAttendee.session_id == session.id, MeetppAttendee.person_key.like("name:%")
     ).all():
         if (username and a.username and a.username.lstrip("@").lower() == username.lstrip("@").lower()) or (
             needle and util.norm_name(a.display_name) == needle
-        ):
+        ) or _same_email(email, a.email):
             return a
     return None
 
@@ -297,7 +306,11 @@ def ensure_attendee(db, session: MeetppSession, *, key: str, identity: str | Non
         provisional = db.query(MeetppAttendee).filter_by(session_id=session.id, person_key=f"id:{identity}").first()
     # A seeded roster row is taken over by name only by a signed-in user; a
     # guest's name is whatever they typed.
-    seeded = _seeded_match(db, session, display, profile.get("username")) if a is None and key.startswith("sub:") else None
+    seeded = (
+        _seeded_match(db, session, display, profile.get("username"), profile.get("email"))
+        if a is None and key.startswith("sub:")
+        else None
+    )
     if a is None and seeded is not None:
         seeded.person_key = key
         a = seeded

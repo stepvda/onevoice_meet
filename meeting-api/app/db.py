@@ -149,6 +149,11 @@ def lightweight_migrate() -> None:
                 # Meet++ — series linkage and per-owner enable flag.
                 ("meetpp_series_id", "ALTER TABLE meetings ADD COLUMN meetpp_series_id VARCHAR(26)"),
                 ("meetpp_enabled", "ALTER TABLE meetings ADD COLUMN meetpp_enabled BOOLEAN DEFAULT 1 NOT NULL"),
+                # One Voice Mail integration: unlisted anonymous joining and
+                # the creating system's key (see models.py).
+                ("allow_anonymous", "ALTER TABLE meetings ADD COLUMN allow_anonymous BOOLEAN DEFAULT 0 NOT NULL"),
+                ("external_source", "ALTER TABLE meetings ADD COLUMN external_source VARCHAR(20)"),
+                ("external_ref", "ALTER TABLE meetings ADD COLUMN external_ref VARCHAR(200)"),
             )),
             ("livestream_destination_states", (
                 ("viewer_count", "ALTER TABLE livestream_destination_states ADD COLUMN viewer_count INTEGER"),

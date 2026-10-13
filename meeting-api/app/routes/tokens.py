@@ -68,11 +68,13 @@ def anon_token(
 
     # Visibility gates joining, not just discoverability. A meeting with
     # `list_for_anonymous=False` is "Private" (no listing AND no
-    # anonymous joins) — anonymous users with the URL get refused here.
+    # anonymous joins) — anonymous users with the URL get refused here,
+    # unless the meeting admits guests with the link (`allow_anonymous`,
+    # set by One Voice Mail: joinable but never listed).
     # Authenticated users still go through (they can be invited / be on
     # the cohost list); owners use a separate `/meetings/{id}/token`
     # endpoint and bypass this path entirely.
-    if auth_user is None and not m.list_for_anonymous:
+    if auth_user is None and not (m.list_for_anonymous or m.allow_anonymous):
         raise HTTPException(
             status_code=403,
             detail="this meeting is not open to anonymous joiners",

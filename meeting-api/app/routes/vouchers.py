@@ -180,14 +180,14 @@ def redeem_voucher(
         window_seconds=3600,
         detail="too many voucher redemption attempts; try again in an hour",
     )
-    if user.kind != "sso":
+    if user.kind not in ("sso", "mail"):
         u = db.get(User, user.user_id)
         if not u:
             raise HTTPException(status_code=404, detail="account not found")
     else:
-        # SSO already always-admin; redemption is a no-op for them and we
-        # refuse rather than silently waste the code.
-        raise HTTPException(status_code=403, detail="SSO accounts already have admin rights")
+        # SSO and Mail users are always admin; redemption is a no-op for
+        # them and we refuse rather than silently waste the code.
+        raise HTTPException(status_code=403, detail="SSO and Mail accounts already have admin rights")
 
     code = body.code.strip().upper()
     v = db.query(Voucher).filter_by(code=code).first()

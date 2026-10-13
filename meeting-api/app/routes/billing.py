@@ -97,8 +97,8 @@ async def create_billing_order(
     body: CreateOrderBody | None = None,
     db: Session = Depends(get_db),
 ) -> CreateOrderOut:
-    if user.kind == "sso":
-        raise HTTPException(status_code=403, detail="SSO accounts already have admin rights")
+    if user.kind in ("sso", "mail"):
+        raise HTTPException(status_code=403, detail="SSO and Mail accounts already have admin rights")
     kind = (body.kind if body else "annual").lower()
     if kind not in ("monthly", "annual"):
         raise HTTPException(status_code=400, detail="kind must be 'monthly' or 'annual'")
@@ -221,8 +221,8 @@ async def confirm_subscription(
     (the JS Buttons SDK's onApprove fires with the subscription_id). We
     fetch the subscription details from PayPal and persist + grant
     entitlement. Webhook events will keep it up to date afterwards."""
-    if user.kind == "sso":
-        raise HTTPException(status_code=403, detail="SSO accounts already have admin rights")
+    if user.kind in ("sso", "mail"):
+        raise HTTPException(status_code=403, detail="SSO and Mail accounts already have admin rights")
     plan = (body.plan or "monthly").lower()
     if plan not in ("monthly", "annual"):
         raise HTTPException(status_code=400, detail="plan must be 'monthly' or 'annual'")
@@ -379,9 +379,10 @@ def my_billing_history(user: RequireUser, db: Session = Depends(get_db)) -> list
     """Aggregates everything that has ever granted this user
     meeting-creation rights: PayPal one-shot orders, PayPal subscriptions,
     and redeemed vouchers. Sorted newest-first. Returns [] for SSO users
-    (their access comes from one.witysk.org, not from any local record)."""
+    (their access comes from one.witysk.org, not from any local record) and
+    for Mail users (theirs comes from One Voice Mail)."""
     items: list[BillingHistoryItem] = []
-    if user.kind == "sso":
+    if user.kind in ("sso", "mail"):
         return items
 
     # PayPal one-shot orders

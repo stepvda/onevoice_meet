@@ -10,7 +10,7 @@ from app.config import settings
 from app.db import engine, lightweight_migrate
 from app.logging_config import log_event, setup_logging
 from app.models import Base
-from app.routes import admin, auth_native, billing, chat, health, meetings, moderation, on_demand_social, playback, polls, recordings, streams, ti_cafe, tokens, totp, users, vouchers, waiting_room, youtube_oauth
+from app.routes import admin, auth_native, billing, chat, embed, health, meetings, moderation, on_demand_social, playback, polls, recordings, streams, ti_cafe, tokens, totp, users, vouchers, waiting_room, youtube_oauth
 from app.meetpp import routes as meetpp_routes
 from app.meetpp.runtime import runtime as meetpp_runtime
 from app.services import ip_block
@@ -105,6 +105,7 @@ async def _request_log_mw(request: Request, call_next):
 app.add_middleware(ip_block.IPBlockMiddleware)
 
 app.include_router(health.router, prefix="/api")
+app.include_router(embed.router, prefix="/api")
 app.include_router(meetings.router, prefix="/api")
 app.include_router(tokens.router, prefix="/api")
 app.include_router(moderation.router, prefix="/api")

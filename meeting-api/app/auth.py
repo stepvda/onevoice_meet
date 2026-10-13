@@ -13,6 +13,14 @@ Two issuers feed into one resolver:
     with `iss="meet"` and `sub="m:<users.id>"`. Same secret, same algorithm,
     so the same `decode_access_token` validates both.
 
+  - **One Voice Mail** (when `MAIL_ISSUER` is set) — ES256 JWT minted by
+    Mail for audience `meet`, verified against Mail's own JWKS. A user who
+    linked One Voice carries `onevoice_sub` and maps to their SSO account
+    (`AuthUser.sub` = that one.witysk.org user_id, same Meet account as at
+    meet.witysk.org); anyone else is a `kind="mail"` user with
+    `external_id = "mail:<Mail user id>"` and `AuthUser.sub` = the same.
+    See docs/MAIL_INTEGRATION.md.
+
 `require_user` returns an `AuthUser` that wraps the matched `User` row's id
 plus a flat snapshot of admin-state and contact info. Routes that mutate
 meeting-creation state (POST /v1/meetings) should use `RequireAdmin`
@@ -24,6 +32,7 @@ issues asymmetric tokens, swap the body of `decode_access_token` to verify
 RS256/ES256 signatures via the JWKS and check the DPoP proof. The public
 shape of this module stays the same.
 """
+import logging
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -32,11 +41,15 @@ from typing import Annotated
 import httpx
 from fastapi import Depends, Header, HTTPException, status
 from jose import JWTError, jwt
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
 from app.models import User
+
+log = logging.getLogger(__name__)
 
 ACCESS_TOKEN_TTL_HOURS = 24 * 7  # mirrors one.witysk.org's typical session length
 
@@ -48,7 +61,7 @@ class AuthUser:
     is computed from the `User` row at resolution time so trial / voucher
     expiry takes effect without needing a sweep job."""
     user_id: int
-    kind: str  # "sso" | "native"
+    kind: str  # "sso" | "native" | "mail"
     external_id: str | None
     email: str | None
     is_admin: bool
@@ -81,6 +94,76 @@ def _onevoice_jwks() -> list[dict]:
         return cached or []
 
 
+# One Voice Mail's JWKS cache — kept apart from one.witysk.org's so neither
+# issuer's keys can ever verify the other's tokens. Same TTL and fallback; a
+# `kid` the cache does not know (Mail rotated its key) triggers one refetch;
+# such forced refetches happen at most every _MAIL_JWKS_MIN_REFETCH_SECONDS so
+# random kids cannot make us hammer Mail.
+_MAIL_JWKS_CACHE: dict = {"keys": None, "at": 0.0, "forced_at": 0.0}
+_MAIL_JWKS_MIN_REFETCH_SECONDS = 10.0
+
+
+def is_mail_issuer(iss: object) -> bool:
+    """True when `iss` is the configured One Voice Mail issuer (integration on)."""
+    issuer = settings.mail_issuer_normalised
+    return bool(issuer) and isinstance(iss, str) and iss.strip().rstrip("/") == issuer
+
+
+def _fetch_mail_jwks() -> list[dict]:
+    resp = httpx.get(settings.mail_jwks_endpoint, timeout=5.0)
+    resp.raise_for_status()
+    return resp.json().get("keys") or []
+
+
+def _mail_jwks(*, refresh: bool = False) -> list[dict]:
+    now = time.time()
+    cached = _MAIL_JWKS_CACHE["keys"]
+    if cached is not None and now - _MAIL_JWKS_CACHE["at"] < _JWKS_TTL_SECONDS and not refresh:
+        return cached
+    if refresh:
+        if now - _MAIL_JWKS_CACHE.get("forced_at", 0.0) < _MAIL_JWKS_MIN_REFETCH_SECONDS:
+            return cached or []
+        _MAIL_JWKS_CACHE["forced_at"] = now
+    try:
+        keys = _fetch_mail_jwks()
+    except Exception as exc:  # noqa: BLE001 — keep the last-known keys
+        log.warning("mail jwks fetch from %s failed: %s", settings.mail_jwks_endpoint, exc)
+        return cached or []
+    _MAIL_JWKS_CACHE["keys"] = keys
+    _MAIL_JWKS_CACHE["at"] = now
+    return keys
+
+
+def _pick_jwk(keys: list[dict], kid: str | None) -> dict | None:
+    jwk = next((k for k in keys if kid and k.get("kid") == kid), None)
+    if jwk is None and not kid and len(keys) == 1:
+        jwk = keys[0]  # single published key → kid is optional
+    return jwk
+
+
+def _decode_mail_token(token: str, header: dict) -> dict:
+    """Verify a Mail-minted token: Mail's JWKS, PINNED to ES256, audience
+    MAIL_AUDIENCE, `exp` required. The caller routed here on the unverified
+    `iss`; the verified signature covers that claim, so it cannot be swapped."""
+    kid = header.get("kid")
+    jwk = _pick_jwk(_mail_jwks(), kid)
+    if jwk is None and kid:
+        jwk = _pick_jwk(_mail_jwks(refresh=True), kid)
+    if jwk is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="no matching verification key",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return jwt.decode(
+        token,
+        jwk,
+        algorithms=["ES256"],
+        audience=settings.mail_audience,
+        options={"leeway": 30, "require_exp": True, "require_aud": True},
+    )
+
+
 def decode_access_token(token: str) -> dict:
     """Verify a bearer JWT. Dual-scheme during the one.witysk.org HS256→ES256
     signing migration:
@@ -94,10 +177,15 @@ def decode_access_token(token: str) -> dict:
     defense): an attacker who signs an HS256 token using the ES256 *public* key
     as the HMAC secret routes to the HS256 branch and is checked against the real
     shared secret — which they do not have — so the forgery fails. `leeway`
-    tolerates ~30s clock drift between meet and one.witysk.org."""
+    tolerates ~30s clock drift between meet and one.witysk.org.
+
+    A token whose unverified `iss` is MAIL_ISSUER takes neither branch: it is
+    verified against Mail's JWKS only (`_decode_mail_token`), whatever its
+    header says."""
     opts = {"options": {"verify_aud": False, "leeway": 30}}
     try:
         header = jwt.get_unverified_header(token)
+        unverified = jwt.get_unverified_claims(token)
     except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -107,6 +195,8 @@ def decode_access_token(token: str) -> dict:
 
     alg = header.get("alg")
     try:
+        if isinstance(unverified, dict) and is_mail_issuer(unverified.get("iss")):
+            return _decode_mail_token(token, header)
         if alg == "ES256":
             kid = header.get("kid")
             keys = _onevoice_jwks()
@@ -181,6 +271,11 @@ def _user_from_claims(claims: dict, db: Session) -> User:
         raise HTTPException(status_code=401, detail="token missing 'sub'")
     iss = claims.get("iss")
 
+    # Only `decode_access_token` produces claims, and it verifies every
+    # Mail-issuer token against Mail's keys, so this branch is Mail's word.
+    if is_mail_issuer(iss):
+        return _mail_user(claims, db)
+
     if iss == "meet" and sub.startswith("m:"):
         try:
             uid = int(sub[2:])
@@ -226,6 +321,88 @@ def _user_from_claims(claims: dict, db: Session) -> User:
     return user
 
 
+def principal_sub(claims: dict) -> str:
+    """`AuthUser.sub` for verified claims: the key meetings, co-host lists
+    and LiveKit identities (`user-<sub>`) use. A Mail token maps to the
+    linked one.witysk.org user_id, else to `mail:<Mail user id>`."""
+    if is_mail_issuer(claims.get("iss")):
+        linked = str(claims.get("onevoice_sub") or "").strip()
+        return linked or f"mail:{claims.get('sub')}"
+    return str(claims.get("sub"))
+
+
+def _mail_email(value: object) -> str | None:
+    email = str(value or "").strip().lower()
+    return email[:320] if "@" in email else None
+
+
+def _mail_name(value: object) -> str | None:
+    return str(value or "").strip()[:120] or None
+
+
+def _email_free(db: Session, email: str | None, user_id: int | None) -> bool:
+    """`users.email` is unique: a Mail identity never takes the address of
+    another account (a native signup, an SSO user) — the sync is skipped."""
+    if not email:
+        return False
+    q = db.query(User.id).filter(func.lower(User.email) == email)
+    if user_id is not None:
+        q = q.filter(User.id != user_id)
+    return q.first() is None
+
+
+def _sync_mail_profile(db: Session, user: User, email: str | None, name: str | None) -> bool:
+    dirty = False
+    if email and (user.email or "").lower() != email and _email_free(db, email, user.id):
+        user.email = email
+        dirty = True
+    if name and user.name != name:
+        user.name = name
+        dirty = True
+    return dirty
+
+
+def _mail_user(claims: dict, db: Session) -> User:
+    """Principal of a Mail-minted token (docs/MAIL_INTEGRATION.md §Auth).
+
+    With `onevoice_sub` the user linked One Voice in Mail: the SSO row of that
+    one.witysk.org user_id (auto-provisioned as for SSO), so Mail and
+    meet.witysk.org share one Meet account. Otherwise a `kind="mail"` row keyed
+    `mail:<Mail user id>`. Email and name follow the claims. A `kind="mail"`
+    user is never made a platform admin by email (see bootstrap_platform_admins)."""
+    email = _mail_email(claims.get("email"))
+    name = _mail_name(claims.get("name"))
+    linked = str(claims.get("onevoice_sub") or "").strip()
+    if linked:
+        kind, external_id = "sso", linked
+    else:
+        kind, external_id = "mail", f"mail:{claims.get('sub')}"
+    user = db.query(User).filter_by(external_id=external_id, kind=kind).first()
+    if user is None:
+        user = User(
+            kind=kind,
+            external_id=external_id,
+            email=email if _email_free(db, email, None) else None,
+            name=name,
+            # Same rule as the SSO path for the voucher admins (by user_id).
+            is_platform_admin=kind == "sso" and linked in settings.voucher_admin_user_ids,
+        )
+        db.add(user)
+        try:
+            db.commit()
+        except IntegrityError:
+            # A concurrent first request created the row (or took the email).
+            db.rollback()
+            user = db.query(User).filter_by(external_id=external_id, kind=kind).first()
+            if user is None:
+                raise HTTPException(status_code=409, detail="account provisioning conflict") from None
+            return user
+        db.refresh(user)
+    elif _sync_mail_profile(db, user, email, name):
+        db.commit()
+    return user
+
+
 def is_bootstrap_admin_email(email: str | None) -> bool:
     """Public so signup can promote a native user immediately if their email
     is in the bootstrap list (avoids waiting for the next restart)."""
@@ -266,7 +443,7 @@ def require_user(
         email=user.email,
         is_admin=user.is_admin_now(now),
         is_platform_admin=bool(user.is_platform_admin),
-        sub=str(claims.get("sub")),
+        sub=principal_sub(claims),
     )
 
 
@@ -312,7 +489,8 @@ def bootstrap_platform_admins() -> None:
         return
     with SessionLocal() as db:
         for u in db.query(User).filter(User.is_platform_admin.is_(False)).all():
-            email_match = bool(u.email and u.email.strip().lower() in email_needles)
+            # Emails asserted by One Voice Mail never make a platform admin.
+            email_match = bool(u.kind != "mail" and u.email and u.email.strip().lower() in email_needles)
             ext_match = bool(u.kind == "sso" and u.external_id in voucher_ids)
             if email_match or ext_match:
                 u.is_platform_admin = True
@@ -352,7 +530,7 @@ def optional_user(
         email=user.email,
         is_admin=user.is_admin_now(now),
         is_platform_admin=bool(user.is_platform_admin),
-        sub=str(claims.get("sub")),
+        sub=principal_sub(claims),
     )
 
 

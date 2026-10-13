@@ -103,6 +103,12 @@ def default_review(db: Session, session: MeetppSession) -> dict:
     meeting = db.get(Meeting, session.meeting_id)
     final = util.loads(session.final_json, {})
     nxt = next_occurrence(meeting, util.now()) if meeting else None
+    # Prepared from One Voice Mail: Mail knows the next sitting and sends its
+    # invitations itself (the draft agenda goes to it with "Send to Meetings").
+    external = util.loads(session.external_json, {}) if session.external_ref else {}
+    upcoming = external.get("next_occurrence") if isinstance(external.get("next_occurrence"), dict) else {}
+    if session.external_ref and util.parse_dt(upcoming.get("starts_at")) is not None:
+        nxt = util.parse_dt(upcoming.get("starts_at"))
     proposal = final.get("next_meeting_proposal") or {}
     if nxt is None and proposal.get("iso"):
         nxt = util.parse_dt(proposal["iso"])
@@ -122,7 +128,12 @@ def default_review(db: Session, session: MeetppSession) -> dict:
             {"title": it.get("title"), "body": it.get("body")} for it in final.get("next_agenda") or [] if isinstance(it, dict)
         ],
         "recipients": {"report": everyone, "invite": required or everyone},
-        "distribution": {"send_report": True, "send_invites": nxt is not None, "attach_snapshots": True, "include_transcript": False},
+        "distribution": {
+            "send_report": True,
+            "send_invites": nxt is not None and not session.external_ref,
+            "attach_snapshots": True,
+            "include_transcript": False,
+        },
     }
 
 

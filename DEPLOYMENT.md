@@ -453,3 +453,36 @@ Studio the system runs on tier 1 only and the report's provenance says so.
 
 SQLite now runs in WAL mode. The backup procedure must copy `meet.db-wal` and
 `meet.db-shm` alongside `meet.db`.
+
+## One Voice Mail integration
+
+Mail (mail.witysk.org) embeds Meet, creates meetings for its calendar and
+Meetings app, and prepares Meet++ sittings (see `docs/MAIL_INTEGRATION.md`).
+Add to `/opt/meet/.env` (no secret is shown here; generate the webhook secret
+once and give the same value to Mail as `MEET_WEBHOOK_SECRET`):
+
+```
+MAIL_ISSUER=https://mail.witysk.org
+MAIL_WEBHOOK_URL=https://mail.witysk.org/api/meet/webhook
+MAIL_WEBHOOK_SECRET=<openssl rand -hex 32, shared with Mail>
+EMBED_PARENT_ORIGINS=https://mail.witysk.org
+MEET_FRAME_ANCESTORS=https://mail.witysk.org
+```
+
+`MAIL_JWKS_URL` (default `<MAIL_ISSUER>/.well-known/jwks.json`) and
+`MAIL_AUDIENCE` (default `meet`) need no entry. Then `scripts/deploy.sh`: the
+schema changes are additive (`meetings.allow_anonymous`, `external_source`,
+`external_ref`; nullable `external_*` columns on the Meet++ tables) and are
+applied at startup. The `caddy` container is recreated once because it now
+receives `MEET_FRAME_ANCESTORS` (a few seconds; LiveKit and egress are not
+touched). Checks after the deploy:
+
+- `curl -fsS https://meet.witysk.org/api/v1/embed/config` →
+  `{"parent_origins":["https://mail.witysk.org"]}`
+- `curl -sI https://meet.witysk.org/ | grep -i -E 'frame|content-security'` →
+  `frame-ancestors 'self' https://mail.witysk.org`, no `X-Frame-Options`
+- from the meeting-api container, Mail's keys:
+  `docker compose -p meet exec meeting-api python -c "import urllib.request; print(urllib.request.urlopen('https://mail.witysk.org/.well-known/jwks.json', timeout=5).read().decode())"`
+
+To turn the integration off, empty `MAIL_ISSUER` (Mail's tokens are then
+refused) and `MAIL_WEBHOOK_URL`, and recreate meeting-api.

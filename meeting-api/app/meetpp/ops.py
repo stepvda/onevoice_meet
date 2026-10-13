@@ -520,7 +520,9 @@ def _similar(a_title: str, a_full: str, b_title: str, b_full: str) -> float:
 
 
 def is_previous_action(a: MeetppAction, session: MeetppSession) -> bool:
-    return a.session_id != session.id or a.origin == "pdf"
+    # Imported from a previous-notes PDF or from One Voice Mail: raised "in"
+    # this session but previous actions all the same.
+    return a.session_id != session.id or a.origin in ("pdf", "mail")
 
 
 # ─── Appliers ───────────────────────────────────────────────────────────────
@@ -1211,7 +1213,7 @@ def _settings(s: MeetppSession) -> dict:
 
 
 def session_meta(db: Session, s: MeetppSession, *, series: MeetppSeries | None = None, meeting: Meeting | None = None) -> dict:
-    from app.meetpp import llm
+    from app.meetpp import external, llm
 
     series = series or db.get(MeetppSeries, s.series_id)
     meeting = meeting or db.get(Meeting, s.meeting_id)
@@ -1257,6 +1259,9 @@ def session_meta(db: Session, s: MeetppSession, *, series: MeetppSeries | None =
         },
         "ai": {"status": llm.ai_status(s.id)},
         "jobs": jobs or None,
+        # Prepared from One Voice Mail: {source, occurrence_ref, open_url,
+        # next_occurrence, next_agenda_sent}; null otherwise.
+        "external": external.external_dto(s, meeting),
     }
 
 
@@ -1503,12 +1508,14 @@ def session_actions(db: Session, session: MeetppSession) -> list[MeetppAction]:
     rows = db.query(MeetppAction).filter_by(series_id=session.series_id).all()
     # Actions raised in later sessions of the series never show in an earlier one.
     cutoff = util.aware(session.ended_at) or util.now()
+    # Open Mail actions that Mail no longer lists for this sitting left it.
+    left = set(util.loads(session.external_json, {}).get("left_action_ids") or [])
     out = [
         a
         for a in rows
         if a.session_id == session.id
         or a.id in reported
-        or (a.status in OPEN_ACTION_STATUSES and util.aware(a.created_at) <= cutoff)
+        or (a.status in OPEN_ACTION_STATUSES and util.aware(a.created_at) <= cutoff and a.id not in left)
     ]
     # Previous actions first (by ref number), then this meeting's.
     def key(a: MeetppAction):

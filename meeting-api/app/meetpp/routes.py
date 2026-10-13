@@ -22,6 +22,7 @@ from app.meetpp import (
     bus,
     compose,
     export as export_mod,
+    external,
     governance,
     ingest as ingest_mod,
     invites as invites_mod,
@@ -174,7 +175,12 @@ async def list_sessions(meeting_id: str, user: RequireUser, db: Session = Depend
     rows = db.query(MeetppSession).filter_by(meeting_id=meeting.id).order_by(MeetppSession.created_at.desc()).all()
     return {
         "sessions": [
-            {"id": s.id, "status": s.status, "started_at": util.iso(s.started_at), "ended_at": util.iso(s.ended_at), "published_at": util.iso(s.published_at)}
+            {
+                "id": s.id, "status": s.status, "started_at": util.iso(s.started_at), "ended_at": util.iso(s.ended_at),
+                "published_at": util.iso(s.published_at),
+                # Mail's id of the sitting, for sessions prepared from One Voice Mail.
+                **({"external_ref": s.external_ref} if s.external_ref else {}),
+            }
             for s in rows
         ]
     }
@@ -686,6 +692,8 @@ async def get_review(session_id: str, ctx: ChairContext = Depends(require_chair_
         "review": invites_mod.review_draft(db, s),
         "final": _final_view(s),
         "state": state,
+        # Also in `session` (SessionMeta); here for the review page's banner.
+        "external": state["session"].get("external"),
     }
 
 
@@ -853,6 +861,43 @@ async def export_json(session_id: str, ctx: ChairContext = Depends(require_chair
 @router.get("/meetpp/sessions/{session_id}/export.md")
 async def export_md(session_id: str, ctx: ChairContext = Depends(require_chair_session), db: Session = Depends(get_db)) -> PlainTextResponse:
     return PlainTextResponse(compose.minutes_markdown(db, ctx.session), media_type="text/markdown; charset=utf-8")
+
+
+# ─── Prepared from One Voice Mail (app/meetpp/external.py) ──────────────────
+
+
+def _external_error(exc: external.ExternalError) -> HTTPException:
+    return HTTPException(status_code=exc.status, detail=exc.detail)
+
+
+@router.put("/meetings/{meeting_id}/meetpp/external")
+async def put_external(meeting_id: str, body: external.SyncBody, user: RequireUser, db: Session = Depends(get_db)) -> dict:
+    """Prepare (or keep in step) Meet++ for one sitting of a Mail meeting:
+    `{session_id, status, series_id}`; 409 `meetpp_closed` / `meetpp_busy`."""
+    meeting = require_meeting_chair(meeting_id, user, db)
+    _require_pilot(meeting)
+    try:
+        return await external.sync(db, meeting, user, body)
+    except external.ExternalError as exc:
+        db.rollback()
+        raise _external_error(exc) from exc
+
+
+@router.get("/meetpp/sessions/{session_id}/external")
+async def get_external(session_id: str, ctx: ChairContext = Depends(require_chair_session), db: Session = Depends(get_db)) -> dict:
+    """The outcome of the sitting in Mail's terms (minutes, decisions, actions, attendance)."""
+    return external.result(db, ctx.session)
+
+
+@router.post("/meetpp/sessions/{session_id}/external/next-agenda")
+async def post_external_next_agenda(
+    session_id: str, body: external.NextAgendaBody, ctx: ChairContext = Depends(require_chair_session), db: Session = Depends(get_db),
+) -> dict:
+    """Send the draft agenda of the next sitting to Mail (webhook `meetpp.next_agenda`)."""
+    try:
+        return await external.send_next_agenda(db, ctx.session, ctx.meeting, body)
+    except external.ExternalError as exc:
+        raise _external_error(exc) from exc
 
 
 # ─── Admin ──────────────────────────────────────────────────────────────────

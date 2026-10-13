@@ -19,6 +19,8 @@ SESSION_META_KEYS = {
     "id", "status", "template", "mode", "language", "goal", "meeting_type", "majority_rule", "series_id", "series_title",
     "meeting_id", "room", "live_section_id", "topic_section_id", "started_at", "ended_at", "published_at", "settings",
     "editors", "undo", "proposal", "agent", "ai", "jobs", "quorum_required", "voting_body",
+    # Prepared from One Voice Mail (null otherwise): docs/MAIL_INTEGRATION.md.
+    "external",
 }
 SECTION_KEYS = {"id", "kind", "parent_id", "position", "number", "title", "body", "presenter", "timebox_minutes", "status",
                 "started_at", "ended_at", "elapsed_seconds", "source", "locked", "counts", "previous_actions_home"}
