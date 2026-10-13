@@ -125,15 +125,25 @@ export default function AudioWaveform({
 
     let raf = 0;
     let buf = new Uint8Array(1024);
+    // The accent of the colour scheme (Meet's green by default), re-read
+    // about once a second so a theme change from Mail shows up.
+    let accent = "76 175 80";
+    let frame = 0;
+    const readAccent = () => {
+      const v = getComputedStyle(canvas).getPropertyValue("--m-accent-500").trim();
+      if (v) accent = v;
+    };
+    readAccent();
 
     const draw = () => {
       raf = requestAnimationFrame(draw);
+      if (++frame % 60 === 0) readAccent();
       ctx2d.clearRect(0, 0, width, height);
       const analyser = analyserRef.current;
       if (!analyser) {
         // Idle: flat centre line.
         ctx2d.beginPath();
-        ctx2d.strokeStyle = "rgba(76, 175, 80, 0.5)";
+        ctx2d.strokeStyle = `rgb(${accent} / 0.5)`;
         ctx2d.lineWidth = 1;
         ctx2d.moveTo(0, height / 2);
         ctx2d.lineTo(width, height / 2);
@@ -145,7 +155,7 @@ export default function AudioWaveform({
       }
       analyser.getByteTimeDomainData(buf);
       ctx2d.beginPath();
-      ctx2d.strokeStyle = "#4CAF50";
+      ctx2d.strokeStyle = `rgb(${accent})`;
       ctx2d.lineWidth = 1.5;
       const slice = width / buf.length;
       let x = 0;

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import Sidebar, { MainArea } from "./components/Sidebar";
+import EmbedBridge from "./components/EmbedBridge";
 // Route components are code-split so the initial bundle stays small. Without
 // this, every visitor downloads the PayPal SDK, the LiveKit client, the emoji
 // picker, and 18 routes' worth of JS just to see the home page. With it, only
@@ -35,16 +36,30 @@ import { TICafeProvider } from "./lib/tiCafe";
 import { usePrivacyServerSync, usePrivacyClassNames } from "./lib/privacy";
 import { useThemePref } from "./lib/themePref";
 import { useUiPrefs } from "./lib/uiPrefs";
+import { useEmbed } from "./lib/embed";
+
+// A lobby per room: moving from one lobby to another in-app (Mail's
+// ovm:navigate does) must not keep the previous room's owner state.
+function LobbyForRoom() {
+  const { roomName = "" } = useParams();
+  return <Lobby key={roomName} />;
+}
+
+// Sign-in pages that make no sense inside One Voice Mail (Mail signs the
+// user in); embedded, they send the user home instead.
+const EMBED_HIDDEN_PATHS = ["/login", "/signup", "/sso-callback", "/forgot-password", "/reset-password", "/account", "/upgrade"];
 
 export default function App() {
   // Side-effect hooks driven by user preferences. They live here so they're
   // active on every route (including pre-meeting pages), not just inside Room.
   useThemePref();
   useUiPrefs();
+  const { status: embedStatus } = useEmbed();
   usePrivacyServerSync();
   usePrivacyClassNames();
-  // Once at app start: try to bootstrap an SSO token, then ask the API for the
-  // user's saved language. If the user has explicitly chosen one in Settings
+  // Once at app start: try to bootstrap an SSO token (embedded in Mail: the
+  // parent's token — lib/auth.ts never starts SSO there), then ask the API
+  // for the user's saved language. If the user has explicitly chosen one in Settings
   // (`language_set_manually=true`), it overrides whatever the browser detected.
   useEffect(() => {
     let cancelled = false;
@@ -84,8 +99,13 @@ export default function App() {
   // changes — the only triggers that disconnect are an explicit click on the
   // bar's main toggle, or `window.dispatchEvent(new Event("ti-cafe-logout"))`
   // (fired from logoutFromOneWitysk()).
+  if (embedStatus !== "off" && EMBED_HIDDEN_PATHS.includes(location.pathname)) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <TICafeProvider>
+      <EmbedBridge />
       <Sidebar />
       <MainArea>
         {/* Suspense fallback shown while a lazy route's chunk is loading.
@@ -125,9 +145,9 @@ export default function App() {
           {/* Live meeting view */}
           <Route path="/r/:roomName" element={<Room />} />
           {/* Backward-compat: old links in the wild are /j/<slug> */}
-          <Route path="/j/:roomName" element={<Lobby />} />
+          <Route path="/j/:roomName" element={<LobbyForRoom />} />
           {/* Clean shareable form: meet.witysk.org/<3-word-slug> → lobby. */}
-          <Route path="/:roomName" element={<Lobby />} />
+          <Route path="/:roomName" element={<LobbyForRoom />} />
         </Routes>
         </Suspense>
       </MainArea>

@@ -13,6 +13,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getAccessToken } from "../lib/auth";
+import { embedActive } from "../lib/embed";
 
 const ONE_WITYSK = "https://one.witysk.org";
 
@@ -40,7 +41,8 @@ export default function Facepic({ user, size = 40, live = false, className = "" 
   const url = rel ? `${ONE_WITYSK}/api/files/${rel}` : "";
 
   useEffect(() => {
-    if (!url || !tok) return;
+    // Embedded in Mail the token is Mail's: never send it to one.witysk.org.
+    if (!url || !tok || embedActive()) return;
     let cancelled = false;
     let blob: string | null = null;
     fetch(url, {

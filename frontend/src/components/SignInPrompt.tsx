@@ -6,9 +6,16 @@
  */
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LogIn, UserPlus, type LucideIcon } from "lucide-react";
+import { LogIn, RefreshCw, UserPlus, type LucideIcon } from "lucide-react";
 import { Card } from "./ui";
 import { startSsoRedirect } from "../lib/auth";
+import { embed, useEmbed } from "../lib/embed";
+
+/** Embedded in Mail: ask Mail for a token again, then reload this page. */
+export async function retryEmbedSignIn(): Promise<void> {
+  const tok = await embed().requestToken();
+  if (tok) window.location.reload();
+}
 
 interface Props {
   icon: LucideIcon;
@@ -19,6 +26,34 @@ interface Props {
 
 export default function SignInPrompt({ icon: Icon, title, body, testId }: Props) {
   const { t } = useTranslation();
+  const embedded = useEmbed().status !== "off";
+  if (embedded) {
+    // Inside One Voice Mail there is no Meet sign-in: Mail provides the
+    // token. Getting here means Mail did not answer (yet).
+    return (
+      <Card data-testid={testId}>
+        <div className="flex flex-col items-center text-center gap-4 py-6">
+          <div className="h-14 w-14 rounded-full bg-accent-500/15 border border-accent-500/40 flex items-center justify-center">
+            <Icon size={26} className="text-accent-500" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
+            <p className="text-sm text-slate-400 mt-1 max-w-md">
+              {t("embed.signInFailed", { defaultValue: "Meet could not sign you in through One Voice Mail." })}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void retryEmbedSignIn()}
+            data-testid="signin-prompt-retry"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold"
+          >
+            <RefreshCw size={16} /> {t("embed.retry", { defaultValue: "Try again" })}
+          </button>
+        </div>
+      </Card>
+    );
+  }
   return (
     <Card data-testid={testId}>
       <div className="flex flex-col items-center text-center gap-4 py-6">

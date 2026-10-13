@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ExternalLink, Sparkles } from "lucide-react";
 import type { Room } from "livekit-client";
@@ -8,6 +9,9 @@ import { chooseConsent, meetppActions, reopenConsent } from "../../lib/meetpp/se
 import { setEndRequest, useMeetpp } from "../../lib/meetpp/store";
 import { BOARD_KEY } from "../../lib/stage";
 import { setFocus } from "../../lib/stageView";
+import { embedActive } from "../../lib/embed";
+import type { ExternalInfo } from "../../lib/meetpp/types";
+import { NextAgendaFromReview, PreparedFromMeetings } from "./External";
 import { useMeetppRoom } from "./useMeetppSession";
 import MeetppSetup from "./MeetppSetup";
 import { cx, useOnClickOutside } from "./ui";
@@ -43,6 +47,10 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
   const [badgeOpen, setBadgeOpen] = useState(false);
   const [editorsOpen, setEditorsOpen] = useState(false);
   const [endedSid, setEndedSid] = useState<string | null>(null);
+  // Mail-prepared session (§4.2): kept from the moment Meet++ ended so the
+  // end dialog can propose the next sitting's agenda.
+  const [endedExternal, setEndedExternal] = useState<ExternalInfo | null>(null);
+  const navigate = useNavigate();
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -70,8 +78,10 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
   const confirmSpokenEnd = async () => {
     setEnding(true);
     try {
+      const external = session?.external ?? null;
       const sid = await meetppActions.end();
       setEndRequest(null);
+      setEndedExternal(external);
       setEndedSid(sid);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -84,7 +94,9 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
     setMenuOpen(false);
     if (!window.confirm(t("meetpp.menu.endConfirm", { defaultValue: "End Meet++? The minutes and the report will be prepared for your review." }))) return;
     try {
+      const external = session?.external ?? null;
       const sid = await meetppActions.end();
+      setEndedExternal(external);
       setEndedSid(sid);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -139,7 +151,7 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
                 : t("meetpp.badge.on", { defaultValue: "AI notes on" })}
           </button>
           {badgeOpen && (
-            <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-2xl">
+            <div className="m-own-palette absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-2xl">
               <p>
                 {consent === "opt_out"
                   ? t("meetpp.badge.youOptedOut", { defaultValue: "Your speech is not transcribed." })
@@ -173,6 +185,8 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
           )}
         </div>
       )}
+
+      {session?.external && (active || isOwner) && <PreparedFromMeetings external={session.external} tone="dark" className="flex-shrink-0" />}
 
       {typeof document !== "undefined" &&
         createPortal(
@@ -214,7 +228,7 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
             )}
 
             {endRequest && active && isOwner && (
-              <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" data-testid="meetpp-end-request">
+              <div className="m-own-palette fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" data-testid="meetpp-end-request">
                 <div role="dialog" aria-modal="true" aria-labelledby="meetpp-end-title" className="w-full max-w-md rounded-2xl bg-white p-5 text-slate-800 shadow-2xl">
                   <h2 id="meetpp-end-title" className="text-lg font-semibold">
                     {t("meetpp.endRequest.title", { defaultValue: "End the meeting?" })}
@@ -238,7 +252,7 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
             )}
 
             {err && (
-              <div className="fixed right-4 top-16 z-[60] max-w-sm rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800 shadow-lg" role="alert" onClick={() => setErr(null)}>
+              <div className="m-own-palette fixed right-4 top-16 z-[60] max-w-sm rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800 shadow-lg" role="alert" onClick={() => setErr(null)}>
                 {err}
               </div>
             )}
@@ -278,13 +292,18 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
             {editorsOpen && <EditorsDialog onClose={() => setEditorsOpen(false)} />}
 
             {endedSid && meetingId && (
-              <Dialog title={t("meetpp.end.title", { defaultValue: "Meet++ ended — preparing the report" })}>
+              <Dialog title={t("meetpp.end.title", { defaultValue: "Meet++ ended — preparing the report" })} wide={!!endedExternal?.next_occurrence}>
                 <p className="text-sm text-slate-600">
                   {t("meetpp.end.body", {
                     defaultValue:
                       "The whole meeting is being re-transcribed and the minutes composed. Review the report, votes and attendance, then publish. Nothing is sent before you click Publish & send.",
                   })}
                 </p>
+                {endedExternal?.next_occurrence && (
+                  <div className="mt-4">
+                    <NextAgendaFromReview sid={endedSid} external={endedExternal} />
+                  </div>
+                )}
                 <div className="mt-4 flex justify-end gap-2">
                   <button type="button" className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700" onClick={() => setEndedSid(null)}>
                     {t("meetpp.common.close", { defaultValue: "Close" })}
@@ -293,7 +312,18 @@ export default function MeetppRoomLayer({ room, roomName, meetingId, isOwner, ro
                     href={`/meetings/${meetingId}/ai/${endedSid}`}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => setEndedSid(null)}
+                    onClick={(e) => {
+                      // Inside Mail there are no tabs: open the review in
+                      // place (this leaves the call).
+                      if (embedActive()) {
+                        e.preventDefault();
+                        if (room.state === "connected" && !window.confirm(t("meetpp.end.leaveForReview", { defaultValue: "Opening the review leaves the call. Continue?" }))) return;
+                        setEndedSid(null);
+                        navigate(`/meetings/${meetingId}/ai/${endedSid}`);
+                        return;
+                      }
+                      setEndedSid(null);
+                    }}
                     className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700"
                   >
                     {t("meetpp.end.openReview", { defaultValue: "Open review" })} <ExternalLink size={13} />
@@ -312,7 +342,7 @@ function MenuPanel({ pos, onClose, children }: { pos: { top: number; right: numb
   const ref = useRef<HTMLDivElement>(null);
   useOnClickOutside(ref, onClose);
   return (
-    <div ref={ref} role="menu" style={{ position: "fixed", top: pos.top, right: pos.right }} className="z-50 w-64 rounded-xl border border-slate-200 bg-white p-1 shadow-2xl" onClick={onClose}>
+    <div ref={ref} role="menu" style={{ position: "fixed", top: pos.top, right: pos.right }} className="m-own-palette z-50 w-64 rounded-xl border border-slate-200 bg-white p-1 shadow-2xl" onClick={onClose}>
       {children}
     </div>
   );
@@ -342,10 +372,10 @@ function MenuToggle({ children, on, onClick }: { children: ReactNode; on: boolea
   );
 }
 
-function Dialog({ title, children }: { title: string; children: ReactNode }) {
+function Dialog({ title, children, wide }: { title: string; children: ReactNode; wide?: boolean }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-slate-800 shadow-2xl">
+    <div className="m-own-palette fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true" aria-label={title}>
+      <div className={cx("max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-5 text-slate-800 shadow-2xl", wide ? "max-w-2xl" : "max-w-lg")}>
         <div className="mb-3 text-xl font-bold text-slate-900">{title}</div>
         {children}
       </div>

@@ -1,10 +1,13 @@
-import { clearAccessToken, forceBootstrapFromOneWitysk, getAccessToken } from "../auth";
+import { clearAccessToken, currentAccessToken, forceBootstrapFromOneWitysk, getAccessToken } from "../auth";
+import { embedActive } from "../embed";
 import type {
+  AgendaDraftItem,
   AttachmentDto,
   AttendeeDto,
   DecisionDto,
   DocSummary,
   DocumentDto,
+  ExternalInfo,
   HumanOp,
   JobInfo,
   MeetingType,
@@ -64,11 +67,18 @@ async function send(path: string, init: RequestInit, json: boolean): Promise<Res
     if (json && init.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
     return fetch(`/api/v1${path}`, { ...init, headers });
   };
-  const access = getAccessToken();
+  const access = await currentAccessToken();
   let res = await run(access);
   if (res.status === 401 && access) {
-    clearAccessToken();
-    const fresh = await forceBootstrapFromOneWitysk().catch(() => null);
+    // Embedded: another call may already have got a new token from Mail.
+    const renewed = embedActive() ? getAccessToken() : null;
+    let fresh: string | null;
+    if (renewed && renewed !== access) {
+      fresh = renewed;
+    } else {
+      clearAccessToken();
+      fresh = await forceBootstrapFromOneWitysk().catch(() => null);
+    }
     if (fresh) res = await run(fresh);
   }
   return res;
@@ -200,6 +210,12 @@ export const meetppApi = {
 
   // ── review and outputs (chair) ──
   getReview: (sid: string) => req<ReviewResponse>(`/meetpp/sessions/${sid}/review`),
+  /** Send the draft agenda to the next sitting in Mail (sessions prepared from Mail). */
+  sendNextAgenda: (sid: string, agenda: AgendaDraftItem[]) =>
+    req<{ ok: boolean; external: ExternalInfo | null; next_agenda: AgendaDraftItem[] }>(`/meetpp/sessions/${sid}/external/next-agenda`, {
+      method: "POST",
+      ...body({ agenda }),
+    }),
   putReview: (sid: string, draft: ReviewDraft) => req<unknown>(`/meetpp/sessions/${sid}/review`, { method: "PUT", ...body(draft) }),
   putVote: (decisionId: string, vote: VoteInput) =>
     req<DecisionDto>(`/meetpp/decisions/${decisionId}/vote`, { method: "PUT", ...body(vote) }),

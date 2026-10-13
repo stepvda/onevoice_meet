@@ -7,6 +7,8 @@ import { refetchState, syncTranscript } from "../lib/meetpp/session";
 import { applySnapshot, setCtx, useMeetpp } from "../lib/meetpp/store";
 import { fmtClock, outlineOrder, sectionLabel } from "../lib/meetpp/state";
 import type {
+  AgendaDraftItem,
+  ExternalInfo,
   JobInfo,
   OutputDto,
   Recipient,
@@ -27,6 +29,7 @@ import {
 } from "../components/meetpp/MeetppItems";
 import MeetppTranscript from "../components/meetpp/MeetppTranscript";
 import { Pill, cx } from "../components/meetpp/ui";
+import { NextAgendaProposal, PreparedFromMeetings } from "../components/meetpp/External";
 
 /**
  * Meet++ review (FDD §5.13, Figure 6): left navigation by report section,
@@ -194,7 +197,7 @@ export default function MeetppReview() {
 
   if (loadError && !review) {
     return (
-      <div className="mx-auto max-w-2xl p-6 text-slate-700">
+      <div className="m-own-palette mx-auto max-w-2xl p-6 text-slate-700">
         <div className="rounded border border-rose-300 bg-rose-50 p-4 text-rose-700">{loadError}</div>
         <button className="mt-4 inline-flex items-center gap-1 rounded bg-slate-700 px-3 py-1.5 text-white" onClick={() => void loadReview()}>
           <RefreshCw size={14} /> {t("meetpp.review.retry", { defaultValue: "Retry" })}
@@ -211,6 +214,13 @@ export default function MeetppReview() {
   }
 
   const session = review.session;
+  // Prepared from Mail's Meetings with a next sitting: propose its agenda (§4.2).
+  const external = session.external ?? review.external ?? null;
+  const proposeNext = !!external?.next_occurrence;
+  const onAgendaSent = (ext: ExternalInfo | null, agenda: AgendaDraftItem[]) => {
+    setReview((r) => (r ? { ...r, external: ext, session: { ...r.session, external: ext } } : r));
+    editDraft((d) => ({ ...d, next_agenda: agenda }));
+  };
   const isPublished = session.status === "published" || !!published;
   const title = session.series_title || t("meetpp.review.meeting", { defaultValue: "Meeting" });
   const date = session.started_at ? new Date(session.started_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
@@ -241,8 +251,17 @@ export default function MeetppReview() {
 
   const rightCards = draft && (
     <>
-      <div data-card="next">
-        <NextMeetingCard draft={draft} edit={editDraft} review={review} />
+      <div data-card="next" className="space-y-4">
+        {proposeNext && external && (
+          <NextAgendaProposal
+            sid={sessionId}
+            external={external}
+            items={draft.next_agenda}
+            onChange={(items) => editDraft((d) => ({ ...d, next_agenda: items }))}
+            onSent={onAgendaSent}
+          />
+        )}
+        <NextMeetingCard draft={draft} edit={editDraft} review={review} hideAgenda={proposeNext} />
       </div>
       <div data-card="distribution">
         <DistributionCard draft={draft} edit={editDraft} saveState={saveState} busy={busy === "publish"} published={isPublished} onPublish={() => void publish()} />
@@ -251,12 +270,15 @@ export default function MeetppReview() {
   );
 
   return (
-    <div className="min-h-dvh bg-slate-100 text-slate-800">
-      <header className="flex flex-wrap items-center gap-3 bg-slate-900 px-6 py-4 text-white">
+    // m-own-palette: the review keeps Meet++'s light palette in every colour
+    // scheme; only the page background and the header follow the scheme.
+    <div className="m-own-palette min-h-dvh bg-review-page text-slate-800">
+      <header className="m-review-header flex flex-wrap items-center gap-3 bg-review-header px-6 py-4 text-review-header-fg">
         <h1 className="min-w-0 flex-1 truncate text-xl font-bold">
           {t("meetpp.review.title", { defaultValue: "Meet++ review" })} — {title}
           {date ? ` · ${date}` : ""}
         </h1>
+        <PreparedFromMeetings external={external} />
         <Pill tone={isPublished ? "green" : session.status === "finalising" ? "amber" : "blue"}>
           {isPublished
             ? t("meetpp.review.statusPublished", { defaultValue: "Published" })
@@ -748,7 +770,18 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function NextMeetingCard({ draft, edit, review }: { draft: ReviewDraft; edit: (fn: (d: ReviewDraft) => ReviewDraft) => void; review: ReviewResponse }) {
+function NextMeetingCard({
+  draft,
+  edit,
+  review,
+  hideAgenda,
+}: {
+  draft: ReviewDraft;
+  edit: (fn: (d: ReviewDraft) => ReviewDraft) => void;
+  review: ReviewResponse;
+  /** The agenda is edited in the "Send to Meetings" proposal instead. */
+  hideAgenda?: boolean;
+}) {
   const { t } = useTranslation();
   const attendees = useMeetpp((s) => s.snap?.attendees ?? []);
   const required = useMemo(() => {
@@ -796,6 +829,7 @@ function NextMeetingCard({ draft, edit, review }: { draft: ReviewDraft; edit: (f
           </div>
         </div>
       )}
+      {!hideAgenda && (
       <div className="mt-4">
         <h3 className="mb-1.5 font-semibold text-slate-900">
           {t("meetpp.review.nextAgenda", { defaultValue: "Agenda draft ({{n}} points)", n: draft.next_agenda.length })}
@@ -822,6 +856,7 @@ function NextMeetingCard({ draft, edit, review }: { draft: ReviewDraft; edit: (f
           <Plus size={13} /> {t("meetpp.setup.addPoint", { defaultValue: "Add point" })}
         </button>
       </div>
+      )}
       <RecipientList
         title={t("meetpp.review.inviteRecipients", { defaultValue: "Invitation recipients" })}
         list={draft.recipients.invite}

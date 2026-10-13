@@ -64,7 +64,7 @@ export default function MeetppBoard({ variant, className, transcriptWidth, onClo
     // Same root element as the loaded board, so the width observer keeps
     // measuring the right node.
     return (
-      <div ref={rootRef} className={cx("relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-slate-50 text-slate-800 shadow-2xl ring-1 ring-blue-300", className)} data-testid="meetpp-board">
+      <div ref={rootRef} className={cx("m-own-palette relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-slate-50 text-slate-800 shadow-2xl ring-1 ring-blue-300", className)} data-testid="meetpp-board">
         <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
           <Loader2 size={16} className="mr-2 animate-spin" />
           {t("meetpp.board.loading", { defaultValue: "Loading the Meet++ board…" })}
@@ -80,7 +80,7 @@ export default function MeetppBoard({ variant, className, transcriptWidth, onClo
   return (
     <div
       ref={rootRef}
-      className={cx("relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-slate-50 text-slate-800 shadow-2xl ring-1 ring-blue-300", className)}
+      className={cx("m-own-palette relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-slate-50 text-slate-800 shadow-2xl ring-1 ring-blue-300", className)}
       data-testid="meetpp-board"
     >
       <div className="sr-only" aria-live="polite" aria-atomic="true">

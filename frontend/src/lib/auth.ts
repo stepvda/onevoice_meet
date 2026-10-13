@@ -9,7 +9,14 @@
  *
  * Once received, we mirror the token into meet.witysk.org's own localStorage
  * so subsequent visits are fast (no iframe round-trip on every page load).
+ *
+ * Embedded in One Voice Mail (lib/embed.ts) none of the One Voice SSO paths
+ * run: no bootstrap iframe, no redirect, no sign-in page, no keep-alive via
+ * the SSO iframe, and the Mail-issued token is never sent to one.witysk.org.
+ * The token comes from the parent (`ovm:init`, `meet:token-request`) and the
+ * accessors below read and write it through the embed controller.
  */
+import { embed, embedActive, embedUser } from "./embed";
 
 const ONE_WITYSK = "https://one.witysk.org";
 const STORAGE_KEY = "access_token";
@@ -48,6 +55,9 @@ function isTokenExpired(token: string | null): boolean {
  *  instead of blindly sending a dead token that 401s with "Signature has
  *  expired". This is the fix for the stale-token loop. */
 export function getAccessToken(): string | null {
+  // Embedded: only the parent's token counts (never a stand-alone token in
+  // localStorage); while the allowlist check runs there is none yet.
+  if (embedActive()) return embed().getToken();
   try {
     const tok = localStorage.getItem(STORAGE_KEY);
     if (tok && isTokenExpired(tok)) {
@@ -75,6 +85,11 @@ function hadSession(): boolean {
 }
 
 export function setAccessToken(token: string): void {
+  if (embedActive()) {
+    const exp = tokenClaims(token)?.exp;
+    if (typeof exp === "number") embed().setToken(token, exp * 1000);
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, token);
     localStorage.setItem(HAD_SESSION_KEY, "1");
@@ -84,6 +99,10 @@ export function setAccessToken(token: string): void {
 }
 
 export function clearAccessToken(): void {
+  if (embedActive()) {
+    embed().clearToken();
+    return;
+  }
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
@@ -113,6 +132,11 @@ export function isAuthenticated(): boolean {
  * land the user there after sign-in completes.
  */
 export function startSsoRedirect(returnTo?: string): void {
+  // Embedded: never leave Mail's iframe for One Voice; ask Mail instead.
+  if (embedActive()) {
+    void embed().requestToken();
+    return;
+  }
   const ret = returnTo ?? window.location.pathname + window.location.search;
   const callback = new URL("/sso-callback", window.location.origin);
   callback.searchParams.set("next", ret);
@@ -134,6 +158,11 @@ export function startSsoRedirect(returnTo?: string): void {
  * Either way we clear meet's local cache so the user is signed out here.
  */
 export function logoutFromOneWitysk(): Promise<{ ok: boolean }> {
+  // Embedded: sign-out is Mail's (the entry is hidden); drop our copy only.
+  if (embedActive()) {
+    embed().clearToken();
+    return Promise.resolve({ ok: true });
+  }
   return new Promise((resolve) => {
     let done = false;
     let iframe: HTMLIFrameElement | null = null;
@@ -237,6 +266,7 @@ export interface OneWityskUserDetail {
  * Does NOT throw — callers can safely render a "—" placeholder on null.
  */
 export async function fetchOneWityskUser(userId: number | string): Promise<OneWityskUserDetail | null> {
+  if (embedActive()) return null;
   const tok = getAccessToken();
   const idPart = encodeURIComponent(String(userId));
   if (tok) {
@@ -339,6 +369,12 @@ async function cachedProfileOrBootstrap(): Promise<OneWityskMe | null> {
 }
 
 export async function fetchOneWityskMe(): Promise<OneWityskMe | null> {
+  // Embedded: the user Mail signed in (ovm:init) — one.witysk.org is not asked.
+  if (embedActive()) {
+    await embed().waitForToken();
+    const u = embedUser();
+    return u ? { name: u.name || null, username: null, email: u.email || null } : null;
+  }
   const tok = getAccessToken();
   // DPoP-bound one.witysk.org sessions reject this cross-origin call (meet
   // cannot sign the proof — the key is non-extractable in one.witysk.org's
@@ -437,6 +473,7 @@ function ensureProxyFrame(): Promise<void> {
  *  parsed JSON body. Older deployed bootstrap builds ignore the message —
  *  that surfaces as a timeout, so callers degrade exactly as before. */
 export async function wityskProxyFetch(path: string, timeoutMs = 6000): Promise<ProxyResult> {
+  if (embedActive()) return null;
   await ensureProxyFrame();
   const target = proxyFrame?.contentWindow;
   if (!target) return null;
@@ -468,6 +505,7 @@ let bootstrapInFlight: Promise<string | null> | null = null;
  * Always resolves — returns null on failure/timeout/not-logged-in.
  */
 export function bootstrapFromOneWitysk(): Promise<string | null> {
+  if (embedActive()) return embedToken(false);
   const existing = getAccessToken();
   if (existing) return Promise.resolve(existing);
   return forceBootstrapFromOneWitysk();
@@ -483,6 +521,7 @@ export function bootstrapFromOneWitysk(): Promise<string | null> {
  * refresh-cookie session warm too.
  */
 export function forceBootstrapFromOneWitysk(): Promise<string | null> {
+  if (embedActive()) return embedToken(true);
   if (bootstrapInFlight) return bootstrapInFlight;
 
   bootstrapInFlight = new Promise((resolve) => {
@@ -541,6 +580,31 @@ export function forceBootstrapFromOneWitysk(): Promise<string | null> {
   return bootstrapInFlight;
 }
 
+/**
+ * Embedded: a token from the parent. `fresh` (after a 401 — the token we hold
+ * was just rejected) always asks Mail for a new one; otherwise the current
+ * token, the one `ovm:init` is about to deliver, or a requested one.
+ * Resolves null when the allowlist check turns embed mode down, so callers
+ * can fall back to the stand-alone flow.
+ */
+async function embedToken(fresh: boolean): Promise<string | null> {
+  const c = embed();
+  const status = await c.whenResolved();
+  if (status !== "on") return status === "off" ? (fresh ? forceBootstrapFromOneWitysk() : bootstrapFromOneWitysk()) : null;
+  if (fresh) return c.requestToken();
+  return c.getToken() ?? (await c.waitForToken()) ?? (await c.requestToken());
+}
+
+/**
+ * The token to send with an API call. Stand-alone this is getAccessToken();
+ * embedded it waits for the parent's first token instead of letting the
+ * call go out unauthenticated (and 401) while `ovm:init` is on its way.
+ */
+export async function currentAccessToken(): Promise<string | null> {
+  if (!embedActive()) return getAccessToken();
+  return embed().getToken() ?? (await bootstrapFromOneWitysk());
+}
+
 // ---------------------------------------------------------------------------
 // Session keep-alive
 //
@@ -569,6 +633,7 @@ function getStoredTokenAny(): string | null {
  *  fallback when the one.witysk.org iframe is unavailable. Returns true on
  *  success. Plain fetch — api.ts imports this module, not vice versa. */
 export async function refreshMeetSession(): Promise<boolean> {
+  if (embedActive()) return false;
   const tok = getStoredTokenAny();
   if (!tok) return false;
   try {
@@ -606,6 +671,9 @@ let keepAliveStarted = false;
  *     silent SSO re-bootstrap, so even a laptop waking from sleep recovers.
  */
 export function startSessionKeepAlive(): void {
+  // Embedded: the embed controller renews through Mail (meet:token-request
+  // two minutes before expiry); the SSO keep-alive must not run.
+  if (embedActive()) return;
   if (keepAliveStarted) return;
   keepAliveStarted = true;
 

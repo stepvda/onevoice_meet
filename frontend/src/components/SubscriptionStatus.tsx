@@ -27,7 +27,7 @@ export default function SubscriptionStatus({ me }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    if (me.kind === "sso") return;
+    if (me.kind !== "native") return;
     api
       .myBillingHistory()
       .then((rows) => {
@@ -72,9 +72,9 @@ export default function SubscriptionStatus({ me }: Props) {
         return t("subStatus.planUnknown", { defaultValue: "Active plan" });
     }
   }
-  // SSO users get admin from one.witysk.org; their entitlement_kind stays
-  // null in our DB. Hide the section for them entirely.
-  if (me.kind === "sso") return null;
+  // SSO users get admin from one.witysk.org (Mail users from Mail); their
+  // entitlement_kind stays null in our DB. Hide the section for them entirely.
+  if (me.kind !== "native") return null;
   // For native users with no entitlement AND no past activity, hide the
   // card so the page doesn't show an empty section.
   const hasActive = me.entitlement_kind && me.entitlement_expires_at;

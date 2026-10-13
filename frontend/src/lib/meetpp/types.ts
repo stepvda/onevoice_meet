@@ -65,6 +65,21 @@ export interface JobInfo {
   [key: string]: unknown;
 }
 
+/** A session prepared from One Voice Mail's Meetings (meet-integration.md §4.2). */
+export interface ExternalInfo {
+  source: string;
+  occurrence_ref: string;
+  /** The sitting in Mail (`https://mail…/meetings/m/<id>`). */
+  open_url: string | null;
+  next_occurrence: { ref: string | null; starts_at: string | null } | null;
+  next_agenda_sent: boolean;
+}
+
+export interface AgendaDraftItem {
+  title: string;
+  body?: string | null;
+}
+
 export interface SessionMeta {
   id: string;
   status: SessionStatus;
@@ -90,6 +105,8 @@ export interface SessionMeta {
   agent: AgentInfo | null;
   ai: { status: "ok" | "paused" | "unavailable" } | null;
   jobs: Record<string, JobInfo> | null;
+  /** Set when the session was prepared from Mail; null otherwise. */
+  external?: ExternalInfo | null;
 }
 
 export interface SectionDto {
@@ -153,7 +170,7 @@ export interface DecisionDto {
   how_taken: string | null;
   status: DecisionStatus;
   decided_at: string | null;
-  origin: "ai" | "user" | "pdf" | string;
+  origin: "ai" | "user" | "pdf" | "mail" | string;
   confirmed: boolean;
   locked: boolean;
   evidence: number[];
@@ -505,6 +522,8 @@ export interface ReviewResponse {
   jobs: Record<string, JobInfo> | null;
   review: ReviewDraft | null;
   final: ReviewFinal | null;
+  /** Same as `session.external`. */
+  external?: ExternalInfo | null;
 }
 
 export interface OutputDto {

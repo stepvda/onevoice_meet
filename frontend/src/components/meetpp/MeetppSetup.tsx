@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, FileUp, GripVertical, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { meetppApi, type OutlinePointInput } from "../../lib/meetpp/api";
 import { discover, loadSession } from "../../lib/meetpp/session";
 import { applySnapshot, useMeetpp } from "../../lib/meetpp/store";
 import { sortSections } from "../../lib/meetpp/state";
-import type { DocSummary, DocumentDto, MajorityRule, MeetingType, SectionDto, SeriesDto, Snapshot } from "../../lib/meetpp/types";
+import type { DocSummary, DocumentDto, ExternalInfo, MajorityRule, MeetingType, SectionDto, SeriesDto, Snapshot } from "../../lib/meetpp/types";
+import { embedActive } from "../../lib/embed";
+import { PreparedFromMeetings } from "./External";
 import MeetppBoard from "./MeetppBoard";
 import { cx } from "./ui";
 
@@ -102,6 +105,9 @@ export default function MeetppSetup({ meetingId, roomName, onClose, onStarted }:
   const [uploads, setUploads] = useState<{ agenda?: UploadState; previous_notes?: UploadState }>({});
   const [importedActions, setImportedActions] = useState(0);
   const [reviewSid, setReviewSid] = useState<string | null>(null);
+  // Prepared from Mail's Meetings (§4.2): agenda, decisions and actions come from there.
+  const [external, setExternal] = useState<ExternalInfo | null>(null);
+  const navigate = useNavigate();
   const [view, setView] = useState<"setup" | "preview">("setup");
   const [save, setSave] = useState<"idle" | "pending" | "saving" | "saved" | "error">("idle");
   const [busy, setBusy] = useState(false);
@@ -156,6 +162,7 @@ export default function MeetppSetup({ meetingId, roomName, onClose, onStarted }:
       if (!alive.current) return;
       applySnapshot(snap);
       const s = snap.session;
+      setExternal(s.external ?? null);
       setTemplate(s.template);
       setMode(s.mode ?? "lead");
       setGoal(s.goal ?? "");
@@ -403,7 +410,7 @@ export default function MeetppSetup({ meetingId, roomName, onClose, onStarted }:
   const field = "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-3" role="dialog" aria-modal="true" aria-labelledby="meetpp-setup-title">
+    <div className="m-own-palette fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-3" role="dialog" aria-modal="true" aria-labelledby="meetpp-setup-title">
       <div className="flex max-h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white text-slate-800 shadow-2xl">
         <div className="flex items-start gap-3 border-b border-slate-200 px-6 pb-3 pt-5">
           <div className="min-w-0 flex-1">
@@ -449,10 +456,29 @@ export default function MeetppSetup({ meetingId, roomName, onClose, onStarted }:
             </div>
           ) : (
             <div className="space-y-5">
+              {external && (
+                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900" data-testid="meetpp-setup-external">
+                  <PreparedFromMeetings external={external} />
+                  <span>{t("meetpp.external.setupHint", { defaultValue: "The agenda, decisions and actions come from the meeting in Meetings and stay in sync with it." })}</span>
+                </div>
+              )}
               {reviewSid && (
                 <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
                   {t("meetpp.setup.reviewPending", { defaultValue: "The previous Meet++ session of this meeting is waiting for review." })}{" "}
-                  <a className="font-semibold underline" href={`/meetings/${meetingId}/ai/${reviewSid}`} target="_blank" rel="noreferrer">
+                  <a
+                    className="font-semibold underline"
+                    href={`/meetings/${meetingId}/ai/${reviewSid}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => {
+                      // Inside Mail: open the review in place (no new tab).
+                      if (!embedActive()) return;
+                      e.preventDefault();
+                      if (!window.confirm(t("meetpp.end.leaveForReview", { defaultValue: "Opening the review leaves the call. Continue?" }))) return;
+                      onClose();
+                      navigate(`/meetings/${meetingId}/ai/${reviewSid}`);
+                    }}
+                  >
                     {t("meetpp.setup.openReview", { defaultValue: "Open review" })}
                   </a>
                 </div>

@@ -1005,8 +1005,10 @@ function Whiteboard({ room, roomName }: { room: ReturnType<typeof useRoomContext
       {/* Scrollable viewport. The canvas inside has a FIXED CSS size so a
           wider/narrower panel doesn't stretch the drawings; the viewport
           scrolls when the panel is narrower than the board, and shows
-          empty space to the right when it's wider. */}
-      <div className="flex-1 overflow-auto bg-primary-900">
+          empty space to the right when it's wider. m-own-palette: the
+          shared drawing surface stays dark in every colour scheme (strokes
+          are drawn for a dark board, white included). */}
+      <div className="m-own-palette flex-1 overflow-auto bg-primary-900">
         <div
           ref={stageRef}
           className="relative"

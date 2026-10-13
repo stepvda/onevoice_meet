@@ -179,7 +179,7 @@ export default function Lobby() {
     if (ownerMeetingId) return;
     let cancelled = false;
     (async () => {
-      const tok = isAuthenticated() ? localStorage.getItem("access_token") : await bootstrapFromOneWitysk();
+      const tok = isAuthenticated() ? getAccessToken() : await bootstrapFromOneWitysk();
       if (!tok) return;
       try {
         const all = await api.listMeetings();

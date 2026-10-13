@@ -788,6 +788,11 @@
       "themeSystem": "System",
       "themeDark": "Dark",
       "themeLight": "Light",
+      "scheme": "Colour scheme",
+      "schemeMeet": "Meet",
+      "schemeMail": "Mail",
+      "schemeHint": "Mail uses One Voice Mail's colours; with it, the light theme is a real light mode.",
+      "schemeEmbedded": "Inside One Voice Mail, Meet uses Mail's colours and follows Mail's light or dark theme.",
       "accent": "Accent color",
       "compact": "Compact mode (denser UI)",
       "fontSize": "UI font size",
@@ -865,6 +870,7 @@
     "signInBody": "Sign in on one.witysk.org or create a meet account first.",
     "loading": "Loading…",
     "kindSso": "Signed in via one.witysk.org",
+    "kindMail": "Signed in via One Voice Mail",
     "kindNative": "Native meet account",
     "canCreate": "Meeting creation: enabled",
     "cannotCreate": "Meeting creation: locked — needs voucher or subscription",
@@ -885,7 +891,8 @@
     "confirmPassword": "Confirm with your password",
     "deleteSubmit": "Delete my account",
     "deleting": "Deleting…",
-    "deleteConfirm": "Permanently delete your account? This cannot be undone."
+    "deleteConfirm": "Permanently delete your account? This cannot be undone.",
+    "mailNote": "Your profile is managed in One Voice Mail."
   },
   "vouchers": {
     "title": "Vouchers",
@@ -1306,7 +1313,8 @@
     "end": {
       "body": "The whole meeting is being re-transcribed and the minutes composed. Review the report, votes and attendance, then publish. Nothing is sent before you click Publish & send.",
       "openReview": "Open review",
-      "title": "Meet++ ended — preparing the report"
+      "title": "Meet++ ended — preparing the report",
+      "leaveForReview": "Opening the review leaves the call. Continue?"
     },
     "follow": {
       "following": "Following live",
@@ -1336,6 +1344,7 @@
       "new": "New",
       "originAi": "AI",
       "originPdf": "PDF",
+      "originMail": "Meetings",
       "originUser": "Chair",
       "reject": "Reject",
       "unconfirmed": "unconfirmed",
@@ -1668,6 +1677,28 @@
       "body": "Meet++ stops taking notes and prepares the minutes and the report for your review.",
       "keep": "Keep going",
       "end": "End the meeting"
+    },
+    "external": {
+      "preparedFrom": "Prepared from Meetings",
+      "openInMeetings": "Open in Meetings",
+      "setupHint": "The agenda, decisions and actions come from the meeting in Meetings and stay in sync with it.",
+      "nextAgendaTitle": "Draft agenda for the next meeting on {{date}}",
+      "nextAgendaTitleNoDate": "Draft agenda for the next meeting",
+      "nextAgendaHint": "Drafted by Meet++ from this meeting. Edit it, then send it to the next meeting in Meetings.",
+      "nextAgendaEmpty": "Meet++ did not propose any points. Add the points for the next meeting.",
+      "drafting": "Meet++ is drafting the agenda…",
+      "pointTitle": "Point title",
+      "pointBody": "Details (optional)",
+      "addPoint": "Add point",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Remove point",
+      "send": "Send to Meetings",
+      "sending": "Sending…",
+      "sent": "Sent to Meetings",
+      "sentHint": "These points were added to the next meeting in Meetings.",
+      "edit": "Edit and send again",
+      "sendFailed": "The agenda could not be sent: {{e}}"
     }
   },
   "stage": {
@@ -1681,5 +1712,9 @@
     "viewGrid": "Grid",
     "viewSpeaker": "Speaker",
     "viewSingle": "Single speaker"
+  },
+  "embed": {
+    "signInFailed": "Meet could not sign you in through One Voice Mail.",
+    "retry": "Try again"
   }
 }

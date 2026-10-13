@@ -5,6 +5,8 @@ import { ImagePlus, Video, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { bootstrapFromOneWitysk, fetchOneWityskMe, fetchOneWityskName, isAuthenticated } from "../lib/auth";
+import { useEmbed } from "../lib/embed";
+import { retryEmbedSignIn } from "../components/SignInPrompt";
 import { useMe } from "../lib/me";
 import { usePreferences } from "../lib/preferences";
 import { Button, Card, Field, Input, Label, Toggle } from "../components/ui";
@@ -25,6 +27,8 @@ type AuthState = "bootstrapping" | "authenticated" | "anonymous";
  */
 function HomeDescription() {
   const { t } = useTranslation();
+  // Inside One Voice Mail the pitch (and its sign-in advice) is out of place.
+  if (useEmbed().status !== "off") return null;
   return (
     <Card data-testid="home-intro">
       <h1 className="text-xl font-bold text-slate-50 mb-1">
@@ -46,6 +50,7 @@ export default function CreateMeeting() {
   const prefs = usePreferences((s) => s.meetingDefaults);
   const modPrefs = usePreferences((s) => s.moderation);
   const { me } = useMe();
+  const embedded = useEmbed().status !== "off";
   const [title, setTitle] = useState("");
   const [password, setPassword] = useState("");
   const [usePassword, setUsePassword] = useState(prefs.requirePassword);
@@ -152,18 +157,33 @@ export default function CreateMeeting() {
     return (
       <div className="p-4 lg:p-8 max-w-4xl mx-auto flex flex-col gap-6">
         <HomeDescription />
-        <Card>
-          <p className="text-slate-200">{t("createMeeting.needSignIn")}</p>
-          <p className="mt-2 text-slate-400">{t("createMeeting.haveJoinLink")}</p>
-          <div className="mt-3 flex flex-wrap gap-3 text-sm">
-            <Link to="/signup" className="text-accent-500 hover:underline">
-              {t("home.cta.signup", { defaultValue: "Create an account" })}
-            </Link>
-            <Link to="/login" className="text-accent-500 hover:underline">
-              {t("home.cta.login", { defaultValue: "Sign in" })}
-            </Link>
-          </div>
-        </Card>
+        {embedded ? (
+          <Card data-testid="home-embed-signin">
+            <p className="text-slate-200">
+              {t("embed.signInFailed", { defaultValue: "Meet could not sign you in through One Voice Mail." })}
+            </p>
+            <button
+              type="button"
+              onClick={() => void retryEmbedSignIn()}
+              className="mt-3 text-sm text-accent-500 hover:underline"
+            >
+              {t("embed.retry", { defaultValue: "Try again" })}
+            </button>
+          </Card>
+        ) : (
+          <Card>
+            <p className="text-slate-200">{t("createMeeting.needSignIn")}</p>
+            <p className="mt-2 text-slate-400">{t("createMeeting.haveJoinLink")}</p>
+            <div className="mt-3 flex flex-wrap gap-3 text-sm">
+              <Link to="/signup" className="text-accent-500 hover:underline">
+                {t("home.cta.signup", { defaultValue: "Create an account" })}
+              </Link>
+              <Link to="/login" className="text-accent-500 hover:underline">
+                {t("home.cta.login", { defaultValue: "Sign in" })}
+              </Link>
+            </div>
+          </Card>
+        )}
         <DiscoverableMeetings />
       </div>
     );

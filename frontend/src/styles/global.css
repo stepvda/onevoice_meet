@@ -2,34 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Scrollbar — mirrors one.witysk.org */
+/* Scrollbar — mirrors one.witysk.org (colours: schemes.css). */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #0E1E33; }
-::-webkit-scrollbar-thumb { background: #294F7E; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #2E5A8F; }
+::-webkit-scrollbar-track { background: var(--m-scroll-track); }
+::-webkit-scrollbar-thumb { background: var(--m-scroll-thumb); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--m-scroll-thumb-hover); }
 
-/* Sidebar gradient matches one.witysk.org */
+/* Sidebar gradient matches one.witysk.org (a flat surface in the Mail scheme). */
 .bg-witysk-sidebar {
   background: linear-gradient(
     180deg,
-    rgba(5, 15, 70, 0.97) 0%,
-    rgba(15, 40, 140, 0.95) 100%
+    var(--m-sidebar-from) 0%,
+    var(--m-sidebar-to) 100%
   );
 }
+/* Mail's folder column: a surface with a hairline instead of a shadow. */
+:root[data-scheme="mail"] .bg-witysk-sidebar { box-shadow: inset -1px 0 0 rgb(var(--m-line)); }
 
 /* Main content soft-gradient background — dark blue-gray with a ~60%-lighter
  * highlight in the middle of the viewport. Center colour is primary-900
  * raised by ~60 lightness points (≈ primary-200 / #b6c7dd); falls off
- * through primary-500 at mid-radius to primary-900 at the edges. */
+ * through primary-500 at mid-radius to primary-900 at the edges. The Mail
+ * scheme sets all three stops to Mail's page colour (a flat page). */
 .bg-witysk-page {
   background: radial-gradient(
     ellipse at center,
-    #b6c7dd 0%,
-    #1E3A5F 50%,
-    #0E1E33 100%
+    rgb(var(--m-page-1)) 0%,
+    rgb(var(--m-page-2)) 50%,
+    rgb(var(--m-page-3)) 100%
   );
   background-attachment: fixed;
 }
+
+/* The video stage keeps a dark palette of its own (m-own-palette in Room);
+ * in the Mail scheme it also gets a dark backdrop instead of the page, and
+ * the light text it inherited from <body> in Meet's scheme. */
+:root[data-scheme="mail"] .meet-stage {
+  background: var(--m-stage-bg);
+  color: rgb(var(--m-slate-100));
+  color-scheme: dark;
+}
+
+/* Native controls (selects, date pickers) follow Mail's dark mode, except in
+ * the light Meet++ areas. */
+:root[data-scheme="mail"][data-theme="dark"] { color-scheme: dark; }
+:root[data-scheme="mail"][data-theme="dark"] .m-own-palette:not(.meet-stage) { color-scheme: light; }
+
+/* Cards are opaque surfaces in the Mail scheme (also when used as a modal
+ * over a dark scrim), with Mail's lighter shadow. */
+:root[data-scheme="mail"] .m-card {
+  background-color: rgb(var(--m-primary-800));
+  --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 1px 3px 0 rgb(0 0 0 / 0.04);
+}
+
+/* Secondary buttons sit on cards of the same colour in the Mail scheme. */
+:root[data-scheme="mail"] .m-btn-secondary { outline: 1px solid rgb(var(--m-line)); outline-offset: -1px; }
+
+/* Meet++ review header: a surface with a hairline in the Mail scheme. */
+:root[data-scheme="mail"] .m-review-header { box-shadow: inset 0 -1px 0 rgb(var(--m-line)); }
 
 html, body, #root { height: 100%; }
 body {
@@ -146,10 +176,10 @@ html[data-blur-emails="true"] .privacy-blur-email:focus-within {
 html[data-high-contrast="true"] {
   --tw-prose-body: #ffffff;
 }
-html[data-high-contrast="true"] body { color: #ffffff; }
-html[data-high-contrast="true"] .border-primary-700 { border-color: #ffffff !important; }
+html[data-high-contrast="true"] body { color: rgb(var(--m-fg)); }
+html[data-high-contrast="true"] .border-primary-700 { border-color: rgb(var(--m-fg)) !important; }
 html[data-high-contrast="true"] .text-slate-400,
-html[data-high-contrast="true"] .text-slate-500 { color: #e2e8f0 !important; }
+html[data-high-contrast="true"] .text-slate-500 { color: rgb(var(--m-slate-200)) !important; }
 
 /* Visible keyboard focus outlines */
 html[data-focus-outlines="off"] *:focus { outline: none !important; }

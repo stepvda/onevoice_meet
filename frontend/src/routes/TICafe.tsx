@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { Coffee, ExternalLink, MessageSquare, Smartphone } from "lucide-react";
 import { api } from "../lib/api";
 import { bootstrapFromOneWitysk, clearAccessToken, getAccessToken, isAuthenticated } from "../lib/auth";
+import { embedActive } from "../lib/embed";
 import { useMe } from "../lib/me";
 import { useTICafe } from "../lib/tiCafe";
 import { Button, Card, CardHeader } from "../components/ui";
@@ -110,7 +111,9 @@ export default function TICafe() {
   // SSO users — native meet accounts don't exist over there. We still let
   // them join the audio Café (LiveKit room is local to meet), they just
   // don't see the witysk online list.
-  const isNative = me?.kind === "native";
+  // Embedded in Mail the token is Mail's and must not reach one.witysk.org,
+  // so the online list is off there too (like for native accounts).
+  const isNative = me?.kind === "native" || me?.kind === "mail" || embedActive();
   const [users, setUsers] = useState<OnlineUser[] | null>(null);
   const [liveIds, setLiveIds] = useState<Set<number>>(new Set());
   const [err, setErr] = useState<string | null>(null);

@@ -131,7 +131,9 @@ export function Provenance({ origin, evidence, at, id, kind }: { origin: string;
       ? t("meetpp.item.originAi", { defaultValue: "AI" })
       : origin === "pdf"
         ? t("meetpp.item.originPdf", { defaultValue: "PDF" })
-        : t("meetpp.item.originUser", { defaultValue: "Chair" });
+        : origin === "mail"
+          ? t("meetpp.item.originMail", { defaultValue: "Meetings" })
+          : t("meetpp.item.originUser", { defaultValue: "Chair" });
   const time = fmtClock(at ?? seg?.t_start ?? null, false);
   return (
     <span className="ml-auto inline-flex items-center gap-1 text-[11px] italic text-slate-500">

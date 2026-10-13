@@ -17,6 +17,8 @@ export type BackgroundEffect = "off" | "blur" | "light-blur" | "image";
 export type RecordingMode = "manual" | "auto_on_start" | "off";
 export type VideoQuality = "low" | "medium" | "high" | "auto";
 export type Theme = "system" | "dark" | "light";
+// Colour scheme: Meet's own navy, or One Voice Mail's colours (lib/scheme.ts).
+export type ColourScheme = "meet" | "mail";
 // Grid-mode tile-shape standardization. "off" = each tile keeps its source
 // aspect (letterboxed to fit). "landscape"/"portrait" force every tile box to
 // a uniform 4:3 / 3:4 so tiles stack neatly. Grid-mode only; toggled from the
@@ -249,6 +251,8 @@ export interface Preferences {
   // ── Appearance & theme ────────────────────────────────────────────
   appearance: {
     theme: Theme;
+    // Optional: stores persisted before it existed lack it ("meet").
+    scheme?: ColourScheme;
     accentColor: string; // hex
     compactMode: boolean;
     fontSize: FontSize;
@@ -392,6 +396,7 @@ export const defaults: Preferences = {
   },
   appearance: {
     theme: "dark",
+    scheme: "meet",
     accentColor: "#2563eb",
     compactMode: false,
     fontSize: "medium",

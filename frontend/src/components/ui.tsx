@@ -20,9 +20,11 @@ const sizes: Record<Size, string> = {
 };
 
 const variants: Record<Variant, string> = {
-  primary: "bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500",
+  primary: "bg-primary-500 text-white hover:bg-primary-strong focus:ring-primary-500",
+  // m-btn-secondary: outlined in the Mail scheme, where primary-800 is the
+  // card's own surface colour (global.css).
   secondary:
-    "bg-primary-800 text-slate-100 hover:bg-primary-700 focus:ring-primary-400",
+    "m-btn-secondary bg-primary-800 text-slate-100 hover:bg-primary-700 focus:ring-primary-400",
   accent: "bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-500",
   danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
   outline:
@@ -55,7 +57,7 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement> & { children: ReactNode }) {
   return (
     <div
-      className={`bg-primary-800/70 backdrop-blur border border-primary-700 rounded-lg shadow-lg p-6 ${className}`}
+      className={`m-card bg-primary-800/70 backdrop-blur border border-primary-700 rounded-lg shadow-lg p-6 ${className}`}
       {...rest}
     >
       {children}

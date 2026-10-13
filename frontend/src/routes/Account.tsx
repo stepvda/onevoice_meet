@@ -207,7 +207,9 @@ export default function Account() {
                 <div className="text-sm text-slate-400">
                   {me.kind === "sso"
                     ? t("account.kindSso", { defaultValue: "Signed in via one.witysk.org" })
-                    : t("account.kindNative", { defaultValue: "Native meet account" })}
+                    : me.kind === "mail"
+                      ? t("account.kindMail", { defaultValue: "Signed in via One Voice Mail" })
+                      : t("account.kindNative", { defaultValue: "Native meet account" })}
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
                   {me.is_admin
@@ -243,6 +245,11 @@ export default function Account() {
                 {t("account.facepicSsoNote", {
                   defaultValue: "Your picture comes from one.witysk.org and can only be changed there.",
                 })}
+              </p>
+            ) : me.kind === "mail" ? (
+              // Mail users: Meet refuses facepic changes (managed in Mail).
+              <p className="text-sm text-slate-400">
+                {t("account.mailNote", { defaultValue: "Your profile is managed in One Voice Mail." })}
               </p>
             ) : (
               <div className="flex items-center gap-4">
@@ -303,7 +310,11 @@ export default function Account() {
             <h2 className="text-lg font-semibold text-slate-100 mb-3">
               {t("account.profile", { defaultValue: "Profile" })}
             </h2>
-            {me.kind === "sso" ? (
+            {me.kind === "mail" ? (
+              <p className="text-sm text-slate-400">
+                {t("account.mailNote", { defaultValue: "Your profile is managed in One Voice Mail." })}
+              </p>
+            ) : me.kind === "sso" ? (
               <p className="text-sm text-slate-400">
                 {t("account.profileSsoNote", {
                   defaultValue: "Your profile is managed on one.witysk.org. Changes there will appear here automatically.",

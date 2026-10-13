@@ -1,4 +1,5 @@
-import { bootstrapFromOneWitysk, clearAccessToken, forceBootstrapFromOneWitysk, getAccessToken } from "./auth";
+import { bootstrapFromOneWitysk, clearAccessToken, currentAccessToken, forceBootstrapFromOneWitysk, getAccessToken } from "./auth";
+import { embedActive } from "./embed";
 
 export interface AnonTokenResponse {
   livekit_url: string;
@@ -118,6 +119,12 @@ export interface MeetingOut {
   public_enabled?: boolean;
   public_slug?: string | null;
   public_url?: string | null;
+  // Mail integration (meet-integration.md §4.1).
+  join_url?: string | null;
+  allow_anonymous?: boolean;
+  has_password?: boolean;
+  external_source?: string | null;
+  external_ref?: string | null;
 }
 
 export interface CameraPublisher {
@@ -223,7 +230,9 @@ export interface UserPreferencesOut {
 
 export interface MeOut {
   id: number;
-  kind: "sso" | "native";
+  // "mail": a One Voice Mail user without a linked One Voice account
+  // (meet-integration.md §3.2).
+  kind: "sso" | "native" | "mail";
   external_id: string | null;
   email: string | null;
   username: string | null;
@@ -380,7 +389,8 @@ async function fetchOnce(path: string, init: RequestInit, token: string | null):
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  let res = await fetchOnce(path, init, getAccessToken());
+  const used = await currentAccessToken();
+  let res = await fetchOnce(path, init, used);
 
   // On ANY 401, try one silent SSO re-bootstrap and retry. This used to be
   // gated on the 401 detail matching /expired|invalid token/, which missed
@@ -392,8 +402,17 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   // for the same reason: the non-force bootstrap short-circuits on any
   // cached token, which is exactly the token that just got rejected.
   if (res.status === 401) {
-    clearAccessToken();
-    const fresh = await forceBootstrapFromOneWitysk();
+    // Embedded: calls that went out with the same stale token 401 one after
+    // another; once Mail sent a new token, retry with it instead of clearing
+    // it and asking again.
+    const renewed = embedActive() ? getAccessToken() : null;
+    let fresh: string | null;
+    if (renewed && renewed !== used) {
+      fresh = renewed;
+    } else {
+      clearAccessToken();
+      fresh = await forceBootstrapFromOneWitysk();
+    }
     if (fresh) {
       res = await fetchOnce(path, init, fresh);
     }

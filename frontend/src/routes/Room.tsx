@@ -68,6 +68,7 @@ import { useRoomLayout } from "../lib/useRoomLayout";
 import { useBrowserNotifications } from "../lib/browserNotifications";
 import { useJoinPolicy } from "../lib/joinPolicy";
 import { StageActionsContext, type StageActions } from "../lib/stageControls";
+import { embed, useEmbed } from "../lib/embed";
 
 interface InnerProps {
   meetingId: string | null;
@@ -106,6 +107,34 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
       name: room.localParticipant.name ?? null,
     });
   }, [room, onCaptureFeedbackInfo]);
+
+  // Embedded in One Voice Mail: tell Mail when we join and leave this room
+  // (`meet:call`), so closing Meet in Mail asks before leaving the call.
+  const embedded = useEmbed().status !== "off";
+  const callTitle = useRef(meetingTitle);
+  callTitle.current = meetingTitle;
+  useEffect(() => {
+    if (embed().status !== "on") return;
+    let inCall = false;
+    const joined = () => {
+      if (inCall) return;
+      inCall = true;
+      embed().postCall(true, roomName, callTitle.current);
+    };
+    const left = () => {
+      if (!inCall) return;
+      inCall = false;
+      embed().postCall(false, roomName, callTitle.current);
+    };
+    if (room.state === "connected") joined();
+    room.on(RoomEvent.Connected, joined);
+    room.on(RoomEvent.Disconnected, left);
+    return () => {
+      room.off(RoomEvent.Connected, joined);
+      room.off(RoomEvent.Disconnected, left);
+      left();
+    };
+  }, [room, roomName, embedded]);
 
   // Warm up the reliable data channel right after connect. LiveKit's SCTP
   // channel is negotiated lazily on the first `publishData` call, which
@@ -488,9 +517,9 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
               data-testid="topbar-title"
               title={livestreamMeeting?.display_title || meetingTitle || ""}
             >
-              {livestreamMeeting?.display_title || meetingTitle || "meet.witysk.org"}
+              {livestreamMeeting?.display_title || meetingTitle || (embedded ? "Meet" : "meet.witysk.org")}
             </div>
-            <div className="text-xs text-slate-400">meet.witysk.org</div>
+            {!embedded && <div className="text-xs text-slate-400">meet.witysk.org</div>}
           </div>
           <AudioWaveform width={120} height={28} className="flex-shrink-0" />
           <RecordingIndicator />
@@ -893,7 +922,9 @@ function InnerRoom({ meetingId, isOwner, meetingTitle, brandingUrl, roomName, on
             // bottom when the viewport gets short. `overflow-hidden` is
             // the safety net so any residual overflow doesn't bleed into
             // the bottom control bar.
-            "meet-stage flex-1 min-w-0 min-h-0 overflow-hidden relative",
+            // m-own-palette: the stage keeps Meet's dark palette in every
+            // colour scheme (styles/schemes.css).
+            "meet-stage m-own-palette flex-1 min-w-0 min-h-0 overflow-hidden relative",
             display.showParticipantNames ? "" : "no-participant-names",
             display.showConnectionQuality ? "" : "no-conn-quality",
             display.highlightSpeaker ? "" : "no-speaker-highlight",

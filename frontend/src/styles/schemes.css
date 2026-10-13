@@ -1,0 +1,195 @@
+/*
+ * Colour schemes (meet-integration.md §2.4). The values mirror
+ * src/lib/scheme.ts (MEET_VARS, mailSchemeVars of Mail's built-in tokens);
+ * src/lib/__tests__/scheme.test.ts fails when the two drift apart.
+ *
+ * :root                    Meet's own colours (stand-alone default).
+ * .m-own-palette           areas that keep Meet's palette in every scheme
+ *                          (Meet++ board and dialogs, the video stage).
+ * [data-scheme="mail"]     One Voice Mail's light and dark tokens; when Meet
+ *                          is embedded in Mail the parent's tokens override
+ *                          these as inline variables on <html>.
+ */
+
+:root {
+  --m-primary-50: 241 245 251;
+  --m-primary-100: 221 230 242;
+  --m-primary-200: 182 199 221;
+  --m-primary-300: 127 157 191;
+  --m-primary-400: 79 115 160;
+  --m-primary-500: 30 58 95;
+  --m-primary-600: 26 51 84;
+  --m-primary-700: 22 44 73;
+  --m-primary-800: 18 37 62;
+  --m-primary-900: 14 30 51;
+  --m-primary-950: 10 22 38;
+  --m-primary-strong: 26 51 84;
+  --m-secondary-500: 46 90 143;
+  --m-secondary-600: 41 79 126;
+  --m-secondary-700: 36 68 109;
+  --m-accent-500: 76 175 80;
+  --m-accent-600: 67 160 71;
+  --m-accent-700: 56 142 60;
+  --m-slate-50: 248 250 252;
+  --m-slate-100: 241 245 249;
+  --m-slate-200: 226 232 240;
+  --m-slate-300: 203 213 225;
+  --m-slate-400: 148 163 184;
+  --m-slate-500: 100 116 139;
+  --m-slate-600: 71 85 105;
+  --m-slate-700: 51 65 85;
+  --m-slate-800: 30 41 59;
+  --m-slate-900: 15 23 42;
+  --m-slate-950: 2 6 23;
+  --m-fg: 255 255 255;
+  --m-page-1: 182 199 221;
+  --m-page-2: 30 58 95;
+  --m-page-3: 14 30 51;
+  --m-sidebar-from: rgba(5, 15, 70, 0.97);
+  --m-sidebar-to: rgba(15, 40, 140, 0.95);
+  --m-nav-fg: 255 255 255;
+  --m-nav-dim: 255 255 255 / 0.7;
+  --m-nav-active: 255 255 255 / 0.15;
+  --m-nav-hover: 255 255 255 / 0.1;
+  --m-scroll-track: #0E1E33;
+  --m-scroll-thumb: #294F7E;
+  --m-scroll-thumb-hover: #2E5A8F;
+  --m-line: 22 44 73;
+  --m-stage-bg: transparent;
+  --m-review-page: 241 245 249;
+  --m-review-header: 15 23 42;
+  --m-review-header-fg: 255 255 255;
+}
+
+.m-own-palette {
+  --m-primary-50: 241 245 251;
+  --m-primary-100: 221 230 242;
+  --m-primary-200: 182 199 221;
+  --m-primary-300: 127 157 191;
+  --m-primary-400: 79 115 160;
+  --m-primary-500: 30 58 95;
+  --m-primary-600: 26 51 84;
+  --m-primary-700: 22 44 73;
+  --m-primary-800: 18 37 62;
+  --m-primary-900: 14 30 51;
+  --m-primary-950: 10 22 38;
+  --m-primary-strong: 26 51 84;
+  --m-secondary-500: 46 90 143;
+  --m-secondary-600: 41 79 126;
+  --m-secondary-700: 36 68 109;
+  --m-accent-500: 76 175 80;
+  --m-accent-600: 67 160 71;
+  --m-accent-700: 56 142 60;
+  --m-slate-50: 248 250 252;
+  --m-slate-100: 241 245 249;
+  --m-slate-200: 226 232 240;
+  --m-slate-300: 203 213 225;
+  --m-slate-400: 148 163 184;
+  --m-slate-500: 100 116 139;
+  --m-slate-600: 71 85 105;
+  --m-slate-700: 51 65 85;
+  --m-slate-800: 30 41 59;
+  --m-slate-900: 15 23 42;
+  --m-slate-950: 2 6 23;
+  --m-fg: 255 255 255;
+}
+
+:root[data-scheme="mail"][data-theme="light"] {
+  --m-primary-50: 245 247 251;
+  --m-primary-100: 31 31 31;
+  --m-primary-200: 28 92 171;
+  --m-primary-300: 28 92 171;
+  --m-primary-400: 28 92 171;
+  --m-primary-500: 28 92 171;
+  --m-primary-600: 214 214 211;
+  --m-primary-700: 230 230 227;
+  --m-primary-800: 255 255 255;
+  --m-primary-900: 245 247 251;
+  --m-primary-950: 255 255 255;
+  --m-primary-strong: 20 74 137;
+  --m-secondary-500: 28 92 171;
+  --m-secondary-600: 20 74 137;
+  --m-secondary-700: 22 65 116;
+  --m-accent-500: 28 92 171;
+  --m-accent-600: 20 74 137;
+  --m-accent-700: 22 65 116;
+  --m-slate-50: 31 31 31;
+  --m-slate-100: 31 31 31;
+  --m-slate-200: 57 56 55;
+  --m-slate-300: 82 81 78;
+  --m-slate-400: 107 106 102;
+  --m-slate-500: 137 136 133;
+  --m-slate-600: 174 173 171;
+  --m-slate-700: 230 230 227;
+  --m-slate-800: 241 243 246;
+  --m-slate-900: 245 247 251;
+  --m-slate-950: 255 255 255;
+  --m-fg: 31 31 31;
+  --m-page-1: 245 247 251;
+  --m-page-2: 245 247 251;
+  --m-page-3: 245 247 251;
+  --m-sidebar-from: #ffffff;
+  --m-sidebar-to: #ffffff;
+  --m-nav-fg: 31 31 31;
+  --m-nav-dim: 82 81 78;
+  --m-nav-active: 28 92 171 / 0.15;
+  --m-nav-hover: 230 230 227;
+  --m-scroll-track: #f5f7fb;
+  --m-scroll-thumb: rgb(200 200 198);
+  --m-scroll-thumb-hover: rgb(170 170 168);
+  --m-line: 230 230 227;
+  --m-stage-bg: #1f1f1f;
+  --m-review-page: 245 247 251;
+  --m-review-header: 255 255 255;
+  --m-review-header-fg: 31 31 31;
+}
+
+:root[data-scheme="mail"][data-theme="dark"] {
+  --m-primary-50: 255 255 255;
+  --m-primary-100: 255 255 255;
+  --m-primary-200: 57 135 229;
+  --m-primary-300: 57 135 229;
+  --m-primary-400: 57 135 229;
+  --m-primary-500: 57 135 229;
+  --m-primary-600: 61 61 59;
+  --m-primary-700: 44 44 42;
+  --m-primary-800: 26 26 25;
+  --m-primary-900: 13 13 13;
+  --m-primary-950: 13 13 13;
+  --m-primary-strong: 20 74 137;
+  --m-secondary-500: 57 135 229;
+  --m-secondary-600: 20 74 137;
+  --m-secondary-700: 19 62 112;
+  --m-accent-500: 57 135 229;
+  --m-accent-600: 20 74 137;
+  --m-accent-700: 19 62 112;
+  --m-slate-50: 255 255 255;
+  --m-slate-100: 255 255 255;
+  --m-slate-200: 225 225 219;
+  --m-slate-300: 195 194 183;
+  --m-slate-400: 154 153 144;
+  --m-slate-500: 122 121 114;
+  --m-slate-600: 90 90 85;
+  --m-slate-700: 44 44 42;
+  --m-slate-800: 37 37 36;
+  --m-slate-900: 26 26 25;
+  --m-slate-950: 13 13 13;
+  --m-fg: 255 255 255;
+  --m-page-1: 13 13 13;
+  --m-page-2: 13 13 13;
+  --m-page-3: 13 13 13;
+  --m-sidebar-from: #1a1a19;
+  --m-sidebar-to: #1a1a19;
+  --m-nav-fg: 255 255 255;
+  --m-nav-dim: 195 194 183;
+  --m-nav-active: 57 135 229 / 0.15;
+  --m-nav-hover: 44 44 42;
+  --m-scroll-track: #0d0d0d;
+  --m-scroll-thumb: rgb(76 76 74);
+  --m-scroll-thumb-hover: rgb(107 107 106);
+  --m-line: 44 44 42;
+  --m-stage-bg: #0d0d0d;
+  --m-review-page: 13 13 13;
+  --m-review-header: 26 26 25;
+  --m-review-header-fg: 255 255 255;
+}

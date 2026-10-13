@@ -20,8 +20,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { LANGUAGES, usePreferences } from "../lib/preferences";
+import { useEmbed } from "../lib/embed";
 import type {
   BackgroundEffect,
+  ColourScheme,
   DateFormat,
   FontSize,
   ForceIP,
@@ -80,6 +82,7 @@ const TABS: TabDef[] = [
 export default function Settings() {
   const { t } = useTranslation();
   const prefs = usePreferences();
+  const embedded = useEmbed().status !== "off";
   const [tab, setTab] = useState<TabId>("av");
   const [flash, setFlash] = useState<string | null>(null);
 
@@ -504,13 +507,28 @@ export default function Settings() {
 
       {tab === "appearance" && (
         <Section icon={<Palette size={18} />} title={t("settings.appearance.section")} testId="section-appearance">
-          <Field id="pref-theme" label={t("settings.appearance.theme")}>
-            <Select id="pref-theme" data-testid="pref-theme" value={prefs.appearance.theme} onChange={(e) => { prefs.setAppearance({ theme: e.target.value as Theme }); saved(); }}>
-              <option value="system">{t("settings.appearance.themeSystem")}</option>
-              <option value="dark">{t("settings.appearance.themeDark")}</option>
-              <option value="light">{t("settings.appearance.themeLight")}</option>
-            </Select>
-          </Field>
+          {embedded ? (
+            // Inside One Voice Mail the colours and light/dark follow Mail.
+            <p className="text-sm text-slate-400" data-testid="pref-scheme-embedded">
+              {t("settings.appearance.schemeEmbedded")}
+            </p>
+          ) : (
+            <>
+              <Field id="pref-theme" label={t("settings.appearance.theme")}>
+                <Select id="pref-theme" data-testid="pref-theme" value={prefs.appearance.theme} onChange={(e) => { prefs.setAppearance({ theme: e.target.value as Theme }); saved(); }}>
+                  <option value="system">{t("settings.appearance.themeSystem")}</option>
+                  <option value="dark">{t("settings.appearance.themeDark")}</option>
+                  <option value="light">{t("settings.appearance.themeLight")}</option>
+                </Select>
+              </Field>
+              <Field id="pref-scheme" label={t("settings.appearance.scheme")} hint={t("settings.appearance.schemeHint")}>
+                <Select id="pref-scheme" data-testid="pref-scheme" value={prefs.appearance.scheme ?? "meet"} onChange={(e) => { prefs.setAppearance({ scheme: e.target.value as ColourScheme }); saved(); }}>
+                  <option value="meet">{t("settings.appearance.schemeMeet")}</option>
+                  <option value="mail">{t("settings.appearance.schemeMail")}</option>
+                </Select>
+              </Field>
+            </>
+          )}
           <Field id="pref-accent" label={t("settings.appearance.accent")}><Input id="pref-accent" data-testid="pref-accent" type="color" value={prefs.appearance.accentColor} onChange={(e) => { prefs.setAppearance({ accentColor: e.target.value }); saved(); }} className="w-20 h-10 p-1" /></Field>
           <Toggle id="pref-compact" label={t("settings.appearance.compact")} checked={prefs.appearance.compactMode} onChange={(v) => { prefs.setAppearance({ compactMode: v }); saved(); }} />
           <Field id="pref-font-size" label={t("settings.appearance.fontSize")}>
