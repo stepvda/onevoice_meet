@@ -169,7 +169,12 @@ def _hls_egress_watchdog_job() -> None:
     from app.config import settings
     from app.db import SessionLocal
     from app.models import Meeting
-    from app.services.egress_mgr import LIVESTREAM_DESTINATIONS, reconcile_egress
+    from app.services.egress_mgr import (
+        LIVESTREAM_DESTINATIONS,
+        egress_lock,
+        host_mem_available_mb,
+        reconcile_egress_locked,
+    )
 
     if not settings.hls_enabled:
         return
@@ -188,7 +193,6 @@ def _hls_egress_watchdog_job() -> None:
             ).all()
 
             restarted = 0
-            now = time.time()
             for m in candidates:
                 want_stream = any(
                     bool(getattr(m, dest[1], False))
@@ -196,66 +200,9 @@ def _hls_egress_watchdog_job() -> None:
                 )
                 if not want_stream:
                     continue
-                live_m3u8 = os.path.join(
-                    settings.recordings_dir, "hls", m.public_slug, "live.m3u8"
-                )
-                if m.livestream_egress_id is None:
-                    log.warning(
-                        "hls watchdog: streaming desired for %s but no egress"
-                        " is running — starting a fresh one",
-                        m.room_name,
-                    )
-                else:
-                    if not os.path.isfile(live_m3u8):
-                        continue
-                    age = now - os.path.getmtime(live_m3u8)
-                    if age <= settings.hls_watchdog_stale_seconds:
-                        continue
-                    log.warning(
-                        "hls watchdog: egress %s stale for %.0fs (live.m3u8 age), restarting",
-                        m.livestream_egress_id,
-                        age,
-                    )
-                    # A stale playlist usually means the handler died without
-                    # LiveKit noticing (container recreation, hard kill): the
-                    # egress stays registered as active, reconcile_egress sees
-                    # no transition to make, and the "restart" loops as a
-                    # no-op forever. Force-stop the registration (best-effort
-                    # — it is often already dead) and clear the pointer so
-                    # the reconcile below starts a genuinely new egress.
-                    try:
-                        from livekit import api as lkapi
-
-                        from app.livekit_client import livekit_api
-
-                        lk = livekit_api()
-                        try:
-                            await lk.egress.stop_egress(
-                                lkapi.StopEgressRequest(
-                                    egress_id=m.livestream_egress_id
-                                )
-                            )
-                        finally:
-                            await lk.aclose()
-                    except Exception:
-                        pass  # unknown/already-ended egress — that's the point
-                    m.livestream_egress_id = None
-                    db.commit()
                 try:
-                    await reconcile_egress(
-                        m,
-                        want_file=False,
-                        want_stream=True,
-                        layout=None,
-                        user_sub="hls_watchdog",
-                        db=db,
-                    )
-                    restarted += 1
-                    log.info(
-                        "hls watchdog: restarted egress for %s, new egress_id=%s",
-                        m.room_name,
-                        m.livestream_egress_id,
-                    )
+                    if await _hls_watchdog_check(db, m):
+                        restarted += 1
                 except Exception:
                     log.exception(
                         "hls watchdog: failed to restart egress for %s",
@@ -263,9 +210,118 @@ def _hls_egress_watchdog_job() -> None:
                     )
             return restarted
 
+    async def _hls_watchdog_check(db, m) -> bool:
+        live_m3u8 = os.path.join(
+            settings.recordings_dir, "hls", m.public_slug, "live.m3u8"
+        )
+        # Decide and act under the meeting's egress lock, on the pointer as
+        # it is now: a manual stop→start or a playlist layout switch that
+        # ran between our read and our start used to leave two egresses
+        # streaming, one of them untracked.
+        async with egress_lock(m.id):
+            db.commit()
+            db.refresh(m)
+            if m.livestream_egress_id is None:
+                log.warning(
+                    "hls watchdog: streaming desired for %s but no egress"
+                    " is running — starting a fresh one",
+                    m.room_name,
+                )
+            else:
+                if not os.path.isfile(live_m3u8):
+                    return False
+                age = time.time() - os.path.getmtime(live_m3u8)
+                if age <= settings.hls_watchdog_stale_seconds:
+                    return False
+                log.warning(
+                    "hls watchdog: egress %s stale for %.0fs (live.m3u8 age), restarting",
+                    m.livestream_egress_id,
+                    age,
+                )
+                # A stale playlist usually means the handler died without
+                # LiveKit noticing (container recreation, hard kill): the
+                # egress stays registered as active, reconcile_egress sees
+                # no transition to make, and the "restart" loops as a
+                # no-op forever. Force-stop the registration (best-effort
+                # — it is often already dead) and clear the pointer so
+                # the reconcile below starts a genuinely new egress. If the
+                # handler is in fact alive and the stop failed, the orphan
+                # reaper stops it once it is untracked.
+                try:
+                    from livekit import api as lkapi
+
+                    from app.livekit_client import livekit_api
+
+                    lk = livekit_api()
+                    try:
+                        await lk.egress.stop_egress(
+                            lkapi.StopEgressRequest(
+                                egress_id=m.livestream_egress_id
+                            )
+                        )
+                    finally:
+                        await lk.aclose()
+                except Exception as exc:  # unknown/already-ended egress — that's the point
+                    log.info(
+                        "hls watchdog: stopping stale %s failed (%s)",
+                        m.livestream_egress_id,
+                        exc,
+                    )
+                m.livestream_egress_id = None
+                db.commit()
+            available = host_mem_available_mb()
+            if available is not None and available < settings.egress_start_min_available_mb:
+                log.error(
+                    "hls watchdog: only %d MB of memory available (< %d) — not"
+                    " starting an egress for %s until memory is back",
+                    available,
+                    settings.egress_start_min_available_mb,
+                    m.room_name,
+                )
+                return False
+            await reconcile_egress_locked(
+                m,
+                want_file=False,
+                want_stream=True,
+                layout=None,
+                user_sub="hls_watchdog",
+                db=db,
+            )
+        log.info(
+            "hls watchdog: restarted egress for %s, new egress_id=%s",
+            m.room_name,
+            m.livestream_egress_id,
+        )
+        return True
+
     restarted = asyncio.run(_run())
     if restarted:
         log.info("hls watchdog: restarted %d stalled egress(es)", restarted)
+
+
+def _egress_orphan_reaper_job() -> None:
+    """Stop TI-TV egresses that the database doesn't track. Racing egress
+    restarts used to leave them streaming for days (three on 2026-10-14, each
+    a Chrome + encoder) until the host ran out of memory. Its own job so slow
+    stops of dead LiveKit registrations never delay the HLS watchdog."""
+    from app.config import settings
+    from app.db import SessionLocal
+    from app.models import Meeting
+    from app.services.egress_mgr import reap_orphan_egresses
+
+    async def _run() -> int:
+        stopped = 0
+        with SessionLocal() as db:
+            for m in db.query(Meeting).filter(Meeting.public_slug == settings.titv_public_slug).all():
+                try:
+                    stopped += len(await reap_orphan_egresses(db, m))
+                except Exception:
+                    log.exception("egress reaper failed for %s", m.room_name)
+        return stopped
+
+    stopped = asyncio.run(_run())
+    if stopped:
+        log.warning("egress reaper: stopped %d untracked egress(es)", stopped)
 
 
 def start() -> None:
@@ -286,7 +342,8 @@ def start() -> None:
         id="meetpp_retention",
         replace_existing=True,
     )
-    # Every hour — evict oldest recordings if disk usage exceeds the cap (75%).
+    # Every hour — evict oldest recordings if disk usage exceeds
+    # `recording_disk_cap_ratio` (0.90).
     scheduler.add_job(
         _disk_cap_job,
         CronTrigger(minute=15),
@@ -331,6 +388,15 @@ def start() -> None:
         _hls_egress_watchdog_job,
         IntervalTrigger(seconds=15),
         id="hls_egress_watchdog",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+    # Every 60s — stop TI-TV egresses nothing tracks (see the job).
+    scheduler.add_job(
+        _egress_orphan_reaper_job,
+        IntervalTrigger(seconds=60),
+        id="egress_orphan_reaper",
         replace_existing=True,
         max_instances=1,
         coalesce=True,

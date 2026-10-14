@@ -16,9 +16,14 @@ and the second toggle stops hanging for 22 s and returning 500.
 """
 from __future__ import annotations
 
+import asyncio
+import logging
+import threading
+import time
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, AsyncIterator
 from urllib.parse import quote
 
 from fastapi import HTTPException
@@ -32,6 +37,50 @@ from app.models import Meeting, ModerationAudit, Recording
 
 if TYPE_CHECKING:
     from app.routes.recordings import RecordingLayout
+
+log = logging.getLogger(__name__)
+
+
+# One egress transition per meeting at a time. reconcile_egress runs from
+# request handlers and webhooks (the main event loop) and from the APScheduler
+# watchdogs (worker threads, each with its own `asyncio.run` loop). Two
+# concurrent calls each started an egress and the one that lost the
+# `livestream_egress_id` race kept streaming untracked: on 2026-10-14 four
+# TI-TV composites (~1 GB RAM each) ran at once and the host went OOM. A
+# threading.Lock is shared by all those loops (meeting-api runs a single
+# uvicorn worker). It is polled, not acquired in a helper thread, so a caller
+# cancelled while waiting can never leave it held.
+EGRESS_LOCK_TIMEOUT_SECONDS = 90.0
+_egress_locks: dict[str, threading.Lock] = {}
+_egress_locks_guard = threading.Lock()
+
+
+@asynccontextmanager
+async def egress_lock(meeting_id: str) -> AsyncIterator[None]:
+    with _egress_locks_guard:
+        lock = _egress_locks.setdefault(meeting_id, threading.Lock())
+    deadline = time.monotonic() + EGRESS_LOCK_TIMEOUT_SECONDS
+    while not lock.acquire(blocking=False):
+        if time.monotonic() >= deadline:
+            raise HTTPException(status_code=409, detail="another recording / livestream change is still in progress")
+        await asyncio.sleep(0.05)
+    try:
+        yield
+    finally:
+        lock.release()
+
+
+def host_mem_available_mb() -> int | None:
+    """MemAvailable of the host (a container's /proc/meminfo is the host's),
+    or None where there is no /proc (macOS dev)."""
+    try:
+        with open("/proc/meminfo") as fh:
+            for line in fh:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) // 1024
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
 
 
 # Every egress (recording + livestream) renders through our custom Web
@@ -243,6 +292,29 @@ async def reconcile_egress(
     caller has already checked owner permissions, meeting active state, and
     (for `want_stream`) that the meeting has RTMPS credentials configured.
     """
+    async with egress_lock(m.id):
+        return await reconcile_egress_locked(
+            m, want_file=want_file, want_stream=want_stream, layout=layout, user_sub=user_sub, db=db,
+        )
+
+
+async def reconcile_egress_locked(
+    m: Meeting,
+    *,
+    want_file: bool,
+    want_stream: bool,
+    layout: "RecordingLayout | None",
+    user_sub: str,
+    db: Session,
+) -> dict:
+    """reconcile_egress for a caller that already holds `egress_lock(m.id)`."""
+    # Decide from the egress pointers as they are now, not as the caller read
+    # them before it got the lock: a concurrent transition may have replaced
+    # the egress since. The refresh re-reads the meeting row; the commit
+    # before it keeps the caller's pending changes (which every path below
+    # commits anyway) from being discarded by it.
+    db.commit()
+    db.refresh(m)
     cur_egress_id, cur_has_file, cur_has_stream = _current_state(m, db)
 
     # If the caller didn't pass an explicit layout (typical for stop/toggle-off
@@ -448,6 +520,62 @@ async def reconcile_egress(
     finally:
         await lk.aclose()
     return {"egress_id": new_egress_id, "recording_id": new_recording_id, "no_change": False}
+
+
+# An egress younger than this may still be on its way into the database
+# (reconcile_egress commits the pointer only after LiveKit answers the start,
+# which took tens of seconds while the host was overloaded).
+ORPHAN_GRACE_SECONDS = 300
+# LiveKit keeps "active" registrations for handlers that died with their
+# process (host reboot, OOM kill); stopping one of those fails. Retry it hourly
+# rather than on every pass.
+ORPHAN_RETRY_SECONDS = 3600
+ORPHAN_STOP_TIMEOUT_SECONDS = 10.0
+_orphan_stop_failed: dict[str, float] = {}
+
+
+async def reap_orphan_egresses(db: Session, m: Meeting) -> list[str]:
+    """Stop the active egresses in the meeting's room that neither its
+    `livestream_egress_id` nor a running Recording tracks; returns the ids
+    stopped. Meant for the 24/7 TI-TV room: an untracked egress there streams
+    (and holds a Chrome + encoder, ~1 GB RAM) until the host runs out of
+    memory, while one in a regular meeting room ends with the room."""
+    now = time.monotonic()
+    for eg, failed_at in list(_orphan_stop_failed.items()):
+        if now - failed_at >= ORPHAN_RETRY_SECONDS:
+            del _orphan_stop_failed[eg]
+    stopped: list[str] = []
+    lk = livekit_api()
+    try:
+        res = await lk.egress.list_egress(api.ListEgressRequest(room_name=m.room_name, active=True))
+        # Read what the database tracks after listing: an egress started in
+        # between is younger than the grace period anyway.
+        db.refresh(m)
+        known = {m.livestream_egress_id} | {
+            r.egress_id for r in db.query(Recording).filter_by(meeting_id=m.id, status="running")
+        }
+        for info in res.items:
+            eg = info.egress_id
+            if eg in known or info.status != api.EgressStatus.EGRESS_ACTIVE:
+                continue
+            if not info.started_at or time.time_ns() - info.started_at < ORPHAN_GRACE_SECONDS * 1_000_000_000:
+                continue
+            if eg in _orphan_stop_failed:
+                continue
+            try:
+                await asyncio.wait_for(
+                    lk.egress.stop_egress(api.StopEgressRequest(egress_id=eg)), ORPHAN_STOP_TIMEOUT_SECONDS
+                )
+            except Exception as exc:  # noqa: BLE001 — usually a registration whose handler is gone
+                _orphan_stop_failed[eg] = time.monotonic()
+                log.info("egress reaper: stopping untracked %s in %s failed (%s: %s)", eg, m.room_name, type(exc).__name__, exc)
+                continue
+            stopped.append(eg)
+            started = datetime.fromtimestamp(info.started_at / 1e9, tz=timezone.utc)
+            log.warning("EGRESS_ORPHAN_REAPED eg=%s room=%s started=%s", eg, m.room_name, started.isoformat(timespec="seconds"))
+    finally:
+        await lk.aclose()
+    return stopped
 
 
 def _mark_youtube_destination(db: Session, meeting_id: str, *, status: str, error: str | None) -> None:

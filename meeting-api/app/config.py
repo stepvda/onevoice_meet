@@ -179,6 +179,11 @@ class Settings(BaseSettings):
     # (enough segments to ride through a transient pipeline pause) but short
     # enough to catch a deadlocked egress before viewers notice.
     hls_watchdog_stale_seconds: int = 30
+    # The watchdog starts no egress (a Chrome + encoder, ~1 GB RAM) while the
+    # host has less memory available than this: on 2026-10-14 its restarts
+    # during an OOM added three composites and froze the box. It still stops
+    # a stale egress, and starts one once memory is back.
+    egress_start_min_available_mb: int = 1024
 
     # Resend (email). Source the key from one.witysk.org's RESEND_API_KEY.
     # `from_email` follows onevoice's convention (FROM_EMAIL env var); supports

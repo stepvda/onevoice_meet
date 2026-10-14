@@ -142,6 +142,15 @@ services:
       - redis
     cap_add:
       - SYS_ADMIN
+    # Each room composite is a Chrome + Xvfb + encoder (~1-1.5 GB): the TI-TV
+    # stream plus up to ~3 recordings fit. Past that the kernel kills a Chrome
+    # inside this container instead of freezing the whole 7.6 GB host (OOM on
+    # 2026-10-14 with four TI-TV composites). No swap: a swapping encoder only
+    # falls behind. Set live on 2026-10-14 with `docker update --memory 4500m
+    # --memory-swap 4500m meet-egress-1`; the next `up` that includes egress
+    # recreates it once for this config change (a short TI-TV gap).
+    mem_limit: 4500m
+    memswap_limit: 4500m
 
   ingress:
     logging: *default-logging
@@ -232,6 +241,10 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - redis
+    # The API (~0.5 GB) plus its ffmpeg jobs (previews are capped at 1.5 GB by
+    # meet-ffmpeg). A runaway child is killed here, not the host.
+    mem_limit: 2g
+    memswap_limit: 2g
 
   # Headless-Chrome PiP compositor. Listens on internal port 8090;
   # meeting-api calls POST /sessions/<room> when a meeting flips

@@ -602,36 +602,52 @@ def _render_music_wav(out_path: Path) -> None:
 # Encode the final MP4
 # ---------------------------------------------------------------------------
 
+# The container's resource-capped, lowest-priority ffmpeg wrapper (see the
+# Dockerfile): the slide is pre-generated in the background next to live
+# egress, which must win the CPUs.
+_FFMPEG_BIN = shutil.which("meet-ffmpeg") or "ffmpeg"
+_ENCODE_TIMEOUT_SECONDS = 300
+
+
 def _encode_mp4(png_path: Path, wav_path: Path, out_path: Path) -> None:
-    # `-loop 1 -t <SLIDE_DURATION_S>` turns the single PNG into a video. We add a
-    # fade-in/out so the slide doesn't pop on/off, and re-encode the
-    # audio to AAC. The size baselines around ~3 MB at CRF 22.
+    # The PNG is decoded once and repeated by the `loop` filter into a
+    # SLIDE_DURATION_S video. We add a fade-in/out so the slide doesn't pop
+    # on/off, and re-encode the audio to AAC. The size baselines around
+    # ~1.4 MB at CRF 22.
+    # Memory: the former `-loop 1` input re-decoded the PNG 30×/s into RGB
+    # frames that queued up ahead of a `-preset medium` x264 — ~1.2 GB RSS,
+    # which pushed the host into OOM on 2026-10-14. Looping in the filter
+    # graph with `veryfast -tune stillimage` on two threads peaks at ~240 MB
+    # for the same file size.
     # `scale=...iw*sar` + `setsar=1` flattens any non-square PAR the source
     # PNG might carry (PIL writes square pixels but some loaders
     # interpret the header strictly enough that libx264 complains about
     # odd dimensions otherwise). We also force the dimensions to even
     # values via `scale=trunc(iw/2)*2:trunc(ih/2)*2`.
     cmd = [
-        "ffmpeg", "-y",
-        "-loop", "1", "-framerate", str(FPS), "-t", str(SLIDE_DURATION_S), "-i", str(png_path),
+        _FFMPEG_BIN, "-y",
+        "-hide_banner", "-loglevel", "error",
+        "-i", str(png_path),
         "-i", str(wav_path),
-        "-vf", (
-            "scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1,"
-            f"fade=t=in:st=0:d=0.6,"
-            f"fade=t=out:st={SLIDE_DURATION_S - 0.8}:d=0.8,"
-            f"format=yuv420p"
+        "-filter_complex", (
+            "[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1,format=yuv420p,"
+            f"loop=loop=-1:size=1,fps={FPS},trim=duration={SLIDE_DURATION_S},setpts=N/{FPS}/TB,"
+            "fade=t=in:st=0:d=0.6,"
+            f"fade=t=out:st={SLIDE_DURATION_S - 0.8}:d=0.8[v]"
         ),
-        "-c:v", "libx264", "-preset", "medium", "-crf", "22",
+        "-map", "[v]", "-map", "1:a",
+        "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-crf", "22",
+        "-threads", "2",
         "-pix_fmt", "yuv420p", "-movflags", "+faststart",
         "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
-        "-shortest",
+        "-t", str(SLIDE_DURATION_S),
         # Force mp4 mux explicitly — we write to a `.mp4.partial`
         # temp path (atomic rename into the cache) and ffmpeg can't
         # infer the format from that extension.
         "-f", "mp4",
         str(out_path),
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=_ENCODE_TIMEOUT_SECONDS)
     if result.returncode != 0:
         log.error(
             "whats_next: ffmpeg encode failed (rc=%s)\nCMD: %s\nSTDERR:\n%s",
