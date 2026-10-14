@@ -147,3 +147,15 @@ async def test_stop_streaming_when_already_stopped_turns_a_stale_pill_off(monkey
         out = await streams.stop_stream(meeting_id, SimpleNamespace(sub="42"), db)
     assert out == {"ok": True, "already_stopped": True}
     assert lk.flags == (False, False)
+
+
+def test_egress_page_url_names_the_room():
+    """LiveKit appends only url / token / layout: the room (for Meet++) must be ours."""
+    from types import SimpleNamespace
+
+    from app.services import egress_mgr
+
+    url = egress_mgr._egress_custom_base_url(SimpleNamespace(room_name="lemur-breeze-sunny", pip_overlay_identity="user-1"))
+    assert url.endswith("/egress-layout/pip?room=lemur-breeze-sunny&overlay=user-1")
+    url = egress_mgr._egress_custom_base_url(SimpleNamespace(room_name="r 1", pip_overlay_identity=None))
+    assert url.endswith("/egress-layout/pip?room=r%201")

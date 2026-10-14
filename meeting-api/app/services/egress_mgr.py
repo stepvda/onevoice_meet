@@ -43,13 +43,14 @@ _EGRESS_TEMPLATE_PATH = "/egress-layout/pip"
 
 
 def _egress_custom_base_url(m: Meeting) -> str:
-    """URL the egress headless Chrome fetches. LiveKit appends its own
-    `url`/`token`/`room`/`layout` query params. We pass `overlay` as a
-    bootstrapping hint — the page subsequently re-reads it from room
-    metadata so changes during the egress don't require a restart."""
-    base = f"{settings.public_url}{_EGRESS_TEMPLATE_PATH}"
+    """URL the egress headless Chrome fetches. LiveKit appends only `url`,
+    `token` and `layout`, so we pass `room` (the page finds the Meet++
+    session with it; the page also reads it from the token) and `overlay`
+    as a bootstrapping hint — the page re-reads it from room metadata so
+    changes during the egress don't require a restart."""
+    base = f"{settings.public_url}{_EGRESS_TEMPLATE_PATH}?room={quote(m.room_name)}"
     overlay = m.pip_overlay_identity or ""
-    return f"{base}?overlay={quote(overlay)}" if overlay else base
+    return f"{base}&overlay={quote(overlay)}" if overlay else base
 
 
 def _build_stream_url(rtmps_url: str, stream_key: str) -> str:

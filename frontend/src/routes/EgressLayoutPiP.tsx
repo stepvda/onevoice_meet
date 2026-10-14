@@ -9,6 +9,7 @@ import {
 import MeetppBoardView from "../components/meetpp/MeetppBoardView";
 import MeetppBoardWindow, { MeetppBoardTile } from "../components/meetpp/MeetppStage";
 import { useMeetppReadOnly } from "../components/meetpp/useMeetppSession";
+import { roomFromToken } from "../lib/livekitToken";
 import {
   BOARD_CANDIDATE,
   BOARD_KEY,
@@ -104,7 +105,9 @@ export default function EgressLayoutPiP() {
       url: p.get("url") || "",
       token: p.get("token") || "",
       overlayHint: p.get("overlay") || "",
-      roomName: p.get("room") || "",
+      // LiveKit gives a custom template only url, token and layout: the room
+      // (needed to find the Meet++ session) comes from the token's grant.
+      roomName: p.get("room") || roomFromToken(p.get("token")),
       // The URL `layout` is the layout the egress was *started* with —
       // used only as the initial render before LiveKit room metadata
       // arrives. Live layout changes are then driven by room metadata
@@ -155,7 +158,7 @@ export default function EgressLayoutPiP() {
   // in the strip or a grid cell. It follows live without pausing and plays
   // the announcement audio.
   const [lkRoom, setLkRoom] = useState<Room | null>(null);
-  const boardWanted = useMeetppReadOnly({ room: lkRoom, roomName, token: token || null, mode: "egress" });
+  const boardWanted = useMeetppReadOnly({ room: lkRoom, roomName: roomName || lkRoom?.name || "", token: token || null, mode: "egress" });
   const boardWantedRef = useRef(boardWanted);
   boardWantedRef.current = boardWanted;
   const [boardMain, setBoardMain] = useState(false);
