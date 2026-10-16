@@ -54,6 +54,10 @@ export default function CreateMeeting() {
   const [title, setTitle] = useState("");
   const [password, setPassword] = useState("");
   const [usePassword, setUsePassword] = useState(prefs.requirePassword);
+  // Guests who have the link may join without signing in. Separate from the
+  // listing toggles below: an unlisted meeting still admits whoever the
+  // owner sends the link to, unless the owner turns this off.
+  const [allowGuests, setAllowGuests] = useState(true);
   const [listForAuth, setListForAuth] = useState(false);
   const [listForAnon, setListForAnon] = useState(false);
   const [autoAdmitAuthenticated, setAutoAdmitAuthenticated] = useState(modPrefs.autoAdmitAuthenticated);
@@ -201,6 +205,8 @@ export default function CreateMeeting() {
         // Anonymous discovery implies authenticated.
         list_for_authenticated: listForAuth || listForAnon,
         list_for_anonymous: listForAnon,
+        // A public listing admits guests anyway.
+        allow_anonymous: allowGuests || listForAnon,
         display_name,
         auto_admit_authenticated: autoAdmitAuthenticated,
         require_name_on_join: requireNameOnJoin,
@@ -315,6 +321,17 @@ export default function CreateMeeting() {
           </Field>
 
           <Toggle
+            id="meeting-allow-guests"
+            label={t("createMeeting.allowGuests")}
+            description={t("createMeeting.allowGuestsDesc")}
+            checked={allowGuests || listForAnon}
+            onChange={(v) => {
+              setAllowGuests(v);
+              if (!v) setListForAnon(false);
+            }}
+          />
+
+          <Toggle
             id="meeting-use-password"
             label={t("createMeeting.fieldRequirePassword")}
             checked={usePassword}
@@ -361,7 +378,10 @@ export default function CreateMeeting() {
                 checked={listForAnon}
                 onChange={(v) => {
                   setListForAnon(v);
-                  if (v) setListForAuth(true);
+                  if (v) {
+                    setListForAuth(true);
+                    setAllowGuests(true);
+                  }
                 }}
               />
             </div>

@@ -175,6 +175,11 @@ export default function MyMeetings({ refreshKey = 0 }: { refreshKey?: number }) 
                   </div>
                   <div className="text-xs text-slate-400 mt-0.5">
                     <code>{m.room_name}</code> · {t("myMeetings.maxParticipants", { n: m.max_participants })} · {visibilityIcon(m).label}
+                    {!m.allow_anonymous && !m.list_for_anonymous && (
+                      <span className="text-amber-400" data-testid={`meeting-signed-in-only-${m.id}`}>
+                        {" "}· {t("myMeetings.signedInOnly")}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <Button

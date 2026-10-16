@@ -438,6 +438,7 @@ export const api = {
     password?: string;
     list_for_authenticated?: boolean;
     list_for_anonymous?: boolean;
+    allow_anonymous?: boolean;
     display_name?: string | null;
     auto_admit_authenticated?: boolean;
     require_name_on_join?: boolean;
@@ -477,6 +478,7 @@ export const api = {
       display_title?: string;
       list_for_authenticated?: boolean;
       list_for_anonymous?: boolean;
+      allow_anonymous?: boolean;
       recording_mode?: "manual" | "auto_on_start" | "off";
       livestream_enabled?: boolean;
       livestream_rtmps_url?: string | null;

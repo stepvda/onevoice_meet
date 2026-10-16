@@ -9,6 +9,7 @@ import {
   fetchOneWityskName,
   getAccessToken,
   isAuthenticated,
+  startSsoRedirect,
 } from "../lib/auth";
 import { getCachedMe, useMe } from "../lib/me";
 import { prewarmMedia } from "../lib/livekit";
@@ -63,6 +64,8 @@ export default function Lobby() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // The meeting refuses guests who aren't signed in — offer sign-in.
+  const [signInRequired, setSignInRequired] = useState(false);
   // Waiting-room state — non-null while we're polling the API after the
   // backend told us we're queued.
   const [waitToken, setWaitToken] = useState<string | null>(null);
@@ -221,6 +224,7 @@ export default function Lobby() {
     e.preventDefault();
     setBusy(true);
     setErr(null);
+    setSignInRequired(false);
     // Kick off camera/mic hardware init NOW so it overlaps with the token
     // fetch + route transition + LiveKit WS handshake. Cuts ~1-3 s off the
     // perceived "Join → camera publishing" delay because LiveKit's
@@ -289,7 +293,14 @@ export default function Lobby() {
       sessionStorage.setItem(CACHE_KEY, JSON.stringify(resp));
       navigate(`/r/${roomName}`);
     } catch (e) {
-      setErr((e as Error).message);
+      const msg = (e as Error).message;
+      // tokens.py refuses guests of a meeting that admits only signed-in users.
+      if (msg === "this meeting is not open to anonymous joiners") {
+        setSignInRequired(true);
+        setErr(t("lobby.signInRequired"));
+      } else {
+        setErr(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -481,7 +492,14 @@ export default function Lobby() {
                 })}
               </div>
             )}
-            {err && <div className="text-red-400 text-sm">{err}</div>}
+            {err && <div className="text-red-400 text-sm" data-testid="lobby-error">{err}</div>}
+            {signInRequired && (
+              <div>
+                <Button type="button" variant="secondary" onClick={() => startSsoRedirect()} data-testid="lobby-sign-in">
+                  {t("lobby.signIn")}
+                </Button>
+              </div>
+            )}
           </div>
           )}
           {waitToken && err && <div className="text-red-400 text-sm">{err}</div>}

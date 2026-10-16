@@ -189,6 +189,8 @@
     "fieldTitle": "Title",
     "fieldTitlePlaceholder": "Weekly sync, 1:1 with Alice, etc.",
     "fieldRequirePassword": "Require a password",
+    "allowGuests": "Guests with the link can join without signing in",
+    "allowGuestsDesc": "Turn off to admit only people signed in with one.witysk.org or a meet account.",
     "fieldPassword": "Password",
     "fieldBranding": "Branding image (optional)",
     "fieldBrandingHint": "Shown in the lobby and the meeting top bar. JPEG, PNG, WebP or GIF; up to 2 MB.",
@@ -271,6 +273,7 @@
     "visibilityListed": "Listed for signed-in users",
     "visibilityPrivate": "Only visible to me",
     "visibilityChange": "{{label}} — click to change",
+    "signedInOnly": "signed-in users only",
     "copyJoinPrompt": "Copy this join link",
     "restart": "Restart",
     "restartTitle": "Reopen this meeting (keeps the same link)"
@@ -291,7 +294,9 @@
     "testMediaTitle": "Test microphone and camera before joining",
     "mediaOk": "Mic & camera ready.",
     "mediaDenied": "Mic or camera blocked. Tap the lock icon in the address bar to allow access, then reload.",
-    "mediaError": "Couldn't access mic/camera — check that no other app is using them."
+    "mediaError": "Couldn't access mic/camera — check that no other app is using them.",
+    "signInRequired": "This meeting is only open to signed-in users. Sign in to join, or ask the host to let guests join with the link.",
+    "signIn": "Sign in"
   },
   "room": {
     "takeStage": "Take stage",
@@ -324,6 +329,10 @@
   "inMeetingSettings": {
     "title": "Settings",
     "close": "Close settings",
+    "groupAccess": "Access",
+    "allowGuests": "Guests with the link can join without signing in",
+    "allowGuestsHint": "When off, only people signed in with one.witysk.org or a meet account can join.",
+    "allowGuestsListed": "Anyone can join while the meeting is listed for anonymous visitors. Change its visibility on the Home page to restrict it.",
     "groupAv": "Audio & Video",
     "groupDisplay": "Display",
     "groupNotifications": "Notifications",

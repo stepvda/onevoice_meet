@@ -69,8 +69,9 @@ def anon_token(
     # Visibility gates joining, not just discoverability. A meeting with
     # `list_for_anonymous=False` is "Private" (no listing AND no
     # anonymous joins) — anonymous users with the URL get refused here,
-    # unless the meeting admits guests with the link (`allow_anonymous`,
-    # set by One Voice Mail: joinable but never listed).
+    # unless the meeting admits guests with the link (`allow_anonymous`:
+    # joinable but never listed — on by default in the SPA's Create Meeting
+    # form and owner-switchable in the meeting, set by One Voice Mail).
     # Authenticated users still go through (they can be invited / be on
     # the cohost list); owners use a separate `/meetings/{id}/token`
     # endpoint and bypass this path entirely.

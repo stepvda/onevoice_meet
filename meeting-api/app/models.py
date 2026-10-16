@@ -224,8 +224,9 @@ class Meeting(Base):
 
     # Guests may join with the link (and the password when one is set)
     # without the meeting being listed anywhere — what `list_for_anonymous`
-    # gives, minus the public listing. Set by One Voice Mail for the meetings
-    # it creates (calendar events, Meetings).
+    # gives, minus the public listing. The SPA's Create Meeting form sends it
+    # (on by default); One Voice Mail sets it for the meetings it creates
+    # (calendar events, Meetings).
     allow_anonymous: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Created by another system: `external_source` names it ("mail") and
     # `external_ref` is that system's key ("event:<uid>", "meeting:<id>").

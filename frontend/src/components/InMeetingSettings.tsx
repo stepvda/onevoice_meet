@@ -10,6 +10,7 @@ import {
   Globe,
   Copy,
   Check,
+  DoorOpen,
   Pencil,
   PictureInPicture2,
   FileVideo,
@@ -89,6 +90,10 @@ export default function InMeetingSettings({
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 text-sm">
         {meeting && onMeetingUpdated && (
           <RenameTitleGroup meeting={meeting} onMeetingUpdated={onMeetingUpdated} />
+        )}
+
+        {meeting && onMeetingUpdated && (
+          <GuestAccessGroup meeting={meeting} onMeetingUpdated={onMeetingUpdated} />
         )}
 
         <Group icon={<Mic size={14} />} title={t("inMeetingSettings.groupAv")}>
@@ -416,6 +421,66 @@ function RenameTitleGroup({
               : t("inMeetingSettings.meetingRename", { defaultValue: "Rename" })}
           </button>
         </div>
+      </div>
+    </section>
+  );
+}
+
+
+function GuestAccessGroup({
+  meeting,
+  onMeetingUpdated,
+}: {
+  meeting: MeetingOut;
+  onMeetingUpdated: (m: MeetingOut) => void;
+}) {
+  const { t } = useTranslation();
+  // A public listing admits guests on its own, so the toggle can't be
+  // turned off while the meeting is listed for anonymous visitors.
+  const listedPublicly = !!meeting.list_for_anonymous;
+  const [enabled, setEnabled] = useState(!!meeting.allow_anonymous || listedPublicly);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEnabled(!!meeting.allow_anonymous || listedPublicly);
+  }, [meeting.allow_anonymous, listedPublicly]);
+
+  async function toggle(v: boolean) {
+    if (listedPublicly) return;
+    setEnabled(v);
+    setErr(null);
+    try {
+      const updated = await api.updateMeeting(meeting.id, { allow_anonymous: v });
+      onMeetingUpdated(updated);
+    } catch (e) {
+      setEnabled(!v);
+      setErr((e as Error).message);
+    }
+  }
+
+  return (
+    <section>
+      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+        <span className="text-slate-500">
+          <DoorOpen size={14} />
+        </span>
+        {t("inMeetingSettings.groupAccess")}
+      </h3>
+      <div className="flex flex-col gap-3">
+        <Toggle
+          id="im-allow-guests"
+          label={t("inMeetingSettings.allowGuests")}
+          checked={enabled}
+          onChange={(v) => void toggle(v)}
+        />
+        <p className="text-xs text-slate-500">
+          {listedPublicly ? t("inMeetingSettings.allowGuestsListed") : t("inMeetingSettings.allowGuestsHint")}
+        </p>
+        {err && (
+          <p data-testid="im-allow-guests-error" className="text-xs text-red-400">
+            {err}
+          </p>
+        )}
       </div>
     </section>
   );
