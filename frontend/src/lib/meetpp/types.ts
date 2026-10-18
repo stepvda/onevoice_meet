@@ -411,6 +411,8 @@ export interface AnnounceMsg {
   title: string;
   subtitle: string | null;
   audio_url: string | null;
+  /** false: show the banner only, never read it aloud (agenda moves). */
+  spoken?: boolean;
 }
 
 export interface ProposalMsg {

@@ -118,8 +118,9 @@ async def test_next_back_move_and_section_closing(fakes):
     await drain()
     ann = fakes.bus.last("announce")
     assert ann["kind"] == "position" and ann["title"] == "1 · Approval of the minutes"
-    assert ann["audio_url"] == f"/api/v1/meetpp/tts/{'ab' * 16}.ogg"
-    assert ("tts", "Moving on to item 1: Approval of the minutes.") in fakes.agent.calls
+    # A banner only: agenda moves are not spoken.
+    assert ann["audio_url"] is None and ann["spoken"] is False
+    assert not any(c[0] == "tts" and "Moving on" in c[1] for c in fakes.agent.calls)
 
     # Chair moves suppress AI moves for 60 s.
     assert outline.ai_moves_suppressed(get(MeetppSession, sid))

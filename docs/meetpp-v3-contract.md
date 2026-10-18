@@ -464,3 +464,7 @@ From the first live use of Release 1.2:
   cite.
 - **Live draft minutes**: while a point is live, its minutes are composed as a draft at most every 180 s once
   120 more words were said on it (runtime `LIVE_DRAFT_*`); the composition when the point closes is unchanged.
+- **No spoken agenda moves**: a move to another agenda point shows the banner (with Undo for an AI move) but is not
+  spoken: no Kokoro clip, and the `announce` message carries `spoken: false` so clients (and the recording page) do
+  not read it aloud with the browser's speech either. "Meet++ is taking notes / has stopped" and the chair's timebox
+  nudge are still spoken.

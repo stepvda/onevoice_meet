@@ -185,6 +185,8 @@ export function useAnnouncementAudio(respectMute: boolean, enabled = true): void
         if (!a || a.aid === lastAid.current) return;
         lastAid.current = a.aid;
         if (!enabledRef.current) return;
+        // Agenda moves are a banner only (no clip, no browser speech).
+        if (a.spoken === false) return;
         if (respectMute && !usePreferences.getState().notifications.speakAnnouncements) return;
         if (s.snap?.session.settings?.speak === false) return;
         playAnnouncement(a);

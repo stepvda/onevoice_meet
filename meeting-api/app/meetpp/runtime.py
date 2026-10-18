@@ -393,7 +393,11 @@ async def announce(
     subtitle: str = "",
     speech: str | None = None,
     destination: list[str] | None = None,
+    spoken: bool | None = None,
 ) -> dict:
+    """Banner on every board; `speech` adds a Kokoro clip. `spoken` False
+    tells clients not to read the banner aloud either (by default it is
+    spoken when there is speech)."""
     db = SessionLocal()
     try:
         session = db.get(MeetppSession, session_id)
@@ -410,19 +414,17 @@ async def announce(
             audio_url = f"/api/v1/meetpp/tts/{clip['hash']}.ogg"
     if speech:
         _last_announce[session_id] = (speech, time.monotonic())
-    msg = bus.message("announce", session_id, aid=util.ulid(), kind=kind, title=title[:120], subtitle=(subtitle or "")[:160], audio_url=audio_url)
+    msg = bus.message(
+        "announce", session_id, aid=util.ulid(), kind=kind, title=title[:120], subtitle=(subtitle or "")[:160],
+        audio_url=audio_url, spoken=bool(speech) if spoken is None else spoken,
+    )
     await bus.send(room, msg, destination)
     return msg
 
 
-def _position_texts(o: outline_mod.Outline, target, *, back: bool) -> tuple[str, str]:
+def _position_title(o: outline_mod.Outline, target) -> str:
     num = o.numbers.get(target.id)
-    title = f"{num} · {target.title}" if num else target.title
-    if back:
-        speech = f"Back to item {num}: {target.title}." if num else f"Back to {target.title}."
-    else:
-        speech = f"Moving on to item {num}: {target.title}." if num else f"Moving on to {target.title}."
-    return title, speech
+    return f"{num} · {target.title}" if num else target.title
 
 
 async def _after_move(
@@ -448,14 +450,12 @@ async def _after_move(
     version = await bus.publish_changes(db, session, changes, lead=_position)
     o = outline_mod.load(db, session.id)
     target = o.by_id.get(res.live_id)
-    prev = o.by_id.get(res.prev_id or "")
-    back = prev is not None and o.later(prev, target) if target is not None else False
     if target is not None:
-        title, speech = _position_texts(o, target, back=back)
         if subtitle is None:
             subtitle = "AI moved the meeting on — the chair can undo" if by == "ai" else ""
+        # A banner only: agenda moves are not spoken (users found it intrusive).
         asyncio.get_running_loop().create_task(
-            announce(session.id, kind="position", title=title, subtitle=subtitle, speech=speech)
+            announce(session.id, kind="position", title=_position_title(o, target), subtitle=subtitle, spoken=False)
         )
     for sid in res.closed:
         compose.schedule_section(session.id, sid, delay=compose_delay)
@@ -1880,7 +1880,7 @@ class SessionRunner:
             db.close()
         await announce(
             self.session_id, kind="timebox", title=f"{label} is over its time",
-            subtitle=f"{minutes} min of {section.timebox_minutes} min", destination=dest,
+            subtitle=f"{minutes} min of {section.timebox_minutes} min", destination=dest, spoken=True,
         )
 
     async def reconcile_agent(self) -> None:
