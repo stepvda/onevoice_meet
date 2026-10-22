@@ -152,8 +152,12 @@ def clip_cache_path(
     )
 
 
+def frame_cache_path(item_id: str, index: int = 9, width: int = 960) -> Path:
+    return _cache_root() / f"{_safe_id(item_id)}-frame-n{index}-w{width}.jpg"
+
+
 def find_cached(item_id: str, kind: str) -> Path | None:
-    """Newest cached artifact of `kind` ("poster", "gif", "clip") for an
+    """Newest cached artifact of `kind` ("poster", "gif", "clip", "frame") for an
     item, regardless of which frame time it was generated at. Lets HEAD
     probes answer from disk without re-deriving the chosen time."""
     prefix = f"{_safe_id(item_id)}-{kind}-"
@@ -565,6 +569,39 @@ def poster_path(
                     frame.unlink(missing_ok=True)
                     raise PreviewError(f"could not store poster: {e}") from e
             frame.unlink(missing_ok=True)
+        except PreviewError:
+            _note_failure(kind_key)
+            raise
+    return out
+
+
+def frame_path(src: Path, item_id: str, index: int = 9, width: int = 960) -> Path:
+    """One plain frame, picked by decoded-frame index (0-based, so the
+    default 9 is the 10th frame), at the source's own aspect ratio.
+
+    Used as the <video poster> on one.witysk.org (Messages link cards,
+    Knowledge Targeting) — unlike the social card it carries no branding
+    and does not hunt for a "best" frame. The frame is chosen by index
+    rather than by time so it is the same picture at any frame rate;
+    decoding the first ten frames costs next to nothing."""
+    kind_key = f"{_safe_id(item_id)}:frame"
+    if _in_failure_cooldown(kind_key):
+        raise PreviewError("recent frame failure; backing off")
+    out = frame_cache_path(item_id, index, width)
+    if _fresh(out, src):
+        return out
+    with _lock_for(str(out)):
+        if _fresh(out, src):
+            return out
+        try:
+            args = [
+                "-i", str(src),
+                "-an",
+                "-vf", f"select=eq(n\\,{index}),scale={width}:-2:flags=lanczos",
+                "-frames:v", "1",
+                "-q:v", "3",
+            ]
+            _run_ffmpeg(args, out, timeout=45)
         except PreviewError:
             _note_failure(kind_key)
             raise

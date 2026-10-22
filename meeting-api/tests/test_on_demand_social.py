@@ -236,6 +236,46 @@ def test_clip_endpoint(client, on_demand_video):
     assert len(r.content) > 1000
 
 
+def test_frame_endpoint_serves_the_tenth_frame(client, tmp_path):
+    """frame.jpg is decoded frame index 9: in a clip whose luma steps by 20
+    per frame it must read frame 9's level, not frame 8's or frame 10's.
+    Unbranded and at the source's aspect ratio."""
+    if not FFMPEG:
+        pytest.skip("ffmpeg not available")
+    from io import BytesIO
+
+    from PIL import Image, ImageStat
+
+    from app.db import SessionLocal
+    from app.models import PlaybackItem
+
+    _mid, iid = _make_meeting_and_item(tmp_path)
+    with SessionLocal() as db:
+        src = Path(db.get(PlaybackItem, iid).file_path)
+    subprocess.run(
+        [
+            FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "lavfi", "-i", "color=c=black:size=160x90:rate=25",
+            "-vf", "format=yuv444p,geq=lum='16+N*20':cb=128:cr=128",
+            "-c:v", "libx264", "-qp", "0", "-pix_fmt", "yuv444p",
+            "-frames:v", "12", str(src),
+        ],
+        check=True,
+    )
+
+    r = client.get(f"/api/v1/on-demand/items/{iid}/frame.jpg")
+    assert r.status_code == 200, r.text
+    assert r.headers["content-type"] == "image/jpeg"
+    img = Image.open(BytesIO(r.content))
+    assert img.size == (960, 540)
+    # Limited-range Y=196 is full-range ~209; neighbours sit ~23 away.
+    luma = ImageStat.Stat(img.convert("L")).mean[0]
+    assert abs(luma - 209) < 8, luma
+
+    r2 = client.get(f"/api/v1/on-demand/items/{iid}/frame.jpg")
+    assert r2.content == r.content
+
+
 def test_embed_and_oembed(client, on_demand_video):
     vid = on_demand_video["id"]
     r = client.get(f"/api/v1/on-demand/embed?v={vid}")
@@ -262,6 +302,7 @@ def test_head_requests_supported(client, on_demand_video):
         ("/api/v1/on-demand/page", 200),
         (f"/api/v1/on-demand/page?v={vid}", 200),
         (f"/api/v1/on-demand/items/{vid}/poster.jpg", 200),
+        (f"/api/v1/on-demand/items/{vid}/frame.jpg", 200),
         (f"/api/v1/on-demand/items/{vid}/preview.mp4", 200),
         ("/api/v1/on-demand/embed?v=nope", 404),
         (f"/api/v1/on-demand/oembed?url=https%3A%2F%2Fmeet.witysk.org%2Fon-demand%3Fv%3D{vid}", 200),

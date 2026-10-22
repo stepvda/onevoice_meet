@@ -52,6 +52,10 @@ GIF_WIDTH = 320
 GIF_DURATION = 3.0
 CLIP_WIDTH = 1280
 CLIP_DURATION = 8.0
+# The <video poster> frame: 0-based index 9 is the 10th frame; 960px covers
+# the 480px Messages card at 2x.
+FRAME_INDEX = 9
+FRAME_WIDTH = 960
 
 # ─── SPA shell discovery ───────────────────────────────────────────────────
 
@@ -486,6 +490,27 @@ def on_demand_poster(request: Request, item_id: str) -> Response:
             previews.write_placeholder(out, title, meeting_title)
         if not out.exists():
             raise HTTPException(status_code=503, detail="preview unavailable")
+    return _media_response(out, "image/jpeg")
+
+
+@router.get("/on-demand/items/{item_id}/frame.jpg")
+@router.head("/on-demand/items/{item_id}/frame.jpg", include_in_schema=False)
+def on_demand_frame(request: Request, item_id: str) -> Response:
+    """The video's 10th frame, unbranded, at its own aspect ratio: the
+    <video poster> one.witysk.org shows before play. A fixed variant for
+    the same reason as the poster card. A 503 just leaves the player
+    without a poster, so there is no placeholder."""
+    with SessionLocal() as db:
+        _item, _m, _source, path, _dur = resolve_on_demand_item(item_id, db)
+    if request.method == "HEAD":
+        return _head_media(item_id, "frame", "image/jpeg")
+    if not settings.on_demand_previews_enabled:
+        raise HTTPException(status_code=503, detail="previews disabled")
+    try:
+        out = previews.frame_path(path, item_id, index=FRAME_INDEX, width=FRAME_WIDTH)
+    except previews.PreviewError as e:
+        log.warning("frame preview failed for %s: %s", item_id, e)
+        raise HTTPException(status_code=503, detail="preview unavailable")
     return _media_response(out, "image/jpeg")
 
 
